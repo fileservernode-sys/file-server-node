@@ -1,5 +1,6 @@
-import { FastifyInstance } from 'fastify';
-import { createSuccessResponse } from '../schemas/response.js';
+import { FastifyInstance, FastifyReply } from 'fastify';
+import { prisma } from '../config/database.js';
+import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 
 export async function healthRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -13,5 +14,30 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       timestamp: new Date().toISOString(),
       uptime: process.uptime()
     });
+  });
+
+  /**
+   * GET /api/v1/health/db
+   * Database Connectivity Verification Probe.
+   * Executes a minimal SELECT 1 query via the Prisma singleton.
+   * Returns safe status without leaking credentials, connection strings, or stack traces.
+   */
+  app.get('/health/db', async (_request, reply: FastifyReply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return reply.status(200).send(
+        createSuccessResponse({
+          status: 'ok',
+          database: 'connected'
+        })
+      );
+    } catch {
+      return reply.status(503).send(
+        createErrorResponse(
+          'DATABASE_UNAVAILABLE',
+          'Database connectivity check failed'
+        )
+      );
+    }
   });
 }

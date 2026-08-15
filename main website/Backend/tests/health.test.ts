@@ -28,6 +28,31 @@ describe('Backend Foundation & Health Probes', () => {
     assert.ok(typeof body.data.uptime === 'number');
   });
 
+  test('GET /api/v1/health/db returns structured status without leaking credentials', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/health/db'
+    });
+
+    assert.ok([200, 503].includes(response.statusCode));
+    const body = JSON.parse(response.payload);
+
+    // Verify response does not leak credentials or connection strings
+    const rawPayload = response.payload.toLowerCase();
+    assert.strictEqual(rawPayload.includes('mysql://'), false);
+    assert.strictEqual(rawPayload.includes('password'), false);
+
+    if (response.statusCode === 200) {
+      assert.strictEqual(body.success, true);
+      assert.strictEqual(body.data.status, 'ok');
+      assert.strictEqual(body.data.database, 'connected');
+    } else {
+      assert.strictEqual(body.success, false);
+      assert.strictEqual(body.error.code, 'DATABASE_UNAVAILABLE');
+      assert.strictEqual(body.error.message, 'Database connectivity check failed');
+    }
+  });
+
   test('GET /api/v1/ready returns valid response structure', async () => {
     const response = await app.inject({
       method: 'GET',
