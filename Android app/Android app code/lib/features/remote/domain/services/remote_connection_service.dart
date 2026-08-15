@@ -101,12 +101,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final remoteEp = conn['remoteEndpoint'] as String?;
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
-        // Establish Outbound Gateway Transport Connection
+        // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
         try {
-          final gatewayUrl = AppConfig.current.apiBaseUrl
-              .replaceAll('http', 'ws')
-              .replaceAll('/api/v1', '');
-          await _transport.connect('$gatewayUrl:4001');
+          await _transport.connect(AppConfig.current.gatewayWsUrl);
 
           // Listen for incoming FILE_REQUEST messages over transport stream
           _setupTransportMessageListener();

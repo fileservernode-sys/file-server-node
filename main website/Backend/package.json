@@ -9,7 +9,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js"
+    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js dist/tests/dns_provider.test.js"
   },
   "keywords": [
     "remote-file-server",

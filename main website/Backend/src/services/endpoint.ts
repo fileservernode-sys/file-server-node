@@ -1,10 +1,19 @@
 import { prisma } from '../config/database.js';
+import { DnsProvider, MockDnsProvider } from './dns_provider.js';
 
 /**
  * Service Abstraction for Remote Endpoint Subdomain & Hostname Allocation
- * (Note: Production DNS provisioning deferred to future batches)
  */
 export class EndpointService {
+  private static dnsProvider: DnsProvider = new MockDnsProvider();
+
+  static setDnsProvider(provider: DnsProvider): void {
+    this.dnsProvider = provider;
+  }
+
+  static getDnsProvider(): DnsProvider {
+    return this.dnsProvider;
+  }
 
   /**
    * Generates a clean, deterministic remote endpoint hostname for a server instance.
@@ -29,6 +38,13 @@ export class EndpointService {
 
     const hostname = this.generateHostname(serverInstanceId);
 
+    // Provision record in DNS provider abstraction
+    await this.dnsProvider.provisionRecord({
+      hostname,
+      target: 'gateway.remotenode.net',
+      type: 'CNAME'
+    });
+
     const endpoint = await prisma.serverEndpoint.create({
       data: {
         serverInstanceId,
@@ -51,6 +67,14 @@ export class EndpointService {
    * Deactivates a reserved endpoint.
    */
   static async releaseEndpoint(endpointId: string) {
+    const endpoint = await prisma.serverEndpoint.findUnique({
+      where: { id: endpointId }
+    });
+
+    if (endpoint) {
+      await this.dnsProvider.removeRecord(endpoint.hostname);
+    }
+
     return prisma.serverEndpoint.update({
       where: { id: endpointId },
       data: { status: 'INACTIVE' }

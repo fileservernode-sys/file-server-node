@@ -1,14 +1,45 @@
 import assert from 'node:assert';
 import { test, describe, before, after } from 'node:test';
+import http from 'node:http';
 import { WebSocket } from 'ws';
-import { GatewayService } from '../src/gateway/gateway_service.js';
+import { GatewayService, TokenValidator } from '../src/gateway/gateway_service.js';
+import { loadGatewayConfig } from '../src/gateway/gateway_config.js';
 
-describe('Development Gateway Transport & Data Plane Routing (ws://localhost:4001)', () => {
+// ---------------------------------------------------------------------------
+// In-memory mock: no DB, no TCP — resolves instantly so tests don't stall
+// ---------------------------------------------------------------------------
+const VALID_TOKEN = 'mock-token-123';
+const VALID_DEVICE = 'mock-device-456';
+const VALID_CONN_ID = 'mock-conn-id-789';
+
+class MockTokenValidator implements TokenValidator {
+  async findConnection(deviceId: string, connectionToken: string) {
+    if (deviceId === VALID_DEVICE && connectionToken === VALID_TOKEN) {
+      return { id: VALID_CONN_ID, deviceId, remoteEndpoint: 'https://node-mockdevi.remotenode.net' };
+    }
+    return null;
+  }
+  async markConnected(_connectionId: string, _now: Date) { /* no-op */ }
+  async markDisconnected(_connectionId: string, _disconnectedAt: Date) { /* no-op */ }
+}
+
+// ---------------------------------------------------------------------------
+
+describe('Production Gateway Infrastructure & Transport Service', () => {
   let gateway: GatewayService;
   const testPort = 4001;
 
   before(async () => {
-    gateway = new GatewayService(testPort);
+    gateway = new GatewayService(
+      {
+        GATEWAY_PORT: testPort,
+        GATEWAY_AUTH_TIMEOUT_MS: 500,
+        GATEWAY_REQUEST_TIMEOUT_MS: 500,
+        GATEWAY_MAX_MESSAGE_SIZE_BYTES: 1024 * 1024,
+        NODE_ENV: 'test'
+      },
+      new MockTokenValidator()
+    );
     await gateway.start();
   });
 
@@ -16,14 +47,57 @@ describe('Development Gateway Transport & Data Plane Routing (ws://localhost:400
     await gateway.stop();
   });
 
-  test('Gateway reports active health status', () => {
-    const health = gateway.getHealthStatus();
-    assert.strictEqual(health.status, 'ACTIVE');
-    assert.strictEqual(health.port, testPort);
-    assert.strictEqual(health.activeConnections, 0);
+  test('Gateway configuration loads with valid defaults and overrides', () => {
+    const customConfig = loadGatewayConfig({
+      GATEWAY_PORT: 5000,
+      GATEWAY_MAX_CONNECTIONS: 200,
+      NODE_ENV: 'production'
+    });
+    assert.strictEqual(customConfig.GATEWAY_PORT, 5000);
+    assert.strictEqual(customConfig.GATEWAY_MAX_CONNECTIONS, 200);
+    assert.strictEqual(customConfig.NODE_ENV, 'production');
   });
 
-  test('Gateway sends HELLO handshake on client connection', async () => {
+  test('GET /health returns 200 OK and health metrics', async () => {
+    const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
+      http.get(`http://localhost:${testPort}/health`, (resp) => {
+        let raw = '';
+        resp.on('data', (c) => (raw += c));
+        resp.on('end', () => {
+          resolve({
+            statusCode: resp.statusCode || 0,
+            data: JSON.parse(raw)
+          });
+        });
+      }).on('error', reject);
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.data.status, 'ok');
+    assert.strictEqual(res.data.gateway, 'ACTIVE');
+    assert.strictEqual(typeof res.data.activeConnections, 'number');
+  });
+
+  test('GET /ready returns 200 OK and readiness metrics', async () => {
+    const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
+      http.get(`http://localhost:${testPort}/ready`, (resp) => {
+        let raw = '';
+        resp.on('data', (c) => (raw += c));
+        resp.on('end', () => {
+          resolve({
+            statusCode: resp.statusCode || 0,
+            data: JSON.parse(raw)
+          });
+        });
+      }).on('error', reject);
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.data.status, 'ready');
+    assert.strictEqual(res.data.controlPlaneConnected, true);
+  });
+
+  test('Gateway sends HELLO handshake greeting on client connection', async () => {
     const socket = new WebSocket(`ws://localhost:${testPort}`);
 
     const received: string[] = [];
@@ -42,62 +116,87 @@ describe('Development Gateway Transport & Data Plane Routing (ws://localhost:400
     assert.ok(received.includes('HELLO'));
   });
 
+  test('Gateway terminates unauthenticated socket after auth timeout', async () => {
+    const socket = new WebSocket(`ws://localhost:${testPort}`);
+
+    const failure = await new Promise<any>((resolve) => {
+      socket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'AUTH_FAILURE') {
+          resolve(msg);
+        }
+      });
+    });
+
+    assert.strictEqual(failure.type, 'AUTH_FAILURE');
+    assert.strictEqual(failure.reason, 'Authentication timeout');
+  });
+
   test('Gateway routes FILE_REQUEST from client socket to target Android host socket', async () => {
     // 1. Android Host Socket connects and authenticates
     const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
     let connectionId = '';
 
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       androidSocket.on('message', (data) => {
         const msg = JSON.parse(data.toString());
         if (msg.type === 'HELLO') {
-          androidSocket.send(JSON.stringify({
-            type: 'AUTH',
-            connectionToken: 'mock-token-123',
-            deviceId: 'mock-device-456'
-          }));
+          androidSocket.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
         } else if (msg.type === 'AUTH_SUCCESS') {
           connectionId = msg.connectionId;
           resolve();
+        } else if (msg.type === 'AUTH_FAILURE') {
+          reject(new Error(`Unexpected AUTH_FAILURE: ${msg.reason}`));
         }
       });
+      androidSocket.on('error', reject);
     });
 
-    assert.ok(connectionId);
+    assert.strictEqual(connectionId, VALID_CONN_ID);
 
     // Setup listener on Android socket to respond to FILE_REQUEST
     androidSocket.on('message', (data) => {
       const msg = JSON.parse(data.toString());
       if (msg.type === 'FILE_REQUEST') {
-        androidSocket.send(JSON.stringify({
-          type: 'FILE_RESPONSE',
-          requestId: msg.requestId,
-          success: true,
-          data: { items: [{ name: 'Documents', isDir: true }] }
-        }));
+        androidSocket.send(
+          JSON.stringify({
+            type: 'FILE_RESPONSE',
+            requestId: msg.requestId,
+            success: true,
+            data: { items: [{ name: 'Documents', isDir: true }] }
+          })
+        );
       }
     });
 
-    // 2. Client socket sends FILE_REQUEST targetting connectionId
+    // 2. Client socket sends FILE_REQUEST targeting connectionId
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
 
-    const response = await new Promise<any>((resolve) => {
+    const response = await new Promise<any>((resolve, reject) => {
       clientSocket.on('message', (data) => {
         const msg = JSON.parse(data.toString());
         if (msg.type === 'FILE_RESPONSE') {
           resolve(msg);
         }
       });
+      clientSocket.on('error', reject);
 
-      // Wait for HELLO before sending request
       setTimeout(() => {
-        clientSocket.send(JSON.stringify({
-          type: 'FILE_REQUEST',
-          requestId: 'req-test-777',
-          connectionId,
-          operation: 'LIST',
-          path: '/'
-        }));
+        clientSocket.send(
+          JSON.stringify({
+            type: 'FILE_REQUEST',
+            requestId: 'req-test-777',
+            connectionId,
+            operation: 'LIST',
+            path: '/'
+          })
+        );
       }, 50);
     });
 
@@ -110,25 +209,28 @@ describe('Development Gateway Transport & Data Plane Routing (ws://localhost:400
     clientSocket.close();
   });
 
-  test('Gateway rejects FILE_REQUEST targetting offline or nonexistent connection ID', async () => {
+  test('Gateway rejects FILE_REQUEST targeting offline connection ID', async () => {
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
 
-    const response = await new Promise<any>((resolve) => {
+    const response = await new Promise<any>((resolve, reject) => {
       clientSocket.on('message', (data) => {
         const msg = JSON.parse(data.toString());
         if (msg.type === 'FILE_RESPONSE') {
           resolve(msg);
         }
       });
+      clientSocket.on('error', reject);
 
       setTimeout(() => {
-        clientSocket.send(JSON.stringify({
-          type: 'FILE_REQUEST',
-          requestId: 'req-test-offline',
-          connectionId: 'nonexistent-conn-id',
-          operation: 'LIST',
-          path: '/'
-        }));
+        clientSocket.send(
+          JSON.stringify({
+            type: 'FILE_REQUEST',
+            requestId: 'req-test-offline',
+            connectionId: 'nonexistent-conn-id',
+            operation: 'LIST',
+            path: '/'
+          })
+        );
       }, 50);
     });
 
@@ -138,5 +240,27 @@ describe('Development Gateway Transport & Data Plane Routing (ws://localhost:400
     assert.strictEqual(response.error.code, 'DEVICE_OFFLINE');
 
     clientSocket.close();
+  });
+
+  test('Gateway handles unknown message types cleanly with ERROR message', async () => {
+    const socket = new WebSocket(`ws://localhost:${testPort}`);
+
+    const errorMsg = await new Promise<any>((resolve, reject) => {
+      socket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'ERROR') {
+          resolve(msg);
+        }
+      });
+      socket.on('error', reject);
+
+      setTimeout(() => {
+        socket.send(JSON.stringify({ type: 'UNSUPPORTED_TYPE_XYZ' }));
+      }, 50);
+    });
+
+    assert.strictEqual(errorMsg.type, 'ERROR');
+    assert.strictEqual(errorMsg.code, 'UNKNOWN_MESSAGE_TYPE');
+    socket.close();
   });
 });
