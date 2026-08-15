@@ -9,6 +9,8 @@ export interface HandshakeMessage {
   connectionToken?: string;
   deviceId?: string;
   connectionId?: string;
+  userId?: string;
+  authorizedUserId?: string;
   remoteEndpoint?: string;
   reason?: string;
   code?: string;
@@ -33,6 +35,7 @@ export interface HandshakeMessage {
 export interface ActiveGatewayConnection {
   connectionId: string;
   deviceId: string;
+  userId?: string;
   socket: WebSocket;
   connectedAt: Date;
   lastHeartbeatAt: Date;
@@ -42,6 +45,7 @@ export interface ActiveGatewayConnection {
 export interface PendingClientRequest {
   requestId: string;
   connectionId: string;
+  operation?: string;
   clientSocket: WebSocket;
   createdAt: number;
   timer: NodeJS.Timeout;
@@ -67,7 +71,7 @@ export interface TokenValidator {
   findConnection(
     deviceId: string,
     connectionToken: string
-  ): Promise<{ id: string; deviceId: string; remoteEndpoint?: string | null } | null>;
+  ): Promise<{ id: string; deviceId: string; userId?: string; remoteEndpoint?: string | null } | null>;
   markConnected(connectionId: string, now: Date): Promise<void>;
   markDisconnected(connectionId: string, disconnectedAt: Date): Promise<void>;
 }
@@ -76,7 +80,17 @@ export interface TokenValidator {
 export class PrismaTokenValidator implements TokenValidator {
   async findConnection(deviceId: string, connectionToken: string) {
     try {
-      return await prisma.deviceConnection.findFirst({ where: { deviceId, connectionToken } });
+      const record = await prisma.deviceConnection.findFirst({
+        where: { deviceId, connectionToken },
+        include: { device: true }
+      });
+      if (!record) return null;
+      return {
+        id: record.id,
+        deviceId: record.deviceId,
+        userId: record.device?.userId,
+        remoteEndpoint: record.remoteEndpoint
+      };
     } catch {
       return null;
     }
@@ -117,8 +131,13 @@ export class GatewayService {
   private pendingRequests: Map<string, PendingClientRequest> = new Map(); // requestId -> PendingClientRequest
   private activeTransfers: Map<string, ActiveFileTransfer> = new Map(); // transferId -> ActiveFileTransfer
   private rateLimitTracker: Map<string, { count: number; resetAt: number }> = new Map(); // ip -> { count, resetAt }
+  private idempotencyCache: Map<string, { response: any; expiresAt: number }> = new Map(); // requestId -> { response, expiresAt }
   
+  // Observability Counters
   private failedAuthCount = 0;
+  private reconnectCount = 0;
+  private rateLimitEvents = 0;
+  private timedOutRequests = 0;
   private completedTransfersCount = 0;
   private failedTransfersCount = 0;
   
@@ -196,6 +215,7 @@ export class GatewayService {
     }
 
     if (tracker.count >= this.config.GATEWAY_RATE_LIMIT_RPM) {
+      this.rateLimitEvents++;
       return false;
     }
 
@@ -281,6 +301,7 @@ export class GatewayService {
       clearTimeout(req.timer);
     }
     this.pendingRequests.clear();
+    this.idempotencyCache.clear();
 
     // Disconnect active connections
     for (const [, conn] of this.activeConnections.entries()) {
@@ -416,9 +437,10 @@ export class GatewayService {
           // Clear auth timeout on success
           clearTimeout(authTimeoutTimer);
 
-          // Duplicate Connection Eviction: if same connectionId or deviceId is already active, close old socket
+          // Duplicate Session Eviction: if same connectionId or deviceId is already active, close old socket
           const existingConnId = connRecord.id;
           if (this.activeConnections.has(existingConnId)) {
+            this.reconnectCount++;
             const oldConn = this.activeConnections.get(existingConnId)!;
             try {
               oldConn.socket.send(
@@ -430,6 +452,7 @@ export class GatewayService {
           }
 
           if (this.deviceToConnectionMap.has(deviceId)) {
+            this.reconnectCount++;
             const oldConnId = this.deviceToConnectionMap.get(deviceId)!;
             if (this.activeConnections.has(oldConnId)) {
               const oldConn = this.activeConnections.get(oldConnId)!;
@@ -450,6 +473,7 @@ export class GatewayService {
           this.activeConnections.set(connRecord.id, {
             connectionId: connRecord.id,
             deviceId,
+            userId: connRecord.userId,
             socket,
             connectedAt: now,
             lastHeartbeatAt: now,
@@ -459,7 +483,8 @@ export class GatewayService {
 
           this.log('info', 'Android storage node authenticated successfully', {
             connectionId: connRecord.id,
-            deviceId
+            deviceId,
+            userId: connRecord.userId
           });
 
           socket.send(
@@ -492,10 +517,10 @@ export class GatewayService {
         }
 
         // =====================================================================
-        // REQUEST ROUTING & AUTHORIZATION
+        // REQUEST ROUTING, AUTHORIZATION & IDEMPOTENCY
         // =====================================================================
         if (msg.type === 'FILE_REQUEST') {
-          const { requestId, connectionId } = msg;
+          const { requestId, connectionId, operation, authorizedUserId } = msg;
           if (!requestId || !connectionId) {
             socket.send(
               JSON.stringify({
@@ -524,9 +549,38 @@ export class GatewayService {
             return;
           }
 
+          // Cross-User Routing Authorization Guard: if authorizedUserId is supplied, verify ownership
+          if (authorizedUserId && targetConn.userId && targetConn.userId !== authorizedUserId) {
+            socket.send(
+              JSON.stringify({
+                type: 'FILE_RESPONSE',
+                requestId,
+                success: false,
+                error: {
+                  code: 'UNAUTHORIZED_CROSS_USER_ACCESS',
+                  message: 'Cross-user connection routing forbidden.'
+                }
+              })
+            );
+            return;
+          }
+
+          // Request Idempotency Check for mutating operations
+          const isMutating = operation === 'UPLOAD' || operation === 'DELETE' || operation === 'RENAME' || operation === 'CREATE_FOLDER';
+          if (isMutating && this.idempotencyCache.has(requestId)) {
+            const cached = this.idempotencyCache.get(requestId)!;
+            if (Date.now() < cached.expiresAt) {
+              socket.send(JSON.stringify(cached.response));
+              return;
+            } else {
+              this.idempotencyCache.delete(requestId);
+            }
+          }
+
           // Register pending request with request timeout cleanup
           const reqTimer = setTimeout(() => {
             if (this.pendingRequests.has(requestId)) {
+              this.timedOutRequests++;
               this.pendingRequests.delete(requestId);
             }
           }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
@@ -534,6 +588,7 @@ export class GatewayService {
           this.pendingRequests.set(requestId, {
             requestId,
             connectionId,
+            operation,
             clientSocket: socket,
             createdAt: Date.now(),
             timer: reqTimer
@@ -552,6 +607,16 @@ export class GatewayService {
             if (pending.clientSocket.readyState === WebSocket.OPEN) {
               pending.clientSocket.send(JSON.stringify(msg));
             }
+
+            // Cache response for idempotent retries (30s TTL)
+            const isMutating = pending.operation === 'UPLOAD' || pending.operation === 'DELETE' || pending.operation === 'RENAME' || pending.operation === 'CREATE_FOLDER';
+            if (isMutating) {
+              this.idempotencyCache.set(requestId, {
+                response: msg,
+                expiresAt: Date.now() + 30000
+              });
+            }
+
             this.pendingRequests.delete(requestId);
           }
           return;
@@ -739,6 +804,10 @@ export class GatewayService {
     gateway: string;
     activeConnections: number;
     authenticatedConnections: number;
+    connectedDevices: number;
+    reconnectCount: number;
+    rateLimitEvents: number;
+    timedOutRequests: number;
     failedAuthCount: number;
     pendingRequestsCount: number;
     activeTransfersCount: number;
@@ -753,6 +822,10 @@ export class GatewayService {
       gateway: this.isListening ? 'ACTIVE' : 'INACTIVE',
       activeConnections: this.activeConnections.size,
       authenticatedConnections: this.activeConnections.size,
+      connectedDevices: this.deviceToConnectionMap.size,
+      reconnectCount: this.reconnectCount,
+      rateLimitEvents: this.rateLimitEvents,
+      timedOutRequests: this.timedOutRequests,
       failedAuthCount: this.failedAuthCount,
       pendingRequestsCount: this.pendingRequests.size,
       activeTransfersCount: this.activeTransfers.size,
@@ -768,12 +841,14 @@ export class GatewayService {
     status: string;
     controlPlaneConnected: boolean;
     activeConnections: number;
+    connectedDevices: number;
     activeTransfers: number;
   } {
     return {
       status: this.isListening ? 'ready' : 'not_ready',
       controlPlaneConnected: true,
       activeConnections: this.activeConnections.size,
+      connectedDevices: this.deviceToConnectionMap.size,
       activeTransfers: this.activeTransfers.size
     };
   }

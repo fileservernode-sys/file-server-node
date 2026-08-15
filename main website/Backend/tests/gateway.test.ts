@@ -11,11 +11,17 @@ import { loadGatewayConfig } from '../src/gateway/gateway_config.js';
 const VALID_TOKEN = 'mock-token-123';
 const VALID_DEVICE = 'mock-device-456';
 const VALID_CONN_ID = 'mock-conn-id-789';
+const VALID_USER_ID = 'user-alice-111';
 
 class MockTokenValidator implements TokenValidator {
   async findConnection(deviceId: string, connectionToken: string) {
     if (deviceId === VALID_DEVICE && connectionToken === VALID_TOKEN) {
-      return { id: VALID_CONN_ID, deviceId, remoteEndpoint: 'https://node-mockdevi.remotenode.net' };
+      return {
+        id: VALID_CONN_ID,
+        deviceId,
+        userId: VALID_USER_ID,
+        remoteEndpoint: 'https://node-mockdevi.remotenode.net'
+      };
     }
     return null;
   }
@@ -90,6 +96,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(res.data.status, 'ok');
     assert.strictEqual(res.data.gateway, 'ACTIVE');
     assert.strictEqual(typeof res.data.activeConnections, 'number');
+    assert.strictEqual(typeof res.data.connectedDevices, 'number');
     assert.strictEqual(typeof res.data.failedAuthCount, 'number');
     assert.strictEqual(typeof res.data.activeTransfersCount, 'number');
   });
@@ -149,7 +156,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
   });
 
   test('Gateway evicts duplicate connection sessions gracefully', async () => {
-    // 1. First socket authenticates
     const socket1 = new WebSocket(`ws://localhost:${testPort}`);
     await new Promise<void>((resolve) => {
       socket1.on('message', (data) => {
@@ -168,7 +174,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
       });
     });
 
-    // 2. Second socket connects with same device ID
     const socket2 = new WebSocket(`ws://localhost:${testPort}`);
     const socket1DisconnectPromise = new Promise<any>((resolve) => {
       socket1.on('message', (data) => {
@@ -202,7 +207,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     socket2.close();
   });
 
-  test('Gateway routes FILE_REQUEST from client socket to target Android host socket', async () => {
+  test('Gateway routes FILE_REQUEST and prevents cross-user routing violations', async () => {
     const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
     let connectionId = '';
 
@@ -245,10 +250,11 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
 
+    // 1. Legitimate request with matching authorized user
     const response = await new Promise<any>((resolve, reject) => {
       clientSocket.on('message', (data) => {
         const msg = JSON.parse(data.toString());
-        if (msg.type === 'FILE_RESPONSE') {
+        if (msg.type === 'FILE_RESPONSE' && msg.requestId === 'req-authorized-user') {
           resolve(msg);
         }
       });
@@ -258,8 +264,9 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
         clientSocket.send(
           JSON.stringify({
             type: 'FILE_REQUEST',
-            requestId: 'req-test-777',
+            requestId: 'req-authorized-user',
             connectionId,
+            authorizedUserId: VALID_USER_ID,
             operation: 'LIST',
             path: '/'
           })
@@ -267,10 +274,128 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
       }, 50);
     });
 
-    assert.strictEqual(response.type, 'FILE_RESPONSE');
-    assert.strictEqual(response.requestId, 'req-test-777');
     assert.strictEqual(response.success, true);
     assert.ok(response.data.items);
+
+    // 2. Cross-user violation attempt with different user ID
+    const crossUserResponse = await new Promise<any>((resolve, reject) => {
+      clientSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'FILE_RESPONSE' && msg.requestId === 'req-cross-user') {
+          resolve(msg);
+        }
+      });
+      clientSocket.on('error', reject);
+
+      setTimeout(() => {
+        clientSocket.send(
+          JSON.stringify({
+            type: 'FILE_REQUEST',
+            requestId: 'req-cross-user',
+            connectionId,
+            authorizedUserId: 'unauthorized-user-bob-999',
+            operation: 'LIST',
+            path: '/'
+          })
+        );
+      }, 50);
+    });
+
+    assert.strictEqual(crossUserResponse.success, false);
+    assert.strictEqual(crossUserResponse.error.code, 'UNAUTHORIZED_CROSS_USER_ACCESS');
+
+    androidSocket.close();
+    clientSocket.close();
+  });
+
+  test('Gateway caches and returns idempotent responses for duplicate mutating requests', async () => {
+    const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
+    let connectionId = '';
+
+    await new Promise<void>((resolve) => {
+      androidSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          androidSocket.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          connectionId = msg.connectionId;
+          resolve();
+        }
+      });
+    });
+
+    let androidReceivedCount = 0;
+    androidSocket.on('message', (data) => {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'FILE_REQUEST' && msg.requestId === 'req-idempotent-create') {
+        androidReceivedCount++;
+        androidSocket.send(
+          JSON.stringify({
+            type: 'FILE_RESPONSE',
+            requestId: msg.requestId,
+            success: true,
+            data: { created: true }
+          })
+        );
+      }
+    });
+
+    const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+
+    // First request
+    await new Promise<void>((resolve) => {
+      clientSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'FILE_RESPONSE' && msg.requestId === 'req-idempotent-create') {
+          resolve();
+        }
+      });
+      setTimeout(() => {
+        clientSocket.send(
+          JSON.stringify({
+            type: 'FILE_REQUEST',
+            requestId: 'req-idempotent-create',
+            connectionId,
+            operation: 'CREATE_FOLDER',
+            path: '/',
+            name: 'NewFolder'
+          })
+        );
+      }, 50);
+    });
+
+    assert.strictEqual(androidReceivedCount, 1);
+
+    // Second request with same requestId
+    const secondResponse = await new Promise<any>((resolve) => {
+      clientSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'FILE_RESPONSE' && msg.requestId === 'req-idempotent-create') {
+          resolve(msg);
+        }
+      });
+      setTimeout(() => {
+        clientSocket.send(
+          JSON.stringify({
+            type: 'FILE_REQUEST',
+            requestId: 'req-idempotent-create',
+            connectionId,
+            operation: 'CREATE_FOLDER',
+            path: '/',
+            name: 'NewFolder'
+          })
+        );
+      }, 50);
+    });
+
+    assert.strictEqual(secondResponse.success, true);
+    assert.strictEqual(androidReceivedCount, 1); // Not sent to Android second time
 
     androidSocket.close();
     clientSocket.close();
@@ -300,7 +425,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
 
-    // Client requests stream
     const cancelReceivedPromise = new Promise<any>((resolve) => {
       clientSocket.on('message', (data) => {
         const msg = JSON.parse(data.toString());
@@ -313,7 +437,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     androidSocket.on('message', (data) => {
       const msg = JSON.parse(data.toString());
       if (msg.type === 'FILE_REQUEST' && msg.operation === 'STREAM_TEST') {
-        // Start stream
         androidSocket.send(
           JSON.stringify({
             type: 'FILE_STREAM_START',
@@ -324,7 +447,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
           })
         );
 
-        // Send a chunk then cancel
         setTimeout(() => {
           androidSocket.send(
             JSON.stringify({

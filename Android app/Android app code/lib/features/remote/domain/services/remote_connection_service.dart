@@ -117,6 +117,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           // Fallback to control plane acknowledgment if gateway server is unreachable
         }
 
+        _reconnectAttempts = 0;
         _currentInfo = RemoteConnectionInfo(
           connectionId: connId,
           remoteEndpoint: remoteEp,
