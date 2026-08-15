@@ -44,8 +44,17 @@ enum EndpointStatus {
 }
 
 enum ConnectionStatus {
-  CONNECTED
   DISCONNECTED
+  CONNECTING
+  CONNECTED
+  RECONNECTING
+  FAILED
+}
+
+enum GatewayStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
 }
 
 enum AuditEventType {
@@ -61,6 +70,11 @@ enum AuditEventType {
   SERVER_STARTED
   SERVER_STOPPED
   ENDPOINT_ASSIGNED
+  REMOTE_CONNECTION_CREATED
+  REMOTE_CONNECTION_CONNECTED
+  REMOTE_CONNECTION_DISCONNECTED
+  REMOTE_CONNECTION_FAILED
+  SERVER_ENDPOINT_ALLOCATED
 }
 
 // -----------------------------------------------------------------------------
@@ -171,19 +185,41 @@ model ServerEndpoint {
   @@index([hostname])
 }
 
+/// Remote Relay Gateway Node Entity
+model GatewayNode {
+  id              String        @id @default(cuid())
+  hostname        String        @unique
+  region          String?
+  status          GatewayStatus @default(ACTIVE)
+  lastHeartbeatAt DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  connections     DeviceConnection[]
+
+  @@index([hostname])
+  @@index([status])
+}
+
 /// Gateway Tunnel Connection Log / State
 model DeviceConnection {
   id              String           @id @default(cuid())
   deviceId        String
   gatewayNodeId   String?
+  connectionToken String?
+  remoteEndpoint  String?
   status          ConnectionStatus @default(DISCONNECTED)
   connectedAt     DateTime?
   disconnectedAt  DateTime?
   lastHeartbeatAt DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   device          Device           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  gatewayNode     GatewayNode?     @relation(fields: [gatewayNodeId], references: [id], onDelete: SetNull)
 
   @@index([deviceId])
+  @@index([gatewayNodeId])
   @@index([status])
 }
 
