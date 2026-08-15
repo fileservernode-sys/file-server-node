@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
@@ -21,6 +22,7 @@ class LoadingIndicator extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const CircularProgressIndicator(
+          strokeWidth: 2.5,
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
         ),
         if (message != null) ...[
@@ -37,5 +39,31 @@ class LoadingIndicator extends StatelessWidget {
       );
     }
     return Center(child: content);
+  }
+}
+
+/// Reusable Skeleton Placeholder for Component Loading States
+class SkeletonLoader extends StatelessWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const SkeletonLoader({
+    super.key,
+    this.width = double.infinity,
+    required this.height,
+    this.borderRadius = AppRadius.md,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppColors.borderSubtle.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+    );
   }
 }

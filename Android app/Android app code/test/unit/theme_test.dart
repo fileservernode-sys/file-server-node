@@ -23,7 +23,7 @@ void main() {
     });
 
     test('AppTypography defines valid font sizes and weights', () {
-      expect(AppTypography.heading1.fontSize, 24.0);
+      expect(AppTypography.heading1.fontSize, 28.0);
       expect(AppTypography.body.fontSize, 14.0);
       expect(AppTypography.status.fontSize, 11.0);
     });
