@@ -1,4 +1,5 @@
 import '../../domain/entities/auth_session.dart';
+import '../../domain/entities/platform_user.dart';
 
 /// Data Transfer Object — Login Request Credentials
 class LoginRequest {
@@ -29,9 +30,12 @@ class OtpVerificationRequest {
   });
 
   Map<String, dynamic> toJson() {
+    final code = otpCode.trim();
     return {
       'email': email.trim().toLowerCase(),
-      'otpCode': otpCode.trim(),
+      'otp': code,
+      'code': code,
+      'otpCode': code,
     };
   }
 }
@@ -53,14 +57,31 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    // Unwraps backend API standard response format: { success: true, data: { ... } }
+    final isSuccess = json['success'] as bool? ?? true;
+    final payload = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    AuthSession? session;
+    if (payload['session'] != null) {
+      session =
+          AuthSession.fromJson(payload['session'] as Map<String, dynamic>);
+    } else if (payload['token'] != null && payload['user'] != null) {
+      session = AuthSession(
+        accessToken: payload['token'] as String,
+        refreshToken: payload['token'] as String,
+        user: PlatformUser.fromJson(payload['user'] as Map<String, dynamic>),
+        expiresAt: DateTime.now().add(const Duration(days: 30)),
+      );
+    }
+
     return AuthResponse(
-      success: json['success'] as bool? ?? false,
-      requiresOtp: json['requiresOtp'] as bool? ?? false,
-      session: json['session'] != null
-          ? AuthSession.fromJson(json['session'] as Map<String, dynamic>)
-          : null,
-      message: json['message'] as String?,
-      errorCode: json['errorCode'] as String?,
+      success: isSuccess,
+      requiresOtp: payload['requiresOtp'] as bool? ?? false,
+      session: session,
+      message: payload['message'] as String?,
+      errorCode: payload['errorCode'] as String?,
     );
   }
 }

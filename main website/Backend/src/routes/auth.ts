@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { prisma } from '../config/database.js';
 import { hashPassword, verifyPassword, generateSessionToken } from '../utils/crypto.js';
 import { issueEmailOtp, verifyEmailOtp } from '../utils/otp.js';
-import { verifyGoogleToken } from '../utils/google-auth.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../errors/app-error.js';
 
@@ -16,7 +15,9 @@ const registerSchema = z.object({
 
 const verifyOtpSchema = z.object({
   email: z.string().email(),
-  code: z.string().length(6)
+  otp: z.string().min(6).max(6).optional(),
+  code: z.string().min(6).max(6).optional(),
+  otpCode: z.string().min(6).max(6).optional()
 });
 
 const loginSchema = z.object({
@@ -24,12 +25,12 @@ const loginSchema = z.object({
   password: z.string().min(1)
 });
 
-const googleAuthSchema = z.object({
-  idToken: z.string().min(1)
+const resendOtpSchema = z.object({
+  email: z.string().email()
 });
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
-  
+
   /**
    * POST /api/v1/auth/register
    * Step 1 of Email/Password Account Creation: Creates PENDING_VERIFICATION user and dispatches OTP.
@@ -61,14 +62,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         }
       });
     } else {
-      // Update pending password hash
       user = await prisma.user.update({
         where: { id: user.id },
         data: { passwordHash, fullName: body.data.fullName || user.fullName }
       });
     }
 
-    // Issue 6-Digit Email OTP
+    // Issue 6-Digit Email OTP via Serverbyt SMTP
     await issueEmailOtp(user.id, email, 'REGISTRATION_VERIFICATION');
 
     await prisma.auditEvent.create({
@@ -82,7 +82,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(200).send(createSuccessResponse({
       requiresOtp: true,
       email,
-      message: 'OTP verification code sent to your email'
+      message: 'Verification code sent to your email'
     }));
   });
 
@@ -97,7 +97,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const email = body.data.email.trim().toLowerCase();
-    const code = body.data.code.trim();
+    const code = (body.data.otp || body.data.code || body.data.otpCode || '').trim();
+
+    if (code.length !== 6) {
+      throw new ValidationError('A 6-digit OTP verification code is required');
+    }
 
     // Check registration or login OTP
     const isRegValid = await verifyEmailOtp(email, code, 'REGISTRATION_VERIFICATION');
@@ -145,7 +149,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         id: updatedUser.id,
         email: updatedUser.email,
         fullName: updatedUser.fullName,
-        emailVerified: updatedUser.emailVerified
+        status: updatedUser.status,
+        emailVerified: updatedUser.emailVerified,
+        createdAt: updatedUser.createdAt.toISOString()
+      },
+      session: {
+        accessToken: token,
+        refreshToken: token,
+        expiresAt: expiresAt.toISOString()
       },
       token
     }));
@@ -171,6 +182,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
           metadata: { email }
         }
       });
+      // Generic credentials error
       return reply.status(401).send(createErrorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
     }
 
@@ -193,85 +205,34 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
-   * POST /api/v1/auth/google
-   * Google Sign-In Identity Authentication (Direct access — No password or OTP required).
+   * POST /api/v1/auth/resend-otp
+   * Resends 6-digit OTP code with generic account enumeration protection.
    */
-  app.post('/auth/google', async (request: FastifyRequest, reply: FastifyReply) => {
-    const body = googleAuthSchema.safeParse(request.body);
+  app.post('/auth/resend-otp', async (request: FastifyRequest, reply: FastifyReply) => {
+    const body = resendOtpSchema.safeParse(request.body);
     if (!body.success) {
-      throw new ValidationError('Google ID Token required');
+      throw new ValidationError('Valid email address required');
     }
 
-    const googlePayload = await verifyGoogleToken(body.data.idToken);
-    const email = googlePayload.email.toLowerCase();
+    const email = body.data.email.trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    let user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { googleId: googlePayload.googleId },
-          { email }
-        ]
-      }
-    });
-
-    if (!user) {
-      // Create new Google-authenticated user
-      user = await prisma.user.create({
-        data: {
-          email,
-          googleId: googlePayload.googleId,
-          fullName: googlePayload.fullName || null,
-          status: 'ACTIVE',
-          emailVerified: true
-        }
-      });
-    } else if (!user.googleId) {
-      // Link Google ID to existing email account
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          googleId: googlePayload.googleId,
-          status: 'ACTIVE',
-          emailVerified: true
-        }
-      });
+    if (user) {
+      const purpose = user.emailVerified ? 'LOGIN_2FA' : 'REGISTRATION_VERIFICATION';
+      await issueEmailOtp(user.id, email, purpose);
     }
 
-    // Create Authenticated Session Token
-    const token = generateSessionToken();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-    await prisma.userSession.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt
-      }
-    });
-
-    await prisma.auditEvent.create({
-      data: {
-        userId: user.id,
-        eventType: 'GOOGLE_SIGNIN'
-      }
-    });
-
+    // Always return generic response to prevent account enumeration
     return reply.status(200).send(createSuccessResponse({
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        emailVerified: user.emailVerified
-      },
-      token
+      message: 'If an account exists, a new verification code has been dispatched.'
     }));
   });
 
   /**
-   * GET /api/v1/auth/me
+   * GET /api/v1/auth/me & POST /api/v1/auth/session/verify
    * Resolves currently authenticated user from Bearer Token
    */
-  app.get('/auth/me', async (request: FastifyRequest) => {
+  const handleVerifySession = async (request: FastifyRequest) => {
     const authHeader = request.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
@@ -298,10 +259,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         email: session.user.email,
         fullName: session.user.fullName,
         status: session.user.status,
-        emailVerified: session.user.emailVerified
+        emailVerified: session.user.emailVerified,
+        createdAt: session.user.createdAt.toISOString()
       }
     });
-  });
+  };
+
+  app.get('/auth/me', handleVerifySession);
+  app.post('/auth/session/verify', handleVerifySession);
 
   /**
    * POST /api/v1/auth/logout

@@ -25,7 +25,15 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL environment variable is required'),
   CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  API_BASE_URL: z.string().default('http://localhost:4000/api/v1')
+  API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
+
+  // Serverbyt SMTP Configuration Schema Parameters
+  SMTP_HOST: z.string().default('smtp.serverbyt.com'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USERNAME: z.string().default(''),
+  SMTP_PASSWORD: z.string().default(''),
+  SMTP_FROM_EMAIL: z.string().default('noreply@remotenode.net'),
+  SMTP_FROM_NAME: z.string().default('RemoteNode File Server'),
 });
 
 function loadConfig() {

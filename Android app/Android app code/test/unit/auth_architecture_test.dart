@@ -59,7 +59,7 @@ void main() {
 
     setUp(() {
       repository = AuthRepositoryImpl(
-        remoteDataSource: MockAuthRemoteDataSource(),
+        remoteDataSource: const MockAuthRemoteDataSource(),
         secureStorageService: InMemorySecureStorageService(),
       );
     });
@@ -119,8 +119,7 @@ void main() {
   });
 
   group('Batch 6D Google Auth Removal Verification', () {
-    test(
-        'Google Auth route is completely eliminated from AppRouter constants',
+    test('Google Auth route is completely eliminated from AppRouter constants',
         () {
       expect(AppRouter.loginRoute, '/login');
       expect(AppRouter.otpRoute, '/auth/otp');

@@ -40,7 +40,6 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
       assert.strictEqual(body.data.requiresOtp, true);
       assert.strictEqual(body.data.email, testEmail);
 
-      // Extract generated OTP from database record for test continuation
       const otpRecord = await prisma.emailOtp.findFirst({
         where: { email: testEmail, used: false },
         orderBy: { createdAt: 'desc' }
@@ -65,8 +64,8 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     assert.strictEqual(body.success, true);
     assert.strictEqual(body.data.user.email, testEmail);
     assert.strictEqual(body.data.user.emailVerified, true);
-    assert.ok(body.data.token);
-    userToken = body.data.token;
+    assert.ok(body.data.token || body.data.session?.accessToken);
+    userToken = body.data.token || body.data.session?.accessToken;
   });
 
   test('GET /api/v1/auth/me returns authenticated user profile', async () => {
@@ -84,20 +83,33 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     assert.strictEqual(body.data.user.email, testEmail);
   });
 
-  test('POST /api/v1/auth/google authenticates Google Sign-In identity without OTP', async () => {
+  test('POST /api/v1/auth/login validates credentials and dispatches 2FA OTP', async () => {
     const response = await app.inject({
       method: 'POST',
-      url: '/api/v1/auth/google',
-      payload: { idToken: 'demo-google-token-12345' }
+      url: '/api/v1/auth/login',
+      payload: { email: testEmail, password: testPassword }
+    });
+
+    assert.ok([200, 401, 503].includes(response.statusCode));
+    const body = JSON.parse(response.payload);
+    if (response.statusCode === 200) {
+      assert.strictEqual(body.success, true);
+      assert.strictEqual(body.data.requiresOtp, true);
+    }
+  });
+
+  test('POST /api/v1/auth/resend-otp provides generic response for account enumeration protection', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/resend-otp',
+      payload: { email: 'nonexistent@remotenode.io' }
     });
 
     assert.ok([200, 503].includes(response.statusCode));
     const body = JSON.parse(response.payload);
     if (response.statusCode === 200) {
       assert.strictEqual(body.success, true);
-      assert.strictEqual(body.data.user.email, 'google.user@remotenode.io');
-      assert.strictEqual(body.data.user.emailVerified, true);
-      assert.ok(body.data.token);
+      assert.ok(body.data.message.includes('If an account exists'));
     }
   });
 

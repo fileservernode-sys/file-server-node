@@ -30,8 +30,8 @@ export function generateSessionToken(): string {
 }
 
 /**
- * Generates a random 6-digit numeric OTP code (e.g. "849201")
+ * Generates a cryptographically secure random 6-digit numeric OTP code (e.g. "849201")
  */
 export function generateOtpCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }

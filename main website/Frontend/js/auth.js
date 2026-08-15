@@ -84,9 +84,10 @@ async function loginUser(email, password) {
 
 // 3. Verify 6-Digit Email OTP
 async function verifyOtp(email, code) {
-  const result = await apiRequest('/auth/verify-otp', 'POST', { email, code });
+  const result = await apiRequest('/auth/verify-otp', 'POST', { email, otp: code, code });
   if (result.ok && result.data.success) {
-    const { token, user } = result.data.data;
+    const token = result.data.data.token || result.data.data.session?.accessToken;
+    const user = result.data.data.user;
     saveSession(token, user);
     window.location.href = 'dashboard.html';
     return { success: true };
@@ -94,19 +95,7 @@ async function verifyOtp(email, code) {
   return { success: false, error: result.data.error?.message || 'Invalid 6-digit OTP code' };
 }
 
-// 4. Google Sign-In Identity Authentication
-async function handleGoogleSignIn(idToken = 'demo-google-token-12345') {
-  const result = await apiRequest('/auth/google', 'POST', { idToken });
-  if (result.ok && result.data.success) {
-    const { token, user } = result.data.data;
-    saveSession(token, user);
-    window.location.href = 'dashboard.html';
-    return { success: true };
-  }
-  return { success: false, error: result.data.error?.message || 'Google Authentication failed' };
-}
-
-// 5. Sign Out
+// 4. Sign Out
 async function logoutUser() {
   await apiRequest('/auth/logout', 'POST');
   clearSession();
@@ -120,6 +109,5 @@ window.AuthService = {
   registerUser,
   loginUser,
   verifyOtp,
-  handleGoogleSignIn,
   logoutUser
 };

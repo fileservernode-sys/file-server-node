@@ -50,7 +50,7 @@ final secureStorageProvider = Provider<SecureStorageService>((ref) {
 });
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
-  return MockAuthRemoteDataSource();
+  return HttpAuthRemoteDataSource();
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

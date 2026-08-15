@@ -1,6 +1,7 @@
 import { OtpPurpose } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { generateOtpCode } from './crypto.js';
+import { emailService } from '../services/email.js';
 
 export interface IssueOtpResult {
   otpCode: string;
@@ -8,13 +9,15 @@ export interface IssueOtpResult {
 }
 
 /**
- * Generates a 6-digit OTP code, persists to EmailOtp database table (expires in 10 minutes),
- * and dispatches email notification.
+ * Generates a cryptographically secure 6-digit OTP code, persists to EmailOtp table (expires in 10 mins),
+ * and dispatches email notification using Serverbyt SMTP service.
  */
 export async function issueEmailOtp(userId: string, email: string, purpose: OtpPurpose): Promise<IssueOtpResult> {
+  const normalizedEmail = email.trim().toLowerCase();
+
   // Invalidate previous unused OTPs for this email and purpose
   await prisma.emailOtp.updateMany({
-    where: { email, purpose, used: false },
+    where: { email: normalizedEmail, purpose, used: false },
     data: { used: true }
   });
 
@@ -24,7 +27,7 @@ export async function issueEmailOtp(userId: string, email: string, purpose: OtpP
   await prisma.emailOtp.create({
     data: {
       userId,
-      email,
+      email: normalizedEmail,
       otpCode,
       purpose,
       expiresAt,
@@ -32,13 +35,11 @@ export async function issueEmailOtp(userId: string, email: string, purpose: OtpP
     }
   });
 
-  // Log dispatch in development mode
-  console.log(`\n==================================================`);
-  console.log(`📧 EMAIL OTP DISPATCH: [${purpose}]`);
-  console.log(`To: ${email}`);
-  console.log(`OTP Code: ${otpCode}`);
-  console.log(`Expires: ${expiresAt.toISOString()}`);
-  console.log(`==================================================\n`);
+  if (purpose === 'REGISTRATION_VERIFICATION') {
+    await emailService.sendVerificationOtp(normalizedEmail, otpCode);
+  } else {
+    await emailService.sendLoginOtp(normalizedEmail, otpCode);
+  }
 
   return { otpCode, expiresAt };
 }
