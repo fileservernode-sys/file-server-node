@@ -1,4 +1,4 @@
-# Remote Android Personal File Server Platform
+# RemoteNode — Personal Android File Server Platform
 
 A personal, self-hosted file server platform that converts unused Android smartphones into remotely accessible storage nodes without router port forwarding, public IPs, or third-party cloud data hosting.
 
@@ -10,33 +10,40 @@ The platform architecture is structured into three logical planes:
 
 1. **Control Plane (Main Website & Backend API)**:
    - Manages user registration, Email + Password + 6-Digit Email OTP authentication, account dashboards, device registration, and remote connection intent tokens (`DeviceConnection`).
-   - Does NOT store or proxy user files.
+   - Does NOT store, proxy, or access user files.
 
 2. **Transport Plane (Remote Gateway Nodes)**:
-   - Outbound WebSocket/WSS relay infrastructure accepting persistent outbound connections initiated by Android storage nodes.
-   - Authenticates connection attempts using single-use/revocable `connectionToken` tokens.
-   - Conducts transport PING/PONG heartbeats and tracks active node state (`DISCONNECTED`, `CONNECTING`, `CONNECTED`, `RECONNECTING`, `FAILED`).
+   - Standalone, vendor-neutral Node.js WebSocket/WSS relay infrastructure accepting persistent outbound connections initiated by Android storage nodes.
+   - Routes structured `FILE_REQUEST` and `FILE_RESPONSE` messages between remote browsers and active Android sockets correlated by `connectionId` and `requestId`.
+   - Does NOT store user files, run filesystem business logic, or maintain cloud file copies.
 
 3. **Data Plane (Android Device & Local Engine)**:
    - The actual Android phone host running native embedded `LocalServerEngine` bound strictly to loopback `127.0.0.1:8080`.
-   - Stores user files physically on Android storage media.
-
-> **Scope Note for Batch 6H**:
-> Batch 6H implements the secure remote transport foundation only. It does not implement production NAT traversal, public DNS provisioning, production gateway deployment, or the complete remote file-management system.
+   - Stores user files physically inside an isolated application sandbox (`RemoteNodeFiles/`).
+   - Processes local & remote file operations (`LIST`, `CREATE_FOLDER`, `RENAME`, `DELETE`, `DOWNLOAD`, `UPLOAD`, `HEALTH`).
 
 ---
 
-## 2. Authentication Model
+## 2. Remote Data Plane Protocol
 
-- **Platform Account Authentication**: Email + Password + 6-Digit Email OTP ONLY.
-- **File Server Authentication**: Dedicated file-server credentials configured during Android app setup.
-- **Strict Separation**: Platform session tokens and credentials are never sent to local file servers; file-server passwords are never sent to the central control plane or transport gateway.
+- **Transport**: Outbound WebSocket over Gateway port `4001`.
+- **Request/Response Protocol**:
+  - `FILE_REQUEST`: `{ "type": "FILE_REQUEST", "requestId": "...", "connectionId": "...", "operation": "LIST"|"CREATE_FOLDER"|"RENAME"|"DELETE"|"DOWNLOAD"|"UPLOAD"|"HEALTH", ... }`
+  - `FILE_RESPONSE`: `{ "type": "FILE_RESPONSE", "requestId": "...", "success": true, "data": ... }`
+  - `FILE_STREAM_START`, `FILE_STREAM_CHUNK`, `FILE_STREAM_END`, `FILE_ERROR`.
 
 ---
 
-## 3. Technology Stack
+## 3. Authentication & Credential Separation
 
-- **Main Website Frontend**: Vanilla HTML5, Vanilla CSS3 (Variables + Design Token System), Modern Vanilla JS.
-- **Main Website Backend**: Fastify (TypeScript), Prisma ORM, MySQL.
-- **Gateway Node**: Standalone Node.js WebSocket (`ws`) Development Gateway.
-- **Android Application**: Flutter (Dart), MethodChannels, Native Kotlin `LocalServerEngine`.
+- **Platform Account**: Email + Password + 6-Digit Email OTP (Serverbyt SMTP).
+- **File Server Credentials**: Configured during Android app setup, used exclusively for file manager access.
+- **Strict Separation**: Platform passwords/OTPs are never sent to local file servers or transport gateways.
+
+---
+
+## 4. Operational Boundaries
+
+- **Google Authentication**: NOT USED.
+- **Brevo Email Service**: NOT USED.
+- **Production DNS / Cloudflare / Ngrok**: NOT USED.

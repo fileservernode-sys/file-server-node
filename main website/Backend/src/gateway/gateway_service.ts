@@ -11,6 +11,17 @@ export interface HandshakeMessage {
   reason?: string;
   code?: string;
   message?: string;
+  requestId?: string;
+  operation?: string;
+  path?: string;
+  name?: string;
+  oldPath?: string;
+  newName?: string;
+  success?: boolean;
+  data?: any;
+  error?: any;
+  chunkIndex?: number;
+  dataBase64?: string;
 }
 
 export interface ActiveGatewayConnection {
@@ -24,6 +35,7 @@ export interface ActiveGatewayConnection {
 export class GatewayService {
   private wss: WebSocketServer | null = null;
   private activeConnections: Map<string, ActiveGatewayConnection> = new Map();
+  private pendingRequests: Map<string, WebSocket> = new Map(); // requestId -> clientSocket
   private isListening = false;
   private port = 4001;
 
@@ -54,6 +66,7 @@ export class GatewayService {
       }
     }
     this.activeConnections.clear();
+    this.pendingRequests.clear();
 
     return new Promise((resolve) => {
       this.wss?.close(() => {
@@ -67,7 +80,7 @@ export class GatewayService {
   private handleSocketConnection(socket: WebSocket): void {
     let authenticatedConnectionId: string | null = null;
 
-    // 1. Send HELLO handshake greeting
+    // Send HELLO handshake greeting
     socket.send(JSON.stringify({ type: 'HELLO', version: '1.0' }));
 
     socket.on('message', async (data: Buffer | string) => {
@@ -148,6 +161,54 @@ export class GatewayService {
           if (authenticatedConnectionId && this.activeConnections.has(authenticatedConnectionId)) {
             const conn = this.activeConnections.get(authenticatedConnectionId)!;
             conn.lastHeartbeatAt = new Date();
+          }
+          return;
+        }
+
+        // =====================================================================
+        // REMOTE FILE DATA PLANE ROUTING ENGINE
+        // =====================================================================
+        if (msg.type === 'FILE_REQUEST') {
+          const { requestId, connectionId } = msg;
+          if (!requestId || !connectionId) {
+            socket.send(JSON.stringify({
+              type: 'FILE_RESPONSE',
+              requestId: requestId || 'unknown',
+              success: false,
+              error: { code: 'INVALID_REQUEST', message: 'Missing requestId or connectionId' }
+            }));
+            return;
+          }
+
+          const targetConn = this.activeConnections.get(connectionId);
+          if (!targetConn || targetConn.socket.readyState !== WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+              type: 'FILE_RESPONSE',
+              requestId,
+              success: false,
+              error: { code: 'DEVICE_OFFLINE', message: 'Android file server host is offline or disconnected.' }
+            }));
+            return;
+          }
+
+          // Register client socket waiting for response
+          this.pendingRequests.set(requestId, socket);
+
+          // Forward request to target Android host socket
+          targetConn.socket.send(JSON.stringify(msg));
+          return;
+        }
+
+        if (msg.type === 'FILE_RESPONSE' || msg.type === 'FILE_STREAM_START' || msg.type === 'FILE_STREAM_CHUNK' || msg.type === 'FILE_STREAM_END' || msg.type === 'FILE_ERROR') {
+          const { requestId } = msg;
+          if (requestId && this.pendingRequests.has(requestId)) {
+            const clientSocket = this.pendingRequests.get(requestId)!;
+            if (clientSocket.readyState === WebSocket.OPEN) {
+              clientSocket.send(JSON.stringify(msg));
+            }
+            if (msg.type === 'FILE_RESPONSE' || msg.type === 'FILE_STREAM_END' || msg.type === 'FILE_ERROR') {
+              this.pendingRequests.delete(requestId);
+            }
           }
           return;
         }

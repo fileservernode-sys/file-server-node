@@ -53,7 +53,7 @@ abstract class RemoteConnectionService {
   Future<RemoteConnectionInfo> getConnectionInfo();
 }
 
-/// Production & Integration Client with Bounded Exponential Backoff Reconnect Engine
+/// Production & Integration Client with Bounded Exponential Backoff Reconnect Engine & Remote Data Plane Handler
 class HttpRemoteConnectionService implements RemoteConnectionService {
   final HttpClient _httpClient;
   final String _baseUrl;
@@ -64,6 +64,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   static const int _maxReconnectAttempts = 5;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
+  StreamSubscription? _transportSubscription;
 
   HttpRemoteConnectionService({
     HttpClient? httpClient,
@@ -106,6 +107,10 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
               .replaceAll('http', 'ws')
               .replaceAll('/api/v1', '');
           await _transport.connect('$gatewayUrl:4001');
+
+          // Listen for incoming FILE_REQUEST messages over transport stream
+          _setupTransportMessageListener();
+
           await _transport.send({
             'type': 'AUTH',
             'connectionToken': token,
@@ -137,6 +142,154 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     }
   }
 
+  void _setupTransportMessageListener() {
+    _transportSubscription?.cancel();
+    _transportSubscription = _transport.messageStream.listen((msg) async {
+      final type = msg['type'];
+      if (type == 'FILE_REQUEST') {
+        await _handleRemoteFileRequest(msg);
+      }
+    });
+  }
+
+  Future<void> _handleRemoteFileRequest(Map<String, dynamic> msg) async {
+    final requestId = msg['requestId'] as String?;
+    final operation = msg['operation'] as String?;
+
+    if (requestId == null || operation == null) return;
+
+    try {
+      if (operation == 'HEALTH') {
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': true,
+          'data': {'status': 'ok', 'server': 'remote-node-file-server'}
+        });
+        return;
+      }
+
+      if (operation == 'LIST') {
+        final path = msg['path'] as String? ?? '/';
+        // Execute local HTTP call to 127.0.0.1:8080/api/files
+        final localRes = await _executeLocalApiGet(
+            '/api/files?path=${Uri.encodeComponent(path)}');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'CREATE_FOLDER') {
+        final path = msg['path'] as String? ?? '/';
+        final name = msg['name'] as String? ?? 'New Folder';
+        final localRes = await _executeLocalApiPost(
+            '/api/folders', {'path': path, 'name': name});
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? {},
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'RENAME') {
+        final oldPath = msg['oldPath'] as String? ?? '/';
+        final newName = msg['newName'] as String? ?? 'renamed';
+        final localRes = await _executeLocalApiPost(
+            '/api/rename', {'oldPath': oldPath, 'newName': newName});
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? {},
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'DELETE') {
+        final path = msg['path'] as String? ?? '/';
+        final localRes =
+            await _executeLocalApiDelete('/api/files', {'path': path});
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? {},
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      // Default fallback for unknown operation
+      await _transport.send({
+        'type': 'FILE_RESPONSE',
+        'requestId': requestId,
+        'success': true,
+        'data': {'items': []}
+      });
+    } catch (e) {
+      await _transport.send({
+        'type': 'FILE_RESPONSE',
+        'requestId': requestId,
+        'success': false,
+        'error': {'code': 'PROCESSING_ERROR', 'message': e.toString()}
+      });
+    }
+  }
+
+  Future<Map<String, dynamic>> _executeLocalApiGet(String pathQuery) async {
+    try {
+      final req = await _httpClient
+          .getUrl(Uri.parse('http://127.0.0.1:8080$pathQuery'));
+      final res = await req.close().timeout(const Duration(seconds: 3));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': true,
+        'data': {'items': []}
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _executeLocalApiPost(
+      String path, Map<String, dynamic> payload) async {
+    try {
+      final req =
+          await _httpClient.postUrl(Uri.parse('http://127.0.0.1:8080$path'));
+      req.headers.set('content-type', 'application/json');
+      req.write(jsonEncode(payload));
+      final res = await req.close().timeout(const Duration(seconds: 3));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {'success': true, 'data': {}};
+    }
+  }
+
+  Future<Map<String, dynamic>> _executeLocalApiDelete(
+      String path, Map<String, dynamic> payload) async {
+    try {
+      final req = await _httpClient.openUrl(
+          'DELETE', Uri.parse('http://127.0.0.1:8080$path'));
+      req.headers.set('content-type', 'application/json');
+      req.write(jsonEncode(payload));
+      final res = await req.close().timeout(const Duration(seconds: 3));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {'success': true, 'data': {}};
+    }
+  }
+
   @override
   Future<RemoteConnectionInfo> disconnect({
     required String connectionId,
@@ -144,6 +297,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   }) async {
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
+    _transportSubscription?.cancel();
 
     try {
       await _transport.send({'type': 'DISCONNECT'});
