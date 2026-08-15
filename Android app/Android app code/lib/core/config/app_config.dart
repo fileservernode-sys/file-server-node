@@ -1,6 +1,7 @@
 /// Centralized Environment Configuration for RemoteNode Android App
 class AppConfig {
   final String environment;
+  final String baseDomain;
   final String apiBaseUrl;
   final String gatewayWsUrl;
   final String webRegistrationUrl;
@@ -8,30 +9,45 @@ class AppConfig {
 
   const AppConfig({
     required this.environment,
+    required this.baseDomain,
     required this.apiBaseUrl,
     required this.gatewayWsUrl,
     required this.webRegistrationUrl,
     this.enableVerboseLogging = false,
   });
 
-  /// Development Environment Configuration (Local/Staging API & Gateway)
+  /// Development Environment Configuration (Local/Emulator loopback)
   factory AppConfig.development() {
     return const AppConfig(
       environment: 'development',
+      baseDomain: 'localhost',
       apiBaseUrl: 'http://10.0.2.2:4000/api/v1',
       gatewayWsUrl: 'ws://10.0.2.2:4001',
-      webRegistrationUrl: 'https://remotenode.net/pages/get-started.html',
+      webRegistrationUrl: 'http://10.0.2.2:3000/pages/get-started.html',
       enableVerboseLogging: true,
     );
   }
 
-  /// Production Environment Configuration (Secure WSS Gateway)
-  factory AppConfig.production() {
+  /// Testing & Staging Environment Configuration (Temporary testing domain: viewduration.com)
+  factory AppConfig.testing() {
     return const AppConfig(
+      environment: 'testing',
+      baseDomain: 'viewduration.com',
+      apiBaseUrl: 'https://api.viewduration.com/api/v1',
+      gatewayWsUrl: 'wss://gateway.viewduration.com',
+      webRegistrationUrl: 'https://viewduration.com/pages/get-started.html',
+      enableVerboseLogging: true,
+    );
+  }
+
+  /// Production Environment Configuration (Configurable production domain)
+  factory AppConfig.production({String baseDomain = 'remotenode.net'}) {
+    return AppConfig(
       environment: 'production',
-      apiBaseUrl: 'https://api.remotenode.net/api/v1',
-      gatewayWsUrl: 'wss://gateway.remotenode.net',
-      webRegistrationUrl: 'https://remotenode.net/pages/get-started.html',
+      baseDomain: baseDomain,
+      apiBaseUrl: 'https://api.$baseDomain/api/v1',
+      gatewayWsUrl: 'wss://gateway.$baseDomain',
+      webRegistrationUrl: 'https://$baseDomain/pages/get-started.html',
       enableVerboseLogging: false,
     );
   }

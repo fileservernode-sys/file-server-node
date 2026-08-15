@@ -64,6 +64,8 @@ export async function endpointRoutes(app: FastifyInstance): Promise<void> {
         id: endpoint.id,
         serverInstanceId: endpoint.serverInstanceId,
         hostname: endpoint.hostname,
+        protocol: 'https',
+        wsProtocol: 'wss',
         status: endpoint.status,
         url: `https://${endpoint.hostname}`,
         createdAt: endpoint.createdAt.toISOString()

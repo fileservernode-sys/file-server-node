@@ -6,6 +6,7 @@ import { DnsProvider, MockDnsProvider } from './dns_provider.js';
  */
 export class EndpointService {
   private static dnsProvider: DnsProvider = new MockDnsProvider();
+  private static baseDomain: string = process.env.REMOTENODE_BASE_DOMAIN || 'viewduration.com';
 
   static setDnsProvider(provider: DnsProvider): void {
     this.dnsProvider = provider;
@@ -15,28 +16,38 @@ export class EndpointService {
     return this.dnsProvider;
   }
 
+  static setBaseDomain(domain: string): void {
+    this.baseDomain = domain;
+  }
+
+  static getBaseDomain(): string {
+    return this.baseDomain;
+  }
+
   /**
-   * Validates that a hostname conforms strictly to the expected *.remotenode.net format.
+   * Validates that a hostname conforms strictly to a valid subdomain under the configured base domain.
    * Rejects path components, protocol prefixes, uppercase letters, invalid characters, and external domains.
    */
-  static validateHostname(hostname: string): boolean {
+  static validateHostname(hostname: string, expectedBaseDomain?: string): boolean {
     if (!hostname || typeof hostname !== 'string') return false;
     if (hostname.includes('://') || hostname.includes('/') || hostname.includes('\\') || hostname.includes(' ')) {
       return false;
     }
-    // Must strictly be a valid subdomain of remotenode.net (e.g. node-abc12345.remotenode.net)
-    const hostnameRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.remotenode\.net$/;
+
+    const domain = expectedBaseDomain || this.baseDomain;
+    const escapedDomain = domain.replace(/\./g, '\\.');
+    const hostnameRegex = new RegExp(`^[a-z0-9][a-z0-9_-]{1,61}[a-z0-9]\\.${escapedDomain}$`, 'i');
     return hostnameRegex.test(hostname);
   }
 
   /**
-   * Generates a clean, deterministic remote endpoint hostname for a server instance.
+   * Generates a clean, deterministic remote endpoint hostname for a server instance using the configured base domain.
    */
-  static generateHostname(serverId: string): string {
-    const cleanId = serverId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    const shortHash = cleanId.substring(Math.max(0, cleanId.length - 8));
-    const hostname = `node-${shortHash || 'default'}.remotenode.net`;
-    return hostname;
+  static generateHostname(serverId: string, customDomain?: string): string {
+    const domain = customDomain || this.baseDomain;
+    const cleanId = serverId.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+    const shortId = cleanId.length > 8 ? cleanId : `srv_${cleanId}`;
+    return `${shortId}.${domain}`;
   }
 
   /**
@@ -54,7 +65,7 @@ export class EndpointService {
       if (!existsInDns) {
         await this.dnsProvider.provisionRecord({
           hostname: existing.hostname,
-          target: 'gateway.remotenode.net',
+          target: `gateway.${this.baseDomain}`,
           type: 'CNAME'
         });
       }
@@ -70,7 +81,7 @@ export class EndpointService {
     // Provision record in DNS provider abstraction
     const provisionRes = await this.dnsProvider.provisionRecord({
       hostname,
-      target: 'gateway.remotenode.net',
+      target: `gateway.${this.baseDomain}`,
       type: 'CNAME'
     });
 

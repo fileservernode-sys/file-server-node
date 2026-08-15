@@ -20,7 +20,7 @@ class MockTokenValidator implements TokenValidator {
         id: VALID_CONN_ID,
         deviceId,
         userId: VALID_USER_ID,
-        remoteEndpoint: 'https://node-mockdevi.remotenode.net'
+        remoteEndpoint: 'https://srv-mockdevi.viewduration.com'
       };
     }
     return null;
@@ -582,7 +582,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
     // Send HTTP GET request with target endpoint query
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${testPort}/api/files?endpoint=node-mockdevi.remotenode.net`, (resp) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=srv-mockdevi.viewduration.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {
@@ -603,7 +603,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
   test('Gateway rejects HTTP reverse-proxy requests targeting unknown subdomains', async () => {
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${testPort}/api/files?endpoint=unknown-host.remotenode.net`, (resp) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=unknown-host.viewduration.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {

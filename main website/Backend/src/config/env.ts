@@ -18,6 +18,8 @@ if (fs.existsSync(envPath)) {
   });
 }
 
+const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(4000),
@@ -26,6 +28,18 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
+
+  // Configurable Base Domain (Default: viewduration.com for testing/staging; replaceable in production)
+  REMOTENODE_BASE_DOMAIN: z
+    .string()
+    .default('viewduration.com')
+    .refine(
+      (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
+      {
+        message:
+          'REMOTENODE_BASE_DOMAIN must be a valid domain name without protocol prefix (http/https), path, or trailing slash'
+      }
+    ),
 
   // Serverbyt SMTP Configuration Schema Parameters
   SMTP_HOST: z.string().default('smtp.serverbyt.com'),
