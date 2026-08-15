@@ -191,8 +191,13 @@ export class GatewayService {
             return;
           }
 
-          // Register client socket waiting for response
+          // Register client socket waiting for response with 10s cleanup timeout
           this.pendingRequests.set(requestId, socket);
+          setTimeout(() => {
+            if (this.pendingRequests.has(requestId)) {
+              this.pendingRequests.delete(requestId);
+            }
+          }, 10000);
 
           // Forward request to target Android host socket
           targetConn.socket.send(JSON.stringify(msg));

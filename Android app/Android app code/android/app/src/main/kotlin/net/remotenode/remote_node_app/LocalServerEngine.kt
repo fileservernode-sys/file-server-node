@@ -107,7 +107,7 @@ class LocalServerEngine {
      */
     companion object {
         fun resolveSandboxPath(rootDir: File, relPath: String): File {
-            if (relPath.contains("\u0000") || relPath.contains("..")) {
+            if (relPath.contains("\u0000") || relPath.contains("..") || relPath.lowercase().contains("%2e%2e")) {
                 throw SecurityException("Path traversal or null-byte injection rejected.")
             }
 

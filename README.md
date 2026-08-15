@@ -15,6 +15,7 @@ The platform architecture is structured into three logical planes:
 2. **Transport Plane (Remote Gateway Nodes)**:
    - Standalone, vendor-neutral Node.js WebSocket/WSS relay infrastructure accepting persistent outbound connections initiated by Android storage nodes.
    - Routes structured `FILE_REQUEST` and `FILE_RESPONSE` messages between remote browsers and active Android sockets correlated by `connectionId` and `requestId`.
+   - Includes automatic request timeout cleanup and payload validation guards.
    - Does NOT store user files, run filesystem business logic, or maintain cloud file copies.
 
 3. **Data Plane (Android Device & Local Engine)**:
@@ -42,8 +43,8 @@ The platform architecture is structured into three logical planes:
 
 ---
 
-## 4. Operational Boundaries
+## 4. Phase 1 Boundaries & Exclusions
 
 - **Google Authentication**: NOT USED.
 - **Brevo Email Service**: NOT USED.
-- **Production DNS / Cloudflare / Ngrok**: NOT USED.
+- **Production Infrastructure (Phase 2)**: STUN/TURN, QUIC, Cloudflare Tunnels, production gateway deployment, and live DNS automation belong strictly to Phase 2 and are NOT included in Phase 1.

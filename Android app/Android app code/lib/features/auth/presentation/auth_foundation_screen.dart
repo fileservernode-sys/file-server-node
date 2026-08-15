@@ -59,27 +59,14 @@ class AuthFoundationScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SecondaryButton(
-                          label: 'Continue with Google',
-                          icon: Icons.g_mobiledata_rounded,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Google Auth will be active in Batch 6B.'),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: AppSpacing.md),
                         PrimaryButton(
-                          label: 'Continue with Email',
+                          label: 'Sign In with Email & Password',
                           icon: Icons.email_outlined,
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Email/Password Auth will be active in Batch 6B.'),
+                                    'Enter Email and Password to receive 6-digit verification OTP.'),
                               ),
                             );
                           },
