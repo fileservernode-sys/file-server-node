@@ -3,88 +3,89 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RemoteNode Local File Server</title>
-  <style>
-    :root {
-      --bg-primary: #0F172A;
-      --surface-card: #1E293B;
-      --text-primary: #FAFAFC;
-      --text-secondary: #94A3B8;
-      --accent-blue: #2563EB;
-      --status-emerald: #10B981;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 1.5rem;
-    }
-    .card {
-      background-color: var(--surface-card);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 440px;
-      width: 100%;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      border: 1px solid rgba(255,255,255,0.1);
-      text-align: center;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      background-color: rgba(16, 185, 129, 0.15);
-      color: var(--status-emerald);
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-bottom: 1.5rem;
-    }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--status-emerald);
-    }
-    h1 {
-      font-size: 1.5rem;
-      margin-bottom: 0.5rem;
-      font-weight: 700;
-    }
-    p {
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-      margin-bottom: 1.5rem;
-    }
-    .info-box {
-      background: rgba(255,255,255,0.05);
-      padding: 1rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      text-align: left;
-    }
-  </style>
+  <title>File Manager | RemoteNode — Personal Android File Server</title>
+  <meta name="description" content="Lightweight in-built file managing website running on your Android phone storage host.">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/file-manager.css">
 </head>
 <body>
-  <div class="card">
-    <div class="badge">
-      <span class="dot"></span> LOCAL SERVER ONLINE
-    </div>
-    <h1>RemoteNode File Server</h1>
-    <p>Local server engine is running successfully on your Android device host.</p>
-    <div class="info-box">
-      <div><strong>Status:</strong> Engine Active</div>
-      <div><strong>Local Interface:</strong> 127.0.0.1 (Loopback)</div>
-      <div><strong>Remote Access:</strong> NOT CONNECTED</div>
+
+  <div class="app-container">
+    
+    <!-- Site Header -->
+    <header class="site-header">
+      <div class="header-inner">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <strong style="font-size: var(--font-size-lg); color: var(--color-brand-primary);">RN File Manager</strong>
+          <span class="badge badge-online">
+            <span class="status-dot"></span> LOCAL SERVER ONLINE
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Host: 127.0.0.1:8080</span>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="FileServerAuth.logout()">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Toolbar Section -->
+      <div class="toolbar-section">
+        <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
+          <button id="btn-new-folder" class="btn btn-primary">➕ New Folder</button>
+          <button id="btn-upload" class="btn btn-secondary">📤 Upload File</button>
+          <button id="btn-refresh" class="btn btn-secondary btn-icon" title="Refresh">🔄</button>
+          <input type="file" id="file-picker" style="display: none;">
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="search-input" class="form-input" placeholder="🔍 Search files in folder...">
+        </div>
+      </div>
+
+      <!-- Breadcrumb Navigation Bar -->
+      <div id="breadcrumb-container" class="breadcrumb-bar">
+        <span class="breadcrumb-item">Home</span>
+      </div>
+
+      <!-- Dynamic File List / Grid Container -->
+      <div id="file-list-container">
+        <!-- Rendered dynamically by file-manager.js -->
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Create New Folder Modal -->
+  <div id="modal-new-folder" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Folder</h3>
+        <button class="btn btn-secondary btn-sm" onclick="UIManager.hideModal('modal-new-folder')">✕</button>
+      </div>
+      <form id="form-new-folder">
+        <div class="form-group">
+          <label for="input-folder-name" class="form-label">Folder Name</label>
+          <input type="text" id="input-folder-name" class="form-input" placeholder="e.g. Documents" required>
+        </div>
+        <div style="display: flex; gap: var(--space-xs); justify-content: flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-new-folder')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
     </div>
   </div>
+
+  <!-- JavaScript Application Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/file-manager.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>

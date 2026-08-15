@@ -1,0 +1,44 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.site-header {
+  background-color: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: var(--space-sm) var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.main-content {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-md);
+}
+
+.toolbar-section {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 200px;
+}

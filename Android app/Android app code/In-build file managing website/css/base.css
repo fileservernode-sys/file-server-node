@@ -1,0 +1,34 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family-base);
+  font-size: 16px;
+  background-color: var(--color-bg-body);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
