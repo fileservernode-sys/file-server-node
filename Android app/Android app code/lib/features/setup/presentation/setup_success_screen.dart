@@ -123,7 +123,8 @@ class _SuccessRow extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+            style:
+                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
             overflow: TextOverflow.ellipsis,
           ),
         ),

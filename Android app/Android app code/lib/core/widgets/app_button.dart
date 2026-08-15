@@ -197,9 +197,12 @@ class TertiaryButton extends StatelessWidget {
               Icon(icon, size: 18, color: AppColors.primary),
               const SizedBox(width: AppSpacing.xs),
             ],
-            Text(
-              label,
-              style: AppTypography.button.copyWith(color: AppColors.primary),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.button.copyWith(color: AppColors.primary),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

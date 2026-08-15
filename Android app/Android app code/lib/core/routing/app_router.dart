@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../features/about/presentation/about_screen.dart';
-import '../../features/auth/presentation/google_auth_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/otp_screen.dart';
 import '../../features/help/presentation/help_screen.dart';
@@ -19,11 +18,10 @@ import '../../features/showcase/presentation/design_system_showcase_screen.dart'
 class AppRouter {
   static const String initialRoute = '/';
 
-  // Unauthenticated / Auth Routes
+  // Unauthenticated / Auth Routes (Email + Password + OTP Only)
   static const String authRoute = '/auth';
   static const String loginRoute = '/login';
   static const String otpRoute = '/auth/otp';
-  static const String googleAuthRoute = '/auth/google';
 
   // Authenticated Shell Routes
   static const String homeRoute = '/home';
@@ -57,11 +55,6 @@ class AppRouter {
       case otpRoute:
         return MaterialPageRoute(
           builder: (_) => const OtpScreen(),
-          settings: settings,
-        );
-      case googleAuthRoute:
-        return MaterialPageRoute(
-          builder: (_) => const GoogleAuthScreen(),
           settings: settings,
         );
       case homeRoute:

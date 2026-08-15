@@ -154,7 +154,8 @@ class _StatusRow extends StatelessWidget {
         Flexible(
           child: Text(
             value,
-            style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w500),
+            style:
+                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w500),
             overflow: TextOverflow.ellipsis,
           ),
         ),

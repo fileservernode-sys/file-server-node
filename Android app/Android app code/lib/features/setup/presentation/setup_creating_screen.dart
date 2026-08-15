@@ -66,7 +66,8 @@ class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: AppSpacing.maxFormWidth),
+            constraints:
+                const BoxConstraints(maxWidth: AppSpacing.maxFormWidth),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
@@ -95,20 +96,30 @@ class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const LoadingIndicator(message: 'Initializing server node...'),
+                        const LoadingIndicator(
+                            message: 'Initializing server node...'),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
                           _stages[_simulatedStageIndex],
-                          style: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
+                          style: AppTypography.body
+                              .copyWith(fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: AppSpacing.lg),
-                        _StageCheckItem(title: 'Preparing device', isDone: _simulatedStageIndex >= 0),
+                        _StageCheckItem(
+                            title: 'Preparing device',
+                            isDone: _simulatedStageIndex >= 0),
                         const SizedBox(height: AppSpacing.xs),
-                        _StageCheckItem(title: 'Configuring storage', isDone: _simulatedStageIndex >= 1),
+                        _StageCheckItem(
+                            title: 'Configuring storage',
+                            isDone: _simulatedStageIndex >= 1),
                         const SizedBox(height: AppSpacing.xs),
-                        _StageCheckItem(title: 'Starting server host', isDone: _simulatedStageIndex >= 2),
+                        _StageCheckItem(
+                            title: 'Starting server host',
+                            isDone: _simulatedStageIndex >= 2),
                         const SizedBox(height: AppSpacing.xs),
-                        _StageCheckItem(title: 'Establishing connection', isDone: _simulatedStageIndex >= 3),
+                        _StageCheckItem(
+                            title: 'Establishing connection',
+                            isDone: _simulatedStageIndex >= 3),
                       ],
                     ),
                   ),
@@ -118,14 +129,16 @@ class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
                     label: 'Complete Setup',
                     icon: Icons.check_circle_outline,
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/server/setup/success');
+                      Navigator.pushReplacementNamed(
+                          context, '/server/setup/success');
                     },
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   TertiaryButton(
                     label: 'Simulate Failure State',
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/server/setup/failure');
+                      Navigator.pushReplacementNamed(
+                          context, '/server/setup/failure');
                     },
                   ),
                 ],
