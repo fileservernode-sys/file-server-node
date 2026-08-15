@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Dashboard | RemoteNode — Personal File Server</title>
+  <meta name="description" content="Manage your registered Android file server nodes, status, and server access endpoints.">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header" id="site-header">
+    <div class="container header-container">
+      <a href="../index.html" class="logo" aria-label="RemoteNode Homepage">
+        <span class="logo-mark">RN</span>
+        <span class="logo-text">RemoteNode</span>
+      </a>
+
+      <nav class="nav-desktop">
+        <a href="dashboard.html" class="nav-link active">Dashboard</a>
+        <a href="server-access.html" class="nav-link">Find Server</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+      </nav>
+
+      <div class="header-actions">
+        <span id="user-email-header" class="text-sm font-semibold" style="color: var(--color-text-secondary); margin-right: var(--space-sm);">User</span>
+        <button type="button" id="btn-logout" class="btn btn-outline btn-sm">Sign Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Page Header Banner -->
+    <section class="page-header" style="padding: var(--space-xl) 0 var(--space-lg);">
+      <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs);">
+              <h1 id="dashboard-user-name" class="page-title" style="margin-bottom: 0;">Platform Account</h1>
+              <span class="badge badge-success">✓ Email Verified</span>
+            </div>
+            <p id="dashboard-user-email" class="page-subtitle" style="margin-bottom: 0;">Loading account credentials...</p>
+          </div>
+
+          <div style="display: flex; gap: var(--space-sm);">
+            <a href="server-access.html" class="btn btn-secondary btn-sm">⚡ Public Discovery</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Section -->
+    <section class="section" style="padding-top: 0;">
+      <div class="container">
+        
+        <!-- Privacy & Control Plane Callout Banner -->
+        <div class="callout-box" style="margin-bottom: var(--space-xl); background: var(--color-bg-secondary); border-left: 4px solid var(--color-brand-primary);">
+          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <div style="font-size: 1.5rem;">🔒</div>
+            <div>
+              <h3 style="font-size: var(--font-size-base); font-weight: 600; margin-bottom: var(--space-2xs); color: var(--color-text-primary);">
+                Control Plane & Device Privacy Policy
+              </h3>
+              <p class="text-sm text-secondary" style="margin-bottom: 0;">
+                Your platform account manages device ownership and server routing. Your personal files <strong>remain on your Android phone host</strong> and are accessed using dedicated file-server credentials created during Android app server setup.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section Title -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+          <div>
+            <h2 class="section-title" style="font-size: var(--font-size-xl); text-align: left; margin-bottom: var(--space-3xs);">
+              Your Registered Servers
+            </h2>
+            <p class="text-secondary text-sm">Android storage nodes paired to this platform account.</p>
+          </div>
+          <span class="text-xs text-muted">Auto-refreshes device status</span>
+        </div>
+
+        <!-- Registered Devices List Grid -->
+        <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
+          
+          <!-- Sample Online Device Card -->
+          <div class="card card-hover" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm);">
+                <div>
+                  <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
+                    Pixel 6a Storage Node
+                  </h3>
+                  <span class="text-xs text-muted">Android 14 • App v1.4.2</span>
+                </div>
+                <span class="status-indicator status-online">ONLINE</span>
+              </div>
+
+              <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                <div class="text-xs text-secondary" style="margin-bottom: 4px;">Assigned Remote Endpoint:</div>
+                <code style="font-size: var(--font-size-xs); color: var(--color-brand-primary); word-break: break-all;">https://pixel6a-node.remotenode.net</code>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+                <span>Last Heartbeat: <strong>Just now</strong></span>
+                <span>Storage Host: <strong>128 GB</strong></span>
+              </div>
+
+              <a href="https://pixel6a-node.remotenode.net" target="_blank" rel="noopener" class="btn btn-primary btn-block btn-sm">
+                Open File Manager Web App ↗
+              </a>
+            </div>
+          </div>
+
+          <!-- Sample Offline Device Card -->
+          <div class="card" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between; opacity: 0.9;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm);">
+                <div>
+                  <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
+                    Samsung S10 Host
+                  </h3>
+                  <span class="text-xs text-muted">Android 12 • App v1.3.0</span>
+                </div>
+                <span class="status-indicator status-offline">OFFLINE</span>
+              </div>
+
+              <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                <div class="text-xs text-secondary" style="margin-bottom: 4px;">Assigned Remote Endpoint:</div>
+                <code style="font-size: var(--font-size-xs); color: var(--color-text-muted); word-break: break-all;">https://samsung-s10.remotenode.net</code>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">
+                <span>Last Heartbeat: <strong>2 hours ago</strong></span>
+                <span>Storage Host: <strong>256 GB</strong></span>
+              </div>
+
+              <button disabled class="btn btn-secondary btn-block btn-sm" style="cursor: not-allowed; opacity: 0.6;">
+                Server Offline
+              </button>
+            </div>
+          </div>
+
+          <!-- Add Device Guidance Card -->
+          <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+            <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
+            <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Register New Android Phone</h3>
+            <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
+              Download the Android app on your spare phone and log in with this account to pair a new storage server.
+            </p>
+            <a href="how-it-works.html" class="btn btn-outline btn-sm">View Pairing Setup Guide</a>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-bottom" style="border: none;">
+      <p>&copy; 2026 RemoteNode. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="../js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = AuthService.getSavedUser();
+      const token = AuthService.getAuthToken();
+
+      if (!token) {
+        // Redirect unauthenticated visitors to login
+        window.location.href = 'login.html';
+        return;
+      }
+
+      if (user) {
+        document.getElementById('user-email-header').textContent = user.email;
+        document.getElementById('dashboard-user-name').textContent = user.fullName || 'Platform User Account';
+        document.getElementById('dashboard-user-email').textContent = user.email;
+      }
+
+      // Handle Sign Out
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        AuthService.logoutUser();
+      });
+    });
+  </script>
+</body>
+</html>

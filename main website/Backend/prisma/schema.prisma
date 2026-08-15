@@ -19,6 +19,11 @@ enum UserStatus {
   SUSPENDED
 }
 
+enum OtpPurpose {
+  REGISTRATION_VERIFICATION
+  LOGIN_2FA
+}
+
 enum DeviceStatus {
   ONLINE
   OFFLINE
@@ -46,6 +51,11 @@ enum ConnectionStatus {
 enum AuditEventType {
   ACCOUNT_CREATED
   EMAIL_VERIFIED
+  LOGIN_ATTEMPT_SUCCESS
+  LOGIN_ATTEMPT_FAILED
+  GOOGLE_SIGNIN
+  OTP_SENT
+  OTP_VERIFIED
   DEVICE_REGISTERED
   DEVICE_CONNECTED
   DEVICE_DISCONNECTED
@@ -62,16 +72,52 @@ enum AuditEventType {
 model User {
   id            String       @id @default(cuid())
   email         String       @unique
-  passwordHash  String
+  fullName      String?
+  googleId      String?      @unique
+  passwordHash  String?
   status        UserStatus   @default(PENDING_VERIFICATION)
   emailVerified Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
+  otps          EmailOtp[]
+  sessions      UserSession[]
   devices       Device[]
   auditEvents   AuditEvent[]
 
   @@index([email])
+  @@index([googleId])
+}
+
+/// Email 6-Digit OTP Verification Model
+model EmailOtp {
+  id        String     @id @default(cuid())
+  userId    String
+  email     String
+  otpCode   String
+  purpose   OtpPurpose @default(REGISTRATION_VERIFICATION)
+  expiresAt DateTime
+  used      Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([userId])
+}
+
+/// Authenticated Platform Session Model
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 /// Registered Android Phone Device Node

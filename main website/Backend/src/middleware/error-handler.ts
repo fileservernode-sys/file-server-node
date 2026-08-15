@@ -16,6 +16,12 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', error.message || 'Invalid request payload'));
   }
 
+  // Prisma Database Connection Errors
+  if (error.name === 'PrismaClientInitializationError' || error.name === 'PrismaClientKnownRequestError') {
+    request.log.error({ err: error, url: request.url }, 'Database service connection error');
+    return reply.status(503).send(createErrorResponse('DATABASE_ERROR', 'Database service is currently unavailable'));
+  }
+
   // Log unexpected internal errors
   request.log.error({ err: error, url: request.url }, 'Unhandled application exception');
 
@@ -25,3 +31,4 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
 
   return reply.status(500).send(createErrorResponse('INTERNAL_SERVER_ERROR', responseMessage));
 }
+
