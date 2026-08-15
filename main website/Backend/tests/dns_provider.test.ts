@@ -42,4 +42,17 @@ describe('DNS Provider Abstraction & Endpoint Integration', () => {
     assert.strictEqual(hostname.endsWith('.remotenode.net'), true);
     assert.strictEqual(hostname.startsWith('node-'), true);
   });
+
+  test('EndpointService strictly validates hostname safety', () => {
+    // Valid subdomains
+    assert.strictEqual(EndpointService.validateHostname('node-12345678.remotenode.net'), true);
+    assert.strictEqual(EndpointService.validateHostname('srv-my-device-1.remotenode.net'), true);
+
+    // Invalid: protocol prefixes, slashes, spaces, external domains
+    assert.strictEqual(EndpointService.validateHostname('https://node-123.remotenode.net'), false);
+    assert.strictEqual(EndpointService.validateHostname('node-123.remotenode.net/admin'), false);
+    assert.strictEqual(EndpointService.validateHostname('node 123.remotenode.net'), false);
+    assert.strictEqual(EndpointService.validateHostname('evil-hacker.com'), false);
+    assert.strictEqual(EndpointService.validateHostname('subdomain.otherdomain.net'), false);
+  });
 });

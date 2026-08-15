@@ -543,4 +543,79 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(errorMsg.code, 'UNKNOWN_MESSAGE_TYPE');
     socket.close();
   });
+
+  test('Gateway routes HTTP reverse-proxy requests for active subdomain endpoints', async () => {
+    const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
+    let connectionId = '';
+
+    await new Promise<void>((resolve) => {
+      androidSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          androidSocket.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          connectionId = msg.connectionId;
+          resolve();
+        }
+      });
+    });
+
+    androidSocket.on('message', (data) => {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'FILE_REQUEST' && msg.operation === 'LIST') {
+        androidSocket.send(
+          JSON.stringify({
+            type: 'FILE_RESPONSE',
+            requestId: msg.requestId,
+            success: true,
+            data: { items: [{ name: 'Photos', isDir: true }, { name: 'document.pdf', isDir: false }] }
+          })
+        );
+      }
+    });
+
+    // Send HTTP GET request with target endpoint query
+    const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=node-mockdevi.remotenode.net`, (resp) => {
+        let raw = '';
+        resp.on('data', (c) => (raw += c));
+        resp.on('end', () => {
+          resolve({
+            statusCode: resp.statusCode || 0,
+            data: JSON.parse(raw)
+          });
+        });
+      }).on('error', reject);
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(res.data.items);
+    assert.strictEqual(res.data.items.length, 2);
+
+    androidSocket.close();
+  });
+
+  test('Gateway rejects HTTP reverse-proxy requests targeting unknown subdomains', async () => {
+    const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=unknown-host.remotenode.net`, (resp) => {
+        let raw = '';
+        resp.on('data', (c) => (raw += c));
+        resp.on('end', () => {
+          resolve({
+            statusCode: resp.statusCode || 0,
+            data: JSON.parse(raw)
+          });
+        });
+      }).on('error', reject);
+    });
+
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.data.error.code, 'SERVER_NOT_FOUND');
+  });
 });

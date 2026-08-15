@@ -36,6 +36,7 @@ export interface ActiveGatewayConnection {
   connectionId: string;
   deviceId: string;
   userId?: string;
+  hostname?: string;
   socket: WebSocket;
   connectedAt: Date;
   lastHeartbeatAt: Date;
@@ -46,7 +47,8 @@ export interface PendingClientRequest {
   requestId: string;
   connectionId: string;
   operation?: string;
-  clientSocket: WebSocket;
+  clientSocket?: WebSocket;
+  httpResolver?: (response: any) => void;
   createdAt: number;
   timer: NodeJS.Timeout;
 }
@@ -128,6 +130,7 @@ export class GatewayService {
   private wss: WebSocketServer | null = null;
   private activeConnections: Map<string, ActiveGatewayConnection> = new Map(); // connectionId -> ActiveGatewayConnection
   private deviceToConnectionMap: Map<string, string> = new Map(); // deviceId -> connectionId
+  private hostnameToConnectionMap: Map<string, string> = new Map(); // hostname -> connectionId
   private pendingRequests: Map<string, PendingClientRequest> = new Map(); // requestId -> PendingClientRequest
   private activeTransfers: Map<string, ActiveFileTransfer> = new Map(); // transferId -> ActiveFileTransfer
   private rateLimitTracker: Map<string, { count: number; resetAt: number }> = new Map(); // ip -> { count, resetAt }
@@ -226,7 +229,7 @@ export class GatewayService {
   public async start(): Promise<void> {
     if (this.isListening) return;
 
-    this.httpServer = http.createServer((req, res) => {
+    this.httpServer = http.createServer(async (req, res) => {
       // Inject Production Web Hardening & Security Headers
       res.setHeader(
         'Content-Security-Policy',
@@ -236,19 +239,128 @@ export class GatewayService {
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
       res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
-      const url = req.url || '';
+      const rawUrl = req.url || '';
+      const parsedUrl = new URL(rawUrl, `http://${req.headers.host || 'localhost'}`);
+      const pathname = parsedUrl.pathname;
 
-      if (url === '/health' && req.method === 'GET') {
+      if (pathname === '/health' && req.method === 'GET') {
         const health = this.getHealthStatus();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(health));
         return;
       }
 
-      if (url === '/ready' && req.method === 'GET') {
+      if (pathname === '/ready' && req.method === 'GET') {
         const ready = this.getReadinessStatus();
         res.writeHead(ready.status === 'ready' ? 200 : 503, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(ready));
+        return;
+      }
+
+      // =======================================================================
+      // HTTP REVERSE PROXY ROUTING FOR *.remotenode.net SUBDOMAINS
+      // =======================================================================
+      const hostHeader = (req.headers.host || '').split(':')[0].toLowerCase();
+      const endpointQuery = parsedUrl.searchParams.get('endpoint');
+      const connectionIdHeader = req.headers['x-connection-id'] as string | undefined;
+
+      const targetHostname = endpointQuery || hostHeader;
+      const resolvedConnId =
+        this.hostnameToConnectionMap.get(targetHostname) ||
+        (connectionIdHeader && this.activeConnections.has(connectionIdHeader) ? connectionIdHeader : null);
+
+      if (pathname.startsWith('/api/')) {
+        if (!resolvedConnId || !this.activeConnections.has(resolvedConnId)) {
+          const isUnknown = !this.hostnameToConnectionMap.has(targetHostname);
+          res.writeHead(isUnknown ? 404 : 503, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              success: false,
+              error: {
+                code: isUnknown ? 'SERVER_NOT_FOUND' : 'SERVER_OFFLINE',
+                message: isUnknown
+                  ? `Server endpoint '${targetHostname}' is not recognized.`
+                  : 'Android file server host is offline or disconnected.'
+              }
+            })
+          );
+          return;
+        }
+
+        const targetConn = this.activeConnections.get(resolvedConnId)!;
+        const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+
+        // Read body if POST/PUT/DELETE
+        let bodyPayload: any = {};
+        if (req.method === 'POST' || req.method === 'DELETE' || req.method === 'PUT') {
+          const bodyBuffers: Buffer[] = [];
+          for await (const chunk of req) {
+            bodyBuffers.push(chunk);
+          }
+          const rawBody = Buffer.concat(bodyBuffers).toString();
+          if (rawBody) {
+            try {
+              bodyPayload = JSON.parse(rawBody);
+            } catch {
+              bodyPayload = {};
+            }
+          }
+        }
+
+        // Map HTTP route to operation
+        let operation = 'HEALTH';
+        if (pathname === '/api/storage') operation = 'STORAGE';
+        else if (pathname === '/api/files/recent') operation = 'RECENT';
+        else if (pathname === '/api/files' && req.method === 'GET') operation = 'LIST';
+        else if (pathname === '/api/folders' && req.method === 'POST') operation = 'CREATE_FOLDER';
+        else if (pathname === '/api/rename' && req.method === 'POST') operation = 'RENAME';
+        else if (pathname === '/api/files' && req.method === 'DELETE') operation = 'DELETE';
+
+        const fileRequestMsg: HandshakeMessage = {
+          type: 'FILE_REQUEST',
+          requestId,
+          connectionId: resolvedConnId,
+          operation,
+          path: parsedUrl.searchParams.get('path') || bodyPayload.path || '/',
+          name: parsedUrl.searchParams.get('name') || bodyPayload.name,
+          oldPath: bodyPayload.oldPath,
+          newName: bodyPayload.newName
+        };
+
+        const responsePromise = new Promise<any>((resolve) => {
+          const timer = setTimeout(() => {
+            if (this.pendingRequests.has(requestId)) {
+              this.timedOutRequests++;
+              this.pendingRequests.delete(requestId);
+              resolve({
+                type: 'FILE_RESPONSE',
+                requestId,
+                success: false,
+                error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
+              });
+            }
+          }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
+
+          this.pendingRequests.set(requestId, {
+            requestId,
+            connectionId: resolvedConnId,
+            operation,
+            httpResolver: (resp) => {
+              clearTimeout(timer);
+              resolve(resp);
+            },
+            createdAt: Date.now(),
+            timer
+          });
+        });
+
+        // Forward over host socket
+        targetConn.socket.send(JSON.stringify(fileRequestMsg));
+
+        const response = await responsePromise;
+        const statusCode = response.success ? 200 : 400;
+        res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(response.data || response));
         return;
       }
 
@@ -312,6 +424,7 @@ export class GatewayService {
     }
     this.activeConnections.clear();
     this.deviceToConnectionMap.clear();
+    this.hostnameToConnectionMap.clear();
 
     return new Promise((resolve) => {
       this.wss?.close(() => {
@@ -470,30 +583,36 @@ export class GatewayService {
           const now = new Date();
           await this.tokenValidator.markConnected(connRecord.id, now);
 
+          const remoteEndpoint =
+            connRecord.remoteEndpoint ||
+            `https://node-${deviceId.substring(0, 8)}.remotenode.net`;
+          const hostname = remoteEndpoint.replace(/^https?:\/\//, '').replace(/:\d+$/, '').toLowerCase();
+
           this.activeConnections.set(connRecord.id, {
             connectionId: connRecord.id,
             deviceId,
             userId: connRecord.userId,
+            hostname,
             socket,
             connectedAt: now,
             lastHeartbeatAt: now,
             remoteIp
           });
           this.deviceToConnectionMap.set(deviceId, connRecord.id);
+          this.hostnameToConnectionMap.set(hostname, connRecord.id);
 
           this.log('info', 'Android storage node authenticated successfully', {
             connectionId: connRecord.id,
             deviceId,
-            userId: connRecord.userId
+            userId: connRecord.userId,
+            hostname
           });
 
           socket.send(
             JSON.stringify({
               type: 'AUTH_SUCCESS',
               connectionId: connRecord.id,
-              remoteEndpoint:
-                connRecord.remoteEndpoint ||
-                `https://node-${deviceId.substring(0, 8)}.remotenode.net`
+              remoteEndpoint
             })
           );
           return;
@@ -604,8 +723,11 @@ export class GatewayService {
           if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
             clearTimeout(pending.timer);
-            if (pending.clientSocket.readyState === WebSocket.OPEN) {
+
+            if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
               pending.clientSocket.send(JSON.stringify(msg));
+            } else if (pending.httpResolver) {
+              pending.httpResolver(msg);
             }
 
             // Cache response for idempotent retries (30s TTL)
@@ -643,7 +765,7 @@ export class GatewayService {
             transferId,
             requestId,
             connectionId: connectionId || '',
-            clientSocket: pending ? pending.clientSocket : socket,
+            clientSocket: pending && pending.clientSocket ? pending.clientSocket : socket,
             hostSocket: targetConn ? targetConn.socket : socket,
             bytesTransferred: 0,
             totalBytes: msg.totalBytes,
@@ -651,7 +773,7 @@ export class GatewayService {
             timer: transferTimer
           });
 
-          if (pending && pending.clientSocket.readyState === WebSocket.OPEN) {
+          if (pending && pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
             pending.clientSocket.send(JSON.stringify(msg));
           }
           return;
@@ -728,7 +850,7 @@ export class GatewayService {
           if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
             clearTimeout(pending.timer);
-            if (pending.clientSocket.readyState === WebSocket.OPEN) {
+            if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
               pending.clientSocket.send(JSON.stringify(msg));
             }
             this.pendingRequests.delete(requestId);
@@ -775,6 +897,9 @@ export class GatewayService {
     const conn = this.activeConnections.get(connectionId);
     if (conn) {
       this.deviceToConnectionMap.delete(conn.deviceId);
+      if (conn.hostname) {
+        this.hostnameToConnectionMap.delete(conn.hostname);
+      }
     }
     this.activeConnections.delete(connectionId);
 

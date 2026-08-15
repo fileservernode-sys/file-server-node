@@ -16,16 +16,32 @@ export class EndpointService {
   }
 
   /**
+   * Validates that a hostname conforms strictly to the expected *.remotenode.net format.
+   * Rejects path components, protocol prefixes, uppercase letters, invalid characters, and external domains.
+   */
+  static validateHostname(hostname: string): boolean {
+    if (!hostname || typeof hostname !== 'string') return false;
+    if (hostname.includes('://') || hostname.includes('/') || hostname.includes('\\') || hostname.includes(' ')) {
+      return false;
+    }
+    // Must strictly be a valid subdomain of remotenode.net (e.g. node-abc12345.remotenode.net)
+    const hostnameRegex = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]\.remotenode\.net$/;
+    return hostnameRegex.test(hostname);
+  }
+
+  /**
    * Generates a clean, deterministic remote endpoint hostname for a server instance.
    */
   static generateHostname(serverId: string): string {
     const cleanId = serverId.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const shortHash = cleanId.substring(Math.max(0, cleanId.length - 8));
-    return `node-${shortHash}.remotenode.net`;
+    const hostname = `node-${shortHash || 'default'}.remotenode.net`;
+    return hostname;
   }
 
   /**
    * Reserves or retrieves an allocated remote endpoint for a ServerInstance.
+   * Idempotent: repeated calls do not create duplicate DNS records or endpoints.
    */
   static async reserveEndpoint(serverInstanceId: string) {
     const existing = await prisma.serverEndpoint.findFirst({
@@ -33,17 +49,34 @@ export class EndpointService {
     });
 
     if (existing) {
+      // Verify record exists in DNS provider
+      const existsInDns = await this.dnsProvider.verifyRecord(existing.hostname);
+      if (!existsInDns) {
+        await this.dnsProvider.provisionRecord({
+          hostname: existing.hostname,
+          target: 'gateway.remotenode.net',
+          type: 'CNAME'
+        });
+      }
       return existing;
     }
 
     const hostname = this.generateHostname(serverInstanceId);
 
+    if (!this.validateHostname(hostname)) {
+      throw new Error(`Generated invalid hostname format: ${hostname}`);
+    }
+
     // Provision record in DNS provider abstraction
-    await this.dnsProvider.provisionRecord({
+    const provisionRes = await this.dnsProvider.provisionRecord({
       hostname,
       target: 'gateway.remotenode.net',
       type: 'CNAME'
     });
+
+    if (!provisionRes.success) {
+      throw new Error(`Failed to provision DNS endpoint record: ${provisionRes.error || 'Unknown error'}`);
+    }
 
     const endpoint = await prisma.serverEndpoint.create({
       data: {
