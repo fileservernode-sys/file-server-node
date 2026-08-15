@@ -127,7 +127,18 @@ const LocalApiAdapter = {
 const RemoteApiAdapter = {
   socket: null,
   pendingPromises: new Map(),
+  statusListeners: [],
   connectionId: 'demo-remote-conn',
+
+  onStatusChange(callback) {
+    this.statusListeners.push(callback);
+  },
+
+  notifyStatus(status, details = {}) {
+    this.statusListeners.forEach(cb => {
+      try { cb(status, details); } catch {}
+    });
+  },
 
   async ensureConnected() {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) return;
@@ -151,18 +162,30 @@ const RemoteApiAdapter = {
                 resolver(msg);
                 this.pendingPromises.delete(msg.requestId);
               }
+            } else if (msg.type === 'ERROR' && msg.code === 'RATE_LIMIT_EXCEEDED') {
+              this.notifyStatus('rate_limited', { message: msg.message });
             }
           } catch (e) {
             // Ignore malformed payloads
           }
         };
 
-        this.socket.onopen = () => resolve();
-        this.socket.onerror = () => resolve();
+        this.socket.onopen = () => {
+          this.notifyStatus('connected');
+          resolve();
+        };
+
+        this.socket.onerror = () => {
+          this.notifyStatus('error');
+          resolve();
+        };
+
         this.socket.onclose = () => {
           this.socket = null;
+          this.notifyStatus('disconnected');
         };
       } catch (e) {
+        this.notifyStatus('error');
         resolve();
       }
     });
@@ -201,13 +224,13 @@ const RemoteApiAdapter = {
         ...payload
       }));
 
-      // Timeout safety after 6s
+      // Timeout safety after 10s
       setTimeout(() => {
         if (this.pendingPromises.has(requestId)) {
           this.pendingPromises.delete(requestId);
-          resolve({ success: false, error: { message: 'Remote request timeout.' } });
+          resolve({ success: false, error: { message: 'Remote request timeout. File server host might be busy or offline.' } });
         }
-      }, 6000);
+      }, 10000);
     });
   },
 
@@ -251,6 +274,16 @@ const RemoteApiAdapter = {
     return await this.sendRequest('UPLOAD', { path: targetPath, name: fileObject.name });
   },
 
+  async cancelTransfer(transferId, reason = 'Cancelled by user') {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({
+        type: 'FILE_STREAM_CANCEL',
+        transferId,
+        reason
+      }));
+    }
+  },
+
   getDownloadUrl(filePath) {
     return `/api/download?path=${encodeURIComponent(filePath)}`;
   }
@@ -265,6 +298,12 @@ const ApiService = {
 
   getAdapter() {
     return this.isRemoteMode() ? RemoteApiAdapter : LocalApiAdapter;
+  },
+
+  onStatusChange(callback) {
+    if (this.isRemoteMode()) {
+      RemoteApiAdapter.onStatusChange(callback);
+    }
   },
 
   checkHealth() {
@@ -305,6 +344,12 @@ const ApiService = {
 
   uploadFile(targetPath, fileObject) {
     return this.getAdapter().uploadFile(targetPath, fileObject);
+  },
+
+  cancelTransfer(transferId, reason) {
+    if (this.isRemoteMode()) {
+      RemoteApiAdapter.cancelTransfer(transferId, reason);
+    }
   },
 
   getDownloadUrl(filePath) {

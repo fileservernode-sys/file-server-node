@@ -36,6 +36,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
         GATEWAY_AUTH_TIMEOUT_MS: 500,
         GATEWAY_REQUEST_TIMEOUT_MS: 500,
         GATEWAY_MAX_MESSAGE_SIZE_BYTES: 1024 * 1024,
+        GATEWAY_RATE_LIMIT_RPM: 100,
         NODE_ENV: 'test'
       },
       new MockTokenValidator()
@@ -51,6 +52,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     const customConfig = loadGatewayConfig({
       GATEWAY_PORT: 5000,
       GATEWAY_MAX_CONNECTIONS: 200,
+      GATEWAY_WS_URL: 'wss://gateway.remotenode.net',
       NODE_ENV: 'production'
     });
     assert.strictEqual(customConfig.GATEWAY_PORT, 5000);
@@ -58,7 +60,19 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(customConfig.NODE_ENV, 'production');
   });
 
-  test('GET /health returns 200 OK and health metrics', async () => {
+  test('Gateway configuration rejects insecure ws:// protocol in production mode', () => {
+    assert.throws(
+      () => {
+        loadGatewayConfig({
+          GATEWAY_WS_URL: 'ws://insecure-gateway.remotenode.net',
+          NODE_ENV: 'production'
+        });
+      },
+      (err: Error) => err.message.includes('Insecure ws:// protocol is strictly forbidden in production mode')
+    );
+  });
+
+  test('GET /health returns 200 OK and enhanced metrics', async () => {
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
       http.get(`http://localhost:${testPort}/health`, (resp) => {
         let raw = '';
@@ -76,6 +90,8 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(res.data.status, 'ok');
     assert.strictEqual(res.data.gateway, 'ACTIVE');
     assert.strictEqual(typeof res.data.activeConnections, 'number');
+    assert.strictEqual(typeof res.data.failedAuthCount, 'number');
+    assert.strictEqual(typeof res.data.activeTransfersCount, 'number');
   });
 
   test('GET /ready returns 200 OK and readiness metrics', async () => {
@@ -132,8 +148,61 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(failure.reason, 'Authentication timeout');
   });
 
+  test('Gateway evicts duplicate connection sessions gracefully', async () => {
+    // 1. First socket authenticates
+    const socket1 = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket1.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // 2. Second socket connects with same device ID
+    const socket2 = new WebSocket(`ws://localhost:${testPort}`);
+    const socket1DisconnectPromise = new Promise<any>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'DISCONNECT') {
+          resolve(msg);
+        }
+      });
+    });
+
+    await new Promise<void>((resolve) => {
+      socket2.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket2.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    const disconnectMsg = await socket1DisconnectPromise;
+    assert.strictEqual(disconnectMsg.type, 'DISCONNECT');
+
+    socket2.close();
+  });
+
   test('Gateway routes FILE_REQUEST from client socket to target Android host socket', async () => {
-    // 1. Android Host Socket connects and authenticates
     const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
     let connectionId = '';
 
@@ -160,7 +229,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
     assert.strictEqual(connectionId, VALID_CONN_ID);
 
-    // Setup listener on Android socket to respond to FILE_REQUEST
     androidSocket.on('message', (data) => {
       const msg = JSON.parse(data.toString());
       if (msg.type === 'FILE_REQUEST') {
@@ -175,7 +243,6 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
       }
     });
 
-    // 2. Client socket sends FILE_REQUEST targeting connectionId
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
 
     const response = await new Promise<any>((resolve, reject) => {
@@ -204,6 +271,97 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(response.requestId, 'req-test-777');
     assert.strictEqual(response.success, true);
     assert.ok(response.data.items);
+
+    androidSocket.close();
+    clientSocket.close();
+  });
+
+  test('Gateway handles streaming transfer lifecycle and cancellation cleanly', async () => {
+    const androidSocket = new WebSocket(`ws://localhost:${testPort}`);
+    let connectionId = '';
+
+    await new Promise<void>((resolve) => {
+      androidSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          androidSocket.send(
+            JSON.stringify({
+              type: 'AUTH',
+              connectionToken: VALID_TOKEN,
+              deviceId: VALID_DEVICE
+            })
+          );
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          connectionId = msg.connectionId;
+          resolve();
+        }
+      });
+    });
+
+    const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+
+    // Client requests stream
+    const cancelReceivedPromise = new Promise<any>((resolve) => {
+      clientSocket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'FILE_STREAM_CANCEL') {
+          resolve(msg);
+        }
+      });
+    });
+
+    androidSocket.on('message', (data) => {
+      const msg = JSON.parse(data.toString());
+      if (msg.type === 'FILE_REQUEST' && msg.operation === 'STREAM_TEST') {
+        // Start stream
+        androidSocket.send(
+          JSON.stringify({
+            type: 'FILE_STREAM_START',
+            transferId: 'transfer-999',
+            requestId: msg.requestId,
+            connectionId,
+            totalBytes: 5000000
+          })
+        );
+
+        // Send a chunk then cancel
+        setTimeout(() => {
+          androidSocket.send(
+            JSON.stringify({
+              type: 'FILE_STREAM_CHUNK',
+              transferId: 'transfer-999',
+              chunkIndex: 0,
+              dataBase64: 'SGVsbG8gV29ybGQ='
+            })
+          );
+
+          setTimeout(() => {
+            androidSocket.send(
+              JSON.stringify({
+                type: 'FILE_STREAM_CANCEL',
+                transferId: 'transfer-999',
+                reason: 'Cancelled by storage host'
+              })
+            );
+          }, 20);
+        }, 20);
+      }
+    });
+
+    setTimeout(() => {
+      clientSocket.send(
+        JSON.stringify({
+          type: 'FILE_REQUEST',
+          requestId: 'req-stream-1',
+          connectionId,
+          operation: 'STREAM_TEST'
+        })
+      );
+    }, 50);
+
+    const cancelMsg = await cancelReceivedPromise;
+    assert.strictEqual(cancelMsg.type, 'FILE_STREAM_CANCEL');
+    assert.strictEqual(cancelMsg.transferId, 'transfer-999');
 
     androidSocket.close();
     clientSocket.close();

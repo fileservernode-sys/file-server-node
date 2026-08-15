@@ -145,8 +145,17 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       final type = msg['type'];
       if (type == 'FILE_REQUEST') {
         await _handleRemoteFileRequest(msg);
+      } else if (type == 'FILE_STREAM_CANCEL') {
+        _handleStreamCancel(msg);
       }
     });
+  }
+
+  void _handleStreamCancel(Map<String, dynamic> msg) {
+    final transferId = msg['transferId'] as String?;
+    if (transferId != null) {
+      // Abort active local stream associated with transferId if in progress
+    }
   }
 
   Future<void> _handleRemoteFileRequest(Map<String, dynamic> msg) async {

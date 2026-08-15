@@ -49,6 +49,21 @@ document.addEventListener('DOMContentLoaded', () => {
   if (isRemote) {
     if (statusBadge) statusBadge.className = 'badge badge-online';
     if (statusText) statusText.textContent = 'REMOTE WSS GATEWAY';
+
+    ApiService.onStatusChange((status, details) => {
+      if (status === 'connected') {
+        if (statusBadge) statusBadge.className = 'badge badge-online';
+        if (statusText) statusText.textContent = 'REMOTE WSS ONLINE';
+      } else if (status === 'disconnected' || status === 'error') {
+        if (statusBadge) statusBadge.className = 'badge badge-error';
+        if (statusText) statusText.textContent = 'GATEWAY RECONNECTING...';
+        UIManager.showToast('Remote gateway disconnected. Reconnecting in background...', 'error');
+      } else if (status === 'rate_limited') {
+        if (statusBadge) statusBadge.className = 'badge badge-warning';
+        if (statusText) statusText.textContent = 'RATE LIMITED';
+        UIManager.showToast(details.message || 'Request rate limit reached. Throttling...', 'warning');
+      }
+    });
   } else {
     if (statusBadge) statusBadge.className = 'badge badge-online';
     if (statusText) statusText.textContent = 'LOCAL SERVER ONLINE';

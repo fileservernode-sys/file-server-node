@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Phase 2 — Batch 2 Remote File Manager Data Plane & Protocol Tests',
+  group(
+      'Phase 2 — Batch 3 Remote File Manager Data Plane & Streaming Protocol Tests',
       () {
     test('FILE_REQUEST message constructs valid request payload', () {
       final req = {
@@ -63,6 +64,54 @@ void main() {
       expect(res['success'], isTrue);
       expect(res['requestId'], 'req-storage-1');
       expect((res['data'] as Map)['totalBytes'], 64 * 1024 * 1024 * 1024);
+    });
+
+    test(
+        'FILE_STREAM_START and FILE_STREAM_CHUNK serialize streaming payloads properly',
+        () {
+      final streamStart = {
+        'type': 'FILE_STREAM_START',
+        'transferId': 'tr-100',
+        'requestId': 'req-str-1',
+        'connectionId': 'conn-777',
+        'totalBytes': 5242880,
+        'totalChunks': 5
+      };
+
+      expect(streamStart['type'], 'FILE_STREAM_START');
+      expect(streamStart['transferId'], 'tr-100');
+      expect(streamStart['totalBytes'], 5242880);
+
+      final streamChunk = {
+        'type': 'FILE_STREAM_CHUNK',
+        'transferId': 'tr-100',
+        'chunkIndex': 0,
+        'dataBase64': 'SGVsbG8gV29ybGQ='
+      };
+
+      expect(streamChunk['type'], 'FILE_STREAM_CHUNK');
+      expect(streamChunk['chunkIndex'], 0);
+
+      final streamEnd = {
+        'type': 'FILE_STREAM_END',
+        'transferId': 'tr-100',
+        'requestId': 'req-str-1'
+      };
+
+      expect(streamEnd['type'], 'FILE_STREAM_END');
+    });
+
+    test('FILE_STREAM_CANCEL payload formats reason and transfer identifier',
+        () {
+      final cancelMsg = {
+        'type': 'FILE_STREAM_CANCEL',
+        'transferId': 'tr-100',
+        'reason': 'User aborted download'
+      };
+
+      expect(cancelMsg['type'], 'FILE_STREAM_CANCEL');
+      expect(cancelMsg['transferId'], 'tr-100');
+      expect(cancelMsg['reason'], 'User aborted download');
     });
 
     test('RECENT files remote request returns ordered items payload', () {

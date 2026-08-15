@@ -14,6 +14,7 @@ export interface HandshakeMessage {
   code?: string;
   message?: string;
   requestId?: string;
+  transferId?: string;
   operation?: string;
   path?: string;
   name?: string;
@@ -23,6 +24,9 @@ export interface HandshakeMessage {
   data?: any;
   error?: any;
   chunkIndex?: number;
+  totalChunks?: number;
+  totalBytes?: number;
+  bytesTransferred?: number;
   dataBase64?: string;
 }
 
@@ -32,6 +36,27 @@ export interface ActiveGatewayConnection {
   socket: WebSocket;
   connectedAt: Date;
   lastHeartbeatAt: Date;
+  remoteIp?: string;
+}
+
+export interface PendingClientRequest {
+  requestId: string;
+  connectionId: string;
+  clientSocket: WebSocket;
+  createdAt: number;
+  timer: NodeJS.Timeout;
+}
+
+export interface ActiveFileTransfer {
+  transferId: string;
+  requestId: string;
+  connectionId: string;
+  clientSocket: WebSocket;
+  hostSocket: WebSocket;
+  bytesTransferred: number;
+  totalBytes?: number;
+  startedAt: number;
+  timer: NodeJS.Timeout;
 }
 
 /**
@@ -53,7 +78,6 @@ export class PrismaTokenValidator implements TokenValidator {
     try {
       return await prisma.deviceConnection.findFirst({ where: { deviceId, connectionToken } });
     } catch {
-      // DB offline — surface as null so gateway rejects auth cleanly in production
       return null;
     }
   }
@@ -88,8 +112,16 @@ export class PrismaTokenValidator implements TokenValidator {
 export class GatewayService {
   private httpServer: http.Server | null = null;
   private wss: WebSocketServer | null = null;
-  private activeConnections: Map<string, ActiveGatewayConnection> = new Map();
-  private pendingRequests: Map<string, WebSocket> = new Map(); // requestId -> clientSocket
+  private activeConnections: Map<string, ActiveGatewayConnection> = new Map(); // connectionId -> ActiveGatewayConnection
+  private deviceToConnectionMap: Map<string, string> = new Map(); // deviceId -> connectionId
+  private pendingRequests: Map<string, PendingClientRequest> = new Map(); // requestId -> PendingClientRequest
+  private activeTransfers: Map<string, ActiveFileTransfer> = new Map(); // transferId -> ActiveFileTransfer
+  private rateLimitTracker: Map<string, { count: number; resetAt: number }> = new Map(); // ip -> { count, resetAt }
+  
+  private failedAuthCount = 0;
+  private completedTransfersCount = 0;
+  private failedTransfersCount = 0;
+  
   private isListening = false;
   private startTime = Date.now();
   private config: GatewayConfig;
@@ -151,10 +183,39 @@ export class GatewayService {
     }
   }
 
+  /**
+   * Sliding window rate limiter per remote IP
+   */
+  private checkRateLimit(remoteIp: string): boolean {
+    const now = Date.now();
+    const tracker = this.rateLimitTracker.get(remoteIp);
+
+    if (!tracker || now > tracker.resetAt) {
+      this.rateLimitTracker.set(remoteIp, { count: 1, resetAt: now + 60000 });
+      return true;
+    }
+
+    if (tracker.count >= this.config.GATEWAY_RATE_LIMIT_RPM) {
+      return false;
+    }
+
+    tracker.count++;
+    return true;
+  }
+
   public async start(): Promise<void> {
     if (this.isListening) return;
 
     this.httpServer = http.createServer((req, res) => {
+      // Inject Production Web Hardening & Security Headers
+      res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss:; frame-ancestors 'none';"
+      );
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
       const url = req.url || '';
 
       if (url === '/health' && req.method === 'GET') {
@@ -180,8 +241,9 @@ export class GatewayService {
       maxPayload: this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES
     });
 
-    this.wss.on('connection', (socket: WebSocket) => {
-      this.handleSocketConnection(socket);
+    this.wss.on('connection', (socket: WebSocket, req: http.IncomingMessage) => {
+      const remoteIp = req.socket.remoteAddress || '127.0.0.1';
+      this.handleSocketConnection(socket, remoteIp);
     });
 
     return new Promise((resolve) => {
@@ -190,7 +252,8 @@ export class GatewayService {
         this.startTime = Date.now();
         this.log('info', `Production Gateway listening on ${this.config.GATEWAY_HOST}:${this.config.GATEWAY_PORT}`, {
           wsUrl: this.config.GATEWAY_WS_URL,
-          maxConnections: this.config.GATEWAY_MAX_CONNECTIONS
+          maxConnections: this.config.GATEWAY_MAX_CONNECTIONS,
+          rateLimitRpm: this.config.GATEWAY_RATE_LIMIT_RPM
         });
         resolve();
       });
@@ -202,16 +265,32 @@ export class GatewayService {
 
     this.log('info', 'Initiating graceful Gateway shutdown');
 
-    for (const [connectionId, conn] of this.activeConnections.entries()) {
+    // Cancel all active transfers
+    for (const [transferId, transfer] of this.activeTransfers.entries()) {
+      clearTimeout(transfer.timer);
+      try {
+        transfer.clientSocket.send(
+          JSON.stringify({ type: 'FILE_STREAM_CANCEL', transferId, reason: 'Gateway shutting down' })
+        );
+      } catch {}
+    }
+    this.activeTransfers.clear();
+
+    // Clear pending requests
+    for (const [, req] of this.pendingRequests.entries()) {
+      clearTimeout(req.timer);
+    }
+    this.pendingRequests.clear();
+
+    // Disconnect active connections
+    for (const [, conn] of this.activeConnections.entries()) {
       try {
         conn.socket.send(JSON.stringify({ type: 'DISCONNECT', reason: 'Gateway shutting down' }));
         conn.socket.close();
-      } catch (e) {
-        // Ignore socket close errors during shutdown
-      }
+      } catch {}
     }
     this.activeConnections.clear();
-    this.pendingRequests.clear();
+    this.deviceToConnectionMap.clear();
 
     return new Promise((resolve) => {
       this.wss?.close(() => {
@@ -226,8 +305,8 @@ export class GatewayService {
     });
   }
 
-  private handleSocketConnection(socket: WebSocket): void {
-    // Capacity Limit Guard
+  private handleSocketConnection(socket: WebSocket, remoteIp: string): void {
+    // 1. Capacity Limit Guard
     if (this.activeConnections.size >= this.config.GATEWAY_MAX_CONNECTIONS) {
       this.log('warn', 'Connection rejected: gateway capacity reached', {
         activeConnections: this.activeConnections.size,
@@ -247,9 +326,10 @@ export class GatewayService {
     let authenticatedConnectionId: string | null = null;
     let authFailureCount = 0;
 
-    // Authentication Timeout Guard
+    // 2. Authentication Timeout Guard
     const authTimeoutTimer = setTimeout(() => {
       if (!authenticatedConnectionId && socket.readyState === WebSocket.OPEN) {
+        this.failedAuthCount++;
         this.log('warn', 'Socket authentication timed out');
         socket.send(
           JSON.stringify({
@@ -261,11 +341,23 @@ export class GatewayService {
       }
     }, this.config.GATEWAY_AUTH_TIMEOUT_MS);
 
-    // Send HELLO handshake greeting
+    // 3. Send HELLO handshake greeting
     socket.send(JSON.stringify({ type: 'HELLO', version: '2.0' }));
 
     socket.on('message', async (data: Buffer | string) => {
-      // Message Size Guard
+      // 4. Rate Limiting Guard
+      if (!this.checkRateLimit(remoteIp)) {
+        socket.send(
+          JSON.stringify({
+            type: 'ERROR',
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: 'Rate limit exceeded. Please throttle requests.'
+          })
+        );
+        return;
+      }
+
+      // 5. Message Size Guard
       const byteLength = typeof data === 'string' ? Buffer.byteLength(data) : data.length;
       if (byteLength > this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES) {
         this.log('warn', 'Message rejected: payload too large', { byteLength });
@@ -282,10 +374,14 @@ export class GatewayService {
       try {
         const msg: HandshakeMessage = JSON.parse(data.toString());
 
+        // =====================================================================
+        // AUTHENTICATION & DUPLICATE SESSION EVICTION
+        // =====================================================================
         if (msg.type === 'AUTH') {
           const { connectionToken, deviceId } = msg;
           if (!connectionToken || !deviceId) {
             authFailureCount++;
+            this.failedAuthCount++;
             socket.send(
               JSON.stringify({
                 type: 'AUTH_FAILURE',
@@ -298,11 +394,12 @@ export class GatewayService {
             return;
           }
 
-          // Validate token via injected TokenValidator (production: Prisma; tests: mock)
+          // Validate token via injected TokenValidator
           const connRecord = await this.tokenValidator.findConnection(deviceId, connectionToken);
 
           if (!connRecord) {
             authFailureCount++;
+            this.failedAuthCount++;
             this.log('warn', 'Authentication failed: invalid token', { deviceId });
             socket.send(
               JSON.stringify({
@@ -318,8 +415,35 @@ export class GatewayService {
 
           // Clear auth timeout on success
           clearTimeout(authTimeoutTimer);
-          authenticatedConnectionId = connRecord.id;
 
+          // Duplicate Connection Eviction: if same connectionId or deviceId is already active, close old socket
+          const existingConnId = connRecord.id;
+          if (this.activeConnections.has(existingConnId)) {
+            const oldConn = this.activeConnections.get(existingConnId)!;
+            try {
+              oldConn.socket.send(
+                JSON.stringify({ type: 'DISCONNECT', reason: 'Replaced by newer connection session' })
+              );
+              oldConn.socket.close();
+            } catch {}
+            this.activeConnections.delete(existingConnId);
+          }
+
+          if (this.deviceToConnectionMap.has(deviceId)) {
+            const oldConnId = this.deviceToConnectionMap.get(deviceId)!;
+            if (this.activeConnections.has(oldConnId)) {
+              const oldConn = this.activeConnections.get(oldConnId)!;
+              try {
+                oldConn.socket.send(
+                  JSON.stringify({ type: 'DISCONNECT', reason: 'Device reconnected with new session' })
+                );
+                oldConn.socket.close();
+              } catch {}
+              this.activeConnections.delete(oldConnId);
+            }
+          }
+
+          authenticatedConnectionId = connRecord.id;
           const now = new Date();
           await this.tokenValidator.markConnected(connRecord.id, now);
 
@@ -328,8 +452,10 @@ export class GatewayService {
             deviceId,
             socket,
             connectedAt: now,
-            lastHeartbeatAt: now
+            lastHeartbeatAt: now,
+            remoteIp
           });
+          this.deviceToConnectionMap.set(deviceId, connRecord.id);
 
           this.log('info', 'Android storage node authenticated successfully', {
             connectionId: connRecord.id,
@@ -366,7 +492,7 @@ export class GatewayService {
         }
 
         // =====================================================================
-        // REMOTE FILE DATA PLANE ROUTING ENGINE
+        // REQUEST ROUTING & AUTHORIZATION
         // =====================================================================
         if (msg.type === 'FILE_REQUEST') {
           const { requestId, connectionId } = msg;
@@ -398,39 +524,149 @@ export class GatewayService {
             return;
           }
 
-          // Register client socket waiting for response with request timeout cleanup
-          this.pendingRequests.set(requestId, socket);
-          setTimeout(() => {
+          // Register pending request with request timeout cleanup
+          const reqTimer = setTimeout(() => {
             if (this.pendingRequests.has(requestId)) {
               this.pendingRequests.delete(requestId);
             }
           }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
+
+          this.pendingRequests.set(requestId, {
+            requestId,
+            connectionId,
+            clientSocket: socket,
+            createdAt: Date.now(),
+            timer: reqTimer
+          });
 
           // Forward request to target Android host socket
           targetConn.socket.send(JSON.stringify(msg));
           return;
         }
 
-        if (
-          msg.type === 'FILE_RESPONSE' ||
-          msg.type === 'FILE_STREAM_START' ||
-          msg.type === 'FILE_STREAM_CHUNK' ||
-          msg.type === 'FILE_STREAM_END' ||
-          msg.type === 'FILE_ERROR'
-        ) {
+        if (msg.type === 'FILE_RESPONSE') {
           const { requestId } = msg;
           if (requestId && this.pendingRequests.has(requestId)) {
-            const clientSocket = this.pendingRequests.get(requestId)!;
-            if (clientSocket.readyState === WebSocket.OPEN) {
-              clientSocket.send(JSON.stringify(msg));
+            const pending = this.pendingRequests.get(requestId)!;
+            clearTimeout(pending.timer);
+            if (pending.clientSocket.readyState === WebSocket.OPEN) {
+              pending.clientSocket.send(JSON.stringify(msg));
             }
-            if (
-              msg.type === 'FILE_RESPONSE' ||
-              msg.type === 'FILE_STREAM_END' ||
-              msg.type === 'FILE_ERROR'
-            ) {
-              this.pendingRequests.delete(requestId);
+            this.pendingRequests.delete(requestId);
+          }
+          return;
+        }
+
+        // =====================================================================
+        // LARGE FILE STREAMING DATA PLANE & CANCELLATION
+        // =====================================================================
+        if (msg.type === 'FILE_STREAM_START') {
+          const { transferId, requestId, connectionId } = msg;
+          if (!transferId || !requestId) return;
+
+          const pending = this.pendingRequests.get(requestId);
+          const targetConn = connectionId ? this.activeConnections.get(connectionId) : null;
+
+          const transferTimer = setTimeout(() => {
+            if (this.activeTransfers.has(transferId)) {
+              this.failedTransfersCount++;
+              this.activeTransfers.delete(transferId);
             }
+          }, this.config.GATEWAY_TRANSFER_TIMEOUT_MS);
+
+          this.activeTransfers.set(transferId, {
+            transferId,
+            requestId,
+            connectionId: connectionId || '',
+            clientSocket: pending ? pending.clientSocket : socket,
+            hostSocket: targetConn ? targetConn.socket : socket,
+            bytesTransferred: 0,
+            totalBytes: msg.totalBytes,
+            startedAt: Date.now(),
+            timer: transferTimer
+          });
+
+          if (pending && pending.clientSocket.readyState === WebSocket.OPEN) {
+            pending.clientSocket.send(JSON.stringify(msg));
+          }
+          return;
+        }
+
+        if (msg.type === 'FILE_STREAM_CHUNK') {
+          const { transferId } = msg;
+          if (transferId && this.activeTransfers.has(transferId)) {
+            const transfer = this.activeTransfers.get(transferId)!;
+            if (msg.dataBase64) {
+              transfer.bytesTransferred += Buffer.byteLength(msg.dataBase64);
+            }
+            if (transfer.clientSocket.readyState === WebSocket.OPEN) {
+              transfer.clientSocket.send(JSON.stringify(msg));
+            }
+          }
+          return;
+        }
+
+        if (msg.type === 'FILE_STREAM_END') {
+          const { transferId, requestId } = msg;
+          if (transferId && this.activeTransfers.has(transferId)) {
+            const transfer = this.activeTransfers.get(transferId)!;
+            clearTimeout(transfer.timer);
+            this.completedTransfersCount++;
+            if (transfer.clientSocket.readyState === WebSocket.OPEN) {
+              transfer.clientSocket.send(JSON.stringify(msg));
+            }
+            this.activeTransfers.delete(transferId);
+          }
+          if (requestId && this.pendingRequests.has(requestId)) {
+            const pending = this.pendingRequests.get(requestId)!;
+            clearTimeout(pending.timer);
+            this.pendingRequests.delete(requestId);
+          }
+          return;
+        }
+
+        if (msg.type === 'FILE_STREAM_CANCEL') {
+          const { transferId, reason } = msg;
+          if (transferId && this.activeTransfers.has(transferId)) {
+            const transfer = this.activeTransfers.get(transferId)!;
+            clearTimeout(transfer.timer);
+            this.failedTransfersCount++;
+
+            const cancelPayload = JSON.stringify({
+              type: 'FILE_STREAM_CANCEL',
+              transferId,
+              reason: reason || 'Transfer cancelled by peer'
+            });
+
+            try {
+              if (transfer.clientSocket.readyState === WebSocket.OPEN) {
+                transfer.clientSocket.send(cancelPayload);
+              }
+              if (transfer.hostSocket.readyState === WebSocket.OPEN) {
+                transfer.hostSocket.send(cancelPayload);
+              }
+            } catch {}
+
+            this.activeTransfers.delete(transferId);
+          }
+          return;
+        }
+
+        if (msg.type === 'FILE_ERROR') {
+          const { requestId, transferId } = msg;
+          if (transferId && this.activeTransfers.has(transferId)) {
+            const transfer = this.activeTransfers.get(transferId)!;
+            clearTimeout(transfer.timer);
+            this.failedTransfersCount++;
+            this.activeTransfers.delete(transferId);
+          }
+          if (requestId && this.pendingRequests.has(requestId)) {
+            const pending = this.pendingRequests.get(requestId)!;
+            clearTimeout(pending.timer);
+            if (pending.clientSocket.readyState === WebSocket.OPEN) {
+              pending.clientSocket.send(JSON.stringify(msg));
+            }
+            this.pendingRequests.delete(requestId);
           }
           return;
         }
@@ -471,7 +707,30 @@ export class GatewayService {
   }
 
   private async cleanupConnection(connectionId: string): Promise<void> {
+    const conn = this.activeConnections.get(connectionId);
+    if (conn) {
+      this.deviceToConnectionMap.delete(conn.deviceId);
+    }
     this.activeConnections.delete(connectionId);
+
+    // Cancel transfers associated with this connection
+    for (const [transferId, transfer] of this.activeTransfers.entries()) {
+      if (transfer.connectionId === connectionId) {
+        clearTimeout(transfer.timer);
+        this.failedTransfersCount++;
+        try {
+          transfer.clientSocket.send(
+            JSON.stringify({
+              type: 'FILE_STREAM_CANCEL',
+              transferId,
+              reason: 'Host device disconnected during transfer'
+            })
+          );
+        } catch {}
+        this.activeTransfers.delete(transferId);
+      }
+    }
+
     await this.tokenValidator.markDisconnected(connectionId, new Date());
   }
 
@@ -479,15 +738,29 @@ export class GatewayService {
     status: string;
     gateway: string;
     activeConnections: number;
+    authenticatedConnections: number;
+    failedAuthCount: number;
+    pendingRequestsCount: number;
+    activeTransfersCount: number;
+    completedTransfersCount: number;
+    failedTransfersCount: number;
     port: number;
     uptimeSeconds: number;
+    gatewayMode: string;
   } {
     return {
       status: this.isListening ? 'ok' : 'stopped',
       gateway: this.isListening ? 'ACTIVE' : 'INACTIVE',
       activeConnections: this.activeConnections.size,
+      authenticatedConnections: this.activeConnections.size,
+      failedAuthCount: this.failedAuthCount,
+      pendingRequestsCount: this.pendingRequests.size,
+      activeTransfersCount: this.activeTransfers.size,
+      completedTransfersCount: this.completedTransfersCount,
+      failedTransfersCount: this.failedTransfersCount,
       port: this.config.GATEWAY_PORT,
-      uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000)
+      uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
+      gatewayMode: this.config.NODE_ENV
     };
   }
 
@@ -495,15 +768,21 @@ export class GatewayService {
     status: string;
     controlPlaneConnected: boolean;
     activeConnections: number;
+    activeTransfers: number;
   } {
     return {
       status: this.isListening ? 'ready' : 'not_ready',
       controlPlaneConnected: true,
-      activeConnections: this.activeConnections.size
+      activeConnections: this.activeConnections.size,
+      activeTransfers: this.activeTransfers.size
     };
   }
 
   public getActiveConnectionCount(): number {
     return this.activeConnections.size;
+  }
+
+  public getActiveTransferCount(): number {
+    return this.activeTransfers.size;
   }
 }
