@@ -22,8 +22,20 @@ export const gatewayConfigSchema = z
         }
       ),
 
-    GATEWAY_PUBLIC_BASE_URL: z.string().default('https://viewduration.com'),
-    GATEWAY_PUBLIC_WS_URL: z.string().default('wss://viewduration.com'),
+    // Configurable Gateway Domain for Remote Node Subdomains (*.gateway.viewduration.com)
+    REMOTENODE_GATEWAY_DOMAIN: z
+      .string()
+      .default('gateway.viewduration.com')
+      .refine(
+        (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
+        {
+          message:
+            'REMOTENODE_GATEWAY_DOMAIN must be a valid domain name without protocol prefix (http/https), path, or trailing slash'
+        }
+      ),
+
+    GATEWAY_PUBLIC_BASE_URL: z.string().default('https://gateway.viewduration.com'),
+    GATEWAY_PUBLIC_WS_URL: z.string().default('wss://gateway.viewduration.com'),
 
     GATEWAY_MAX_CONNECTIONS: z.coerce.number().default(1000),
     GATEWAY_AUTH_TIMEOUT_MS: z.coerce.number().default(10000),
@@ -36,7 +48,7 @@ export const gatewayConfigSchema = z
     GATEWAY_TRANSFER_CHUNK_SIZE_BYTES: z.coerce.number().default(1048576), // 1MB chunk limit
     GATEWAY_TLS_CERT_PATH: z.string().optional(),
     GATEWAY_TLS_KEY_PATH: z.string().optional(),
-    NODE_ENV: z.enum(['development', 'production', 'test']).default('development')
+    NODE_ENV: z.enum(['development', 'production', 'test', 'staging']).default('development')
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV === 'production') {
@@ -60,6 +72,7 @@ export function loadGatewayConfig(overrides: Partial<Record<string, string | num
     GATEWAY_WS_URL: overrides.GATEWAY_WS_URL ?? process.env.GATEWAY_WS_URL,
     CONTROL_PLANE_URL: overrides.CONTROL_PLANE_URL ?? process.env.CONTROL_PLANE_URL,
     REMOTENODE_BASE_DOMAIN: overrides.REMOTENODE_BASE_DOMAIN ?? process.env.REMOTENODE_BASE_DOMAIN,
+    REMOTENODE_GATEWAY_DOMAIN: overrides.REMOTENODE_GATEWAY_DOMAIN ?? process.env.REMOTENODE_GATEWAY_DOMAIN,
     GATEWAY_PUBLIC_BASE_URL: overrides.GATEWAY_PUBLIC_BASE_URL ?? process.env.GATEWAY_PUBLIC_BASE_URL,
     GATEWAY_PUBLIC_WS_URL: overrides.GATEWAY_PUBLIC_WS_URL ?? process.env.GATEWAY_PUBLIC_WS_URL,
     GATEWAY_MAX_CONNECTIONS: overrides.GATEWAY_MAX_CONNECTIONS ?? process.env.GATEWAY_MAX_CONNECTIONS,

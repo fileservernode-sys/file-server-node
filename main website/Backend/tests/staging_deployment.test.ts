@@ -13,7 +13,7 @@ const STAGING_DEVICE_ID = 'dev_staging_phone_001';
 const STAGING_TOKEN = 'staging_conn_token_xyz987';
 const STAGING_CONN_ID = 'conn_staging_active_001';
 const STAGING_USER_ID = 'user_staging_alice';
-const STAGING_ENDPOINT = 'https://srv_alpha123.viewduration.com';
+const STAGING_ENDPOINT = 'https://srv_alpha123.gateway.viewduration.com';
 
 class StagingMockTokenValidator implements TokenValidator {
   async findConnection(deviceId: string, connectionToken: string) {
@@ -39,14 +39,16 @@ describe('Phase 2 — Batch 6: Staging Deployment & viewduration.com End-to-End 
 
   before(async () => {
     EndpointService.setBaseDomain('viewduration.com');
+    EndpointService.setGatewayDomain('gateway.viewduration.com');
     EndpointService.setDnsProvider(new MockDnsProvider());
 
     gateway = new GatewayService(
       {
         GATEWAY_PORT: gatewayPort,
         REMOTENODE_BASE_DOMAIN: 'viewduration.com',
-        GATEWAY_PUBLIC_BASE_URL: 'https://viewduration.com',
-        GATEWAY_PUBLIC_WS_URL: 'wss://viewduration.com',
+        REMOTENODE_GATEWAY_DOMAIN: 'gateway.viewduration.com',
+        GATEWAY_PUBLIC_BASE_URL: 'https://gateway.viewduration.com',
+        GATEWAY_PUBLIC_WS_URL: 'wss://gateway.viewduration.com',
         GATEWAY_AUTH_TIMEOUT_MS: 800,
         GATEWAY_REQUEST_TIMEOUT_MS: 800,
         NODE_ENV: 'test'
@@ -61,9 +63,9 @@ describe('Phase 2 — Batch 6: Staging Deployment & viewduration.com End-to-End 
     await gateway.stop();
   });
 
-  test('1. EndpointService allocates staging endpoint with viewduration.com domain', () => {
+  test('1. EndpointService allocates staging endpoint with gateway.viewduration.com subdomain', () => {
     const hostname = EndpointService.generateHostname('srv_alpha123');
-    assert.strictEqual(hostname, 'srv_alpha123.viewduration.com');
+    assert.strictEqual(hostname, 'srv_alpha123.gateway.viewduration.com');
     assert.strictEqual(EndpointService.validateHostname(hostname), true);
   });
 
@@ -143,9 +145,9 @@ describe('Phase 2 — Batch 6: Staging Deployment & viewduration.com End-to-End 
       }
     });
 
-    // HTTP Client sends request targeting srv_alpha123.viewduration.com
+    // HTTP Client sends request targeting srv_alpha123.gateway.viewduration.com
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${gatewayPort}/api/storage?endpoint=srv_alpha123.viewduration.com`, (resp) => {
+      http.get(`http://localhost:${gatewayPort}/api/storage?endpoint=srv_alpha123.gateway.viewduration.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {
@@ -164,7 +166,7 @@ describe('Phase 2 — Batch 6: Staging Deployment & viewduration.com End-to-End 
     androidSocket.close();
   });
 
-  test('4. HTTP reverse proxy routes GET /api/files/recent for srv_alpha123.viewduration.com', async () => {
+  test('4. HTTP reverse proxy routes GET /api/files/recent for srv_alpha123.gateway.viewduration.com', async () => {
     const androidSocket = new WebSocket(`ws://localhost:${gatewayPort}`);
 
     await new Promise<void>((resolve) => {
@@ -204,7 +206,7 @@ describe('Phase 2 — Batch 6: Staging Deployment & viewduration.com End-to-End 
     });
 
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${gatewayPort}/api/files/recent?endpoint=srv_alpha123.viewduration.com`, (resp) => {
+      http.get(`http://localhost:${gatewayPort}/api/files/recent?endpoint=srv_alpha123.gateway.viewduration.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {

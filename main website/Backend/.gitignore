@@ -7,8 +7,10 @@ dist/
 # Environment Variables & Secrets (CRITICAL)
 .env
 .env.*
+.env.render
 !.env.example
 !.env.staging.example
+!.env.render.example
 
 # Logs
 logs/
