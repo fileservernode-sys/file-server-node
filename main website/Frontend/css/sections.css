@@ -1,0 +1,419 @@
+/* ==========================================================================
+   HOMEPAGE SECTIONS STYLES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   SECTION HEADINGS & INTROS
+   -------------------------------------------------------------------------- */
+.section-header {
+  margin-bottom: var(--space-3xl);
+  max-width: 680px;
+}
+
+.section-header-center {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-eyebrow {
+  margin-bottom: var(--space-xs);
+}
+
+.section-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-md);
+}
+
+.section-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 1 — HERO
+   -------------------------------------------------------------------------- */
+.hero-section {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+  background: radial-gradient(circle at 50% 0%, rgba(37, 99, 235, 0.04) 0%, rgba(250, 250, 252, 0) 70%);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3xl);
+  align-items: center;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.hero-eyebrow {
+  margin-bottom: var(--space-md);
+}
+
+.hero-title {
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.035em;
+  margin-bottom: var(--space-lg);
+}
+
+.hero-description {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin-bottom: var(--space-2xl);
+  max-width: 540px;
+}
+
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
+}
+
+.hero-trust-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+/* Hero Visual Diagram Container */
+.hero-visual {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-xl);
+  position: relative;
+}
+
+.hero-visual-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: var(--space-lg);
+}
+
+.window-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.window-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-tertiary);
+}
+
+.window-dot:nth-child(1) { background-color: #EF4444; }
+.window-dot:nth-child(2) { background-color: #F59E0B; }
+.window-dot:nth-child(3) { background-color: #10B981; }
+
+.visual-flow-card {
+  background-color: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.visual-flow-card:last-child {
+  margin-bottom: 0;
+}
+
+.visual-flow-node {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.visual-flow-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 2 — PRODUCT CONCEPT
+   -------------------------------------------------------------------------- */
+.concept-flow-wrapper {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-sm);
+  align-items: center;
+  margin-top: var(--space-2xl);
+}
+
+.concept-node {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.concept-arrow {
+  text-align: center;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-xl);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 3 — HOW IT WORKS
+   -------------------------------------------------------------------------- */
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-lg);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 4 — WHY THIS PRODUCT & SECTION 6 — FEATURES
+   -------------------------------------------------------------------------- */
+.grid-3-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xl);
+}
+
+.grid-4-col {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xl);
+}
+
+.grid-2-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2xl);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 5 — PRODUCT COMPONENTS (3 Core Pillars)
+   -------------------------------------------------------------------------- */
+.components-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-xl);
+}
+
+.component-pill-header {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-accent);
+  background-color: var(--color-accent-subtle);
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  margin-bottom: var(--space-md);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 7 — PRIVACY & SECURITY
+   -------------------------------------------------------------------------- */
+.security-banner {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-md);
+}
+
+.security-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.security-point-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.security-check-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 8 — OLD PHONE REUSE
+   -------------------------------------------------------------------------- */
+.reuse-hero-box {
+  background-color: var(--color-primary);
+  color: var(--color-surface);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3xl);
+  box-shadow: var(--shadow-xl);
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+.reuse-title {
+  color: var(--color-surface);
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--space-md);
+}
+
+.reuse-text {
+  color: var(--color-surface-secondary);
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 9 — STORAGE CONCEPT DIAGRAM
+   -------------------------------------------------------------------------- */
+.storage-equation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.equation-box {
+  background-color: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg) var(--space-xl);
+  text-align: center;
+  min-width: 160px;
+}
+
+.equation-operator {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 10 — PRICING PREVIEW
+   -------------------------------------------------------------------------- */
+.pricing-preview-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3xl);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   SECTION 12 — FINAL CTA BANNER
+   -------------------------------------------------------------------------- */
+.final-cta-banner {
+  background-color: var(--color-surface-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4xl) var(--space-2xl);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.final-cta-title {
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--space-md);
+}
+
+.final-cta-description {
+  font-size: var(--font-size-lg);
+  max-width: 600px;
+  margin: 0 auto var(--space-2xl) auto;
+}
+
+/* --------------------------------------------------------------------------
+   RESPONSIVE LAYOUT ADJUSTMENTS FOR SECTIONS
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .grid-3-col, .components-card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grid-4-col {
+    grid-template-columns: 1fr 1fr;
+  }
+  .process-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .concept-flow-wrapper {
+    grid-template-columns: 1fr;
+  }
+  .concept-arrow {
+    transform: rotate(90deg);
+  }
+  .reuse-hero-box {
+    grid-template-columns: 1fr;
+    padding: var(--space-2xl);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: var(--font-size-4xl);
+  }
+  .grid-3-col, .grid-4-col, .grid-2-col, .components-card-grid, .process-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-cta-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  .hero-cta-group .btn {
+    width: 100%;
+  }
+  .storage-equation {
+    flex-direction: column;
+  }
+  .equation-operator {
+    transform: rotate(90deg);
+  }
+}

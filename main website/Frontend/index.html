@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Turn an unused Android phone into your personal remotely accessible file server. Private, self-hosted storage without port forwarding or complex NAT configuration.">
+  <meta name="keywords" content="Android file server, personal cloud storage, self-hosted file server, old phone reuse, remote file manager">
+  <title>RemoteNode — Personal Android File Server Platform</title>
+
+  <!-- Open Graph / Social SEO -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="RemoteNode — Turn Any Android Phone Into Your Personal File Server">
+  <meta property="og:description" content="Keep your files on hardware you own. Access them securely from anywhere without port forwarding.">
+
+  <!-- Modular Design System Stylesheets -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/sections.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       HEADER & NAVIGATION
+       ========================================================================= -->
+  <header class="site-header" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo / Text Mark Placeholder -->
+      <a href="index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">RN</span>
+        <span>RemoteNode</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Main Navigation">
+        <a href="#product-concept" class="nav-link">Product</a>
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#security" class="nav-link">Security & Privacy</a>
+        <a href="#pricing" class="nav-link">Pricing</a>
+        <a href="#docs" class="nav-link">Documentation</a>
+      </nav>
+
+      <!-- Desktop Header Actions -->
+      <div class="header-actions">
+        <a href="#login" class="btn btn-ghost">Sign In</a>
+        <a href="#get-started" class="btn btn-primary">Get Started</a>
+      </div>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu" aria-expanded="false">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- Mobile Drawer & Backdrop -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <span class="brand-mark">
+        <span class="brand-icon">RN</span>
+        <span>RemoteNode</span>
+      </span>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="#product-concept" class="drawer-nav-link">Product</a>
+      <a href="#how-it-works" class="drawer-nav-link">How It Works</a>
+      <a href="#features" class="drawer-nav-link">Features</a>
+      <a href="#security" class="drawer-nav-link">Security & Privacy</a>
+      <a href="#pricing" class="drawer-nav-link">Pricing</a>
+      <a href="#docs" class="drawer-nav-link">Documentation</a>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
+      <a href="#login" class="btn btn-secondary" style="width: 100%;">Sign In</a>
+      <a href="#get-started" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    </div>
+  </aside>
+
+  <main>
+    <!-- =========================================================================
+         SECTION 1 — HERO
+         ========================================================================= -->
+    <section class="section-wrapper hero-section" id="hero">
+      <div class="container hero-grid">
+        
+        <div class="hero-content">
+          <div class="hero-eyebrow">
+            <span class="badge badge-accent">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              Personal Cloud Infrastructure
+            </span>
+          </div>
+
+          <h1 class="hero-title">
+            Turn an old Android phone into your personal remote file server.
+          </h1>
+
+          <p class="hero-description">
+            Transform unused smartphone hardware into dedicated private storage. Access, manage, and stream your files securely from anywhere without router port forwarding or complex public IP configuration.
+          </p>
+
+          <div class="hero-cta-group">
+            <a href="#get-started" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="#how-it-works" class="btn btn-secondary btn-lg">See How It Works</a>
+          </div>
+
+          <div class="hero-trust-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+              <path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            <span>Files remain strictly on your Android device storage. No complex router setup needed.</span>
+          </div>
+        </div>
+
+        <!-- Hero Visual Diagram -->
+        <div class="hero-visual">
+          <div class="hero-visual-header">
+            <div class="window-dots">
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+              <span class="window-dot"></span>
+            </div>
+            <span class="badge badge-subtle">Remote Architecture Overview</span>
+          </div>
+
+          <div class="visual-flow-card">
+            <div class="visual-flow-node">
+              <div class="visual-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
+              </div>
+              <div>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Android Storage Host</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Primary Data Host</span>
+              </div>
+            </div>
+            <span class="status-indicator status-online">
+              <span class="status-dot"></span>
+              Online
+            </span>
+          </div>
+
+          <div class="visual-flow-card">
+            <div class="visual-flow-node">
+              <div class="visual-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+              </div>
+              <div>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Outbound Secure Tunnel</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Encrypted Gateway Connection</span>
+              </div>
+            </div>
+            <span class="status-indicator status-connecting">
+              <span class="status-dot"></span>
+              Secured
+            </span>
+          </div>
+
+          <div class="visual-flow-card">
+            <div class="visual-flow-node">
+              <div class="visual-flow-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </div>
+              <div>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Remote Web File Manager</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Access Anywhere via Browser</span>
+              </div>
+            </div>
+            <span class="badge badge-accent">HTTPS</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 2 — PRODUCT CONCEPT
+         ========================================================================= -->
+    <section class="section-wrapper section-wrapper-alt" id="product-concept">
+      <div class="container">
+        
+        <div class="section-header section-header-center">
+          <div class="section-eyebrow">
+            <span class="badge badge-subtle">Transformation Pipeline</span>
+          </div>
+          <h2 class="section-title">How your old phone becomes a personal server</h2>
+          <p class="section-subtitle">
+            The platform provides the intelligent software and secure connectivity around your hardware so your files remain local and accessible.
+          </p>
+        </div>
+
+        <div class="concept-flow-wrapper">
+          <div class="concept-node">
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">01. Android Phone</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Unused / Old Device</span>
+          </div>
+          <div class="concept-arrow">➔</div>
+          <div class="concept-node">
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">02. Install App</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Flutter Server App</span>
+          </div>
+          <div class="concept-arrow">➔</div>
+          <div class="concept-node">
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">03. Outbound Link</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Secure Gateway Tunnel</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 3 — HOW IT WORKS
+         ========================================================================= -->
+    <section class="section-wrapper" id="how-it-works">
+      <div class="container">
+        
+        <div class="section-header">
+          <div class="section-eyebrow">
+            <span class="badge badge-subtle">Simple Step-by-Step Setup</span>
+          </div>
+          <h2 class="section-title">Five steps to total storage autonomy</h2>
+          <p class="section-subtitle">
+            No technical networking knowledge required. Configure your device in minutes.
+          </p>
+        </div>
+
+        <div class="process-grid">
+          <div class="card process-card">
+            <span class="process-step-number">STEP 01</span>
+            <h3 class="card-title">Create Account</h3>
+            <p class="card-description">Register your platform account on our website and verify your primary email address.</p>
+          </div>
+
+          <div class="card process-card">
+            <span class="process-step-number">STEP 02</span>
+            <h3 class="card-title">Install Application</h3>
+            <p class="card-description">Download and install the Android application on your dedicated storage phone.</p>
+          </div>
+
+          <div class="card process-card">
+            <span class="process-step-number">STEP 03</span>
+            <h3 class="card-title">Connect Phone</h3>
+            <p class="card-description">Sign into the Android application and link the phone to your registered platform account.</p>
+          </div>
+
+          <div class="card process-card">
+            <span class="process-step-number">STEP 04</span>
+            <h3 class="card-title">Configure Credentials</h3>
+            <p class="card-description">Create dedicated file-server credentials for authenticating web access to your phone.</p>
+          </div>
+
+          <div class="card process-card">
+            <span class="process-step-number">STEP 05</span>
+            <h3 class="card-title">Start & Access</h3>
+            <p class="card-description">Enable Server Mode on the phone and open your assigned remote URL from any browser.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 4 — WHY THIS PRODUCT
+         ========================================================================= -->
+    <section class="section-wrapper section-wrapper-alt" id="why-product">
+      <div class="container">
+        
+        <div class="section-header">
+          <div class="section-eyebrow">
+            <span class="badge badge-accent">Core Advantages</span>
+          </div>
+          <h2 class="section-title">Designed around hardware you already own</h2>
+          <p class="section-subtitle">
+            Why buy expensive commercial cloud subscriptions or complex NAS hardware when your old phone has gigabytes of reliable flash storage?
+          </p>
+        </div>
+
+        <div class="grid-3-col">
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <h3 class="card-title">Reuse Old Hardware</h3>
+            <p class="card-description">Give drawer-bound smartphones a second life as energy-efficient, silent, 24/7 personal file servers.</p>
+          </div>
+
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <h3 class="card-title">Local-First Storage</h3>
+            <p class="card-description">Your primary files remain strictly on your Android device. The platform never becomes your default storage vault.</p>
+          </div>
+
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <h3 class="card-title">Zero Router Tweaks</h3>
+            <p class="card-description">No port forwarding, public IP setup, or NAT configuration required. Outbound connections handle access seamlessly.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 5 — PRODUCT COMPONENTS (3 Core Pillars)
+         ========================================================================= -->
+    <section class="section-wrapper" id="components">
+      <div class="container">
+        
+        <div class="section-header section-header-center">
+          <div class="section-eyebrow">
+            <span class="badge badge-subtle">Unified System Architecture</span>
+          </div>
+          <h2 class="section-title">Three components. One seamless platform.</h2>
+          <p class="section-subtitle">
+            The platform combines control plane, device management, and lightweight server hosting into a unified experience.
+          </p>
+        </div>
+
+        <div class="components-card-grid">
+          <div class="card card-hover">
+            <span class="component-pill-header">COMPONENT 01</span>
+            <h3 class="card-title">Main Website</h3>
+            <p class="card-description">The platform control plane for account management, email verification, documentation, device status monitoring, and server discovery.</p>
+          </div>
+
+          <div class="card card-hover">
+            <span class="component-pill-header">COMPONENT 02</span>
+            <h3 class="card-title">Android Application</h3>
+            <p class="card-description">The Flutter device management application running on your phone to configure credentials, start Server Mode, and maintain gateway health.</p>
+          </div>
+
+          <div class="card card-hover">
+            <span class="component-pill-header">COMPONENT 03</span>
+            <h3 class="card-title">In-Built File Manager</h3>
+            <p class="card-description">An ultra-lightweight file management website served directly from your Android phone for browsing, uploading, downloading, and media playback.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 6 — FEATURES
+         ========================================================================= -->
+    <section class="section-wrapper section-wrapper-alt" id="features">
+      <div class="container">
+        
+        <div class="section-header">
+          <div class="section-eyebrow">
+            <span class="badge badge-accent">Capabilities</span>
+          </div>
+          <h2 class="section-title">Built for simplicity and reliability</h2>
+          <p class="section-subtitle">
+            Essential tools for managing your personal files remotely without bloated software.
+          </p>
+        </div>
+
+        <div class="grid-4-col">
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h4 class="card-title">File Operations</h4>
+            <p class="card-description">Browse, create folders, upload, download, move, rename, and delete files remotely.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <h4 class="card-title">Media Previews</h4>
+            <p class="card-description">View photos and stream videos directly through your web browser interface.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h4 class="card-title">Dual Auth Protection</h4>
+            <p class="card-description">Separate account credentials for platform management and individual file-server access.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+            </div>
+            <h4 class="card-title">Subdomain Routing</h4>
+            <p class="card-description">Access your server easily via assigned unique subdomain endpoints.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 7 — SECURITY & PRIVACY CONCEPT
+         ========================================================================= -->
+    <section class="section-wrapper" id="security">
+      <div class="container">
+        
+        <div class="security-banner">
+          <div class="section-header" style="margin-bottom: var(--space-xl);">
+            <div class="section-eyebrow">
+              <span class="badge badge-subtle">Privacy & Security Principles</span>
+            </div>
+            <h2 class="section-title">Designed around data privacy and local ownership</h2>
+            <p class="section-subtitle">
+              We believe your personal documents, photos, and records belong on physical hardware under your control.
+            </p>
+          </div>
+
+          <div class="security-points-list">
+            <div class="security-point-item">
+              <div class="security-check-icon">✓</div>
+              <div>
+                <strong style="color: var(--color-text-primary);">Local Storage Ownership:</strong>
+                <span style="color: var(--color-text-secondary);"> Your files reside on your phone's storage media. The central cloud plane holds metadata and endpoint mapping only.</span>
+              </div>
+            </div>
+
+            <div class="security-point-item">
+              <div class="security-check-icon">✓</div>
+              <div>
+                <strong style="color: var(--color-text-primary);">Outbound Secure Architecture:</strong>
+                <span style="color: var(--color-text-secondary);"> Android servers connect outbound to our gateway, removing the risk of open router ports and exposed home networks.</span>
+              </div>
+            </div>
+
+            <div class="security-point-item">
+              <div class="security-check-icon">✓</div>
+              <div>
+                <strong style="color: var(--color-text-primary);">Strict Credential Separation:</strong>
+                <span style="color: var(--color-text-secondary);"> Platform authentication manages device registration; dedicated server credentials authorize file operations.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 8 — OLD PHONE REUSE
+         ========================================================================= -->
+    <section class="section-wrapper" id="reuse-phone">
+      <div class="container">
+        
+        <div class="reuse-hero-box">
+          <div>
+            <h2 class="reuse-title">Give your old Android phone a new job.</h2>
+            <p class="reuse-text">
+              Don't discard an older phone. With silent operation, built-in battery backup, and solid-state storage, an unused smartphone makes an exceptional personal file server.
+            </p>
+          </div>
+          <div style="background-color: rgba(255, 255, 255, 0.08); padding: var(--space-xl); border-radius: var(--radius-lg); text-align: center;">
+            <span style="font-size: var(--font-size-3xl); font-weight: bold; color: #10B981; display: block; margin-bottom: var(--space-xs);">100% Useful</span>
+            <span style="font-size: var(--font-size-sm); color: var(--color-surface-secondary);">Eco-friendly hardware repurposing for home infrastructure.</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 9 — STORAGE ARCHITECTURE CONCEPT
+         ========================================================================= -->
+    <section class="section-wrapper section-wrapper-alt" id="architecture">
+      <div class="container">
+        
+        <div class="section-header section-header-center">
+          <div class="section-eyebrow">
+            <span class="badge badge-accent">Conceptual Architecture</span>
+          </div>
+          <h2 class="section-title">How the system fits together</h2>
+        </div>
+
+        <div class="storage-equation">
+          <div class="equation-box">
+            <strong style="display: block; color: var(--color-text-primary);">YOUR PHONE</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Storage Host</span>
+          </div>
+          <span class="equation-operator">+</span>
+          <div class="equation-box">
+            <strong style="display: block; color: var(--color-text-primary);">ANDROID APP</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Server Host</span>
+          </div>
+          <span class="equation-operator">+</span>
+          <div class="equation-box">
+            <strong style="display: block; color: var(--color-text-primary);">SECURE GATEWAY</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Outbound Route</span>
+          </div>
+          <span class="equation-operator">=</span>
+          <div class="equation-box" style="background-color: var(--color-accent-subtle); border-color: rgba(37, 99, 235, 0.3);">
+            <strong style="display: block; color: var(--color-accent);">PERSONAL FILE SERVER</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-accent);">Remote Access</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 10 — INTERACTIVE DESIGN SYSTEM DEMO (Status & Loading States)
+         ========================================================================= -->
+    <section class="section-wrapper" id="design-system-demo">
+      <div class="container">
+        
+        <div class="section-header">
+          <div class="section-eyebrow">
+            <span class="badge badge-subtle">Design Token System</span>
+          </div>
+          <h2 class="section-title">Status indicators & asynchronous loading states</h2>
+          <p class="section-subtitle">
+            Preview the standardized status and loading feedback states built into our shared design system.
+          </p>
+        </div>
+
+        <div class="grid-2-col">
+          <!-- Interactive Status Preview Box -->
+          <div class="card">
+            <h3 class="card-title">Live Device Status Tokens</h3>
+            <p class="card-description" style="margin-bottom: var(--space-lg);">Click buttons to toggle server status indicators:</p>
+            
+            <div id="demo-status-container" style="min-height: 48px; display: flex; align-items: center; margin-bottom: var(--space-lg);">
+              <span class="status-indicator status-online">
+                <span class="status-dot"></span>
+                Server Online
+              </span>
+            </div>
+
+            <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
+              <button class="btn btn-sm btn-primary" data-status-toggle="online">Online</button>
+              <button class="btn btn-sm btn-secondary" data-status-toggle="connecting">Connecting</button>
+              <button class="btn btn-sm btn-secondary" data-status-toggle="reconnecting">Reconnecting</button>
+              <button class="btn btn-sm btn-secondary" data-status-toggle="offline">Offline</button>
+            </div>
+          </div>
+
+          <!-- Loading Skeleton Preview Box -->
+          <div class="card">
+            <h3 class="card-title">Skeleton Loader Patterns</h3>
+            <p class="card-description" style="margin-bottom: var(--space-lg);">Standardized feedback while querying server instances:</p>
+            
+            <div style="padding: var(--space-md); background-color: var(--color-surface-secondary); border-radius: var(--radius-md);">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text" style="width: 80%;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 11 — PRICING PREVIEW
+         ========================================================================= -->
+    <section class="section-wrapper section-wrapper-alt" id="pricing">
+      <div class="container">
+        
+        <div class="pricing-preview-card">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-md);">Flexible Plans</span>
+          <h2 class="section-title">Plans designed for different storage and usage needs</h2>
+          <p class="section-subtitle" style="margin-bottom: var(--space-xl);">
+            Transparent pricing options will be announced as gateway scaling tiers open.
+          </p>
+          <a href="#get-started" class="btn btn-primary btn-lg">Join Early Access Waitlist</a>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 12 — DOCUMENTATION / HELP
+         ========================================================================= -->
+    <section class="section-wrapper" id="docs">
+      <div class="container">
+        
+        <div class="grid-2-col" style="align-items: center;">
+          <div>
+            <span class="badge badge-subtle" style="margin-bottom: var(--space-xs);">Documentation & Support</span>
+            <h2 class="section-title">Learn how to configure your personal file server</h2>
+            <p class="section-subtitle" style="margin-bottom: var(--space-lg);">
+              Explore step-by-step guides on installing the Android app, granting storage permissions, configuring server credentials, and troubleshooting connection states.
+            </p>
+            <a href="#explore-docs" class="btn btn-secondary">Explore Documentation</a>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Popular Setup Guides</h3>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md);">
+              <li><a href="#" class="nav-link">➔ Android App Installation & Initial Setup</a></li>
+              <li><a href="#" class="nav-link">➔ Creating Dedicated File Server Credentials</a></li>
+              <li><a href="#" class="nav-link">➔ Understanding Gateway Connection Statuses</a></li>
+              <li><a href="#" class="nav-link">➔ Battery Optimization & Background Execution Guide</a></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 13 — FINAL CTA BANNER
+         ========================================================================= -->
+    <section class="section-wrapper" id="get-started">
+      <div class="container">
+        
+        <div class="final-cta-banner">
+          <h2 class="final-cta-title">Your old phone is already capable of doing more.</h2>
+          <p class="final-cta-description">
+            Start transforming your spare Android smartphone into a secure, self-hosted, remotely accessible personal cloud file server today.
+          </p>
+          <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+            <a href="#register" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="#docs" class="btn btn-secondary btn-lg">Read Documentation</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <!-- =========================================================================
+       FOOTER
+       ========================================================================= -->
+  <footer class="site-footer">
+    <div class="container">
+      
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="index.html" class="brand-mark">
+            <span class="brand-icon">RN</span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Converting unused smartphones into remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
+            <li><a href="#pricing" class="footer-link">Pricing</a></li>
+            <li><a href="#components" class="footer-link">3 Components</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="#docs" class="footer-link">Documentation</a></li>
+            <li><a href="#setup" class="footer-link">Setup Guides</a></li>
+            <li><a href="#faq" class="footer-link">FAQ</a></li>
+            <li><a href="#help" class="footer-link">Help Center</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="#about" class="footer-link">About Us</a></li>
+            <li><a href="#contact" class="footer-link">Contact</a></li>
+            <li><a href="#privacy" class="footer-link">Privacy Concept</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="#terms" class="footer-link">Terms of Service</a></li>
+            <li><a href="#privacy-policy" class="footer-link">Privacy Policy</a></li>
+            <li><a href="#security" class="footer-link">Security Overview</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div>Shared-hosting ready • Lightweight HTML/CSS/JS foundation</div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Main JavaScript File -->
+  <script src="js/main.js"></script>
+</body>
+</html>
