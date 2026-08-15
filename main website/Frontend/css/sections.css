@@ -398,7 +398,10 @@
 
 @media (max-width: 640px) {
   .hero-title {
-    font-size: var(--font-size-4xl);
+    font-size: var(--font-size-3xl);
+  }
+  .section-title {
+    font-size: var(--font-size-2xl);
   }
   .grid-3-col, .grid-4-col, .grid-2-col, .components-card-grid, .process-grid {
     grid-template-columns: 1fr;
@@ -412,8 +415,28 @@
   }
   .storage-equation {
     flex-direction: column;
+    width: 100%;
+  }
+  .equation-box {
+    width: 100%;
+    min-width: 0;
   }
   .equation-operator {
     transform: rotate(90deg);
   }
 }
+
+@media (max-width: 380px) {
+  .container {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+  .btn-lg {
+    padding: 0.75rem 1.25rem;
+    font-size: var(--font-size-sm);
+  }
+  .card {
+    padding: var(--space-md);
+  }
+}
+
