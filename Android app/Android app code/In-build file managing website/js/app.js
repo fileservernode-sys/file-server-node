@@ -1,6 +1,56 @@
 /**
- * Application Bootstrap & Event Handlers
+ * RemoteNode File Manager Application Initialization
  */
 document.addEventListener('DOMContentLoaded', () => {
-  FileManager.init();
+  // 1. Initialize Views and Controllers
+  AppRouter.init();
+  MyFilesController.init();
+
+  // 2. Global File Picker Binding
+  const filePicker = document.getElementById('file-picker');
+  filePicker?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      FileManagerHelper.handleUpload(e.target.files);
+      filePicker.value = '';
+    }
+  });
+
+  // 3. Quick Upload Button Triggers
+  document.getElementById('btn-quick-upload')?.addEventListener('click', () => filePicker?.click());
+  document.getElementById('btn-home-upload')?.addEventListener('click', () => filePicker?.click());
+
+  // 4. Quick New Folder Button Triggers
+  document.getElementById('btn-home-new-folder')?.addEventListener('click', () => {
+    UIManager.showModal('modal-new-folder');
+  });
+
+  // 5. New Folder Form Submission
+  document.getElementById('form-new-folder')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('input-folder-name');
+    const folderName = input.value.trim();
+    if (folderName) {
+      FileManagerHelper.handleCreateFolder(folderName);
+      input.value = '';
+      UIManager.hideModal('modal-new-folder');
+    }
+  });
+
+  // 6. Refresh Button Handlers
+  document.getElementById('btn-photos-refresh')?.addEventListener('click', () => PhotosController.load());
+  document.getElementById('btn-videos-refresh')?.addEventListener('click', () => VideosController.load());
+  document.getElementById('btn-storage-refresh')?.addEventListener('click', () => StorageController.load());
+
+  // 7. Dynamic Mode & Status Setup
+  const isRemote = ApiService.isRemoteMode();
+  const statusBadge = document.getElementById('connection-status-badge');
+  const statusText = document.getElementById('connection-status-text');
+
+  if (isRemote) {
+    if (statusBadge) statusBadge.className = 'badge badge-online';
+    if (statusText) statusText.textContent = 'REMOTE WSS GATEWAY';
+  } else {
+    if (statusBadge) statusBadge.className = 'badge badge-online';
+    if (statusText) statusText.textContent = 'LOCAL SERVER ONLINE';
+  }
 });

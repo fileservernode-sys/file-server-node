@@ -18,10 +18,47 @@ const LocalApiAdapter = {
     }
   },
 
-  async listFiles(path = '/') {
+  async getStorageStats() {
+    try {
+      const res = await fetch(`${this.baseUrl}/storage`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: { message: e.message } };
+    }
+  },
+
+  async getRecentFiles() {
+    try {
+      const res = await fetch(`${this.baseUrl}/files/recent`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: { message: e.message } };
+    }
+  },
+
+  async getPhotos() {
+    try {
+      const res = await fetch(`${this.baseUrl}/files?type=photos`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: { message: e.message } };
+    }
+  },
+
+  async getVideos() {
+    try {
+      const res = await fetch(`${this.baseUrl}/files?type=videos`);
+      return await res.json();
+    } catch (e) {
+      return { success: false, error: { message: e.message } };
+    }
+  },
+
+  async listFiles(path = '/', typeFilter = null) {
     try {
       const encodedPath = encodeURIComponent(path);
-      const res = await fetch(`${this.baseUrl}/files?path=${encodedPath}`);
+      const query = typeFilter ? `path=${encodedPath}&type=${encodeURIComponent(typeFilter)}` : `path=${encodedPath}`;
+      const res = await fetch(`${this.baseUrl}/files?${query}`);
       return await res.json();
     } catch (e) {
       return { success: false, error: { message: e.message } };
@@ -69,13 +106,11 @@ const LocalApiAdapter = {
 
   async uploadFile(targetPath, fileObject) {
     try {
-      const formData = new FormData();
-      formData.append('path', targetPath);
-      formData.append('file', fileObject);
-
-      const res = await fetch(`${this.baseUrl}/upload`, {
+      const encodedPath = encodeURIComponent(targetPath);
+      const encodedFilename = encodeURIComponent(fileObject.name);
+      const res = await fetch(`${this.baseUrl}/upload?path=${encodedPath}&filename=${encodedFilename}`, {
         method: 'POST',
-        body: formData
+        body: fileObject
       });
       return await res.json();
     } catch (e) {
@@ -98,26 +133,38 @@ const RemoteApiAdapter = {
     if (this.socket && this.socket.readyState === WebSocket.OPEN) return;
 
     return new Promise((resolve) => {
-      const wsUrl = `ws://${window.location.hostname || 'localhost'}:4001`;
-      this.socket = new WebSocket(wsUrl);
+      const isSecure = window.location.protocol === 'https:';
+      const wsProtocol = isSecure ? 'wss:' : 'ws:';
+      const wsHost = window.location.hostname || 'localhost';
+      const wsPort = isSecure ? (window.location.port || '') : ':4001';
+      const wsUrl = `${wsProtocol}//${wsHost}${wsPort ? wsPort : ''}`;
 
-      this.socket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          if (msg.type === 'FILE_RESPONSE' && msg.requestId) {
-            const resolver = this.pendingPromises.get(msg.requestId);
-            if (resolver) {
-              resolver(msg);
-              this.pendingPromises.delete(msg.requestId);
+      try {
+        this.socket = new WebSocket(wsUrl);
+
+        this.socket.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'FILE_RESPONSE' && msg.requestId) {
+              const resolver = this.pendingPromises.get(msg.requestId);
+              if (resolver) {
+                resolver(msg);
+                this.pendingPromises.delete(msg.requestId);
+              }
             }
+          } catch (e) {
+            // Ignore malformed payloads
           }
-        } catch (e) {
-          // Ignore malformed payloads
-        }
-      };
+        };
 
-      this.socket.onopen = () => resolve();
-      this.socket.onerror = () => resolve();
+        this.socket.onopen = () => resolve();
+        this.socket.onerror = () => resolve();
+        this.socket.onclose = () => {
+          this.socket = null;
+        };
+      } catch (e) {
+        resolve();
+      }
     });
   },
 
@@ -129,8 +176,20 @@ const RemoteApiAdapter = {
       this.pendingPromises.set(requestId, resolve);
 
       if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
-        // Fallback to local HTTP adapter if remote gateway socket cannot connect
-        resolve(LocalApiAdapter[operation === 'LIST' ? 'listFiles' : 'checkHealth'](payload.path));
+        // Fallback to local HTTP adapter if remote gateway socket is unavailable
+        if (operation === 'STORAGE') {
+          resolve(LocalApiAdapter.getStorageStats());
+        } else if (operation === 'RECENT') {
+          resolve(LocalApiAdapter.getRecentFiles());
+        } else if (operation === 'PHOTOS') {
+          resolve(LocalApiAdapter.getPhotos());
+        } else if (operation === 'VIDEOS') {
+          resolve(LocalApiAdapter.getVideos());
+        } else if (operation === 'LIST') {
+          resolve(LocalApiAdapter.listFiles(payload.path, payload.type_filter));
+        } else {
+          resolve(LocalApiAdapter.checkHealth());
+        }
         return;
       }
 
@@ -142,13 +201,13 @@ const RemoteApiAdapter = {
         ...payload
       }));
 
-      // Timeout safety after 5s
+      // Timeout safety after 6s
       setTimeout(() => {
         if (this.pendingPromises.has(requestId)) {
           this.pendingPromises.delete(requestId);
           resolve({ success: false, error: { message: 'Remote request timeout.' } });
         }
-      }, 5000);
+      }, 6000);
     });
   },
 
@@ -156,8 +215,24 @@ const RemoteApiAdapter = {
     return await this.sendRequest('HEALTH');
   },
 
-  async listFiles(path = '/') {
-    return await this.sendRequest('LIST', { path });
+  async getStorageStats() {
+    return await this.sendRequest('STORAGE');
+  },
+
+  async getRecentFiles() {
+    return await this.sendRequest('RECENT');
+  },
+
+  async getPhotos() {
+    return await this.sendRequest('PHOTOS');
+  },
+
+  async getVideos() {
+    return await this.sendRequest('VIDEOS');
+  },
+
+  async listFiles(path = '/', typeFilter = null) {
+    return await this.sendRequest('LIST', { path, type_filter: typeFilter });
   },
 
   async createFolder(parentPath, folderName) {
@@ -196,8 +271,24 @@ const ApiService = {
     return this.getAdapter().checkHealth();
   },
 
-  listFiles(path = '/') {
-    return this.getAdapter().listFiles(path);
+  getStorageStats() {
+    return this.getAdapter().getStorageStats();
+  },
+
+  getRecentFiles() {
+    return this.getAdapter().getRecentFiles();
+  },
+
+  getPhotos() {
+    return this.getAdapter().getPhotos();
+  },
+
+  getVideos() {
+    return this.getAdapter().getVideos();
+  },
+
+  listFiles(path = '/', typeFilter = null) {
+    return this.getAdapter().listFiles(path, typeFilter);
   },
 
   createFolder(parentPath, folderName) {

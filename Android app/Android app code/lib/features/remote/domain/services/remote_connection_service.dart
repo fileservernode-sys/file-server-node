@@ -166,11 +166,73 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         return;
       }
 
+      if (operation == 'STORAGE') {
+        final localRes = await _executeLocalApiGet('/api/storage');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'RECENT') {
+        final localRes = await _executeLocalApiGet('/api/files/recent');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'PHOTOS') {
+        final localRes = await _executeLocalApiGet('/api/files?type=photos');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'VIDEOS') {
+        final localRes = await _executeLocalApiGet('/api/files?type=videos');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
+      if (operation == 'DOCUMENTS') {
+        final localRes = await _executeLocalApiGet('/api/files?type=documents');
+        await _transport.send({
+          'type': 'FILE_RESPONSE',
+          'requestId': requestId,
+          'success': localRes['success'] ?? true,
+          'data': localRes['data'] ?? localRes,
+          'error': localRes['error']
+        });
+        return;
+      }
+
       if (operation == 'LIST') {
         final path = msg['path'] as String? ?? '/';
-        // Execute local HTTP call to 127.0.0.1:8080/api/files
-        final localRes = await _executeLocalApiGet(
-            '/api/files?path=${Uri.encodeComponent(path)}');
+        final type = msg['type_filter'] as String?;
+        final queryParam = type != null
+            ? '?path=${Uri.encodeComponent(path)}&type=$type'
+            : '?path=${Uri.encodeComponent(path)}';
+        final localRes = await _executeLocalApiGet('/api/files$queryParam');
         await _transport.send({
           'type': 'FILE_RESPONSE',
           'requestId': requestId,

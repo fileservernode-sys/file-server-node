@@ -8,6 +8,10 @@ import java.io.OutputStream
 import java.net.InetSocketAddress
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Embedded Local HTTP Server Engine for RemoteNode Android File Host
@@ -39,8 +43,15 @@ class LocalServerEngine {
             val address = InetSocketAddress("127.0.0.1", activePort)
             val newServer = HttpServer.create(address, 0)
 
-            // Health check endpoint
+            // Health & Auth endpoints
             newServer.createContext("/api/health", HealthHandler())
+            newServer.createContext("/api/auth/login", AuthHandler())
+
+            // Storage Statistics & Intelligence endpoint
+            newServer.createContext("/api/storage", StorageHandler(sandboxDir))
+
+            // Recent Files endpoint
+            newServer.createContext("/api/files/recent", RecentFilesHandler(sandboxDir))
 
             // Local File Management API Contexts
             newServer.createContext("/api/files", FileListAndDeleteHandler(sandboxDir))
@@ -48,7 +59,6 @@ class LocalServerEngine {
             newServer.createContext("/api/rename", RenameHandler(sandboxDir))
             newServer.createContext("/api/download", DownloadHandler(sandboxDir))
             newServer.createContext("/api/upload", UploadHandler(sandboxDir))
-            newServer.createContext("/api/auth/login", AuthHandler())
 
             // Static bundled website assets handler
             newServer.createContext("/", StaticAssetsHandler())
@@ -103,11 +113,58 @@ class LocalServerEngine {
     }
 
     /**
-     * Filesystem Sandbox Helper — Rejects Path Traversal Attempts
+     * Filesystem Sandbox Helper & Category Classifier
      */
     companion object {
+        private val PHOTO_EXTS = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic", "heif", "svg")
+        private val VIDEO_EXTS = setOf("mp4", "mkv", "webm", "mov", "avi", "m4v", "3gp", "wmv", "flv")
+        private val DOC_EXTS = setOf("pdf", "doc", "docx", "txt", "md", "csv", "xlsx", "pptx", "json", "xml", "html", "epub")
+        private val AUDIO_EXTS = setOf("mp3", "wav", "aac", "flac", "ogg", "m4a", "wma")
+        private val ARCHIVE_EXTS = setOf("zip", "tar", "gz", "7z", "rar", "bz2", "xz")
+
+        fun classifyFile(filename: String): String {
+            val ext = filename.substringAfterLast('.', "").lowercase(Locale.ROOT)
+            return when {
+                PHOTO_EXTS.contains(ext) -> "photos"
+                VIDEO_EXTS.contains(ext) -> "videos"
+                DOC_EXTS.contains(ext) -> "documents"
+                AUDIO_EXTS.contains(ext) -> "audio"
+                ARCHIVE_EXTS.contains(ext) -> "archives"
+                else -> "other"
+            }
+        }
+
+        fun getMimeType(filename: String): String {
+            val ext = filename.substringAfterLast('.', "").lowercase(Locale.ROOT)
+            return when (ext) {
+                "jpg", "jpeg" -> "image/jpeg"
+                "png" -> "image/png"
+                "gif" -> "image/gif"
+                "webp" -> "image/webp"
+                "svg" -> "image/svg+xml"
+                "bmp" -> "image/bmp"
+                "mp4" -> "video/mp4"
+                "webm" -> "video/webm"
+                "mkv" -> "video/x-matroska"
+                "mov" -> "video/quicktime"
+                "mp3" -> "audio/mpeg"
+                "wav" -> "audio/wav"
+                "pdf" -> "application/pdf"
+                "json" -> "application/json"
+                "txt", "md" -> "text/plain; charset=UTF-8"
+                "html" -> "text/html; charset=UTF-8"
+                else -> "application/octet-stream"
+            }
+        }
+
+        fun formatIsoDate(epochMs: Long): String {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            return sdf.format(Date(epochMs))
+        }
+
         fun resolveSandboxPath(rootDir: File, relPath: String): File {
-            if (relPath.contains("\u0000") || relPath.contains("..") || relPath.lowercase().contains("%2e%2e")) {
+            if (relPath.contains("\u0000") || relPath.contains("..") || relPath.lowercase(Locale.ROOT).contains("%2e%2e")) {
                 throw SecurityException("Path traversal or null-byte injection rejected.")
             }
 
@@ -124,6 +181,9 @@ class LocalServerEngine {
         fun sendJsonResponse(exchange: HttpExchange, statusCode: Int, json: String) {
             val bytes = json.toByteArray(StandardCharsets.UTF_8)
             exchange.responseHeaders.set("Content-Type", "application/json; charset=UTF-8")
+            exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+            exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+            exchange.responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
             exchange.sendResponseHeaders(statusCode, bytes.size.toLong())
             val os: OutputStream = exchange.responseBody
             os.write(bytes)
@@ -143,17 +203,210 @@ class LocalServerEngine {
         }
     }
 
+    /**
+     * Real Storage Statistics & Category Intelligence Handler
+     */
+    private class StorageHandler(private val rootDir: File) : HttpHandler {
+        override fun handle(exchange: HttpExchange) {
+            if (exchange.requestMethod != "GET") {
+                sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
+                return
+            }
+
+            try {
+                var totalBytes = rootDir.totalSpace
+                var freeBytes = rootDir.usableSpace
+                // Fallback for virtual/sandbox environments if totalSpace returns 0
+                if (totalBytes <= 0) {
+                    totalBytes = 64L * 1024 * 1024 * 1024 // 64 GB baseline
+                    freeBytes = 48L * 1024 * 1024 * 1024
+                }
+                val usedBytes = totalBytes - freeBytes
+
+                val categoryBytes = mutableMapOf(
+                    "photos" to 0L,
+                    "videos" to 0L,
+                    "documents" to 0L,
+                    "audio" to 0L,
+                    "archives" to 0L,
+                    "other" to 0L
+                )
+
+                val categoryCounts = mutableMapOf(
+                    "photos" to 0,
+                    "videos" to 0,
+                    "documents" to 0,
+                    "audio" to 0,
+                    "archives" to 0,
+                    "other" to 0
+                )
+
+                var sandboxUsedBytes = 0L
+                val allFiles = mutableListOf<File>()
+
+                fun scanDir(dir: File, depth: Int) {
+                    if (depth > 12) return
+                    val files = dir.listFiles() ?: return
+                    for (f in files) {
+                        if (f.isDirectory) {
+                            scanDir(f, depth + 1)
+                        } else if (f.isFile) {
+                            val size = f.length()
+                            sandboxUsedBytes += size
+                            val cat = classifyFile(f.name)
+                            categoryBytes[cat] = (categoryBytes[cat] ?: 0L) + size
+                            categoryCounts[cat] = (categoryCounts[cat] ?: 0) + 1
+                            allFiles.add(f)
+                        }
+                    }
+                }
+
+                scanDir(rootDir, 0)
+
+                // Top 10 largest files
+                val largest = allFiles.sortedByDescending { it.length() }.take(10).map { f ->
+                    val relPath = f.canonicalPath.substringAfter(rootDir.canonicalPath).replace("\\", "/")
+                    val safePath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
+                    """{"name":"${f.name}","path":"$safePath","sizeBytes":${f.length()},"modifiedAt":"${formatIsoDate(f.lastModified())}"}"""
+                }.joinToString(",")
+
+                val json = """
+                {
+                  "success": true,
+                  "data": {
+                    "totalBytes": $totalBytes,
+                    "usedBytes": $usedBytes,
+                    "freeBytes": $freeBytes,
+                    "sandboxUsedBytes": $sandboxUsedBytes,
+                    "usagePercentage": ${if (totalBytes > 0) ((usedBytes.toDouble() / totalBytes) * 100).toInt() else 0},
+                    "categories": {
+                      "photos": ${categoryBytes["photos"] ?: 0},
+                      "videos": ${categoryBytes["videos"] ?: 0},
+                      "documents": ${categoryBytes["documents"] ?: 0},
+                      "audio": ${categoryBytes["audio"] ?: 0},
+                      "archives": ${categoryBytes["archives"] ?: 0},
+                      "other": ${categoryBytes["other"] ?: 0}
+                    },
+                    "counts": {
+                      "photos": ${categoryCounts["photos"] ?: 0},
+                      "videos": ${categoryCounts["videos"] ?: 0},
+                      "documents": ${categoryCounts["documents"] ?: 0},
+                      "audio": ${categoryCounts["audio"] ?: 0},
+                      "archives": ${categoryCounts["archives"] ?: 0},
+                      "other": ${categoryCounts["other"] ?: 0},
+                      "total": ${allFiles.size}
+                    },
+                    "largestFiles": [$largest]
+                  }
+                }
+                """.trimIndent()
+
+                sendJsonResponse(exchange, 200, json)
+            } catch (e: Exception) {
+                sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"STORAGE_CALC_FAILED","message":"${e.message}"}}""")
+            }
+        }
+    }
+
+    /**
+     * Recent Files Handler — returns files sorted by lastModified descending
+     */
+    private class RecentFilesHandler(private val rootDir: File) : HttpHandler {
+        override fun handle(exchange: HttpExchange) {
+            if (exchange.requestMethod != "GET") {
+                sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
+                return
+            }
+
+            try {
+                val allFiles = mutableListOf<File>()
+
+                fun scanDir(dir: File, depth: Int) {
+                    if (depth > 12) return
+                    val files = dir.listFiles() ?: return
+                    for (f in files) {
+                        if (f.isDirectory) {
+                            scanDir(f, depth + 1)
+                        } else if (f.isFile) {
+                            allFiles.add(f)
+                        }
+                    }
+                }
+
+                scanDir(rootDir, 0)
+
+                val recent = allFiles.sortedByDescending { it.lastModified() }.take(20).map { f ->
+                    val relPath = f.canonicalPath.substringAfter(rootDir.canonicalPath).replace("\\", "/")
+                    val safePath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
+                    val cat = classifyFile(f.name)
+                    """{"name":"${f.name}","isDir":false,"sizeBytes":${f.length()},"category":"$cat","modifiedAt":"${formatIsoDate(f.lastModified())}","path":"$safePath"}"""
+                }.joinToString(",")
+
+                sendJsonResponse(exchange, 200, """{"success":true,"data":{"items":[$recent]}}""")
+            } catch (e: Exception) {
+                sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"RECENT_FILES_FAILED","message":"${e.message}"}}""")
+            }
+        }
+    }
+
+    /**
+     * File Listing, Categorical Filtering & Deletion Handler
+     */
     private class FileListAndDeleteHandler(private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             try {
                 if (exchange.requestMethod == "GET") {
                     val query = exchange.requestURI.rawQuery ?: ""
                     var reqPath = "/"
+                    var filterType: String? = null
+
                     for (param in query.split("&")) {
                         val pair = param.split("=")
-                        if (pair.size == 2 && pair[0] == "path") {
-                            reqPath = pair[1]
+                        if (pair.size == 2) {
+                            when (pair[0]) {
+                                "path" -> reqPath = pair[1]
+                                "type" -> filterType = pair[1].lowercase(Locale.ROOT)
+                            }
                         }
+                    }
+
+                    // If a category filter is requested (photos, videos, documents, audio), perform recursive discovery
+                    if (filterType != null && filterType.isNotEmpty()) {
+                        val allMatchedFiles = mutableListOf<File>()
+
+                        fun scanCategory(dir: File, depth: Int) {
+                            if (depth > 12) return
+                            val files = dir.listFiles() ?: return
+                            for (f in files) {
+                                if (f.isDirectory) {
+                                    scanCategory(f, depth + 1)
+                                } else if (f.isFile) {
+                                    val cat = classifyFile(f.name)
+                                    val matches = when (filterType) {
+                                        "photo", "photos" -> cat == "photos"
+                                        "video", "videos" -> cat == "videos"
+                                        "doc", "docs", "document", "documents" -> cat == "documents"
+                                        "audio" -> cat == "audio"
+                                        "archive", "archives" -> cat == "archives"
+                                        else -> true
+                                    }
+                                    if (matches) {
+                                        allMatchedFiles.add(f)
+                                    }
+                                }
+                            }
+                        }
+
+                        scanCategory(rootDir, 0)
+
+                        val items = allMatchedFiles.sortedByDescending { it.lastModified() }.map { file ->
+                            val relPath = file.canonicalPath.substringAfter(rootDir.canonicalPath).replace("\\", "/")
+                            val safePath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
+                            """{"name":"${file.name}","isDir":false,"sizeBytes":${file.length()},"category":"${classifyFile(file.name)}","modifiedAt":"${formatIsoDate(file.lastModified())}","path":"$safePath"}"""
+                        }.joinToString(",")
+
+                        sendJsonResponse(exchange, 200, """{"success":true,"data":{"items":[$items]}}""")
+                        return
                     }
 
                     val targetDir = resolveSandboxPath(rootDir, reqPath)
@@ -167,7 +420,9 @@ class LocalServerEngine {
                         val isDir = file.isDirectory
                         val sizeBytes = if (isDir) 0L else file.length()
                         val relPath = file.canonicalPath.substringAfter(rootDir.canonicalPath).replace("\\", "/")
-                        """{"name":"$name","isDir":$isDir,"sizeBytes":$sizeBytes,"path":"${if (relPath.isEmpty()) "/" else relPath}"}"""
+                        val safePath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
+                        val cat = if (isDir) "folder" else classifyFile(name)
+                        """{"name":"$name","isDir":$isDir,"sizeBytes":$sizeBytes,"category":"$cat","modifiedAt":"${formatIsoDate(file.lastModified())}","path":"$safePath"}"""
                     }?.joinToString(",") ?: ""
 
                     sendJsonResponse(exchange, 200, """{"success":true,"data":{"items":[$items]}}""")
@@ -274,8 +529,10 @@ class LocalServerEngine {
                     return
                 }
 
-                exchange.responseHeaders.set("Content-Type", "application/octet-stream")
-                exchange.responseHeaders.set("Content-Disposition", "attachment; filename=\"${targetFile.name}\"")
+                val mimeType = getMimeType(targetFile.name)
+                exchange.responseHeaders.set("Content-Type", mimeType)
+                exchange.responseHeaders.set("Content-Disposition", "inline; filename=\"${targetFile.name}\"")
+                exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
                 exchange.sendResponseHeaders(200, targetFile.length())
                 val os: OutputStream = exchange.responseBody
                 targetFile.inputStream().use { input -> input.copyTo(os) }
@@ -293,22 +550,30 @@ class LocalServerEngine {
             try {
                 val query = exchange.requestURI.rawQuery ?: ""
                 var reqPath = "/"
+                var customFilename: String? = null
+
                 for (param in query.split("&")) {
                     val pair = param.split("=")
-                    if (pair.size == 2 && pair[0] == "path") {
-                        reqPath = pair[1]
+                    if (pair.size == 2) {
+                        when (pair[0]) {
+                            "path" -> reqPath = pair[1]
+                            "filename" -> customFilename = URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name())
+                        }
                     }
                 }
 
                 val targetDir = resolveSandboxPath(rootDir, reqPath)
                 if (!targetDir.exists()) targetDir.mkdirs()
 
-                val newFile = File(targetDir, "upload_${System.currentTimeMillis()}.dat")
+                val filename = customFilename ?: "upload_${System.currentTimeMillis()}.dat"
+                val newFile = File(targetDir, filename)
+                resolveSandboxPath(rootDir, newFile.canonicalPath.substringAfter(rootDir.canonicalPath))
+
                 val os = newFile.outputStream()
                 exchange.requestBody.copyTo(os)
                 os.close()
 
-                sendJsonResponse(exchange, 200, """{"success":true,"data":{"filename":"${newFile.name}"}}""")
+                sendJsonResponse(exchange, 200, """{"success":true,"data":{"filename":"${newFile.name}","sizeBytes":${newFile.length()}}}""")
             } catch (e: SecurityException) {
                 sendJsonResponse(exchange, 403, """{"success":false,"error":{"code":"PATH_TRAVERSAL_REJECTED","message":"Path traversal attempt rejected."}}""")
             } catch (e: Exception) {
@@ -333,18 +598,19 @@ class LocalServerEngine {
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
                   <title>File Manager | RemoteNode</title>
                   <style>
-                    body { font-family: sans-serif; background: #FAFAFC; color: #0F172A; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
-                    .card { background: #FFFFFF; border-radius: 12px; padding: 2rem; max-width: 480px; text-align: center; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-                    .badge { color: #059669; background: #ECFDF5; padding: 4px 12px; border-radius: 99px; font-size: 0.85rem; font-weight: bold; }
-                    h1 { margin-top: 1rem; font-size: 1.5rem; color: #2563EB; }
-                    p { color: #475569; font-size: 0.9rem; margin-top: 0.5rem; }
+                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #FAFAFC; color: #0F172A; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; margin: 0; }
+                    .card { background: #FFFFFF; border-radius: 12px; padding: 2.5rem; max-width: 520px; text-align: center; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(15,23,42,0.08); }
+                    .badge { color: #059669; background: #ECFDF5; padding: 6px 14px; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+                    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #059669; }
+                    h1 { margin: 1.25rem 0 0.5rem; font-size: 1.6rem; color: #2563EB; font-weight: 700; }
+                    p { color: #475569; font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.5; }
                   </style>
                 </head>
                 <body>
                   <div class="card">
-                    <span class="badge">LOCAL SERVER ONLINE</span>
-                    <h1>RemoteNode File Manager</h1>
-                    <p>Bundled Android File Manager running successfully at 127.0.0.1:8080.</p>
+                    <span class="badge"><span class="status-dot"></span> LOCAL SERVER ONLINE</span>
+                    <h1>RemoteNode Personal Storage</h1>
+                    <p>Android Local Storage Server running at 127.0.0.1:8080.</p>
                   </div>
                 </body>
                 </html>
