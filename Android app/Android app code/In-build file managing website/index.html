@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RemoteNode Local File Server</title>
+  <style>
+    :root {
+      --bg-primary: #0F172A;
+      --surface-card: #1E293B;
+      --text-primary: #FAFAFC;
+      --text-secondary: #94A3B8;
+      --accent-blue: #2563EB;
+      --status-emerald: #10B981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .card {
+      background-color: var(--surface-card);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--status-emerald);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--status-emerald);
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+    }
+    .info-box {
+      background: rgba(255,255,255,0.05);
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">
+      <span class="dot"></span> LOCAL SERVER ONLINE
+    </div>
+    <h1>RemoteNode File Server</h1>
+    <p>Local server engine is running successfully on your Android device host.</p>
+    <div class="info-box">
+      <div><strong>Status:</strong> Engine Active</div>
+      <div><strong>Local Interface:</strong> 127.0.0.1 (Loopback)</div>
+      <div><strong>Remote Access:</strong> NOT CONNECTED</div>
+    </div>
+  </div>
+</body>
+</html>

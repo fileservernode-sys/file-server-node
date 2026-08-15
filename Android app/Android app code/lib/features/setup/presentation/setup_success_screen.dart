@@ -41,7 +41,7 @@ class SetupSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Text(
-                    'Your file server is ready',
+                    'Your local file server is ready',
                     style: AppTypography.pageTitle,
                     textAlign: TextAlign.center,
                   ),
@@ -62,7 +62,8 @@ class SetupSuccessScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Node Status', style: AppTypography.cardTitle),
+                            Text('Local Server Status',
+                                style: AppTypography.cardTitle),
                             StatusBadge(status: DeviceServerStatus.online),
                           ],
                         ),
@@ -76,8 +77,12 @@ class SetupSuccessScreen extends StatelessWidget {
                             label: 'Server Name', value: 'My Personal Server'),
                         SizedBox(height: AppSpacing.xs),
                         _SuccessRow(
-                            label: 'Future Endpoint',
-                            value: 'https://demo-node.remotenode.net'),
+                            label: 'Local Interface',
+                            value: 'http://127.0.0.1:8080'),
+                        SizedBox(height: AppSpacing.xs),
+                        _SuccessRow(
+                            label: 'Remote Gateway',
+                            value: 'NOT CONNECTED (Phase 2)'),
                       ],
                     ),
                   ),

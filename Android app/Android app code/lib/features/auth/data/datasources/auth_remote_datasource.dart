@@ -108,7 +108,8 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
     return const AuthResponse(
       success: true,
       requiresOtp: true,
-      message: 'Credentials verified. 6-digit security code sent to your email.',
+      message:
+          'Credentials verified. 6-digit security code sent to your email.',
     );
   }
 

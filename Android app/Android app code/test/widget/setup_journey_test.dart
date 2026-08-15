@@ -180,8 +180,8 @@ void main() {
       );
 
       expect(find.textContaining('Server Ready'), findsOneWidget);
-      expect(find.text('Your file server is ready'), findsOneWidget);
-      expect(find.text('https://demo-node.remotenode.net'), findsOneWidget);
+      expect(find.text('Your local file server is ready'), findsOneWidget);
+      expect(find.text('http://127.0.0.1:8080'), findsOneWidget);
     });
 
     testWidgets('SetupFailureScreen renders user-friendly error recovery view',
@@ -215,7 +215,7 @@ void main() {
       );
 
       expect(find.text('Server Node Details'), findsOneWidget);
-      expect(find.text('Start Server'), findsOneWidget);
+      expect(find.text('Start Local Server'), findsOneWidget);
     });
 
     testWidgets('HelpScreen displays documentation category list',

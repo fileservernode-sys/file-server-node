@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -6,15 +7,88 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../domain/services/server_service.dart';
 
-/// Server Status Detail Screen — Displays mock server node metrics and control triggers
-class ServerStatusScreen extends StatelessWidget {
+final serverServiceProvider = Provider<ServerService>((ref) {
+  return MethodChannelServerService();
+});
+
+/// Server Status Detail Screen — Displays local HTTP server engine state and control triggers
+class ServerStatusScreen extends ConsumerStatefulWidget {
   final DeviceServerStatus mockStatus;
 
   const ServerStatusScreen({
     super.key,
     this.mockStatus = DeviceServerStatus.online,
   });
+
+  @override
+  ConsumerState<ServerStatusScreen> createState() => _ServerStatusScreenState();
+}
+
+class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
+  bool _isLocalRunning = true;
+  String _localUrl = 'http://127.0.0.1:8080';
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshServerStatus();
+  }
+
+  Future<void> _refreshServerStatus() async {
+    final service = ref.read(serverServiceProvider);
+    final status = await service.getServerStatus();
+    final url = await service.getLocalUrl();
+    if (mounted) {
+      setState(() {
+        _isLocalRunning = status['status'] == 'ONLINE';
+        _localUrl = url;
+      });
+    }
+  }
+
+  Future<void> _handleStart() async {
+    setState(() => _isLoading = true);
+    final service = ref.read(serverServiceProvider);
+    await service.startServer();
+    await _refreshServerStatus();
+    if (mounted) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Local HTTP File Server started on 127.0.0.1:8080')),
+      );
+    }
+  }
+
+  Future<void> _handleRestart() async {
+    setState(() => _isLoading = true);
+    final service = ref.read(serverServiceProvider);
+    await service.restartServer();
+    await _refreshServerStatus();
+    if (mounted) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Local HTTP File Server restarted cleanly.')),
+      );
+    }
+  }
+
+  Future<void> _handleStop() async {
+    setState(() => _isLoading = true);
+    final service = ref.read(serverServiceProvider);
+    await service.stopServer();
+    await _refreshServerStatus();
+    if (mounted) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Local HTTP File Server stopped.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,38 +127,47 @@ class ServerStatusScreen extends StatelessWidget {
                                       style: AppTypography.cardTitle),
                                   const SizedBox(height: AppSpacing.xxs),
                                   Text(
-                                    'Node ID: mock-device-node-01',
+                                    'Node ID: inst-node-device-01',
                                     style: AppTypography.caption
                                         .copyWith(fontFamily: 'monospace'),
                                   ),
                                 ],
                               ),
                             ),
-                            StatusBadge(status: mockStatus),
+                            StatusBadge(
+                              status: _isLocalRunning
+                                  ? DeviceServerStatus.online
+                                  : DeviceServerStatus.offline,
+                            ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         const Divider(),
                         const SizedBox(height: AppSpacing.md),
                         const _StatusRow(
-                            label: 'Server Name',
-                            value: 'My Personal File Server'),
+                          label: 'Server Name',
+                          value: 'My Personal File Server',
+                        ),
                         const SizedBox(height: AppSpacing.xs),
                         const _StatusRow(
-                            label: 'Device Host',
-                            value: 'Android Phone (Lollipop+)'),
+                          label: 'Device Host',
+                          value: 'Android Phone (Local Host)',
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
+                          label: 'Local Engine Status',
+                          value: _isLocalRunning ? 'ONLINE' : 'STOPPED',
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
+                          label: 'Local Server URL',
+                          value: _localUrl,
+                        ),
                         const SizedBox(height: AppSpacing.xs),
                         const _StatusRow(
-                            label: 'Last Heartbeat',
-                            value: 'Just now (Mock data)'),
-                        const SizedBox(height: AppSpacing.xs),
-                        const _StatusRow(
-                            label: 'Remote Endpoint',
-                            value: 'https://demo-node.remotenode.net'),
-                        const SizedBox(height: AppSpacing.xs),
-                        const _StatusRow(
-                            label: 'Local Storage',
-                            value: '64.0 GB total / 18.5 GB free'),
+                          label: 'Remote Gateway Access',
+                          value: 'NOT CONNECTED (Phase 2)',
+                        ),
                       ],
                     ),
                   ),
@@ -95,39 +178,24 @@ class ServerStatusScreen extends StatelessWidget {
                       style: AppTypography.sectionTitle),
                   const SizedBox(height: AppSpacing.sm),
                   PrimaryButton(
-                    label: 'Start Server',
+                    label: 'Start Local Server',
                     icon: Icons.play_arrow_outlined,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Mock Action: Server start operation triggered.')),
-                      );
-                    },
+                    isLoading: _isLoading,
+                    onPressed: _isLocalRunning ? null : _handleStart,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   SecondaryButton(
-                    label: 'Restart Server',
+                    label: 'Restart Server Engine',
                     icon: Icons.refresh_outlined,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Mock Action: Server restart operation triggered.')),
-                      );
-                    },
+                    isLoading: _isLoading,
+                    onPressed: _handleRestart,
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   DestructiveButton(
-                    label: 'Stop Server',
+                    label: 'Stop Local Server',
                     icon: Icons.stop_outlined,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Mock Action: Server stop operation triggered.')),
-                      );
-                    },
+                    isLoading: _isLoading,
+                    onPressed: !_isLocalRunning ? null : _handleStop,
                   ),
                 ],
               ),
