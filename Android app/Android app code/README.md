@@ -69,7 +69,7 @@ Android app/Android app code/
 | Specification | Decision / Selection | Rationale |
 | :--- | :--- | :--- |
 | **Package Identifier** | `net.remotenode.fileserver` | Production-ready package namespace. |
-| **Minimum Android SDK** | `minSdkVersion 21` (Android 5.0 Lollipop) | Broadest market reach (99.4%+ devices) for repurposed legacy smartphones while maintaining TLS 1.2/1.3 security and socket background thread support. |
+| **Minimum Android SDK** | `minSdkVersion 21` (Android 5.0 Lollipop) | Provides broad device compatibility for repurposed older Android smartphones while maintaining TLS 1.2/1.3 security and socket background thread support. |
 | **State Management** | `flutter_riverpod` (^2.5.1) | Compile-time safety, zero BuildContext dependency coupling, testability via `ProviderContainer` overrides, and clean UI/logic decoupling. |
 
 ---

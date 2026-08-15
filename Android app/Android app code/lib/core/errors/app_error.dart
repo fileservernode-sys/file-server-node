@@ -6,13 +6,15 @@ abstract class AppError implements Exception {
   const AppError(this.message, {this.code});
 
   @override
-  String toString() => '$runtimeType: $message${code != null ? ' ($code)' : ''}';
+  String toString() =>
+      '$runtimeType: $message${code != null ? ' ($code)' : ''}';
 }
 
 /// Network Connectivity Error
 class NetworkError extends AppError {
   const NetworkError([
-    super.message = 'Unable to connect to platform server. Please check network connection.',
+    super.message =
+        'Unable to connect to platform server. Please check network connection.',
     String? code = 'NETWORK_ERROR',
   ]) : super(code: code);
 }

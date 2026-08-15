@@ -31,15 +31,18 @@ class DashboardFoundationScreen extends StatelessWidget {
               AppCard(
                 child: Row(
                   children: [
-                    Icon(Icons.phone_android, size: 36, color: AppColors.primary),
+                    Icon(Icons.phone_android,
+                        size: 36, color: AppColors.primary),
                     SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('This Phone Server Node', style: AppTypography.heading3),
+                          Text('This Phone Server Node',
+                              style: AppTypography.heading3),
                           SizedBox(height: 2),
-                          Text('Host Node Status', style: AppTypography.caption),
+                          Text('Host Node Status',
+                              style: AppTypography.caption),
                         ],
                       ),
                     ),

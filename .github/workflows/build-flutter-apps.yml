@@ -1,4 +1,4 @@
-name: Build & Release Flutter Applications (Android APK & iOS IPA)
+name: Build Android APK (CI Workflow)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 1. BUILD ANDROID APK ARTIFACTS
+  # BUILD ANDROID APK ARTIFACTS (PRODUCT TARGET: ANDROID ONLY)
   # ---------------------------------------------------------------------------
   build-android:
     name: Build Android APK (Release & Debug)
@@ -63,45 +63,4 @@ jobs:
           path: |
             Android app/Android app code/build/app/outputs/flutter-apk/app-release.apk
             Android app/Android app code/build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 30
-
-  # ---------------------------------------------------------------------------
-  # 2. BUILD IOS APP / IPA ARTIFACTS
-  # ---------------------------------------------------------------------------
-  build-ios:
-    name: Build iOS Bundle & IPA
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter SDK
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Install Dependencies
-        run: |
-          cd "Android app/Android app code"
-          flutter pub get
-
-      - name: Build iOS Application (No Codesign)
-        run: |
-          cd "Android app/Android app code"
-          flutter build ios --no-codesign
-
-      - name: Compress iOS App Runner Payload into Zip
-        run: |
-          cd "Android app/Android app code/build/ios/iphoneos"
-          mkdir Payload
-          cp -r Runner.app Payload/
-          zip -r remote-node-ios-app.zip Payload
-
-      - name: Upload iOS App Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: remote-node-ios-app
-          path: Android app/Android app code/build/ios/iphoneos/remote-node-ios-app.zip
           retention-days: 30
