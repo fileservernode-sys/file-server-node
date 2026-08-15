@@ -1,4 +1,4 @@
-package net.remotenode.remote_node_app
+package net.remotenode.fileserver
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine

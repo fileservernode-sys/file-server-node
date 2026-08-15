@@ -1,4 +1,4 @@
-package net.remotenode.remote_node_app
+package net.remotenode.fileserver
 
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
