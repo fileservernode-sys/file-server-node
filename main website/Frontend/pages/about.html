@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Learn about RemoteNode's mission to repurpose unused smartphones into accessible personal cloud infrastructure.">
+  <title>About Us | RemoteNode — Personal File Server</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="header">
+    <div class="container header-container">
+      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+      <nav class="desktop-nav">
+        <a href="product.html" class="nav-link">Product</a>
+        <a href="how-it-works.html" class="nav-link">How It Works</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="about.html" class="nav-link is-active">About</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+      </div>
+      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+    <div class="drawer-header">
+      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
+      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="product.html" class="drawer-nav-link">Product</a>
+      <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
+      <a href="about.html" class="drawer-nav-link">About</a>
+      <a href="contact.html" class="drawer-nav-link">Contact</a>
+      <a href="faq.html" class="drawer-nav-link">FAQ</a>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
+      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    </div>
+  </aside>
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="../index.html" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">About Us</span>
+      </div>
+      <div class="page-header-content">
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Our Purpose</span></div>
+        <h1 class="page-header-title">Giving Unused Hardware a Second Life</h1>
+        <p class="page-header-subtitle">
+          Hundreds of millions of old smartphones sit unused in drawers despite containing fast flash storage, low-power ARM processors, and built-in battery backups.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <!-- MISSION SECTION -->
+    <section class="section-wrapper">
+      <div class="container">
+        <div class="grid-2-col" style="align-items: center;">
+          <div>
+            <h2 class="section-title">The Product Mission</h2>
+            <p class="card-description" style="margin-bottom: var(--space-md);">
+              Our goal is to make personal self-hosted cloud storage accessible to non-technical users by abstracting away port forwarding, dynamic DNS, TLS certificates, and complex server administration.
+            </p>
+            <p class="card-description">
+              By combining hardware you already own with simple software control planes and secure outbound tunneling, we enable private personal cloud storage without monthly storage rental fees.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">Core Principles</h3>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md);">
+              <li><strong>♻ Sustainable Tech Reuse:</strong> Repurpose existing smartphones into energy-efficient 24/7 personal servers.</li>
+              <li><strong>🔒 Local Data Ownership:</strong> Your files remain stored physically on your Android device hardware.</li>
+              <li><strong>⚡ Frictionless Simplicity:</strong> Zero manual router port forwarding or public IP management.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="final-cta-banner">
+          <h2 class="final-cta-title">Join us in making personal storage simple.</h2>
+          <p class="final-cta-description">Create your account today and configure your first Android phone server.</p>
+          <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About Us</a></li>
+            <li><a href="contact.html" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

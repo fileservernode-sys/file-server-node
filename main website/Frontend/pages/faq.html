@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Frequently asked questions regarding RemoteNode personal Android file server setup, storage, remote access, security, and device requirements.">
+  <title>Frequently Asked Questions | RemoteNode — Personal File Server</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="header">
+    <div class="container header-container">
+      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+      <nav class="desktop-nav">
+        <a href="product.html" class="nav-link">Product</a>
+        <a href="how-it-works.html" class="nav-link">How It Works</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+        <a href="faq.html" class="nav-link is-active">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+      </div>
+      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+    <div class="drawer-header">
+      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
+      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="product.html" class="drawer-nav-link">Product</a>
+      <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
+      <a href="about.html" class="drawer-nav-link">About</a>
+      <a href="contact.html" class="drawer-nav-link">Contact</a>
+      <a href="faq.html" class="drawer-nav-link">FAQ</a>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
+      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    </div>
+  </aside>
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="../index.html" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">FAQ</span>
+      </div>
+      <div class="page-header-content">
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Questions & Answers</span></div>
+        <h1 class="page-header-title">Frequently Asked Questions</h1>
+        <p class="page-header-subtitle">
+          Find answers to common questions about storage hosts, remote connectivity, Android permissions, and security.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section-wrapper">
+      <div class="container" style="max-width: 900px;">
+        
+        <!-- GENERAL CATEGORY -->
+        <div style="margin-bottom: var(--space-3xl);">
+          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">General Questions</h2>
+          <div class="accordion">
+            
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  What is the Remote Android Personal File Server Platform?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                It is a platform that converts an unused Android phone into a remotely accessible personal file server. The phone serves as the primary file storage host while our platform handles account coordination, remote discovery, and secure gateway routing.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  What can I do with an old Android phone?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                You can repurpose it into a dedicated 24/7 personal cloud server for hosting photos, videos, documents, and backups without paying recurring cloud storage subscription fees.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  Does my phone need to stay powered on and connected to Wi-Fi?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                Yes. For remote access to be available, the phone must remain connected to power and an active Wi-Fi or mobile network with Server Mode enabled.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- STORAGE CATEGORY -->
+        <div style="margin-bottom: var(--space-3xl);">
+          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Storage & Files</h2>
+          <div class="accordion">
+            
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  Where are my files physically stored?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                Your files remain strictly on your Android phone's storage media. They are not uploaded to central cloud servers unless you explicitly configure third-party exports.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  Does the platform upload my files to third-party cloud storage?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                No. The cloud control plane owns metadata and routing coordination only. Your actual files stay on your physical phone.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- REMOTE ACCESS CATEGORY -->
+        <div style="margin-bottom: var(--space-3xl);">
+          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Remote Access & Gateway</h2>
+          <div class="accordion">
+            
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  Do I need to configure port forwarding on my home router?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                No. The Android app creates an outbound secure tunnel to our gateway, bypassing the need for public IP addresses or router configuration.
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  What happens if my phone's IP address changes?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                Because the connection is established outbound from the phone to our gateway, local IP address changes do not interrupt your remote endpoint routing.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- SECURITY CATEGORY -->
+        <div>
+          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Security & Authentication</h2>
+          <div class="accordion">
+            
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  Why does the file server require dedicated credentials?
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                We enforce strict security separation between Platform Account credentials (used for device management) and File-Server credentials (used for accessing actual files on the phone).
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About Us</a></li>
+            <li><a href="contact.html" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

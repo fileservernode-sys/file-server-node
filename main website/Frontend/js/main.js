@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobileDrawer();
   initStatusDemoToggles();
   initSmoothScroll();
+  initAccordion();
+  initFrontendFormHandlers();
 });
 
 /**
@@ -73,7 +75,76 @@ function initMobileDrawer() {
 }
 
 /**
- * 3. Status System Interactive Demo Toggle (For Previewing Design System States)
+ * 3. Accessible Accordion Controller (FAQ & Collapsibles)
+ */
+function initAccordion() {
+  const accordionTriggers = document.querySelectorAll('.accordion-trigger');
+  accordionTriggers.forEach(trigger => {
+    trigger.addEventListener('click', () => {
+      const item = trigger.closest('.accordion-item');
+      if (!item) return;
+
+      const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+      
+      // Close sibling items in the same accordion group if needed
+      const parentAccordion = item.closest('.accordion');
+      if (parentAccordion && !parentAccordion.hasAttribute('data-multi-expand')) {
+        parentAccordion.querySelectorAll('.accordion-item').forEach(sibling => {
+          if (sibling !== item) {
+            sibling.classList.remove('is-open');
+            const siblingBtn = sibling.querySelector('.accordion-trigger');
+            if (siblingBtn) siblingBtn.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // Toggle current item
+      if (isExpanded) {
+        item.classList.remove('is-open');
+        trigger.setAttribute('aria-expanded', 'false');
+      } else {
+        item.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+    });
+  });
+}
+
+/**
+ * 4. Interactive Frontend Form Submission Handlers (Contact, Login, Get-Started)
+ */
+function initFrontendFormHandlers() {
+  const forms = document.querySelectorAll('[data-frontend-form]');
+  forms.forEach(form => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const submitBtn = form.querySelector('[type="submit"]');
+      const feedbackContainer = form.querySelector('.form-feedback-area');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = `<span class="spinner"></span> Processing...`;
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+          
+          if (feedbackContainer) {
+            feedbackContainer.innerHTML = `
+              <div class="alert alert-info" style="margin-top: var(--space-md);">
+                <strong>Frontend Demo:</strong> Form validation succeeded. Backend endpoints will connect in Phase 2.
+              </div>`;
+          }
+        }, 800);
+      }
+    });
+  });
+}
+
+/**
+ * 5. Status System Interactive Demo Toggle
  */
 function initStatusDemoToggles() {
   const statusContainer = document.getElementById('demo-status-container');
@@ -117,7 +188,7 @@ function initStatusDemoToggles() {
 }
 
 /**
- * 4. Smooth Anchor Link Scrolling
+ * 6. Smooth Anchor Link Scrolling
  */
 function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -135,3 +206,4 @@ function initSmoothScroll() {
     });
   });
 }
+

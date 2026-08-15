@@ -19,19 +19,53 @@ The Main Website is the public marketing, account control, documentation, and de
 
 ```
 main website/Frontend/
-├── index.html              # Main homepage entry point (contains all 13 sections)
+├── index.html              # Main website homepage (all 13 sections)
+├── pages/
+│   ├── product.html        # Product overview & 3 core components breakdown
+│   ├── how-it-works.html   # 10-step complete setup sequence & file storage explanation
+│   ├── documentation.html # Documentation center hub & topic cards
+│   ├── pricing.html       # Provisional pricing comparison table & pricing FAQ
+│   ├── about.html         # Mission statement, hardware reuse & values
+│   ├── contact.html       # Interactive contact form UI with frontend feedback
+│   ├── faq.html           # Accessible ARIA accordion categories
+│   ├── privacy.html       # Structured Privacy Policy placeholder
+│   ├── terms.html         # Structured Terms of Service placeholder
+│   ├── login.html         # Frontend Sign In interface placeholder
+│   └── get-started.html    # Frontend Account Creation interface placeholder
 ├── css/
-│   ├── variables.css       # Centralized design system tokens (colors, fonts, spacing, shadows)
-│   ├── base.css            # Reset, typography defaults, accessibility focus states
-│   ├── components.css      # Reusable buttons, cards, badges, status badges, loaders, forms
-│   ├── layout.css          # Containers, sticky header, mobile drawer menu, footer layout
-│   └── sections.css        # Styles for all 13 homepage sections & interactive demo
+│   ├── variables.css      # Centralized design system tokens
+│   ├── base.css           # Reset, typography defaults, accessibility focus states
+│   ├── components.css     # Reusable buttons, cards, badges, loaders, forms, accordions, page header
+│   ├── layout.css         # Containers, sticky header, mobile drawer menu, footer layout
+│   └── sections.css       # Styles for homepage sections & internal page grids
 ├── js/
-│   └── main.js             # Sticky header, drawer toggle, keyboard navigation, status demo
+│   └── main.js            # Sticky header, drawer toggle, keyboard navigation, accordion, form handlers
 ├── assets/
-│   └── icons/              # SVG vector icon assets
-└── README.md               # Frontend documentation
+│   └── icons/             # SVG vector icon assets
+└── README.md              # Frontend documentation
 ```
+
+---
+
+## 3. Design System & Component Catalog
+
+### Shared UI Components (`css/components.css`)
+- **Page Header**: `.page-header` with title, subtitle, eyebrow badging, and `.breadcrumbs`.
+- **Accessible Accordion**: `.accordion`, `.accordion-item`, `.accordion-trigger`, `.accordion-panel`, `.accordion-icon` with `aria-expanded` state tracking and smooth panel toggling.
+- **Form Controls**: `.form-group`, `.form-label`, `.form-input`, `.form-select`, `.form-textarea`, `.form-checkbox`, `.form-radio`, `.alert-info`, `.alert-success`, `.alert-error`.
+- **Status Indicators**: `status-online`, `status-connecting`, `status-reconnecting`, `status-offline`.
+
+---
+
+## 4. Deferral & Scope Limits Notice
+
+The following functionality is intentionally deferred to later backend/integration batches:
+- Real account registration, login authentication, and session cookie management.
+- Real email verification sending.
+- MySQL database storage and REST API communication.
+- Android application HTTP file server and WebSocket gateway tunneling.
+- Real subdomain provisioning and DNS automation.
+
 
 ---
 
