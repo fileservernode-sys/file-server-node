@@ -9,7 +9,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js"
+    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js"
   },
   "keywords": [
     "remote-file-server",
@@ -26,8 +26,10 @@
     "@fastify/helmet": "^11.1.1",
     "@fastify/rate-limit": "^9.1.0",
     "@prisma/client": "^5.10.2",
+    "@types/ws": "^8.18.1",
     "fastify": "^4.26.1",
     "pino": "^8.19.0",
+    "ws": "^8.21.3",
     "zod": "^3.22.4"
   },
   "devDependencies": {
