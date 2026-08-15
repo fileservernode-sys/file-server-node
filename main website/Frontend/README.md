@@ -26,6 +26,7 @@ main website/Frontend/
 │   ├── documentation.html # Documentation center hub & topic cards
 │   ├── pricing.html       # Provisional pricing comparison table & pricing FAQ
 │   ├── about.html         # Mission statement, hardware reuse & values
+│   ├── server-access.html # Account server discovery & device status UI
 │   ├── contact.html       # Interactive contact form UI with frontend feedback
 │   ├── faq.html           # Accessible ARIA accordion categories
 │   ├── privacy.html       # Structured Privacy Policy placeholder
@@ -39,11 +40,32 @@ main website/Frontend/
 │   ├── layout.css         # Containers, sticky header, mobile drawer menu, footer layout
 │   └── sections.css       # Styles for homepage sections & internal page grids
 ├── js/
-│   └── main.js            # Sticky header, drawer toggle, keyboard navigation, accordion, form handlers
+│   ├── main.js            # Sticky header, drawer toggle, keyboard navigation, accordion, form handlers
+│   └── server-discovery.js# Server discovery state machine, mock API boundary & clipboard copy
 ├── assets/
 │   └── icons/             # SVG vector icon assets
 └── README.md              # Frontend documentation
 ```
+
+---
+
+## 3. Server Discovery & Device Status Architecture (`js/server-discovery.js`)
+
+### Frontend State Machine
+1. `state-initial`: Collects registered platform account email with helper copy.
+2. `state-loading`: Displays skeleton card loaders + spinner ("Searching for registered servers...").
+3. `state-not-found`: Generic, anti-enumeration "No account found" panel.
+4. `state-no-devices`: "No Server Connected Yet" guidance panel with setup links.
+5. `state-devices-found`: Multi-device cards grid rendering `ONLINE`, `OFFLINE`, and `CONNECTING` indicators, last seen timestamps, copyable server endpoints, and status-aware CTAs.
+6. `state-error`: Recoverable timeout/connection error panel with a "Try Again" retry action.
+
+### Mock Data & API Boundary (`findDevicesByEmail`)
+The service layer exposes `findDevicesByEmail(email)` returning a Promise object. In Phase 2, this function will be updated to make HTTP API calls to the backend without modifying the rendering UI logic.
+
+### Authentication Separation Principle
+- **Platform Account Email**: Used exclusively for finding registered device nodes on the Main Website.
+- **File-Server Credentials**: Used exclusively on the Android-hosted file management website. Never requested or stored on the Main Website discovery page.
+
 
 ---
 

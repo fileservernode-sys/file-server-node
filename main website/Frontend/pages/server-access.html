@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Enter your platform account email to discover your registered Android file servers, check online status, and launch remote file management.">
+  <title>Access Server | RemoteNode — Personal File Server</title>
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header" id="header">
+    <div class="container header-container">
+      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+      <nav class="desktop-nav">
+        <a href="product.html" class="nav-link">Product</a>
+        <a href="how-it-works.html" class="nav-link">How It Works</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="server-access.html" class="nav-link is-active">Find Server</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+      </nav>
+      <div class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+      </div>
+      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+    <div class="drawer-header">
+      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
+      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="product.html" class="drawer-nav-link">Product</a>
+      <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
+      <a href="about.html" class="drawer-nav-link">About</a>
+      <a href="server-access.html" class="drawer-nav-link">Find Server</a>
+      <a href="contact.html" class="drawer-nav-link">Contact</a>
+      <a href="faq.html" class="drawer-nav-link">FAQ</a>
+    </div>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
+      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    </div>
+  </aside>
+
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="../index.html" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Server Access</span>
+      </div>
+      <div class="page-header-content">
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Platform Device Discovery</span></div>
+        <h1 class="page-header-title">Access Your Personal File Server</h1>
+        <p class="page-header-subtitle">
+          Enter the registered email address associated with your platform account to find online server endpoints.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section-wrapper">
+      <div class="container" style="max-width: 840px;">
+        
+        <!-- PRIVACY & DATA ISOLATION CALLOUT -->
+        <div class="alert alert-info" style="margin-bottom: var(--space-2xl);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <div>
+            <strong>Architecture Notice:</strong> Entering your platform email locates registered Android servers. Your files remain stored physically on your phone host, not on this main website.
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 1: INITIAL EMAIL INPUT FORM
+             =================================================================== -->
+        <div id="state-initial">
+          <div class="card" style="padding: var(--space-2xl);">
+            <h2 class="card-title" style="margin-bottom: var(--space-xs);">Locate Registered Servers</h2>
+            <p class="card-description" style="margin-bottom: var(--space-lg);">Enter your platform email to query server status.</p>
+
+            <form id="server-lookup-form">
+              <div class="form-group">
+                <label for="lookup-email-input" class="form-label">Platform Account Email Address</label>
+                <input type="email" id="lookup-email-input" class="form-input" placeholder="e.g. demo@remotenode.io" required>
+                <span class="form-helper">Tip: Try <code>demo@remotenode.io</code> for multiple server preview or <code>nodevices@remotenode.io</code> for no devices.</span>
+              </div>
+              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Find My Server</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 2: LOADING SKELETON STATE
+             =================================================================== -->
+        <div id="state-loading" style="display: none;">
+          <div class="card" style="padding: var(--space-2xl); margin-bottom: var(--space-lg); text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-md); margin-bottom: var(--space-md);">
+              <span class="spinner" style="width: 24px; height: 24px;"></span>
+              <strong style="font-size: var(--font-size-lg); color: var(--color-text-primary);">Searching for registered servers...</strong>
+            </div>
+            <p class="card-description">Querying cloud control plane and gateway routing status...</p>
+          </div>
+
+          <!-- Skeleton Loaders Grid -->
+          <div class="grid-2-col">
+            <div class="card" style="padding: var(--space-xl);">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text" style="width: 70%;"></div>
+            </div>
+            <div class="card" style="padding: var(--space-xl);">
+              <div class="skeleton skeleton-title"></div>
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text" style="width: 60%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 3: ACCOUNT NOT FOUND STATE
+             =================================================================== -->
+        <div id="state-not-found" style="display: none;">
+          <div class="card" style="padding: var(--space-2xl); text-align: center;">
+            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-surface-secondary); color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h2 class="card-title">No Registered Account Found</h2>
+            <p class="card-description" style="max-width: 500px; margin: 0 auto var(--space-xl) auto;">
+              We couldn't locate a platform account associated with that email address. Please verify your email or create a new account.
+            </p>
+            <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-secondary" data-action="reset-lookup">Try Another Email</button>
+              <a href="get-started.html" class="btn btn-primary">Create an Account</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 4: NO DEVICES LINKED STATE
+             =================================================================== -->
+        <div id="state-no-devices" style="display: none;">
+          <div class="card" style="padding: var(--space-2xl); text-align: center;">
+            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-accent-subtle); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            </div>
+            <h2 class="card-title">No Server Connected Yet</h2>
+            <p class="card-description" style="max-width: 540px; margin: 0 auto var(--space-xl) auto;">
+              Your account exists, but no Android phone has been registered as a server host. Install our Android app and start Server Mode on your phone to link it.
+            </p>
+            <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+              <a href="how-it-works.html" class="btn btn-primary">View Setup Guide</a>
+              <button class="btn btn-secondary" data-action="reset-lookup">Try Another Email</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 5: DEVICES FOUND STATE (Multi-device Grid)
+             =================================================================== -->
+        <div id="state-devices-found" style="display: none;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg);">
+            <div>
+              <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: 2px;">Your Registered Servers</h2>
+              <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Select an online server to open its file management website.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" data-action="reset-lookup">Change Email</button>
+          </div>
+
+          <!-- Dynamic Devices Container -->
+          <div id="device-list-grid" class="grid-2-col" style="margin-bottom: var(--space-3xl);">
+            <!-- Rendered by server-discovery.js -->
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             STATE 6: RECOVERABLE ERROR STATE
+             =================================================================== -->
+        <div id="state-error" style="display: none;">
+          <div class="card" style="padding: var(--space-2xl); text-align: center; border-color: rgba(220, 38, 38, 0.3);">
+            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-error-bg); color: var(--color-error); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h2 class="card-title">Connection Timeout</h2>
+            <p class="card-description" style="max-width: 480px; margin: 0 auto var(--space-xl) auto;">
+              Unable to reach the server discovery service. Please check your internet connection and try again.
+            </p>
+            <div style="display: flex; gap: var(--space-md); justify-content: center;">
+              <button class="btn btn-primary" data-action="retry-lookup">Try Again</button>
+              <button class="btn btn-secondary" data-action="reset-lookup">Change Email</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDUCATIONAL EXPLANATION BOX -->
+        <div class="card" style="background-color: var(--color-surface-secondary); border-color: var(--color-border); margin-top: var(--space-3xl);">
+          <h3 class="card-title" style="font-size: var(--font-size-md);">How Remote Discovery Works</h3>
+          <p class="card-description">
+            When Server Mode is enabled, your Android phone establishes a secure outbound tunnel to our gateway. The main website resolves your account to your active phone endpoint so you can access your file manager remotely without manual router port forwarding.
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
+          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="server-access.html" class="footer-link">Find Server</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About Us</a></li>
+            <li><a href="contact.html" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/server-discovery.js"></script>
+</body>
+</html>
