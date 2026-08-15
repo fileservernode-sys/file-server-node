@@ -1,22 +1,260 @@
 package net.remotenode.remote_node_app
 
-import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpHandler
-import com.sun.net.httpserver.HttpServer
+import java.io.BufferedInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
+import java.net.URI
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
-/**
- * Embedded Local HTTP Server Engine for RemoteNode Android File Host
- * Listens strictly on loopback interface 127.0.0.1:8080
- */
+// -----------------------------------------------------------------------------
+// Pure Java/Android-Compatible Embedded HTTP Server Abstractions
+// (Replaces non-Android com.sun.net.httpserver.* packages)
+// -----------------------------------------------------------------------------
+
+class HttpHeaders {
+    private val headers = mutableMapOf<String, String>()
+
+    fun set(key: String, value: String) {
+        headers[key.lowercase(Locale.ROOT)] = value
+    }
+
+    fun getFirst(key: String): String? {
+        return headers[key.lowercase(Locale.ROOT)]
+    }
+
+    fun getAll(): Map<String, String> = headers
+}
+
+class HttpExchange(
+    val requestMethod: String,
+    val requestURI: URI,
+    val requestHeaders: HttpHeaders,
+    val responseHeaders: HttpHeaders,
+    val requestBody: InputStream,
+    val responseBody: OutputStream,
+    private val sendHeaderCallback: (Int, Long) -> Unit
+) {
+    fun sendResponseHeaders(rCode: Int, responseLength: Long) {
+        sendHeaderCallback(rCode, responseLength)
+    }
+}
+
+interface HttpHandler {
+    fun handle(exchange: HttpExchange)
+}
+
+class HttpServer private constructor(private val address: InetSocketAddress) {
+    private var serverSocket: ServerSocket? = null
+    private var isRunning = false
+    private val contexts = mutableMapOf<String, HttpHandler>()
+    private var threadPool: ExecutorService = Executors.newCachedThreadPool()
+
+    fun createContext(path: String, handler: HttpHandler) {
+        contexts[path] = handler
+    }
+
+    fun start() {
+        serverSocket = ServerSocket(address.port, 50, address.address)
+        isRunning = true
+        threadPool.execute {
+            while (isRunning && serverSocket != null && !serverSocket!!.isClosed) {
+                try {
+                    val socket = serverSocket?.accept() ?: break
+                    threadPool.execute {
+                        handleClient(socket)
+                    }
+                } catch (_: Exception) {
+                    if (!isRunning) break
+                }
+            }
+        }
+    }
+
+    fun stop(delay: Int) {
+        isRunning = false
+        try {
+            serverSocket?.close()
+        } catch (_: Exception) {}
+        try {
+            threadPool.shutdownNow()
+        } catch (_: Exception) {}
+    }
+
+    private fun handleClient(socket: Socket) {
+        try {
+            socket.soTimeout = 15000
+            val rawInput = socket.getInputStream()
+            val rawOutput = socket.getOutputStream()
+            val bufferedInput = BufferedInputStream(rawInput)
+
+            // Read HTTP request line
+            val requestLine = readLine(bufferedInput) ?: return
+            val parts = requestLine.trim().split(" ")
+            if (parts.size < 2) return
+
+            val method = parts[0].uppercase(Locale.ROOT)
+            val rawUri = parts[1]
+            val uri = URI(rawUri)
+
+            // Read HTTP request headers
+            val reqHeaders = HttpHeaders()
+            while (true) {
+                val line = readLine(bufferedInput) ?: break
+                if (line.isEmpty()) break
+                val colonIdx = line.indexOf(':')
+                if (colonIdx > 0) {
+                    val headerName = line.substring(0, colonIdx).trim()
+                    val headerValue = line.substring(colonIdx + 1).trim()
+                    reqHeaders.set(headerName, headerValue)
+                }
+            }
+
+            // Handle OPTIONS preflight immediately
+            if (method == "OPTIONS") {
+                val resp = StringBuilder()
+                resp.append("HTTP/1.1 204 No Content\r\n")
+                resp.append("Access-Control-Allow-Origin: *\r\n")
+                resp.append("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS\r\n")
+                resp.append("Access-Control-Allow-Headers: Content-Type, Authorization\r\n")
+                resp.append("Content-Length: 0\r\n")
+                resp.append("Connection: close\r\n\r\n")
+                rawOutput.write(resp.toString().toByteArray(StandardCharsets.UTF_8))
+                rawOutput.flush()
+                return
+            }
+
+            val contentLength = reqHeaders.getFirst("content-length")?.toLongOrNull() ?: 0L
+            val bodyStream = BoundedInputStream(bufferedInput, contentLength)
+
+            val respHeaders = HttpHeaders()
+            var headersSent = false
+
+            val exchange = HttpExchange(
+                requestMethod = method,
+                requestURI = uri,
+                requestHeaders = reqHeaders,
+                responseHeaders = respHeaders,
+                requestBody = bodyStream,
+                responseBody = rawOutput,
+                sendHeaderCallback = { statusCode, length ->
+                    if (!headersSent) {
+                        headersSent = true
+                        val statusText = when (statusCode) {
+                            200 -> "OK"
+                            201 -> "Created"
+                            204 -> "No Content"
+                            400 -> "Bad Request"
+                            401 -> "Unauthorized"
+                            403 -> "Forbidden"
+                            404 -> "Not Found"
+                            405 -> "Method Not Allowed"
+                            500 -> "Internal Server Error"
+                            else -> "OK"
+                        }
+
+                        val sb = StringBuilder()
+                        sb.append("HTTP/1.1 $statusCode $statusText\r\n")
+                        for ((k, v) in respHeaders.getAll()) {
+                            sb.append("$k: $v\r\n")
+                        }
+                        if (length >= 0) {
+                            sb.append("Content-Length: $length\r\n")
+                        }
+                        sb.append("Connection: close\r\n\r\n")
+                        rawOutput.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
+                        rawOutput.flush()
+                    }
+                }
+            )
+
+            // Route to longest matching context
+            val matchedHandler = findHandler(uri.path)
+            if (matchedHandler != null) {
+                matchedHandler.handle(exchange)
+            } else {
+                LocalServerEngine.sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"NOT_FOUND","message":"Not Found"}}""")
+            }
+
+            rawOutput.flush()
+        } catch (_: Exception) {
+        } finally {
+            try {
+                socket.close()
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun findHandler(path: String): HttpHandler? {
+        val sortedKeys = contexts.keys.sortedByDescending { it.length }
+        for (k in sortedKeys) {
+            if (k == "/" || path == k || path.startsWith("$k/")) {
+                return contexts[k]
+            }
+        }
+        return contexts["/"]
+    }
+
+    private fun readLine(input: InputStream): String? {
+        val baos = ByteArrayOutputStream()
+        while (true) {
+            val b = input.read()
+            if (b == -1) {
+                if (baos.size() == 0) return null
+                break
+            }
+            if (b == '\n'.code) {
+                break
+            }
+            if (b != '\r'.code) {
+                baos.write(b)
+            }
+        }
+        return baos.toString(StandardCharsets.UTF_8.name())
+    }
+
+    companion object {
+        fun create(address: InetSocketAddress, backlog: Int): HttpServer {
+            return HttpServer(address)
+        }
+    }
+}
+
+class BoundedInputStream(private val wrapped: InputStream, private val limit: Long) : InputStream() {
+    private var count = 0L
+
+    override fun read(): Int {
+        if (limit in 0..count) return -1
+        val b = wrapped.read()
+        if (b != -1) count++
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (limit in 0..count) return -1
+        val toRead = if (limit >= 0) Math.min(len.toLong(), limit - count).toInt() else len
+        val bytesRead = wrapped.read(b, off, toRead)
+        if (bytesRead > 0) count += bytesRead
+        return bytesRead
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Embedded Local HTTP Server Engine for RemoteNode Android File Host
+// Listens strictly on loopback interface 127.0.0.1:8080
+// -----------------------------------------------------------------------------
+
 class LocalServerEngine {
     private var server: HttpServer? = null
     private var isRunning: Boolean = false
@@ -63,7 +301,6 @@ class LocalServerEngine {
             // Static bundled website assets handler
             newServer.createContext("/", StaticAssetsHandler())
 
-            newServer.executor = null
             newServer.start()
 
             server = newServer
@@ -616,10 +853,11 @@ class LocalServerEngine {
                 </html>
             """.trimIndent()
 
+            val bytes = html.toByteArray(StandardCharsets.UTF_8)
             exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
-            exchange.sendResponseHeaders(200, html.toByteArray(StandardCharsets.UTF_8).size.toLong())
+            exchange.sendResponseHeaders(200, bytes.size.toLong())
             val os: OutputStream = exchange.responseBody
-            os.write(html.toByteArray(StandardCharsets.UTF_8))
+            os.write(bytes)
             os.close()
         }
     }
