@@ -1,0 +1,162 @@
+// Prisma Schema — Remote Android Personal File Server Platform (Control Plane)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+  CONNECTING
+  RECONNECTING
+}
+
+enum ServerInstanceStatus {
+  STOPPED
+  STARTING
+  RUNNING
+  ERROR
+}
+
+enum EndpointStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+enum AuditEventType {
+  ACCOUNT_CREATED
+  EMAIL_VERIFIED
+  DEVICE_REGISTERED
+  DEVICE_CONNECTED
+  DEVICE_DISCONNECTED
+  SERVER_STARTED
+  SERVER_STOPPED
+  ENDPOINT_ASSIGNED
+}
+
+// -----------------------------------------------------------------------------
+// CORE ENTITIES
+// -----------------------------------------------------------------------------
+
+/// User Account (Control Plane Metadata Only — No User Files Stored Here)
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  passwordHash  String
+  status        UserStatus   @default(PENDING_VERIFICATION)
+  emailVerified Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  devices       Device[]
+  auditEvents   AuditEvent[]
+
+  @@index([email])
+}
+
+/// Registered Android Phone Device Node
+model Device {
+  id          String       @id @default(cuid())
+  userId      String
+  deviceName  String
+  platform    String       @default("Android")
+  osVersion   String?
+  appVersion  String?
+  status      DeviceStatus @default(OFFLINE)
+  lastSeenAt  DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servers     ServerInstance[]
+  connections DeviceConnection[]
+  auditEvents AuditEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([lastSeenAt])
+}
+
+/// Logical File Server Service Instance running on Android Device
+model ServerInstance {
+  id              String               @id @default(cuid())
+  deviceId        String
+  status          ServerInstanceStatus @default(STOPPED)
+  startedAt       DateTime?
+  lastHeartbeatAt DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  device          Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  endpoints       ServerEndpoint[]
+
+  @@index([deviceId])
+  @@index([status])
+}
+
+/// Assigned Remote Endpoint / Subdomain Mapping
+model ServerEndpoint {
+  id               String         @id @default(cuid())
+  serverInstanceId String
+  hostname         String         @unique
+  status           EndpointStatus @default(ACTIVE)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  serverInstance   ServerInstance @relation(fields: [serverInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([hostname])
+}
+
+/// Gateway Tunnel Connection Log / State
+model DeviceConnection {
+  id              String           @id @default(cuid())
+  deviceId        String
+  gatewayNodeId   String?
+  status          ConnectionStatus @default(DISCONNECTED)
+  connectedAt     DateTime?
+  disconnectedAt  DateTime?
+  lastHeartbeatAt DateTime?
+
+  device          Device           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId])
+  @@index([status])
+}
+
+/// Control Plane Security & Operational Audit Log
+model AuditEvent {
+  id        String         @id @default(cuid())
+  userId    String?
+  deviceId  String?
+  eventType AuditEventType
+  metadata  Json?
+  createdAt DateTime       @default(now())
+
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  device    Device?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([eventType])
+}
