@@ -350,38 +350,43 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       } catch (_) {}
 
       // 3. Delete from Backend Database control plane (removes Device, ServerInstance, ServerEndpoint)
-      if (sessionToken != null && sessionToken.isNotEmpty) {
-        final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
-        
-        // If active deviceId is tracked in memory, delete it first
-        if (devId != null && devId.isNotEmpty) {
-          try {
-            await deviceDataSource.deleteDevice(
-              deviceId: devId,
-              sessionToken: sessionToken,
-            );
-          } catch (_) {}
-        }
+      if (sessionToken == null || sessionToken.isEmpty) {
+        state = state.copyWith(
+          errorMessage: 'Authentication session expired. Please sign in again before deleting server.',
+        );
+        return false;
+      }
 
-        // Query all registered devices for this user account and delete all of them from MySQL
+      final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+      
+      // If active deviceId is tracked in memory, delete it first
+      if (devId != null && devId.isNotEmpty) {
         try {
-          final userDevicesRes = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
-          if (userDevicesRes['success'] == true && userDevicesRes['data'] != null) {
-            final devices = userDevicesRes['data']['devices'] as List<dynamic>?;
-            if (devices != null) {
-              for (final d in devices) {
-                final id = d['id'] as String?;
-                if (id != null && id.isNotEmpty) {
-                  await deviceDataSource.deleteDevice(
-                    deviceId: id,
-                    sessionToken: sessionToken,
-                  );
-                }
+          await deviceDataSource.deleteDevice(
+            deviceId: devId,
+            sessionToken: sessionToken,
+          );
+        } catch (_) {}
+      }
+
+      // Query all registered devices for this user account and delete all of them from MySQL
+      try {
+        final userDevicesRes = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+        if (userDevicesRes['success'] == true && userDevicesRes['data'] != null) {
+          final devices = userDevicesRes['data']['devices'] as List<dynamic>?;
+          if (devices != null) {
+            for (final d in devices) {
+              final id = d['id'] as String?;
+              if (id != null && id.isNotEmpty) {
+                await deviceDataSource.deleteDevice(
+                  deviceId: id,
+                  sessionToken: sessionToken,
+                );
               }
             }
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
 
       // 4. Reset setup state
       state = const SetupState();
