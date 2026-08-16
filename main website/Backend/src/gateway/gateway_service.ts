@@ -302,6 +302,26 @@ export class GatewayService {
     return true;
   }
 
+  /**
+   * Disconnects active WebSocket connections and unbinds proxy hostname routes for a deleted device.
+   */
+  public evictDeviceSession(deviceId: string, reason: string = 'Server node deleted by owner'): void {
+    const connId = this.deviceToConnectionMap.get(deviceId);
+    if (connId && this.activeConnections.has(connId)) {
+      const conn = this.activeConnections.get(connId)!;
+      try {
+        conn.socket.send(JSON.stringify({ type: 'DISCONNECT', reason }));
+        conn.socket.close();
+      } catch {}
+      if (conn.hostname) {
+        this.hostnameToConnectionMap.delete(conn.hostname.toLowerCase());
+      }
+      this.activeConnections.delete(connId);
+    }
+    this.deviceToConnectionMap.delete(deviceId);
+    this.log('info', 'Evicted gateway session and unbound routing for deleted device', { deviceId });
+  }
+
   public async start(): Promise<void> {
     if (this.isListening) return;
 

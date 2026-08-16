@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
-
 import { hashPassword } from '../utils/crypto.js';
+import { defaultGatewayService } from '../gateway/gateway_service.js';
+import { EndpointService } from '../services/endpoint.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -405,41 +406,55 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       throw new ForbiddenError('You do not have permission to delete this server');
     }
 
-    // Cascade delete: ServerEndpoints -> ServerInstances -> DeviceConnections -> Device
+    // 1. Gateway & DNS Cleanups
+    try {
+      defaultGatewayService.evictDeviceSession(device.id, 'Server node deleted by user');
+      for (const server of device.servers) {
+        for (const ep of server.endpoints) {
+          try {
+            await EndpointService.getDnsProvider().removeRecord(ep.hostname);
+          } catch {}
+        }
+      }
+    } catch {}
+
+    // 2. Cascade delete: ServerEndpoints -> ServerInstances -> DeviceConnections -> Device in atomic transaction
     const serverIds = device.servers.map((s: { id: string }) => s.id);
+    const targetDeviceId = device.id;
+    const targetDeviceName = device.deviceName;
     
     await prisma.$transaction(async (tx) => {
-      // 1. Delete all ServerEndpoints (releasing and removing subdomains)
+      // Step A: Delete all ServerEndpoints (releasing and removing subdomains)
       if (serverIds.length > 0) {
         await tx.serverEndpoint.deleteMany({
           where: { serverInstanceId: { in: serverIds } }
         });
       }
 
-      // 2. Delete all ServerInstances
+      // Step B: Delete all ServerInstances (purges serverName, adminUsername, adminPasswordHash)
       if (serverIds.length > 0) {
         await tx.serverInstance.deleteMany({
           where: { id: { in: serverIds } }
         });
       }
 
-      // 3. Delete all DeviceConnections
+      // Step C: Delete all DeviceConnections
       await tx.deviceConnection.deleteMany({
-        where: { deviceId: device!.id }
+        where: { deviceId: targetDeviceId }
       });
 
-      // 4. Delete the Device record
+      // Step D: Delete the Device record
       await tx.device.delete({
-        where: { id: device!.id }
+        where: { id: targetDeviceId }
       });
 
-      // 5. Record Audit Log
+      // Step E: Record Audit Log (deviceId set to null to avoid FK constraint on deleted row)
       await tx.auditEvent.create({
         data: {
           userId: user.id,
-          deviceId: device!.id,
+          deviceId: null,
           eventType: 'SERVER_STOPPED',
-          metadata: { action: 'SERVER_DELETED', deviceName: device!.deviceName }
+          metadata: { action: 'SERVER_DELETED', deviceId: targetDeviceId, deviceName: targetDeviceName }
         }
       });
     });

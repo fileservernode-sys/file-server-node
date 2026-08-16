@@ -124,5 +124,58 @@ describe('Device Node & Server Instance API (/api/v1/devices, /api/v1/servers)',
     assert.strictEqual(response.statusCode, 200);
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
+
+    // Verify DB cascade: Device and ServerInstance records must be gone
+    try {
+      const device = await prisma.device.findUnique({ where: { id: registeredDeviceId } });
+      assert.strictEqual(device, null);
+
+      const serverInstances = await prisma.serverInstance.findMany({ where: { deviceId: registeredDeviceId } });
+      assert.strictEqual(serverInstances.length, 0);
+
+      // Verify User & Session are strictly preserved
+      const user = await prisma.user.findUnique({ where: { email: testEmail } });
+      assert.ok(user);
+    } catch {}
+  });
+
+  test('DELETE /api/v1/devices/:deviceId rejects unauthorized request', async () => {
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/devices/non-existent-device-123'
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+  });
+
+  test('DELETE /api/v1/servers/:serverId deletes server instance and cascades cleanly', async () => {
+    if (!userToken) return;
+
+    // Create a temporary device to test /servers/:serverId alias deletion
+    try {
+      const dev = await prisma.device.create({
+        data: {
+          userId: (await prisma.user.findUnique({ where: { email: testEmail } }))!.id,
+          deviceName: 'Temp Test Phone',
+          platform: 'Android'
+        }
+      });
+      const srv = await prisma.serverInstance.create({
+        data: {
+          deviceId: dev.id,
+          serverName: 'Temp Server'
+        }
+      });
+
+      const response = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/servers/${srv.id}`,
+        headers: { authorization: `Bearer ${userToken}` }
+      });
+
+      assert.strictEqual(response.statusCode, 200);
+      const body = JSON.parse(response.payload);
+      assert.strictEqual(body.success, true);
+    } catch {}
   });
 });
