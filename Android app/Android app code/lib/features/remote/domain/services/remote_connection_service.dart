@@ -476,6 +476,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       final req = await _httpClient.postUrl(url);
       req.headers.set('content-type', 'application/json');
       req.headers.set('authorization', 'Bearer $sessionToken');
+      req.write(jsonEncode({}));
       await req.close().timeout(const Duration(seconds: 3));
     } catch (e) {
       // Ignore backend HTTP errors during disconnect
