@@ -23,7 +23,7 @@ class SetupFoundationScreen extends StatelessWidget {
               Text('Configure Storage Host', style: AppTypography.heading1),
               SizedBox(height: AppSpacing.sm),
               Text(
-                'Create dedicated file-server credentials and assign a remote subdomain.',
+                'Configure storage host settings and connect to your ViewDuration account.',
                 style: AppTypography.bodySmall,
               ),
             ],

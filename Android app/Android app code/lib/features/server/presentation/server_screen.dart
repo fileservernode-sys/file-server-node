@@ -39,10 +39,6 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
         setup.deviceId != null ||
         setup.isLocalOnline ||
         setup.assignedSubdomain != null;
-    final publicUrl = setup.publicUrl ??
-        (setup.assignedSubdomain != null
-            ? 'https://${setup.assignedSubdomain}'
-            : null);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -138,44 +134,26 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                               ),
                             ],
                           ),
-                          if (publicUrl != null) ...[
-                            const SizedBox(height: AppSpacing.md),
-                            const Divider(),
-                            const SizedBox(height: AppSpacing.sm),
-                            Row(
-                              children: [
-                                const Icon(Icons.public,
-                                    size: 16, color: AppColors.primary),
-                                const SizedBox(width: AppSpacing.xs),
-                                Expanded(
-                                  child: Text(
-                                    publicUrl,
-                                    style: AppTypography.caption.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
-                                      fontFamily: 'monospace',
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                          const SizedBox(height: AppSpacing.md),
+                          const Divider(),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            children: [
+                              const Icon(Icons.language_rounded,
+                                  size: 16, color: AppColors.primary),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  'Access on viewduration.com',
+                                  style: AppTypography.caption.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.copy, size: 16),
-                                  tooltip: 'Copy Public Link',
-                                  onPressed: () {
-                                    Clipboard.setData(
-                                        ClipboardData(text: publicUrl));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Public link copied: $publicUrl'),
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: AppSpacing.lg),
                           PrimaryButton(
                             label: 'View Server Details',

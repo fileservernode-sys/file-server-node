@@ -24,7 +24,7 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
     'Registering Android host device with control plane...',
     'Starting embedded HTTP file-server engine on 0.0.0.0:8080...',
     'Verifying local socket listener health probe (127.0.0.1:8080)...',
-    'Provisioning public subdomain endpoint & DNS routing...',
+    'Configuring secure gateway transport endpoint...',
     'Establishing secure WebSocket connection to Remote Gateway...',
     'Verifying gateway reverse-proxy routing & public server access...',
   ];
@@ -67,7 +67,8 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 5,
+                    currentStep: 3,
+                    totalSteps: 3,
                     stepTitle: 'Create Server',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -78,7 +79,7 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text(
-                    'Configuring local engine, provisioning public subdomain, and connecting to Remote Gateway.',
+                    'Configuring local engine and connecting to Remote Gateway.',
                     style: AppTypography.bodySmall,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -91,7 +92,7 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                       children: [
                         LoadingIndicator(
                             message: setupState.isProcessing
-                                ? 'Provisioning server & public endpoint...'
+                                ? 'Provisioning server & gateway connection...'
                                 : 'Finalizing node configuration...'),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
@@ -113,7 +114,7 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                             isDone: stageIdx >= 3),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Provisioning public subdomain endpoint',
+                            title: 'Configuring gateway transport routing',
                             isDone: stageIdx >= 4),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(

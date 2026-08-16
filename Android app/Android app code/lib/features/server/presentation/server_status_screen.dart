@@ -140,10 +140,6 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   @override
   Widget build(BuildContext context) {
     final setup = ref.watch(setupStateProvider);
-    final publicUrl = setup.publicUrl ??
-        (setup.assignedSubdomain != null
-            ? 'https://${setup.assignedSubdomain}'
-            : 'https://gateway.viewduration.com');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -270,13 +266,13 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         _StatusRow(
                           label: 'Remote Gateway Access',
                           value: setup.isGatewayConnected
-                              ? 'CONNECTED (gateway.viewduration.com)'
-                              : 'CONNECTED (Active)',
+                              ? 'CONNECTED'
+                              : 'DISCONNECTED',
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
-                          label: 'Subdomain Status',
-                          value: setup.endpointStatus,
+                          label: 'Gateway Status',
+                          value: setup.endpointStatus == 'ACTIVE' ? 'ACTIVE' : setup.endpointStatus,
                         ),
                       ],
                     ),
@@ -313,7 +309,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                   const Divider(),
                   const SizedBox(height: AppSpacing.sm),
                   DestructiveButton(
-                    label: 'Delete Server & Release Subdomain',
+                    label: 'Delete Server',
                     icon: Icons.delete_outline,
                     isLoading: _isLoading,
                     onPressed: _handleDeleteServer,
