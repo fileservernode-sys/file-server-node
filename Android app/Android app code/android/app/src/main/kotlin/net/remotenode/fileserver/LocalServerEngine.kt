@@ -365,9 +365,9 @@ class LocalServerEngine {
         }
     }
 
-    fun restart(port: Int = 8080): Map<String, Any> {
+    fun restart(port: Int = 8080, baseStorageDir: File? = null, context: Any? = null): Map<String, Any> {
         stop()
-        return start(port)
+        return start(port, baseStorageDir ?: rootDirectory, context ?: androidContext)
     }
 
     fun getDeviceIpAddress(): String {
@@ -1016,6 +1016,25 @@ class LocalServerEngine {
             }
 
             // 3. Fallback: SPA index.html
+            if (androidContext != null) {
+                try {
+                    val getAssetsMethod = androidContext.javaClass.getMethod("getAssets")
+                    val assetManager = getAssetsMethod.invoke(androidContext)
+                    val openMethod = assetManager.javaClass.getMethod("open", String::class.java)
+                    val inputStream = openMethod.invoke(assetManager, "web/index.html") as InputStream
+
+                    exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+                    val bytes = inputStream.readBytes()
+                    inputStream.close()
+                    exchange.sendResponseHeaders(200, bytes.size.toLong())
+                    val os = exchange.responseBody
+                    os.write(bytes)
+                    os.close()
+                    return
+                } catch (_: Exception) {}
+            }
+
             val fallbackLocations = listOf(
                 File("In-build file managing website/index.html"),
                 File("android/app/src/main/assets/web/index.html")

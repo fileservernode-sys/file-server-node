@@ -30,7 +30,8 @@ class MainActivity : FlutterActivity() {
                 }
                 "restartServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
-                    val res = localServerEngine.restart(port)
+                    val storageDir = context.filesDir.resolve("RemoteNodeFiles")
+                    val res = localServerEngine.restart(port, storageDir, context)
                     result.success(res)
                 }
                 "getServerStatus" -> {

@@ -3,7 +3,7 @@
  * STRICT RULE: OTP Only. No verification links. No reset links.
  */
 
-const API_BASE_URL = (function() {
+function getCalculatedApiBase() {
   if (typeof window === 'undefined') return '/api/v1';
   const host = window.location.hostname;
   const protocol = window.location.protocol;
@@ -11,8 +11,13 @@ const API_BASE_URL = (function() {
   if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
     return 'http://localhost:4000/api/v1';
   }
-  return '/api/v1';
-})();
+  if (host === 'gateway.viewduration.com') {
+    return '/api/v1';
+  }
+  return 'https://gateway.viewduration.com/api/v1';
+}
+
+const API_BASE_URL = getCalculatedApiBase();
 
 if (typeof window !== 'undefined') {
   window.API_BASE_URL = API_BASE_URL;
@@ -48,7 +53,7 @@ function clearSession() {
   localStorage.removeItem(USER_STORAGE_KEY);
 }
 
-// API Call Wrapper
+// API Call Wrapper with Automatic Multi-Base Fallback
 async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
   const headers = { 'Content-Type': 'application/json' };
   const authToken = token || getAuthToken();
@@ -61,28 +66,51 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
     options.body = JSON.stringify(body);
   }
 
-  try {
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    let json = {};
+  // Base URL candidates for maximum resilience across dev, local server, and production
+  const candidates = [
+    window.API_BASE_URL,
+    getCalculatedApiBase(),
+    'https://gateway.viewduration.com/api/v1',
+    '/api/v1',
+    'http://localhost:4000/api/v1'
+  ].filter((url, index, self) => url && self.indexOf(url) === index);
+
+  let lastError = null;
+
+  for (let i = 0; i < candidates.length; i++) {
+    const base = candidates[i];
     try {
-      json = await res.json();
-    } catch {
-      json = { success: res.ok };
+      const res = await fetch(`${base}${endpoint}`, options);
+      if (res.status === 404 && i < candidates.length - 1) {
+        continue; // Try next candidate if endpoint route is 404 on current base URL
+      }
+      let json = {};
+      try {
+        json = await res.json();
+      } catch {
+        json = { success: res.ok };
+      }
+      return { ok: res.ok, status: res.status, data: json };
+    } catch (err) {
+      lastError = err;
+      if (i < candidates.length - 1) {
+        continue;
+      }
     }
-    return { ok: res.ok, status: res.status, data: json };
-  } catch (err) {
-    return { 
-      ok: false, 
-      status: 0, 
-      data: { 
-        success: false, 
-        error: { 
-          code: 'NETWORK_ERROR', 
-          message: 'Unable to connect to platform backend API server' 
-        } 
-      } 
-    };
   }
+
+  return { 
+    ok: false, 
+    status: 0, 
+    data: { 
+      success: false, 
+      error: { 
+        code: 'NETWORK_ERROR', 
+        message: 'Could not connect to backend control plane.' 
+      } 
+    } 
+  };
+}
 }
 
 // -----------------------------------------------------------------------------
