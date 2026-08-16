@@ -164,7 +164,9 @@ void main() {
 
       expect(find.textContaining('Create Server'), findsOneWidget);
       expect(find.text('Creating your personal file server'), findsOneWidget);
-      expect(find.text('Complete Setup'), findsOneWidget);
+      expect(find.textContaining('Registering'), findsWidgets);
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
     });
 
     testWidgets(

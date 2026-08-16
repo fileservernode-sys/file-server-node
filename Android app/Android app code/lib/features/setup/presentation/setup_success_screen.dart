@@ -50,7 +50,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Text(
-                    'Your personal file server is ready',
+                    'Your local file server is ready',
                     style: AppTypography.pageTitle,
                     textAlign: TextAlign.center,
                   ),
