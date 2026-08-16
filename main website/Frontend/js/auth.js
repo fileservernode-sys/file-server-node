@@ -111,7 +111,6 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
     } 
   };
 }
-}
 
 // -----------------------------------------------------------------------------
 // AUTH ACTIONS
