@@ -713,8 +713,9 @@
 
         const serverName = serverInfo?.serverName || 'File Server';
         document.getElementById('vd-server-name-breadcrumb').textContent = serverName;
-        if (serverInfo?.adminUsername) {
-          document.getElementById('fs-login-server-name').textContent = `Server: ${serverName}`;
+        const fsLoginElem = document.getElementById('fs-login-server-name');
+        if (fsLoginElem && serverInfo?.adminUsername) {
+          fsLoginElem.textContent = `Server: ${serverName}`;
         }
 
         if (!serverInfo?.online || !serverInfo?.ok) {

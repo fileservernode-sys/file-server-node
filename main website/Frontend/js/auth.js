@@ -3,12 +3,16 @@
  * STRICT RULE: OTP Only. No verification links. No reset links.
  */
 
-// Base API configuration: Automatically switches between local dev and live staging/production backend
-const API_BASE_URL = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname)) 
-  ? 'http://localhost:4000/api/v1' 
-  : (window.location.hostname === 'gateway.viewduration.com' 
-      ? '/api/v1' 
-      : 'https://gateway.viewduration.com/api/v1');
+const API_BASE_URL = (function() {
+  if (typeof window === 'undefined') return '/api/v1';
+  const host = window.location.hostname;
+  const protocol = window.location.protocol;
+
+  if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
+    return 'http://localhost:4000/api/v1';
+  }
+  return '/api/v1';
+})();
 
 if (typeof window !== 'undefined') {
   window.API_BASE_URL = API_BASE_URL;
