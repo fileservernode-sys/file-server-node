@@ -46,8 +46,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkInitialSession() async {
-    // Quick, non-blocking splash duration for smooth visual transition
-    await Future.delayed(const Duration(milliseconds: 900));
+    // Ultra-fast session discovery for responsive app launch
+    await Future.delayed(const Duration(milliseconds: 300));
 
     if (!mounted) return;
 
