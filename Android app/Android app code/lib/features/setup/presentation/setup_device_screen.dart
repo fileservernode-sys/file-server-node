@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
 /// Step 1 — Device Preparation Screen
-class SetupDeviceScreen extends StatelessWidget {
+class SetupDeviceScreen extends ConsumerWidget {
   const SetupDeviceScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final setup = ref.watch(setupStateProvider);
+    final isAlreadyConfigured = setup.deviceId != null ||
+        setup.isLocalOnline ||
+        setup.assignedSubdomain != null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -34,6 +41,34 @@ class SetupDeviceScreen extends StatelessWidget {
                     stepTitle: 'Prepare Device',
                   ),
                   const SizedBox(height: AppSpacing.xl),
+
+                  if (isAlreadyConfigured) ...[
+                    AppCard(
+                      color: AppColors.statusOnlineBg,
+                      borderColor: AppColors.statusOnline,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.check_circle_rounded,
+                                  color: AppColors.statusOnline, size: 22),
+                              const SizedBox(width: AppSpacing.sm),
+                              Text('Server Already Configured',
+                                  style: AppTypography.cardTitle
+                                      .copyWith(color: AppColors.statusOnline)),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            'Each mobile device can host exactly 1 personal server. A server (${setup.serverName.isNotEmpty ? setup.serverName : setup.deviceName}) is already configured on this phone.',
+                            style: AppTypography.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                  ],
 
                   const Text(
                     'This phone will become your personal file server.',
@@ -79,14 +114,24 @@ class SetupDeviceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xxl),
 
-                  PrimaryButton(
-                    label: 'Continue',
-                    icon: Icons.arrow_forward,
-                    onPressed: () {
-                      Navigator.pushNamed(
-                          context, '/server/setup/configuration');
-                    },
-                  ),
+                  if (!isAlreadyConfigured)
+                    PrimaryButton(
+                      label: 'Continue',
+                      icon: Icons.arrow_forward,
+                      onPressed: () {
+                        Navigator.pushNamed(
+                            context, '/server/setup/configuration');
+                      },
+                    )
+                  else
+                    PrimaryButton(
+                      label: 'View Active Server Status',
+                      icon: Icons.dashboard_outlined,
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                            context, '/server/status', (r) => false);
+                      },
+                    ),
                 ],
               ),
             ),
@@ -101,11 +146,13 @@ class _ChecklistTile extends StatelessWidget {
   final bool isCompleted;
   final String title;
   final String subtitle;
+  final Color? activeColor;
 
   const _ChecklistTile({
     required this.isCompleted,
     required this.title,
     required this.subtitle,
+    this.activeColor,
   });
 
   @override
@@ -116,7 +163,7 @@ class _ChecklistTile extends StatelessWidget {
           isCompleted
               ? Icons.check_circle_rounded
               : Icons.radio_button_unchecked,
-          color: isCompleted ? AppColors.statusOnline : AppColors.textMuted,
+          color: isCompleted ? (activeColor ?? AppColors.statusOnline) : AppColors.textMuted,
           size: 22,
         ),
         const SizedBox(width: AppSpacing.sm),
