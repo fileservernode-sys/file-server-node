@@ -40,14 +40,18 @@
             <span id="otp-error-message"></span>
           </div>
 
+          <div id="otp-success-alert" class="alert alert-success hidden" style="margin-bottom: var(--space-md); text-align: left;">
+            <span id="otp-success-message"></span>
+          </div>
+
           <form id="otp-verification-form">
             <div style="display: flex; gap: var(--space-xs); justify-content: center; margin: var(--space-lg) 0;">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required>
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
             </div>
 
             <button type="submit" id="btn-verify-otp" class="btn btn-primary btn-block btn-lg" style="margin-bottom: var(--space-md);">
@@ -56,7 +60,7 @@
           </form>
 
           <p class="auth-footer-text" style="margin-top: var(--space-md);">
-            Didn't receive the code? <button type="button" id="btn-resend-otp" class="text-link" style="background: none; border: none; padding: 0; cursor: pointer;">Resend Code (<span id="resend-countdown">60</span>s)</button>
+            Didn't receive the code? <button type="button" id="btn-resend-otp" class="text-link" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--color-brand-primary); font-weight: 600;">Resend Code (<span id="resend-countdown">60</span>s)</button>
           </p>
 
           <p class="text-muted text-xs" style="margin-top: var(--space-lg);">
@@ -77,14 +81,76 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const email = urlParams.get('email') || 'your registered email';
-      document.getElementById('target-email-display').textContent = email;
+      const email = urlParams.get('email') || '';
+      if (email) {
+        document.getElementById('target-email-display').textContent = email;
+      }
 
       const inputs = document.querySelectorAll('.otp-input');
       const form = document.getElementById('otp-verification-form');
       const errorAlert = document.getElementById('otp-error-alert');
       const errorMessage = document.getElementById('otp-error-message');
+      const successAlert = document.getElementById('otp-success-alert');
+      const successMessage = document.getElementById('otp-success-message');
       const submitBtn = document.getElementById('btn-verify-otp');
+      const btnResend = document.getElementById('btn-resend-otp');
+      const resendCountdown = document.getElementById('resend-countdown');
+
+      let countdownTimer = null;
+
+      function startCountdown(seconds = 60) {
+        let remaining = seconds;
+        btnResend.disabled = true;
+        btnResend.style.opacity = '0.6';
+        btnResend.style.cursor = 'not-allowed';
+        btnResend.innerHTML = `Resend Code (<span id="resend-countdown">${remaining}</span>s)`;
+
+        if (countdownTimer) clearInterval(countdownTimer);
+
+        countdownTimer = setInterval(() => {
+          remaining--;
+          const span = document.getElementById('resend-countdown');
+          if (span) span.textContent = remaining;
+
+          if (remaining <= 0) {
+            clearInterval(countdownTimer);
+            btnResend.disabled = false;
+            btnResend.style.opacity = '1';
+            btnResend.style.cursor = 'pointer';
+            btnResend.innerHTML = 'Resend Code';
+          }
+        }, 1000);
+      }
+
+      // Start initial 60s cooldown on page load
+      startCountdown(60);
+
+      // Resend OTP button click handler
+      btnResend.addEventListener('click', async () => {
+        if (btnResend.disabled) return;
+        if (!email) {
+          errorMessage.textContent = 'Email address not found. Please register or sign in again.';
+          errorAlert.classList.remove('hidden');
+          return;
+        }
+
+        errorAlert.classList.add('hidden');
+        successAlert.classList.add('hidden');
+        btnResend.disabled = true;
+        btnResend.textContent = 'Sending...';
+
+        const result = await AuthService.resendOtp(email);
+        if (result.success) {
+          successMessage.textContent = result.message || 'A fresh 6-digit verification code has been sent to your email.';
+          successAlert.classList.remove('hidden');
+          startCountdown(60);
+        } else {
+          errorMessage.textContent = result.error || 'Failed to resend code. Please try again.';
+          errorAlert.classList.remove('hidden');
+          btnResend.disabled = false;
+          btnResend.innerHTML = 'Resend Code';
+        }
+      });
 
       // Auto focus first input
       if (inputs.length > 0) inputs[0].focus();
@@ -120,6 +186,7 @@
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorAlert.classList.add('hidden');
+        successAlert.classList.add('hidden');
         
         let code = '';
         inputs.forEach(input => code += input.value.trim());

@@ -15,10 +15,9 @@ export interface EmailService {
 
 /**
  * Serverbyt SMTP Email Delivery Service Implementation
- * Sends real transactional emails through Serverbyt SMTP (port 587 STARTTLS)
+ * Sends real transactional emails through Serverbyt SMTP (port 587 STARTTLS / port 465 SSL)
  */
 export class SmtpEmailService implements EmailService {
-  private transporter: Transporter | null = null;
   private host: string;
   private port: number;
   private fromEmail: string;
@@ -29,33 +28,45 @@ export class SmtpEmailService implements EmailService {
     this.port = config.SMTP_PORT;
     this.fromEmail = config.SMTP_FROM_EMAIL;
     this.fromName = config.SMTP_FROM_NAME;
+  }
 
-    if (config.SMTP_HOST && config.SMTP_USERNAME && config.SMTP_PASSWORD) {
-      this.transporter = nodemailer.createTransport({
-        host: this.host,
-        port: this.port,
-        secure: this.port === 465, // true for 465, false for 587
-        auth: {
-          user: config.SMTP_USERNAME,
-          pass: config.SMTP_PASSWORD
-        },
-        tls: {
-          rejectUnauthorized: false
-        }
-      });
+  private getTransporter(): Transporter | null {
+    const host = process.env.SMTP_HOST || this.host;
+    const port = Number(process.env.SMTP_PORT || this.port);
+    const user = process.env.SMTP_USERNAME || process.env.SMTP_USER || config.SMTP_USERNAME;
+    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || config.SMTP_PASSWORD;
+
+    if (!host || !user || !pass) {
+      return null;
     }
+
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
+    });
   }
 
   private async sendMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
-    if (!this.transporter) {
-      // Diagnostic log without printing credentials or OTP
-      console.warn(`[Serverbyt SMTP] Transporter not fully configured (missing SMTP_USERNAME or SMTP_PASSWORD). Email dispatch to ${to} deferred.`);
+    const transporter = this.getTransporter();
+    const fromEmail = process.env.SMTP_FROM_EMAIL || this.fromEmail;
+    const fromName = process.env.SMTP_FROM_NAME || this.fromName;
+
+    if (!transporter) {
+      console.warn(`[Serverbyt SMTP] Transporter not fully configured (missing SMTP_USERNAME/SMTP_USER or SMTP_PASSWORD/SMTP_PASS in environment). Email dispatch to ${to} deferred.`);
       return true;
     }
 
     try {
-      await this.transporter.sendMail({
-        from: `"${this.fromName}" <${this.fromEmail}>`,
+      await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
         to,
         subject,
         text,
@@ -64,7 +75,6 @@ export class SmtpEmailService implements EmailService {
       console.log(`[Serverbyt SMTP] Successfully dispatched transactional email to ${to}`);
       return true;
     } catch (err: any) {
-      // Log sanitized error without credentials
       console.error(`[Serverbyt SMTP] Failed to send email to ${to}: ${err?.message || 'SMTP delivery error'}`);
       return false;
     }
