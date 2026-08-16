@@ -136,15 +136,19 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         return _currentInfo;
       }
 
-      _currentInfo = const RemoteConnectionInfo(
+      final errorMsg = json['error']?['message'] ??
+          'Failed to establish connection token with control plane (${res.statusCode})';
+      _currentInfo = RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
-        errorMessage:
-            'Failed to establish connection token with control plane.',
+        errorMessage: errorMsg,
       );
       return _currentInfo;
     } catch (e) {
-      return const MockRemoteConnectionService()
-          .connect(deviceId: deviceId, sessionToken: sessionToken);
+      _currentInfo = RemoteConnectionInfo(
+        status: RemoteConnectionState.failed,
+        errorMessage: 'Network error connecting to control plane: ${e.toString()}',
+      );
+      return _currentInfo;
     }
   }
 

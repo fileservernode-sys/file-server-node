@@ -278,6 +278,10 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         sessionToken: sessionToken,
       );
 
+      if (connInfo.status == RemoteConnectionState.failed) {
+        throw Exception(connInfo.errorMessage ?? 'Subdomain connection failed');
+      }
+
       final hostname = connInfo.hostname ??
           (connInfo.remoteEndpoint != null
               ? Uri.tryParse(connInfo.remoteEndpoint!)?.host

@@ -32,14 +32,26 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(request.toJson()));
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 8));
       final responseBody = await res.transform(utf8.decoder).join();
       final json = jsonDecode(responseBody) as Map<String, dynamic>;
 
+      if (res.statusCode >= 400 || json['success'] == false) {
+        final error = json['error'] as Map<String, dynamic>?;
+        return AuthResponse(
+          success: false,
+          message: error?['message'] ?? 'Authentication failed (${res.statusCode})',
+          errorCode: error?['code'] ?? 'AUTH_ERROR',
+        );
+      }
+
       return AuthResponse.fromJson(json);
     } catch (e) {
-      // Fallback for development/offline testing
-      return const MockAuthRemoteDataSource().login(request);
+      return AuthResponse(
+        success: false,
+        message: 'Network error connecting to auth service: ${e.toString()}',
+        errorCode: 'NETWORK_ERROR',
+      );
     }
   }
 
@@ -51,13 +63,26 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(request.toJson()));
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 8));
       final responseBody = await res.transform(utf8.decoder).join();
       final json = jsonDecode(responseBody) as Map<String, dynamic>;
 
+      if (res.statusCode >= 400 || json['success'] == false) {
+        final error = json['error'] as Map<String, dynamic>?;
+        return AuthResponse(
+          success: false,
+          message: error?['message'] ?? 'OTP Verification failed (${res.statusCode})',
+          errorCode: error?['code'] ?? 'OTP_ERROR',
+        );
+      }
+
       return AuthResponse.fromJson(json);
     } catch (e) {
-      return const MockAuthRemoteDataSource().verifyOtp(request);
+      return AuthResponse(
+        success: false,
+        message: 'Network error verifying OTP code: ${e.toString()}',
+        errorCode: 'NETWORK_ERROR',
+      );
     }
   }
 
@@ -69,10 +94,10 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode({'email': email}));
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 8));
       return res.statusCode == 200;
     } catch (e) {
-      return const MockAuthRemoteDataSource().resendOtp(email);
+      return false;
     }
   }
 
