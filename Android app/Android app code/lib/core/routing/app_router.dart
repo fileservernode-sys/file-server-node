@@ -13,10 +13,14 @@ import '../../features/setup/presentation/setup_review_screen.dart';
 import '../../features/setup/presentation/setup_success_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/showcase/presentation/design_system_showcase_screen.dart';
+import '../../features/splash/presentation/splash_screen.dart';
 
 /// Centralized Router Architecture — Manages Unauthenticated & Authenticated Journeys
 class AppRouter {
   static const String initialRoute = '/';
+
+  // Splash & Starting Route
+  static const String splashRoute = '/splash';
 
   // Unauthenticated / Auth Routes (Email + Password + OTP Only)
   static const String authRoute = '/auth';
@@ -46,6 +50,11 @@ class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case initialRoute:
+      case splashRoute:
+        return MaterialPageRoute(
+          builder: (_) => const SplashScreen(),
+          settings: settings,
+        );
       case authRoute:
       case loginRoute:
         return MaterialPageRoute(
