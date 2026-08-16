@@ -110,6 +110,16 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
+    let assignedHostname = '';
+    if (serverInstance) {
+      const activeEp = await prisma.serverEndpoint.findFirst({
+        where: { serverInstanceId: serverInstance.id, status: 'ACTIVE' }
+      });
+      if (activeEp) {
+        assignedHostname = activeEp.hostname;
+      }
+    }
+
     return reply.status(200).send(createSuccessResponse({
       connection: {
         id: connection.id,
@@ -117,6 +127,8 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
         gatewayNodeId: connection.gatewayNodeId,
         connectionToken: connection.connectionToken,
         remoteEndpoint: connection.remoteEndpoint,
+        hostname: assignedHostname,
+        publicUrl: remoteEndpointStr,
         status: connection.status,
         createdAt: connection.createdAt.toISOString()
       }
@@ -247,12 +259,20 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       throw new ForbiddenError('You do not have permission to view this remote connection');
     }
 
+    const serverInst = await prisma.serverInstance.findFirst({
+      where: { deviceId: connection.deviceId },
+      include: { endpoints: true }
+    });
+    const activeEp = serverInst?.endpoints.find(e => e.status === 'ACTIVE');
+
     return reply.status(200).send(createSuccessResponse({
       connection: {
         id: connection.id,
         deviceId: connection.deviceId,
         status: connection.status,
         remoteEndpoint: connection.remoteEndpoint,
+        hostname: activeEp?.hostname ?? '',
+        publicUrl: connection.remoteEndpoint ?? (activeEp ? `https://${activeEp.hostname}` : null),
         connectedAt: connection.connectedAt?.toISOString(),
         disconnectedAt: connection.disconnectedAt?.toISOString(),
         lastHeartbeatAt: connection.lastHeartbeatAt?.toISOString()

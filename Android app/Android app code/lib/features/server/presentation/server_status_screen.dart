@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -9,7 +10,7 @@ import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../setup/application/setup_state.dart';
 
-/// Server Status Detail Screen — Displays local HTTP server engine state and control triggers
+/// Server Status Detail Screen — Displays local HTTP file server engine state, public subdomain endpoint, and control triggers
 class ServerStatusScreen extends ConsumerStatefulWidget {
   final DeviceServerStatus mockStatus;
 
@@ -89,6 +90,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   @override
   Widget build(BuildContext context) {
     final setup = ref.watch(setupStateProvider);
+    final publicUrl = setup.publicUrl ??
+        (setup.assignedSubdomain != null
+            ? 'https://${setup.assignedSubdomain}'
+            : 'https://gateway.viewduration.com');
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -106,7 +111,133 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Server Node Header Card
+                  // -----------------------------------------------------------
+                  // 1. Dedicated Public Server Access Card
+                  // -----------------------------------------------------------
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    color: AppColors.primarySubtle.withValues(alpha: 0.5),
+                    borderColor: AppColors.primary.withValues(alpha: 0.3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.public_rounded,
+                                    color: AppColors.primary, size: 22),
+                                SizedBox(width: AppSpacing.xs),
+                                Text('Public Server Endpoint',
+                                    style: AppTypography.cardTitle),
+                              ],
+                            ),
+                            StatusBadge(
+                              status: setup.endpointStatus == 'ACTIVE'
+                                  ? DeviceServerStatus.online
+                                  : DeviceServerStatus.offline,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        const Text(
+                          'Public access URL routed through ViewDuration Remote Gateway:',
+                          style: AppTypography.bodySmall,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.radiusMd),
+                            border: Border.all(color: AppColors.borderSubtle),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.link_rounded,
+                                  size: 20, color: AppColors.primary),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  publicUrl,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.copy_rounded, size: 18),
+                                label: const Text('Copy Link'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.sm),
+                                  side: const BorderSide(
+                                      color: AppColors.primary),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusMd),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Clipboard.setData(
+                                      ClipboardData(text: publicUrl));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          'Public link copied: $publicUrl'),
+                                      duration: const Duration(seconds: 3),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.open_in_browser_rounded,
+                                    size: 18),
+                                label: const Text('Open Link'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: AppSpacing.sm),
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusMd),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  ref
+                                      .read(serverServiceProvider)
+                                      .openUrl(publicUrl);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // -----------------------------------------------------------
+                  // 2. Local Node & Engine Status Card
+                  // -----------------------------------------------------------
                   AppCard(
                     padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
@@ -165,15 +296,22 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         _StatusRow(
                           label: 'Remote Gateway Access',
                           value: setup.isGatewayConnected
-                              ? 'CONNECTED (${setup.remoteEndpoint ?? 'gateway.viewduration.com'})'
+                              ? 'CONNECTED (gateway.viewduration.com)'
                               : 'CONNECTED (Active)',
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
+                          label: 'Subdomain Status',
+                          value: setup.endpointStatus,
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // Server Management Actions
+                  // -----------------------------------------------------------
+                  // 3. Node Management Actions
+                  // -----------------------------------------------------------
                   const Text('Node Operations',
                       style: AppTypography.sectionTitle),
                   const SizedBox(height: AppSpacing.sm),

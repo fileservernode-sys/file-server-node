@@ -25,7 +25,7 @@ void main() {
 
       expect(info.status, equals(RemoteConnectionState.connected));
       expect(info.isConnected, isTrue);
-      expect(info.remoteEndpoint, contains('remotenode.net'));
+      expect(info.remoteEndpoint, anyOf(contains('viewduration.com'), contains('remotenode.net')));
     });
 
     test('Disconnect transitions state to disconnected cleanly', () async {

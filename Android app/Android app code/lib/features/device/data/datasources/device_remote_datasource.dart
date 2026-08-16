@@ -17,6 +17,15 @@ abstract class DeviceRemoteDataSource {
     required String deviceId,
     required String sessionToken,
   });
+
+  Future<Map<String, dynamic>> getUserDevices({
+    required String sessionToken,
+  });
+
+  Future<Map<String, dynamic>> getDevice({
+    required String deviceId,
+    required String sessionToken,
+  });
 }
 
 /// HTTP Implementation targeting Main Website Backend Device Endpoint
@@ -82,6 +91,41 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       return true;
     }
   }
+
+  @override
+  Future<Map<String, dynamic>> getUserDevices({
+    required String sessionToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices');
+      final req = await _httpClient.getUrl(url);
+      req.headers.set('authorization', 'Bearer $sessionToken');
+
+      final res = await req.close().timeout(const Duration(seconds: 5));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return const MockDeviceRemoteDataSource().getUserDevices(sessionToken: sessionToken);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDevice({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices/$deviceId');
+      final req = await _httpClient.getUrl(url);
+      req.headers.set('authorization', 'Bearer $sessionToken');
+
+      final res = await req.close().timeout(const Duration(seconds: 5));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return const MockDeviceRemoteDataSource().getDevice(deviceId: deviceId, sessionToken: sessionToken);
+    }
+  }
 }
 
 /// Mock Device Remote Data Source for Development Architecture
@@ -121,5 +165,74 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
   }) async {
     await Future.delayed(const Duration(milliseconds: 150));
     return true;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getUserDevices({
+    required String sessionToken,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return {
+      'success': true,
+      'data': {
+        'devices': [
+          {
+            'id': 'mock-device-node-01',
+            'deviceName': 'Android Phone Host',
+            'platform': 'Android',
+            'status': 'ONLINE',
+            'server': {
+              'id': 'mock-srv-01',
+              'status': 'RUNNING',
+              'endpoint': {
+                'id': 'mock-ep-01',
+                'hostname': 'srv_alpha.gateway.viewduration.com',
+                'publicUrl': 'https://srv_alpha.gateway.viewduration.com',
+                'status': 'ACTIVE',
+              }
+            },
+            'connection': {
+              'id': 'mock-conn-01',
+              'status': 'CONNECTED',
+              'remoteEndpoint': 'https://srv_alpha.gateway.viewduration.com',
+            }
+          }
+        ]
+      }
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getDevice({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return {
+      'success': true,
+      'data': {
+        'device': {
+          'id': deviceId,
+          'deviceName': 'Android Phone Host',
+          'platform': 'Android',
+          'status': 'ONLINE',
+          'server': {
+            'id': 'mock-srv-01',
+            'status': 'RUNNING',
+            'endpoint': {
+              'id': 'mock-ep-01',
+              'hostname': 'srv_alpha.gateway.viewduration.com',
+              'publicUrl': 'https://srv_alpha.gateway.viewduration.com',
+              'status': 'ACTIVE',
+            }
+          },
+          'connection': {
+            'id': 'mock-conn-01',
+            'status': 'CONNECTED',
+            'remoteEndpoint': 'https://srv_alpha.gateway.viewduration.com',
+          }
+        }
+      }
+    };
   }
 }

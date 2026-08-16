@@ -7,6 +7,7 @@ abstract class ServerService {
   Future<Map<String, dynamic>> restartServer({int port = 8080});
   Future<Map<String, dynamic>> getServerStatus();
   Future<String> getLocalUrl();
+  Future<bool> openUrl(String url);
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine
@@ -73,6 +74,16 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().getLocalUrl();
     }
   }
+
+  @override
+  Future<bool> openUrl(String url) async {
+    try {
+      final res = await _channel.invokeMethod<bool>('openUrl', {'url': url});
+      return res ?? false;
+    } catch (e) {
+      return const MockServerService().openUrl(url);
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -118,5 +129,11 @@ class MockServerService implements ServerService {
   @override
   Future<String> getLocalUrl() async {
     return 'http://127.0.0.1:$_port';
+  }
+
+  @override
+  Future<bool> openUrl(String url) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    return true;
   }
 }

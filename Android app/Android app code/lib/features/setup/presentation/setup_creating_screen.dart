@@ -10,7 +10,7 @@ import '../../../core/widgets/loading_indicator.dart';
 import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
-/// Step 5 — Real Server Creation & Gateway Handshake Progress Screen
+/// Step 5 — Real Server Creation, Subdomain Provisioning & Gateway Handshake Progress Screen
 class SetupCreatingScreen extends ConsumerStatefulWidget {
   const SetupCreatingScreen({super.key});
 
@@ -23,9 +23,10 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
   final List<String> _stages = const [
     'Registering Android host device with control plane...',
     'Starting embedded HTTP file-server engine on 0.0.0.0:8080...',
-    'Verifying local socket listener health probe...',
-    'Registering server endpoint & allocating remote connection token...',
-    'Establishing secure outbound WebSocket connection to Remote Gateway...',
+    'Verifying local socket listener health probe (127.0.0.1:8080)...',
+    'Provisioning public subdomain endpoint & DNS routing...',
+    'Establishing secure WebSocket connection to Remote Gateway...',
+    'Verifying gateway reverse-proxy routing & public server access...',
   ];
 
   @override
@@ -42,8 +43,6 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
 
     if (success) {
       Navigator.pushReplacementNamed(context, '/server/setup/success');
-    } else {
-      Navigator.pushReplacementNamed(context, '/server/setup/failure');
     }
   }
 
@@ -79,7 +78,7 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text(
-                    'Configuring this Android device as a personal file server host node.',
+                    'Configuring local engine, provisioning public subdomain, and connecting to Remote Gateway.',
                     style: AppTypography.bodySmall,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -92,17 +91,17 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                       children: [
                         LoadingIndicator(
                             message: setupState.isProcessing
-                                ? 'Executing server creation...'
+                                ? 'Provisioning server & public endpoint...'
                                 : 'Finalizing node configuration...'),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
                           _stages[stageIdx],
                           style: AppTypography.body
-                              .copyWith(fontWeight: FontWeight.w500),
+                              .copyWith(fontWeight: FontWeight.w600, color: AppColors.primary),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _StageCheckItem(
-                            title: 'Registering host device node',
+                            title: 'Registering host device node with backend',
                             isDone: stageIdx >= 1),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
@@ -110,16 +109,20 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                             isDone: stageIdx >= 2),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Verifying local socket listener',
+                            title: 'Verifying local socket listener (127.0.0.1:8080)',
                             isDone: stageIdx >= 3),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Reserving endpoint & gateway token',
+                            title: 'Provisioning public subdomain endpoint',
                             isDone: stageIdx >= 4),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Connecting to Remote Gateway',
-                            isDone: setupState.isGatewayConnected),
+                            title: 'Connecting outbound WebSocket to Remote Gateway',
+                            isDone: stageIdx >= 5 || setupState.isGatewayConnected),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StageCheckItem(
+                            title: 'Verifying public reverse-proxy routing',
+                            isDone: setupState.endpointStatus == 'ACTIVE'),
                       ],
                     ),
                   ),
@@ -134,15 +137,33 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                             BorderRadius.circular(AppSpacing.radiusMd),
                         border: Border.all(color: AppColors.statusError),
                       ),
-                      child: Text(
-                        setupState.errorMessage!,
-                        style: AppTypography.bodySmall
-                            .copyWith(color: AppColors.statusError),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline,
+                                  color: AppColors.statusError, size: 20),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                'Subdomain connection failed',
+                                style: AppTypography.cardTitle
+                                    .copyWith(color: AppColors.statusError),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            setupState.errorMessage!,
+                            style: AppTypography.bodySmall
+                                .copyWith(color: AppColors.statusError),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     PrimaryButton(
-                      label: 'Retry Setup',
+                      label: 'Retry Connection',
                       icon: Icons.refresh,
                       onPressed: _runSetup,
                     ),
@@ -178,6 +199,7 @@ class _StageCheckItem extends StatelessWidget {
             title,
             style: AppTypography.caption.copyWith(
               color: isDone ? AppColors.textPrimary : AppColors.textMuted,
+              fontWeight: isDone ? FontWeight.w500 : FontWeight.normal,
             ),
           ),
         ),

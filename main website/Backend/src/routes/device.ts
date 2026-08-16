@@ -162,4 +162,139 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       lastSeenAt: now.toISOString()
     }));
   });
+
+  /**
+   * GET /api/v1/devices
+   * Retrieves all registered devices for the authenticated user along with their active servers and endpoints.
+   */
+  app.get('/devices', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+
+    const devices = await prisma.device.findMany({
+      where: { userId: user.id },
+      include: {
+        servers: {
+          include: {
+            endpoints: true
+          }
+        },
+        connections: {
+          include: {
+            gatewayNode: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      devices: devices.map(d => {
+        const activeServer = d.servers[0];
+        const activeEndpoint = activeServer?.endpoints?.find(e => e.status === 'ACTIVE') ?? activeServer?.endpoints?.[0];
+        const activeConn = d.connections?.[0];
+
+        return {
+          id: d.id,
+          deviceName: d.deviceName,
+          platform: d.platform,
+          osVersion: d.osVersion,
+          appVersion: d.appVersion,
+          status: d.status,
+          lastSeenAt: d.lastSeenAt?.toISOString(),
+          server: activeServer ? {
+            id: activeServer.id,
+            status: activeServer.status,
+            startedAt: activeServer.startedAt?.toISOString(),
+            endpoint: activeEndpoint ? {
+              id: activeEndpoint.id,
+              hostname: activeEndpoint.hostname,
+              publicUrl: `https://${activeEndpoint.hostname}`,
+              status: activeEndpoint.status
+            } : null
+          } : null,
+          connection: activeConn ? {
+            id: activeConn.id,
+            status: activeConn.status,
+            remoteEndpoint: activeConn.remoteEndpoint,
+            gatewayHost: activeConn.gatewayNode?.hostname ?? null,
+            lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()
+          } : null
+        };
+      })
+    }));
+  });
+
+  /**
+   * GET /api/v1/devices/:deviceId
+   * Retrieves a single device by ID with its active server and endpoint.
+   */
+  app.get('/devices/:deviceId', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const params = heartbeatSchema.safeParse(request.params);
+
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const deviceId = params.data.deviceId;
+    const device = await prisma.device.findUnique({
+      where: { id: deviceId },
+      include: {
+        servers: {
+          include: {
+            endpoints: true
+          }
+        },
+        connections: {
+          include: {
+            gatewayNode: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!device) {
+      return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
+    }
+
+    if (device.userId !== user.id) {
+      throw new ForbiddenError('You do not have permission to access this device');
+    }
+
+    const activeServer = device.servers[0];
+    const activeEndpoint = activeServer?.endpoints?.find(e => e.status === 'ACTIVE') ?? activeServer?.endpoints?.[0];
+    const activeConn = device.connections?.[0];
+
+    return reply.status(200).send(createSuccessResponse({
+      device: {
+        id: device.id,
+        deviceName: device.deviceName,
+        platform: device.platform,
+        osVersion: device.osVersion,
+        appVersion: device.appVersion,
+        status: device.status,
+        lastSeenAt: device.lastSeenAt?.toISOString(),
+        server: activeServer ? {
+          id: activeServer.id,
+          status: activeServer.status,
+          startedAt: activeServer.startedAt?.toISOString(),
+          endpoint: activeEndpoint ? {
+            id: activeEndpoint.id,
+            hostname: activeEndpoint.hostname,
+            publicUrl: `https://${activeEndpoint.hostname}`,
+            status: activeEndpoint.status
+          } : null
+        } : null,
+        connection: activeConn ? {
+          id: activeConn.id,
+          status: activeConn.status,
+          remoteEndpoint: activeConn.remoteEndpoint,
+          gatewayHost: activeConn.gatewayNode?.hostname ?? null,
+          lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()
+        } : null
+      }
+    }));
+  });
 }

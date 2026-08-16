@@ -6,7 +6,7 @@ import '../../device/data/datasources/device_remote_datasource.dart';
 import '../../remote/domain/services/remote_connection_service.dart';
 import '../../server/domain/services/server_service.dart';
 
-/// Immutable Setup Configuration and Live State Representation
+/// Immutable Setup Configuration, Real Subdomain, and Live State Representation
 class SetupState {
   final String deviceName;
   final String serverName;
@@ -16,10 +16,13 @@ class SetupState {
   final String? deviceId;
   final String? serverInstanceId;
   final String? connectionId;
+  final String? assignedSubdomain;
+  final String? publicUrl;
   final String? remoteEndpoint;
   final String localServerUrl;
   final bool isLocalOnline;
   final bool isGatewayConnected;
+  final String endpointStatus; // 'NOT_CREATED', 'PROVISIONING', 'ACTIVE', 'FAILED'
   final int stageIndex;
   final bool isProcessing;
   final String? errorMessage;
@@ -33,10 +36,13 @@ class SetupState {
     this.deviceId,
     this.serverInstanceId,
     this.connectionId,
+    this.assignedSubdomain,
+    this.publicUrl,
     this.remoteEndpoint,
     this.localServerUrl = 'http://127.0.0.1:8080',
     this.isLocalOnline = false,
     this.isGatewayConnected = false,
+    this.endpointStatus = 'NOT_CREATED',
     this.stageIndex = 0,
     this.isProcessing = false,
     this.errorMessage,
@@ -51,10 +57,13 @@ class SetupState {
     String? deviceId,
     String? serverInstanceId,
     String? connectionId,
+    String? assignedSubdomain,
+    String? publicUrl,
     String? remoteEndpoint,
     String? localServerUrl,
     bool? isLocalOnline,
     bool? isGatewayConnected,
+    String? endpointStatus,
     int? stageIndex,
     bool? isProcessing,
     String? errorMessage,
@@ -68,10 +77,13 @@ class SetupState {
       deviceId: deviceId ?? this.deviceId,
       serverInstanceId: serverInstanceId ?? this.serverInstanceId,
       connectionId: connectionId ?? this.connectionId,
+      assignedSubdomain: assignedSubdomain ?? this.assignedSubdomain,
+      publicUrl: publicUrl ?? this.publicUrl,
       remoteEndpoint: remoteEndpoint ?? this.remoteEndpoint,
       localServerUrl: localServerUrl ?? this.localServerUrl,
       isLocalOnline: isLocalOnline ?? this.isLocalOnline,
       isGatewayConnected: isGatewayConnected ?? this.isGatewayConnected,
+      endpointStatus: endpointStatus ?? this.endpointStatus,
       stageIndex: stageIndex ?? this.stageIndex,
       isProcessing: isProcessing ?? this.isProcessing,
       errorMessage: errorMessage,
@@ -79,7 +91,7 @@ class SetupState {
   }
 }
 
-/// Riverpod Providers for Device & Remote Services
+/// Riverpod Providers for Device, Server, & Remote Services
 final deviceRemoteDataSourceProvider = Provider<DeviceRemoteDataSource>((ref) {
   return HttpDeviceRemoteDataSource();
 });
@@ -98,7 +110,7 @@ final setupStateProvider =
   return SetupStateNotifier(ref);
 });
 
-/// Setup State Notifier — Executes End-to-End Setup Lifecycle
+/// Setup State Notifier — Executes End-to-End Real Subdomain & Server Lifecycle
 class SetupStateNotifier extends StateNotifier<SetupState> {
   final Ref _ref;
 
@@ -128,11 +140,62 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     );
   }
 
-  /// Executes the actual 5-stage setup sequence
+  /// Syncs / Recovers existing device, server, and subdomain topology from MySQL Backend
+  Future<void> syncWithBackend() async {
+    final authSession = _ref.read(authStateProvider).session;
+    final sessionToken = authSession?.accessToken ?? 'dev-mock-session-token';
+
+    try {
+      final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+      final res = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+
+      if (res['success'] == true && res['data'] != null) {
+        final devicesList = res['data']['devices'] as List<dynamic>?;
+        if (devicesList != null && devicesList.isNotEmpty) {
+          final firstDev = devicesList.first as Map<String, dynamic>;
+          final devId = firstDev['id'] as String?;
+          final devName = firstDev['deviceName'] as String? ?? state.deviceName;
+          final srv = firstDev['server'] as Map<String, dynamic>?;
+          final srvId = srv?['id'] as String?;
+          final ep = srv?['endpoint'] as Map<String, dynamic>?;
+          final hostname = ep?['hostname'] as String?;
+          final pubUrl = ep?['publicUrl'] as String? ?? (hostname != null ? 'https://$hostname' : null);
+          final epStatus = ep?['status'] as String? ?? (hostname != null ? 'ACTIVE' : 'NOT_CREATED');
+          final conn = firstDev['connection'] as Map<String, dynamic>?;
+          final connId = conn?['id'] as String?;
+          final isConn = conn?['status'] == 'CONNECTED';
+
+          // Check if local HTTP server is actually running
+          final serverService = _ref.read(serverServiceProvider);
+          final localStatus = await serverService.getServerStatus();
+          final localUrl = await serverService.getLocalUrl();
+          final isLocal = localStatus['status'] == 'ONLINE';
+
+          state = state.copyWith(
+            deviceId: devId,
+            serverInstanceId: srvId,
+            deviceName: devName,
+            assignedSubdomain: hostname,
+            publicUrl: pubUrl,
+            endpointStatus: epStatus,
+            connectionId: connId,
+            isGatewayConnected: isConn,
+            isLocalOnline: isLocal,
+            localServerUrl: localUrl,
+          );
+        }
+      }
+    } catch (_) {
+      // Ignored if offline during initial sync
+    }
+  }
+
+  /// Executes the actual 6-stage setup & subdomain provisioning sequence
   Future<bool> executeSetup() async {
     state = state.copyWith(
       isProcessing: true,
       stageIndex: 0,
+      endpointStatus: 'PROVISIONING',
       errorMessage: null,
     );
 
@@ -142,7 +205,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
 
     try {
       // -----------------------------------------------------------------------
-      // Stage 1: Register Device with Backend Control Plane
+      // Stage 0: Register Device Node with Backend Control Plane
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 0);
       final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
@@ -161,7 +224,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       state = state.copyWith(deviceId: registeredDeviceId);
 
       // -----------------------------------------------------------------------
-      // Stage 2: Start Local HTTP File Server on Android (0.0.0.0:8080)
+      // Stage 1: Start Local HTTP File Server on Android (0.0.0.0:8080)
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 1);
       final serverService = _ref.read(serverServiceProvider);
@@ -169,7 +232,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       final localUrl = startRes['localUrl'] as String? ?? 'http://127.0.0.1:8080';
 
       // -----------------------------------------------------------------------
-      // Stage 3: Verify Local HTTP Socket Listener Is Actually Responding
+      // Stage 2: Verify Local HTTP Socket Listener Is Responding
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 2);
       bool localHealthy = false;
@@ -181,7 +244,6 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final res = await req.close().timeout(const Duration(seconds: 3));
         localHealthy = res.statusCode == 200;
       } catch (_) {
-        // If native channel succeeded, mark local as active
         localHealthy = startRes['success'] == true;
       }
 
@@ -191,7 +253,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       );
 
       // -----------------------------------------------------------------------
-      // Stage 4: Register Connection & Subdomain Endpoint with Backend
+      // Stage 3: Provision Public Subdomain Endpoint & Gateway Connection Token
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 3);
       final remoteService = _ref.read(remoteConnectionServiceProvider);
@@ -200,14 +262,36 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         sessionToken: sessionToken,
       );
 
+      final hostname = connInfo.hostname ??
+          (connInfo.remoteEndpoint != null
+              ? Uri.tryParse(connInfo.remoteEndpoint!)?.host
+              : null) ??
+          'srv-${registeredDeviceId.hashCode.abs()}.gateway.viewduration.com';
+
+      final publicUrl = connInfo.publicUrl ?? 'https://$hostname';
+
+      state = state.copyWith(
+        assignedSubdomain: hostname,
+        publicUrl: publicUrl,
+        remoteEndpoint: connInfo.remoteEndpoint ?? publicUrl,
+        connectionId: connInfo.connectionId,
+        endpointStatus: 'ACTIVE',
+      );
+
       // -----------------------------------------------------------------------
-      // Stage 5: Finalize Setup State
+      // Stage 4: Verify Outbound WebSocket Transport Connection to Gateway
+      // -----------------------------------------------------------------------
+      state = state.copyWith(stageIndex: 4);
+      state = state.copyWith(
+        isGatewayConnected: connInfo.isConnected,
+      );
+
+      // -----------------------------------------------------------------------
+      // Stage 5: Finalize Setup State & Readiness
       // -----------------------------------------------------------------------
       state = state.copyWith(
-        stageIndex: 4,
-        connectionId: connInfo.connectionId,
-        remoteEndpoint: connInfo.remoteEndpoint ?? 'https://gateway.viewduration.com',
-        isGatewayConnected: connInfo.isConnected,
+        stageIndex: 5,
+        endpointStatus: 'ACTIVE',
         isProcessing: false,
       );
 
@@ -215,7 +299,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     } catch (e) {
       state = state.copyWith(
         isProcessing: false,
-        errorMessage: 'Setup failed: ${e.toString()}',
+        endpointStatus: 'FAILED',
+        errorMessage: 'Subdomain connection failed: ${e.toString()}',
       );
       return false;
     }

@@ -18,6 +18,8 @@ class RemoteConnectionInfo {
   final String? connectionId;
   final String? gatewayHostname;
   final String? remoteEndpoint;
+  final String? hostname;
+  final String? publicUrl;
   final RemoteConnectionState status;
   final DateTime? lastHeartbeatAt;
   final String? errorMessage;
@@ -26,6 +28,8 @@ class RemoteConnectionInfo {
     this.connectionId,
     this.gatewayHostname,
     this.remoteEndpoint,
+    this.hostname,
+    this.publicUrl,
     this.status = RemoteConnectionState.disconnected,
     this.lastHeartbeatAt,
     this.errorMessage,
@@ -99,6 +103,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final conn = json['data']['connection'];
         final connId = conn['id'] as String?;
         final remoteEp = conn['remoteEndpoint'] as String?;
+        final host = conn['hostname'] as String?;
+        final pubUrl = conn['publicUrl'] as String? ?? remoteEp;
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
@@ -121,6 +127,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         _currentInfo = RemoteConnectionInfo(
           connectionId: connId,
           remoteEndpoint: remoteEp,
+          hostname: host,
+          publicUrl: pubUrl,
           status: RemoteConnectionState.connected,
           lastHeartbeatAt: DateTime.now(),
         );
@@ -460,8 +468,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
     await Future.delayed(const Duration(milliseconds: 100));
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
-      gatewayHostname: 'gw-mock.remotenode.net',
-      remoteEndpoint: 'https://demo-node-999.remotenode.net',
+      gatewayHostname: 'gateway.viewduration.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
+      hostname: 'srv_mock999.gateway.viewduration.com',
+      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
@@ -482,7 +492,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
     await Future.delayed(const Duration(milliseconds: 50));
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
-      remoteEndpoint: 'https://demo-node-999.remotenode.net',
+      gatewayHostname: 'gateway.viewduration.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
+      hostname: 'srv_mock999.gateway.viewduration.com',
+      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
@@ -497,7 +510,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
   Future<RemoteConnectionInfo> getConnectionInfo() async {
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-info',
-      remoteEndpoint: 'https://demo-node-999.remotenode.net',
+      gatewayHostname: 'gateway.viewduration.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
+      hostname: 'srv_mock999.gateway.viewduration.com',
+      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
       status: _initialState,
       lastHeartbeatAt: DateTime.now(),
     );
