@@ -8,7 +8,7 @@ const API_BASE_URL = (typeof window !== 'undefined' && (window.location.hostname
   ? 'http://localhost:4000/api/v1' 
   : (window.location.hostname === 'gateway.viewduration.com' 
       ? '/api/v1' 
-      : (window.location.hostname.endsWith('viewduration.com') ? '/api/v1' : 'https://gateway.viewduration.com/api/v1'));
+      : 'https://gateway.viewduration.com/api/v1');
 
 if (typeof window !== 'undefined') {
   window.API_BASE_URL = API_BASE_URL;
