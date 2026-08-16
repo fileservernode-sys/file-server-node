@@ -350,12 +350,28 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       } catch (_) {}
 
       // 3. Delete from Backend Database control plane (removes Device, ServerInstance, ServerEndpoint)
-      if (devId != null && sessionToken != null && sessionToken.isNotEmpty) {
+      if (sessionToken != null && sessionToken.isNotEmpty) {
         final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
-        await deviceDataSource.deleteDevice(
-          deviceId: devId,
-          sessionToken: sessionToken,
-        );
+        var targetDevId = devId;
+
+        if (targetDevId == null || targetDevId.isEmpty) {
+          try {
+            final userDevicesRes = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+            if (userDevicesRes['success'] == true && userDevicesRes['data'] != null) {
+              final devices = userDevicesRes['data']['devices'] as List<dynamic>?;
+              if (devices != null && devices.isNotEmpty) {
+                targetDevId = devices[0]['id'] as String?;
+              }
+            }
+          } catch (_) {}
+        }
+
+        if (targetDevId != null && targetDevId.isNotEmpty) {
+          await deviceDataSource.deleteDevice(
+            deviceId: targetDevId,
+            sessionToken: sessionToken,
+          );
+        }
       }
 
       // 4. Reset setup state
