@@ -97,24 +97,69 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
-   * GET /api/v1/health/smtp
-   * Safe SMTP Configuration & Connectivity Diagnostic Probe.
-   * Verifies if SMTP credentials are provided and tests socket connectivity without exposing passwords.
+  /**
+   * GET /api/v1/health/smtp (and alias /api/v1/health/email)
+   * Safe Email / SMTP Configuration & Connectivity Diagnostic Probe.
+   * Tests Brevo HTTPS REST API (port 443) or SMTP relay without exposing secrets.
    */
-  app.get('/health/smtp', async (_request, reply: FastifyReply) => {
+  const emailHealthHandler = async (_request: any, reply: FastifyReply) => {
+    const brevoApiKey = (process.env.BREVO_API_KEY || config.BREVO_API_KEY || '').trim();
     const host = process.env.SMTP_HOST || config.SMTP_HOST;
     const port = Number(process.env.SMTP_PORT || config.SMTP_PORT);
     const user = process.env.SMTP_USERNAME || process.env.SMTP_USER || config.SMTP_USERNAME;
     const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || config.SMTP_PASSWORD;
 
+    // 1. Check Brevo HTTPS REST API
+    if (brevoApiKey) {
+      try {
+        const res = await fetch('https://api.brevo.com/v3/account', {
+          method: 'GET',
+          headers: {
+            'api-key': brevoApiKey,
+            'accept': 'application/json'
+          }
+        });
+
+        if (res.ok) {
+          const accountData: any = await res.json().catch(() => ({}));
+          return reply.status(200).send(
+            createSuccessResponse({
+              status: 'ok',
+              provider: 'brevo_api',
+              email: accountData?.email ? '***@' + (accountData.email.split('@')[1] || '***') : 'configured',
+              message: 'Brevo Transactional Email API is authenticated and ready to dispatch emails over HTTPS (Port 443).'
+            })
+          );
+        } else {
+          const errData: any = await res.json().catch(() => ({}));
+          return reply.status(200).send(
+            createSuccessResponse({
+              status: 'warning',
+              provider: 'brevo_api',
+              message: `Brevo API authentication error: ${errData?.message || res.statusText}`
+            })
+          );
+        }
+      } catch (e: any) {
+        return reply.status(200).send(
+          createSuccessResponse({
+            status: 'warning',
+            provider: 'brevo_api',
+            message: `Brevo API connection error: ${e?.message || 'Network error'}`
+          })
+        );
+      }
+    }
+
+    // 2. Check SMTP Relay
     const isConfigured = Boolean(host && user && pass);
 
     if (!isConfigured) {
       return reply.status(200).send(
         createSuccessResponse({
           status: 'warning',
-          smtp: 'missing_credentials',
-          message: 'SMTP credentials are not configured in Render environment variables. Please set SMTP_USERNAME and SMTP_PASSWORD.',
+          provider: 'smtp_relay',
+          message: 'No email service credentials configured. Please set BREVO_API_KEY in Render environment variables.',
           host,
           port,
           hasUsername: Boolean(user),
@@ -138,8 +183,8 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(200).send(
         createSuccessResponse({
           status: 'ok',
-          smtp: 'connected',
-          message: 'Serverbyt SMTP service is authenticated and ready to dispatch emails.',
+          provider: 'smtp_relay',
+          message: 'SMTP relay is authenticated and ready to dispatch emails.',
           host,
           port
         })
@@ -151,12 +196,15 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(200).send(
         createSuccessResponse({
           status: 'warning',
-          smtp: 'connection_failed',
+          provider: 'smtp_relay',
           message: `Unable to connect to SMTP server: ${sanitizedError}`,
           host,
           port
         })
       );
     }
-  });
+  };
+
+  app.get('/health/smtp', emailHealthHandler);
+  app.get('/health/email', emailHealthHandler);
 }

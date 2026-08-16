@@ -53,10 +53,11 @@ const envSchema = z.object({
       }
     ),
 
-  // StackMail / Serverbyt SMTP Configuration Schema Parameters
-  SMTP_HOST: z.string().default('smtp.stackmail.com'),
-  SMTP_PORT: z.coerce.number().default(465),
-  SMTP_USERNAME: z.string().default('noreply@viewduration.com'),
+  // Brevo & SMTP Email Configuration Schema Parameters
+  BREVO_API_KEY: z.string().default(''),
+  SMTP_HOST: z.string().default('smtp-relay.brevo.com'),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_USERNAME: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
   SMTP_FROM_EMAIL: z.string().default('noreply@viewduration.com'),
   SMTP_FROM_NAME: z.string().default('RemoteNode File Server'),

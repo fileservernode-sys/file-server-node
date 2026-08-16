@@ -14,10 +14,11 @@ export interface EmailService {
 }
 
 /**
- * Serverbyt SMTP Email Delivery Service Implementation
- * Sends real transactional emails through Serverbyt SMTP (port 587 STARTTLS / port 465 SSL)
+ * Brevo Transactional Email Service
+ * Supports direct HTTPS REST API (Port 443 - zero cloud firewall issues on Render)
+ * as well as Brevo / Standard SMTP Relay fallback.
  */
-export class SmtpEmailService implements EmailService {
+export class BrevoEmailService implements EmailService {
   private host: string;
   private port: number;
   private fromEmail: string;
@@ -28,6 +29,10 @@ export class SmtpEmailService implements EmailService {
     this.port = config.SMTP_PORT;
     this.fromEmail = config.SMTP_FROM_EMAIL;
     this.fromName = config.SMTP_FROM_NAME;
+  }
+
+  private getApiKey(): string {
+    return (process.env.BREVO_API_KEY || config.BREVO_API_KEY || '').trim();
   }
 
   private getTransporter(): Transporter | null {
@@ -55,29 +60,64 @@ export class SmtpEmailService implements EmailService {
   }
 
   private async sendMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+    const apiKey = this.getApiKey();
+    const fromEmail = (process.env.SMTP_FROM_EMAIL || this.fromEmail).trim();
+    const fromName = (process.env.SMTP_FROM_NAME || this.fromName).trim();
+
+    // 1. Primary: Brevo HTTPS REST API (Zero port-blocking issues on Render)
+    if (apiKey) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': apiKey,
+            'content-type': 'application/json',
+            'accept': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: { name: fromName, email: fromEmail },
+            to: [{ email: to }],
+            subject,
+            htmlContent: html,
+            textContent: text
+          })
+        });
+
+        if (response.ok) {
+          console.log(`[Brevo Email API] Successfully dispatched transactional email to ${to}`);
+          return true;
+        }
+
+        const errorPayload: any = await response.json().catch(() => ({}));
+        console.error(`[Brevo Email API] Delivery error for ${to}: ${errorPayload?.message || response.statusText}`);
+        return false;
+      } catch (err: any) {
+        console.error(`[Brevo Email API] Network error dispatching to ${to}: ${err?.message || 'Unknown error'}`);
+        return false;
+      }
+    }
+
+    // 2. Secondary: SMTP Relay (Port 587 / 465 / 2525)
     const transporter = this.getTransporter();
-    const fromEmail = process.env.SMTP_FROM_EMAIL || this.fromEmail;
-    const fromName = process.env.SMTP_FROM_NAME || this.fromName;
-
-    if (!transporter) {
-      console.warn(`[Serverbyt SMTP] Transporter not fully configured (missing SMTP_USERNAME/SMTP_USER or SMTP_PASSWORD/SMTP_PASS in environment). Email dispatch to ${to} deferred.`);
-      return true;
+    if (transporter) {
+      try {
+        await transporter.sendMail({
+          from: `"${fromName}" <${fromEmail}>`,
+          to,
+          subject,
+          text,
+          html
+        });
+        console.log(`[Brevo SMTP Relay] Successfully dispatched email to ${to}`);
+        return true;
+      } catch (err: any) {
+        console.error(`[Brevo SMTP Relay] Failed to send email to ${to}: ${err?.message || 'SMTP error'}`);
+        return false;
+      }
     }
 
-    try {
-      await transporter.sendMail({
-        from: `"${fromName}" <${fromEmail}>`,
-        to,
-        subject,
-        text,
-        html
-      });
-      console.log(`[Serverbyt SMTP] Successfully dispatched transactional email to ${to}`);
-      return true;
-    } catch (err: any) {
-      console.error(`[Serverbyt SMTP] Failed to send email to ${to}: ${err?.message || 'SMTP delivery error'}`);
-      return false;
-    }
+    console.warn(`[Brevo Email] Neither BREVO_API_KEY nor SMTP credentials configured. Email dispatch to ${to} deferred.`);
+    return true;
   }
 
   async sendVerificationOtp(email: string, otpCode: string): Promise<boolean> {
@@ -98,6 +138,11 @@ export class SmtpEmailService implements EmailService {
     return this.sendMail(email, template.subject, template.html, template.text);
   }
 }
+
+/**
+ * Backward compatibility alias for SmtpEmailService
+ */
+export const SmtpEmailService = BrevoEmailService;
 
 /**
  * Mock Email Service for Test Environment
@@ -123,4 +168,4 @@ export class MockEmailService implements EmailService {
 
 export const emailService: EmailService = config.NODE_ENV === 'test'
   ? new MockEmailService()
-  : new SmtpEmailService();
+  : new BrevoEmailService();
