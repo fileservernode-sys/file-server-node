@@ -1,4 +1,6 @@
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { prisma } from '../config/database.js';
 import { GatewayConfig, loadGatewayConfig } from './gateway_config.js';
@@ -435,6 +437,39 @@ export class GatewayService {
         const statusCode = response.success ? 200 : 400;
         res.writeHead(statusCode, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(response.data || response));
+        return;
+      }
+
+      // =======================================================================
+      // STATIC FILE MANAGER WEB APP SERVING
+      // =======================================================================
+      let relativeFilePath = pathname === '/' ? '/index.html' : pathname;
+      const webDir = path.resolve(__dirname, 'web');
+      const resolvedFilePath = path.normalize(path.join(webDir, relativeFilePath));
+
+      if (resolvedFilePath.startsWith(webDir) && fs.existsSync(resolvedFilePath) && fs.statSync(resolvedFilePath).isFile()) {
+        const ext = path.extname(resolvedFilePath).toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          '.html': 'text/html; charset=utf-8',
+          '.css': 'text/css; charset=utf-8',
+          '.js': 'application/javascript; charset=utf-8',
+          '.json': 'application/json',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon'
+        };
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': contentType });
+        fs.createReadStream(resolvedFilePath).pipe(res);
+        return;
+      }
+
+      // Fallback for root or SPA paths to index.html if available
+      const indexPath = path.join(webDir, 'index.html');
+      if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        fs.createReadStream(indexPath).pipe(res);
         return;
       }
 
