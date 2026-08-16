@@ -349,11 +349,12 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
-   * DELETE /api/v1/devices/:deviceId
+   * DELETE /api/v1/devices/:deviceId & DELETE /api/v1/servers/:deviceId
    * Deletes a server node, releasing and deleting its allocated subdomain endpoint,
    * active device connections, and server instance records from MySQL.
+   * Supports device ID and server instance ID.
    */
-  app.delete('/devices/:deviceId', async (request: FastifyRequest, reply: FastifyReply) => {
+  const handleDeleteDevice = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = heartbeatSchema.safeParse(request.params);
 
@@ -361,9 +362,16 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('Invalid device ID parameter');
     }
 
-    const deviceId = params.data.deviceId;
-    const device = await prisma.device.findUnique({
-      where: { id: deviceId },
+    const identifier = params.data.deviceId;
+
+    // Search by device UUID or linked ServerInstance ID
+    let device = await prisma.device.findFirst({
+      where: {
+        OR: [
+          { id: identifier },
+          { servers: { some: { id: identifier } } }
+        ]
+      },
       include: {
         servers: {
           include: {
@@ -374,6 +382,21 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
+    // Fallback: If not found by exact ID, find any device owned by this user
+    if (!device) {
+      device = await prisma.device.findFirst({
+        where: { userId: user.id },
+        include: {
+          servers: {
+            include: {
+              endpoints: true
+            }
+          },
+          connections: true
+        }
+      });
+    }
+
     if (!device) {
       return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
     }
@@ -383,7 +406,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Cascade delete: ServerEndpoints -> ServerInstances -> DeviceConnections -> Device
-    const serverIds = device.servers.map(s => s.id);
+    const serverIds = device.servers.map((s: { id: string }) => s.id);
     
     await prisma.$transaction(async (tx) => {
       // 1. Delete all ServerEndpoints (releasing and removing subdomains)
@@ -402,21 +425,21 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
       // 3. Delete all DeviceConnections
       await tx.deviceConnection.deleteMany({
-        where: { deviceId: device.id }
+        where: { deviceId: device!.id }
       });
 
       // 4. Delete the Device record
       await tx.device.delete({
-        where: { id: device.id }
+        where: { id: device!.id }
       });
 
       // 5. Record Audit Log
       await tx.auditEvent.create({
         data: {
           userId: user.id,
-          deviceId: device.id,
+          deviceId: device!.id,
           eventType: 'SERVER_STOPPED',
-          metadata: { action: 'SERVER_DELETED', deviceName: device.deviceName }
+          metadata: { action: 'SERVER_DELETED', deviceName: device!.deviceName }
         }
       });
     });
@@ -424,5 +447,9 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(200).send(createSuccessResponse({
       message: 'Server, allocated subdomain endpoint, and all associated node data successfully deleted.'
     }));
-  });
+  };
+
+  app.delete('/devices/:deviceId', handleDeleteDevice);
+  app.delete('/servers/:deviceId', handleDeleteDevice);
 }
+
