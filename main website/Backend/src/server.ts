@@ -1,10 +1,14 @@
 import { buildApp } from './app.js';
 import { config } from './config/env.js';
 import { disconnectDatabase } from './config/database.js';
+import { runStartupMigrations } from './services/db_migrator.js';
 
 async function startServer() {
   try {
     const app = await buildApp();
+
+    // Execute runtime safe Prisma migrations on startup
+    await runStartupMigrations(app.log);
 
     const address = await app.listen({
       port: config.PORT,
