@@ -347,4 +347,82 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     }));
   });
+
+  /**
+   * DELETE /api/v1/devices/:deviceId
+   * Deletes a server node, releasing and deleting its allocated subdomain endpoint,
+   * active device connections, and server instance records from MySQL.
+   */
+  app.delete('/devices/:deviceId', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const params = heartbeatSchema.safeParse(request.params);
+
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const deviceId = params.data.deviceId;
+    const device = await prisma.device.findUnique({
+      where: { id: deviceId },
+      include: {
+        servers: {
+          include: {
+            endpoints: true
+          }
+        },
+        connections: true
+      }
+    });
+
+    if (!device) {
+      return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
+    }
+
+    if (device.userId !== user.id) {
+      throw new ForbiddenError('You do not have permission to delete this server');
+    }
+
+    // Cascade delete: ServerEndpoints -> ServerInstances -> DeviceConnections -> Device
+    const serverIds = device.servers.map(s => s.id);
+    
+    await prisma.$transaction(async (tx) => {
+      // 1. Delete all ServerEndpoints (releasing and removing subdomains)
+      if (serverIds.length > 0) {
+        await tx.serverEndpoint.deleteMany({
+          where: { serverInstanceId: { in: serverIds } }
+        });
+      }
+
+      // 2. Delete all ServerInstances
+      if (serverIds.length > 0) {
+        await tx.serverInstance.deleteMany({
+          where: { id: { in: serverIds } }
+        });
+      }
+
+      // 3. Delete all DeviceConnections
+      await tx.deviceConnection.deleteMany({
+        where: { deviceId: device.id }
+      });
+
+      // 4. Delete the Device record
+      await tx.device.delete({
+        where: { id: device.id }
+      });
+
+      // 5. Record Audit Log
+      await tx.auditEvent.create({
+        data: {
+          userId: user.id,
+          deviceId: device.id,
+          eventType: 'SERVER_STOPPED',
+          metadata: { action: 'SERVER_DELETED', deviceName: device.deviceName }
+        }
+      });
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      message: 'Server, allocated subdomain endpoint, and all associated node data successfully deleted.'
+    }));
+  });
 }

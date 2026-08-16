@@ -334,9 +334,12 @@
                 </div>
 
                 <div>
-                  <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); padding-top: var(--space-xs); border-top: 1px solid var(--color-border-subtle);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-xs); color: var(--color-text-muted); padding-top: var(--space-xs); border-top: 1px solid var(--color-border-subtle);">
                     <span>Last Seen: <strong>${escapeHtml(lastSeenFormatted)}</strong></span>
-                    <span>Node ID: <strong>${escapeHtml(device.id.substring(0, 8))}</strong></span>
+                    <button type="button" class="btn btn-outline btn-sm" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.3); padding: 3px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;" onclick="deleteUserServer('${escapeHtml(device.id)}', '${escapeHtml(serverDisplayName)}', this)">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
@@ -373,6 +376,39 @@
         }
       } finally {
         isFetching = false;
+      }
+    }
+
+    async function deleteUserServer(deviceId, serverName, btnElement) {
+      const confirmed = window.confirm(`Are you sure you want to permanently delete "${serverName}"?\n\nThis will remove the server node, its allocated subdomain endpoint, and all connection records from the database.`);
+      if (!confirmed) return;
+
+      const originalText = btnElement.innerHTML;
+      btnElement.disabled = true;
+      btnElement.innerHTML = 'Deleting...';
+
+      try {
+        const token = getAuthToken();
+        const base = getApiBase();
+        const res = await fetch(`${base}/devices/${deviceId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          await loadUserServers(false);
+        } else {
+          alert(data.error?.message || 'Failed to delete server.');
+          btnElement.disabled = false;
+          btnElement.innerHTML = originalText;
+        }
+      } catch (err) {
+        alert('Network error while attempting to delete server.');
+        btnElement.disabled = false;
+        btnElement.innerHTML = originalText;
       }
     }
   </script>

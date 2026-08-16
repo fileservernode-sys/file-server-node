@@ -29,6 +29,11 @@ abstract class DeviceRemoteDataSource {
     required String deviceId,
     required String sessionToken,
   });
+
+  Future<Map<String, dynamic>> deleteDevice({
+    required String deviceId,
+    required String sessionToken,
+  });
 }
 
 /// HTTP Implementation targeting Main Website Backend Device Endpoint
@@ -135,6 +140,30 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
       return const MockDeviceRemoteDataSource().getDevice(deviceId: deviceId, sessionToken: sessionToken);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> deleteDevice({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices/$deviceId');
+      final req = await _httpClient.deleteUrl(url);
+      req.headers.set('authorization', 'Bearer $sessionToken');
+
+      final res = await req.close().timeout(const Duration(seconds: 8));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to delete device: ${e.toString()}'
+        }
+      };
     }
   }
 }
@@ -247,6 +276,18 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
           }
         }
       }
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> deleteDevice({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return {
+      'success': true,
+      'data': {'message': 'Device deleted successfully'}
     };
   }
 }

@@ -87,6 +87,55 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
     }
   }
 
+  Future<void> _handleDeleteServer() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Server?'),
+        content: const Text(
+          'Are you sure you want to permanently delete this file server?\n\n'
+          'This will stop the local server engine, remove your allocated subdomain, '
+          'and delete all server records from the database.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.statusError,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete Permanently'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isLoading = true);
+      final success = await ref.read(setupStateProvider.notifier).deleteServer();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Server deleted successfully.')),
+          );
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ref.read(setupStateProvider).errorMessage ?? 'Failed to delete server.'),
+              backgroundColor: AppColors.statusError,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final setup = ref.watch(setupStateProvider);
@@ -334,6 +383,15 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                     icon: Icons.stop_outlined,
                     isLoading: _isLoading,
                     onPressed: !_isLocalRunning ? null : _handleStop,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(),
+                  const SizedBox(height: AppSpacing.sm),
+                  DestructiveButton(
+                    label: 'Delete Server & Release Subdomain',
+                    icon: Icons.delete_outline,
+                    isLoading: _isLoading,
+                    onPressed: _handleDeleteServer,
                   ),
                 ],
               ),

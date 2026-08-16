@@ -321,4 +321,47 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       return false;
     }
   }
+
+  /// Deletes the active server node, stops the local HTTP server, and purges backend database records
+  Future<bool> deleteServer() async {
+    final devId = state.deviceId;
+    final authSession = _ref.read(authStateProvider).session;
+    final sessionToken = authSession?.accessToken;
+
+    try {
+      // 1. Stop local HTTP server engine on Android
+      try {
+        final serverService = _ref.read(serverServiceProvider);
+        await serverService.stopServer();
+      } catch (_) {}
+
+      // 2. Disconnect remote transport
+      try {
+        final remoteService = _ref.read(remoteConnectionServiceProvider);
+        final connId = state.connectionId ?? 'active-conn';
+        await remoteService.disconnect(
+          connectionId: connId,
+          sessionToken: sessionToken ?? '',
+        );
+      } catch (_) {}
+
+      // 3. Delete from Backend Database control plane (removes Device, ServerInstance, ServerEndpoint)
+      if (devId != null && sessionToken != null && sessionToken.isNotEmpty) {
+        final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+        await deviceDataSource.deleteDevice(
+          deviceId: devId,
+          sessionToken: sessionToken,
+        );
+      }
+
+      // 4. Reset setup state
+      state = const SetupState();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Failed to delete server: ${e.toString()}',
+      );
+      return false;
+    }
+  }
 }

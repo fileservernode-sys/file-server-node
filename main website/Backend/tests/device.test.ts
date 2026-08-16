@@ -111,4 +111,18 @@ describe('Device Node & Server Instance API (/api/v1/devices, /api/v1/servers)',
     assert.strictEqual(body.success, true);
     assert.strictEqual(body.data.serverInstance.deviceId, registeredDeviceId);
   });
+
+  test('DELETE /api/v1/devices/:deviceId deletes server node and releases endpoint', async () => {
+    if (!userToken || !registeredDeviceId) return;
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/devices/${registeredDeviceId}`,
+      headers: { authorization: `Bearer ${userToken}` }
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    const body = JSON.parse(response.payload);
+    assert.strictEqual(body.success, true);
+  });
 });
