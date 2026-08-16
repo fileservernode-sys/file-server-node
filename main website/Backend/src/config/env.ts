@@ -55,7 +55,7 @@ const envSchema = z.object({
 
   // StackMail / Serverbyt SMTP Configuration Schema Parameters
   SMTP_HOST: z.string().default('smtp.stackmail.com'),
-  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_PORT: z.coerce.number().default(465),
   SMTP_USERNAME: z.string().default('noreply@viewduration.com'),
   SMTP_PASSWORD: z.string().default(''),
   SMTP_FROM_EMAIL: z.string().default('noreply@viewduration.com'),
