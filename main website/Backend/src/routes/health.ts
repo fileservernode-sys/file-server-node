@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
+import nodemailer from 'nodemailer';
 import { prisma } from '../config/database.js';
+import { config } from '../config/env.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 
 /**
@@ -61,7 +63,6 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/health/db
    * Database Connectivity Verification & Diagnostic Probe.
    * Executes a minimal SELECT 1 query via the Prisma singleton.
-   * Logs structured redacted diagnostic telemetry server-side while keeping the public response sanitized.
    */
   app.get('/health/db', async (_request, reply: FastifyReply) => {
     try {
@@ -75,14 +76,11 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     } catch (err) {
       const diagnostic = classifyDatabaseError(err);
 
-      // Server-side structured diagnostic log (redacted: no username, password, or connection string)
       app.log.error(
         {
           dbDiagnostic: {
             category: diagnostic.category,
             prismaCode: diagnostic.code,
-            host: 'mysql.gb.stackcp.com',
-            port: 45878,
             summary: diagnostic.sanitizedSummary
           }
         },
@@ -94,6 +92,70 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
           'DATABASE_UNAVAILABLE',
           'Database connectivity check failed'
         )
+      );
+    }
+  });
+
+  /**
+   * GET /api/v1/health/smtp
+   * Safe SMTP Configuration & Connectivity Diagnostic Probe.
+   * Verifies if SMTP credentials are provided and tests socket connectivity without exposing passwords.
+   */
+  app.get('/health/smtp', async (_request, reply: FastifyReply) => {
+    const host = process.env.SMTP_HOST || config.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT || config.SMTP_PORT);
+    const user = process.env.SMTP_USERNAME || process.env.SMTP_USER || config.SMTP_USERNAME;
+    const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || config.SMTP_PASSWORD;
+
+    const isConfigured = Boolean(host && user && pass);
+
+    if (!isConfigured) {
+      return reply.status(200).send(
+        createSuccessResponse({
+          status: 'warning',
+          smtp: 'missing_credentials',
+          message: 'SMTP credentials are not configured in Render environment variables. Please set SMTP_USERNAME and SMTP_PASSWORD.',
+          host,
+          port,
+          hasUsername: Boolean(user),
+          hasPassword: Boolean(pass)
+        })
+      );
+    }
+
+    try {
+      const transporter = nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 8000
+      });
+
+      await transporter.verify();
+
+      return reply.status(200).send(
+        createSuccessResponse({
+          status: 'ok',
+          smtp: 'connected',
+          message: 'Serverbyt SMTP service is authenticated and ready to dispatch emails.',
+          host,
+          port
+        })
+      );
+    } catch (err: any) {
+      const sanitizedError = (err?.message || 'SMTP verification failed').replace(/:[^\s@/:]+@/g, ':***@');
+      app.log.warn({ err: sanitizedError }, 'SMTP probe failed to authenticate or connect');
+
+      return reply.status(200).send(
+        createSuccessResponse({
+          status: 'warning',
+          smtp: 'connection_failed',
+          message: `Unable to connect to SMTP server: ${sanitizedError}`,
+          host,
+          port
+        })
       );
     }
   });

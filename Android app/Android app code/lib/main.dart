@@ -8,10 +8,10 @@ import 'core/utils/logger.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Development Environment Configuration
-  AppConfig.setEnvironment(AppConfig.development());
+  // Initialize Testing/Staging Environment Configuration (Connects to live https://gateway.viewduration.com/api/v1)
+  AppConfig.setEnvironment(AppConfig.testing());
   AppLogger.info(
-      'Initializing RemoteNode Android App Foundation (${AppConfig.current.environment})');
+      'Initializing RemoteNode Android App Foundation (${AppConfig.current.environment} -> ${AppConfig.current.apiBaseUrl})');
 
   runApp(
     const ProviderScope(
