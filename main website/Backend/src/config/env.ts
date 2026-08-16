@@ -60,6 +60,12 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().default(''),
   SMTP_FROM_EMAIL: z.string().default('noreply@viewduration.com'),
   SMTP_FROM_NAME: z.string().default('RemoteNode File Server'),
+
+  // OTP Expiry and Brute-force Limit Parameters
+  EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS: z.coerce.number().default(600),
+  PASSWORD_RESET_OTP_EXPIRY_SECONDS: z.coerce.number().default(600),
+  OTP_MAX_ATTEMPTS: z.coerce.number().default(5),
+  OTP_RESEND_COOLDOWN_SECONDS: z.coerce.number().default(60),
 });
 
 function loadConfig() {

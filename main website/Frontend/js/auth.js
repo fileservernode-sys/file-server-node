@@ -1,5 +1,6 @@
 /**
  * Frontend Authentication State & API Client — RemoteNode Control Plane
+ * STRICT RULE: OTP Only. No verification links. No reset links.
  */
 
 const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
@@ -62,7 +63,7 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
 // AUTH ACTIONS
 // -----------------------------------------------------------------------------
 
-// 1. Email + Password Registration
+// 1. Email + Password Registration -> Dispatches Email OTP
 async function registerUser(email, password, fullName) {
   const result = await apiRequest('/auth/register', 'POST', { email, password, fullName });
   if (result.ok && result.data.success && result.data.data.requiresOtp) {
@@ -72,7 +73,7 @@ async function registerUser(email, password, fullName) {
   return { success: false, error: result.data.error?.message || 'Registration failed' };
 }
 
-// 2. Email + Password Login
+// 2. Email + Password Login -> Dispatches 2FA Email OTP
 async function loginUser(email, password) {
   const result = await apiRequest('/auth/login', 'POST', { email, password });
   if (result.ok && result.data.success && result.data.data.requiresOtp) {
@@ -82,7 +83,7 @@ async function loginUser(email, password) {
   return { success: false, error: result.data.error?.message || 'Invalid email or password' };
 }
 
-// 3. Verify 6-Digit Email OTP
+// 3. Verify 6-Digit Email OTP (Registration / Login)
 async function verifyOtp(email, code) {
   const result = await apiRequest('/auth/verify-otp', 'POST', { email, otp: code, code });
   if (result.ok && result.data.success) {
@@ -95,7 +96,43 @@ async function verifyOtp(email, code) {
   return { success: false, error: result.data.error?.message || 'Invalid 6-digit OTP code' };
 }
 
-// 4. Sign Out
+// 4. Request Password Reset -> Dispatches 6-Digit Reset OTP
+async function forgotPassword(email) {
+  const result = await apiRequest('/auth/forgot-password', 'POST', { email });
+  if (result.ok && result.data.success) {
+    return { success: true, message: result.data.data.message };
+  }
+  return { success: false, error: result.data.error?.message || 'Failed to request password reset' };
+}
+
+// 5. Verify Password Reset OTP
+async function verifyPasswordResetOtp(email, otp) {
+  const result = await apiRequest('/auth/verify-password-reset-otp', 'POST', { email, otp, code: otp });
+  if (result.ok && result.data.success) {
+    return { success: true, message: result.data.data.message };
+  }
+  return { success: false, error: result.data.error?.message || 'Invalid or expired password reset code' };
+}
+
+// 6. Reset Password with OTP & New Password
+async function resetPassword(email, otp, newPassword) {
+  const result = await apiRequest('/auth/reset-password', 'POST', { email, otp, code: otp, newPassword });
+  if (result.ok && result.data.success) {
+    return { success: true, message: result.data.data.message };
+  }
+  return { success: false, error: result.data.error?.message || 'Password reset failed' };
+}
+
+// 7. Resend OTP
+async function resendOtp(email) {
+  const result = await apiRequest('/auth/resend-otp', 'POST', { email });
+  if (result.ok && result.data.success) {
+    return { success: true, message: result.data.data.message };
+  }
+  return { success: false, error: result.data.error?.message || 'Failed to resend verification code' };
+}
+
+// 8. Sign Out
 async function logoutUser() {
   await apiRequest('/auth/logout', 'POST');
   clearSession();
@@ -109,5 +146,9 @@ window.AuthService = {
   registerUser,
   loginUser,
   verifyOtp,
+  forgotPassword,
+  verifyPasswordResetOtp,
+  resetPassword,
+  resendOtp,
   logoutUser
 };
