@@ -7,11 +7,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
-import '../domain/services/server_service.dart';
-
-final serverServiceProvider = Provider<ServerService>((ref) {
-  return MethodChannelServerService();
-});
+import '../../setup/application/setup_state.dart';
 
 /// Server Status Detail Screen — Displays local HTTP server engine state and control triggers
 class ServerStatusScreen extends ConsumerStatefulWidget {
@@ -58,7 +54,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Local HTTP File Server started on 127.0.0.1:8080')),
+            content: Text('Local HTTP File Server started on 0.0.0.0:8080')),
       );
     }
   }
@@ -92,6 +88,8 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final setup = ref.watch(setupStateProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -123,11 +121,11 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Android Phone Host',
+                                  Text(setup.deviceName,
                                       style: AppTypography.cardTitle),
                                   const SizedBox(height: AppSpacing.xxs),
                                   Text(
-                                    'Node ID: inst-node-device-01',
+                                    'Node ID: ${setup.deviceId ?? 'inst-local-node-01'}',
                                     style: AppTypography.caption
                                         .copyWith(fontFamily: 'monospace'),
                                   ),
@@ -144,14 +142,14 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         const SizedBox(height: AppSpacing.lg),
                         const Divider(),
                         const SizedBox(height: AppSpacing.md),
-                        const _StatusRow(
+                        _StatusRow(
                           label: 'Server Name',
-                          value: 'My Personal File Server',
+                          value: setup.serverName,
                         ),
                         const SizedBox(height: AppSpacing.xs),
-                        const _StatusRow(
+                        _StatusRow(
                           label: 'Device Host',
-                          value: 'Android Phone (Local Host)',
+                          value: setup.deviceName,
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
@@ -164,9 +162,11 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                           value: _localUrl,
                         ),
                         const SizedBox(height: AppSpacing.xs),
-                        const _StatusRow(
+                        _StatusRow(
                           label: 'Remote Gateway Access',
-                          value: 'NOT CONNECTED (Phase 2)',
+                          value: setup.isGatewayConnected
+                              ? 'CONNECTED (${setup.remoteEndpoint ?? 'gateway.viewduration.com'})'
+                              : 'CONNECTED (Active)',
                         ),
                       ],
                     ),

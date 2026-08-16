@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
 /// Step 2 — Server Configuration Screen
-class SetupConfigurationScreen extends StatefulWidget {
+class SetupConfigurationScreen extends ConsumerStatefulWidget {
   const SetupConfigurationScreen({super.key});
 
   @override
-  State<SetupConfigurationScreen> createState() =>
+  ConsumerState<SetupConfigurationScreen> createState() =>
       _SetupConfigurationScreenState();
 }
 
-class _SetupConfigurationScreenState extends State<SetupConfigurationScreen> {
+class _SetupConfigurationScreenState
+    extends ConsumerState<SetupConfigurationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _serverNameController =
-      TextEditingController(text: 'My Personal Server');
-  final _deviceNameController =
-      TextEditingController(text: 'Android Phone Host');
-  final _descriptionController = TextEditingController();
+  late final TextEditingController _serverNameController;
+  late final TextEditingController _deviceNameController;
+  late final TextEditingController _descriptionController;
+
+  @override
+  void initState() {
+    super.initState();
+    final currentSetup = ref.read(setupStateProvider);
+    _serverNameController =
+        TextEditingController(text: currentSetup.serverName);
+    _deviceNameController =
+        TextEditingController(text: currentSetup.deviceName);
+    _descriptionController =
+        TextEditingController(text: currentSetup.description);
+  }
 
   @override
   void dispose() {
@@ -82,7 +95,7 @@ class _SetupConfigurationScreenState extends State<SetupConfigurationScreen> {
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(
                       label: 'Device Display Name',
-                      hintText: 'e.g., Pixel 4a Host',
+                      hintText: 'e.g., Android Phone Host',
                       controller: _deviceNameController,
                       prefixIcon: const Icon(Icons.phone_android_outlined),
                       validator: (val) {
@@ -105,6 +118,11 @@ class _SetupConfigurationScreenState extends State<SetupConfigurationScreen> {
                       icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
+                          ref.read(setupStateProvider.notifier).setConfiguration(
+                                serverName: _serverNameController.text,
+                                deviceName: _deviceNameController.text,
+                                description: _descriptionController.text,
+                              );
                           Navigator.pushNamed(
                               context, '/server/setup/credentials');
                         }

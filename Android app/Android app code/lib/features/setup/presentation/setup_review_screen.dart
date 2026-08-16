@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
 /// Step 4 — Review Configuration Screen
-class SetupReviewScreen extends StatelessWidget {
+class SetupReviewScreen extends ConsumerWidget {
   const SetupReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final setup = ref.watch(setupStateProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -47,24 +51,25 @@ class SetupReviewScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xl),
 
                   // Review Summary Card
-                  const AppCard(
-                    padding: EdgeInsets.all(AppSpacing.xl),
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Configuration Summary',
+                        const Text('Configuration Summary',
                             style: AppTypography.cardTitle),
-                        SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.md),
                         _ReviewRow(
-                            label: 'Host Device', value: 'Android Phone Host'),
-                        Divider(height: AppSpacing.lg),
+                            label: 'Host Device', value: setup.deviceName),
+                        const Divider(height: AppSpacing.lg),
                         _ReviewRow(
-                            label: 'Server Name', value: 'My Personal Server'),
-                        Divider(height: AppSpacing.lg),
+                            label: 'Server Name', value: setup.serverName),
+                        const Divider(height: AppSpacing.lg),
                         _ReviewRow(
-                            label: 'File-server Username', value: 'admin_user'),
-                        Divider(height: AppSpacing.lg),
-                        _ReviewRow(
+                            label: 'File-server Username',
+                            value: setup.fileServerUsername),
+                        const Divider(height: AppSpacing.lg),
+                        const _ReviewRow(
                             label: 'File-server Password', value: '••••••••'),
                       ],
                     ),

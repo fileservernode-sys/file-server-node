@@ -69,6 +69,23 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     if (serverInstance) {
       const endpoint = await EndpointService.reserveEndpoint(serverInstance.id);
       remoteEndpointStr = `https://${endpoint.hostname}`;
+
+      // Mark ServerInstance as RUNNING and record start timestamp
+      await prisma.serverInstance.update({
+        where: { id: serverInstance.id },
+        data: {
+          status: 'RUNNING',
+          startedAt: new Date(),
+          lastHeartbeatAt: new Date()
+        }
+      });
+    }
+
+    // Resolve or discover active GatewayNode
+    let resolvedGatewayId = gatewayNodeId;
+    if (!resolvedGatewayId) {
+      const activeGateway = await prisma.gatewayNode.findFirst({ where: { status: 'ACTIVE' } });
+      resolvedGatewayId = activeGateway?.id;
     }
 
     const token = `conn-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
@@ -76,7 +93,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     const connection = await prisma.deviceConnection.create({
       data: {
         deviceId,
-        gatewayNodeId,
+        gatewayNodeId: resolvedGatewayId,
         connectionToken: token,
         remoteEndpoint: remoteEndpointStr,
         status: 'CONNECTING',

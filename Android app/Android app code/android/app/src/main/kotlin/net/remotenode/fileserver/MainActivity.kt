@@ -14,7 +14,8 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
-                    val res = localServerEngine.start(port)
+                    val storageDir = context.filesDir.resolve("RemoteNodeFiles")
+                    val res = localServerEngine.start(port, storageDir)
                     result.success(res)
                 }
                 "stopServer" -> {

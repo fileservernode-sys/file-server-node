@@ -10,6 +10,24 @@ async function startServer() {
     // Execute runtime safe Prisma migrations on startup
     await runStartupMigrations(app.log);
 
+    // Ensure default GatewayNode is registered in MySQL
+    try {
+      const { prisma } = await import('./config/database.js');
+      await prisma.gatewayNode.upsert({
+        where: { hostname: config.REMOTENODE_GATEWAY_DOMAIN },
+        update: { status: 'ACTIVE', lastHeartbeatAt: new Date() },
+        create: {
+          hostname: config.REMOTENODE_GATEWAY_DOMAIN,
+          region: 'eu-west',
+          status: 'ACTIVE',
+          lastHeartbeatAt: new Date()
+        }
+      });
+      app.log.info(`🌐 Active gateway node initialized: ${config.REMOTENODE_GATEWAY_DOMAIN}`);
+    } catch (err: any) {
+      app.log.warn({ err: err?.message }, 'Gateway node startup registration deferred');
+    }
+
     const address = await app.listen({
       port: config.PORT,
       host: config.HOST

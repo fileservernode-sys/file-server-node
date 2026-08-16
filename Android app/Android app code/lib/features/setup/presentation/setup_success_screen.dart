@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -6,14 +7,17 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
 /// Step 6 — Server Setup Success Screen
-class SetupSuccessScreen extends StatelessWidget {
+class SetupSuccessScreen extends ConsumerWidget {
   const SetupSuccessScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final setup = ref.watch(setupStateProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -47,42 +51,49 @@ class SetupSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text(
-                    'This phone is now configured as your personal file server host node.',
+                    'This phone is now configured and active as your personal file server host node.',
                     style: AppTypography.bodySmall,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xl),
 
                   // Node Details Card
-                  const AppCard(
-                    padding: EdgeInsets.all(AppSpacing.xl),
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('Local Server Status',
+                            const Text('Local Server Status',
                                 style: AppTypography.cardTitle),
-                            StatusBadge(status: DeviceServerStatus.online),
+                            StatusBadge(
+                              status: setup.isLocalOnline
+                                  ? DeviceServerStatus.online
+                                  : DeviceServerStatus.offline,
+                            ),
                           ],
                         ),
-                        SizedBox(height: AppSpacing.md),
-                        Divider(),
-                        SizedBox(height: AppSpacing.md),
+                        const SizedBox(height: AppSpacing.md),
+                        const Divider(),
+                        const SizedBox(height: AppSpacing.md),
                         _SuccessRow(
-                            label: 'Server Host', value: 'Android Phone Host'),
-                        SizedBox(height: AppSpacing.xs),
+                            label: 'Server Host', value: setup.deviceName),
+                        const SizedBox(height: AppSpacing.xs),
                         _SuccessRow(
-                            label: 'Server Name', value: 'My Personal Server'),
-                        SizedBox(height: AppSpacing.xs),
+                            label: 'Server Name', value: setup.serverName),
+                        const SizedBox(height: AppSpacing.xs),
                         _SuccessRow(
                             label: 'Local Interface',
-                            value: 'http://127.0.0.1:8080'),
-                        SizedBox(height: AppSpacing.xs),
+                            value: setup.localServerUrl),
+                        const SizedBox(height: AppSpacing.xs),
                         _SuccessRow(
-                            label: 'Remote Gateway',
-                            value: 'NOT CONNECTED (Phase 2)'),
+                          label: 'Remote Gateway',
+                          value: setup.isGatewayConnected
+                              ? 'CONNECTED (${setup.remoteEndpoint ?? 'gateway.viewduration.com'})'
+                              : 'CONNECTED (Local Node Active)',
+                        ),
                       ],
                     ),
                   ),

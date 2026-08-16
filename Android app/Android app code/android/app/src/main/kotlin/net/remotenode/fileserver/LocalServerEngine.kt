@@ -278,7 +278,7 @@ class LocalServerEngine {
             }
             rootDirectory = sandboxDir
 
-            val address = InetSocketAddress("127.0.0.1", activePort)
+            val address = InetSocketAddress("0.0.0.0", activePort)
             val newServer = HttpServer.create(address, 0)
 
             // Health & Auth endpoints

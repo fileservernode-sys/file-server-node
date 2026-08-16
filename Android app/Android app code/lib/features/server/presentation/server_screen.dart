@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -6,9 +7,10 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../setup/application/setup_state.dart';
 
-/// Server Screen — Manages the Android Server Host Node (Mock State Only)
-class ServerScreen extends StatelessWidget {
+/// Server Screen — Manages the Android Server Host Node
+class ServerScreen extends ConsumerWidget {
   final bool isConfiguredMock;
 
   const ServerScreen({
@@ -17,7 +19,10 @@ class ServerScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final setup = ref.watch(setupStateProvider);
+    final isConfigured = isConfiguredMock || setup.deviceId != null || setup.isLocalOnline;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -33,7 +38,7 @@ class ServerScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (!isConfiguredMock) ...[
+                  if (!isConfigured) ...[
                     // Unconfigured State
                     AppCard(
                       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -78,30 +83,38 @@ class ServerScreen extends StatelessWidget {
                       ),
                     ),
                   ] else ...[
-                    // Configured Mock State
+                    // Configured Active State
                     AppCard(
                       padding: const EdgeInsets.all(AppSpacing.xl),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
-                              Icon(Icons.dns_rounded,
+                              const Icon(Icons.dns_rounded,
                                   size: 32, color: AppColors.primary),
-                              SizedBox(width: AppSpacing.md),
+                              const SizedBox(width: AppSpacing.md),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Android Phone Host Node',
+                                    Text(setup.deviceName,
                                         style: AppTypography.cardTitle),
-                                    SizedBox(height: AppSpacing.xxs),
-                                    Text('Online and serving files',
-                                        style: AppTypography.bodySmall),
+                                    const SizedBox(height: AppSpacing.xxs),
+                                    Text(
+                                      setup.isLocalOnline
+                                          ? 'Online on ${setup.localServerUrl}'
+                                          : 'Offline / Stopped',
+                                      style: AppTypography.bodySmall,
+                                    ),
                                   ],
                                 ),
                               ),
-                              StatusBadge(status: DeviceServerStatus.online),
+                              StatusBadge(
+                                status: setup.isLocalOnline
+                                    ? DeviceServerStatus.online
+                                    : DeviceServerStatus.offline,
+                              ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xl),

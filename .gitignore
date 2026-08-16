@@ -8,6 +8,8 @@ build/
 # Environment Variables & Secrets (CRITICAL)
 .env
 .env.*
+*.env
+*.env.*
 .env.render
 !.env.example
 !.env.staging.example

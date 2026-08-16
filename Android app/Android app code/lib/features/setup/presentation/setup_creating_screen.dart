@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -7,57 +7,51 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
-/// Step 5 — Server Creation Simulated Loading State Screen
-class SetupCreatingScreen extends StatefulWidget {
+/// Step 5 — Real Server Creation & Gateway Handshake Progress Screen
+class SetupCreatingScreen extends ConsumerStatefulWidget {
   const SetupCreatingScreen({super.key});
 
   @override
-  State<SetupCreatingScreen> createState() => _SetupCreatingScreenState();
+  ConsumerState<SetupCreatingScreen> createState() =>
+      _SetupCreatingScreenState();
 }
 
-class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
-  int _simulatedStageIndex = 0;
-  Timer? _timer;
-
+class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
   final List<String> _stages = const [
-    'Preparing device storage environment...',
-    'Configuring local HTTP file server host...',
-    'Generating mock encryption keys...',
-    'Establishing control plane heartbeat connection...',
+    'Registering Android host device with control plane...',
+    'Starting embedded HTTP file-server engine on 0.0.0.0:8080...',
+    'Verifying local socket listener health probe...',
+    'Registering server endpoint & allocating remote connection token...',
+    'Establishing secure outbound WebSocket connection to Remote Gateway...',
   ];
 
   @override
   void initState() {
     super.initState();
-    _startSimulatedProgress();
-  }
-
-  void _startSimulatedProgress() {
-    _timer = Timer.periodic(const Duration(milliseconds: 600), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_simulatedStageIndex < _stages.length - 1) {
-        setState(() {
-          _simulatedStageIndex++;
-        });
-      } else {
-        timer.cancel();
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _runSetup();
     });
   }
 
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
+  Future<void> _runSetup() async {
+    final success = await ref.read(setupStateProvider.notifier).executeSetup();
+    if (!mounted) return;
+
+    if (success) {
+      Navigator.pushReplacementNamed(context, '/server/setup/success');
+    } else {
+      Navigator.pushReplacementNamed(context, '/server/setup/failure');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final setupState = ref.watch(setupStateProvider);
+    final stageIdx = setupState.stageIndex.clamp(0, _stages.length - 1);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -85,7 +79,7 @@ class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   const Text(
-                    'Preparing this Android device as a personal file server host node.',
+                    'Configuring this Android device as a personal file server host node.',
                     style: AppTypography.bodySmall,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
@@ -96,51 +90,63 @@ class _SetupCreatingScreenState extends State<SetupCreatingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const LoadingIndicator(
-                            message: 'Initializing server node...'),
+                        LoadingIndicator(
+                            message: setupState.isProcessing
+                                ? 'Executing server creation...'
+                                : 'Finalizing node configuration...'),
                         const SizedBox(height: AppSpacing.xl),
                         Text(
-                          _stages[_simulatedStageIndex],
+                          _stages[stageIdx],
                           style: AppTypography.body
                               .copyWith(fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _StageCheckItem(
-                            title: 'Preparing device',
-                            isDone: _simulatedStageIndex >= 0),
+                            title: 'Registering host device node',
+                            isDone: stageIdx >= 1),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Configuring storage',
-                            isDone: _simulatedStageIndex >= 1),
+                            title: 'Starting local HTTP engine (0.0.0.0:8080)',
+                            isDone: stageIdx >= 2),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Starting server host',
-                            isDone: _simulatedStageIndex >= 2),
+                            title: 'Verifying local socket listener',
+                            isDone: stageIdx >= 3),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Establishing connection',
-                            isDone: _simulatedStageIndex >= 3),
+                            title: 'Reserving endpoint & gateway token',
+                            isDone: stageIdx >= 4),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StageCheckItem(
+                            title: 'Connecting to Remote Gateway',
+                            isDone: setupState.isGatewayConnected),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
 
-                  PrimaryButton(
-                    label: 'Complete Setup',
-                    icon: Icons.check_circle_outline,
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                          context, '/server/setup/success');
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  TertiaryButton(
-                    label: 'Simulate Failure State',
-                    onPressed: () {
-                      Navigator.pushReplacementNamed(
-                          context, '/server/setup/failure');
-                    },
-                  ),
+                  if (setupState.errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.statusErrorBg,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.radiusMd),
+                        border: Border.all(color: AppColors.statusError),
+                      ),
+                      child: Text(
+                        setupState.errorMessage!,
+                        style: AppTypography.bodySmall
+                            .copyWith(color: AppColors.statusError),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    PrimaryButton(
+                      label: 'Retry Setup',
+                      icon: Icons.refresh,
+                      onPressed: _runSetup,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -167,10 +173,12 @@ class _StageCheckItem extends StatelessWidget {
           color: isDone ? AppColors.statusOnline : AppColors.textMuted,
         ),
         const SizedBox(width: AppSpacing.xs),
-        Text(
-          title,
-          style: AppTypography.caption.copyWith(
-            color: isDone ? AppColors.textPrimary : AppColors.textMuted,
+        Expanded(
+          child: Text(
+            title,
+            style: AppTypography.caption.copyWith(
+              color: isDone ? AppColors.textPrimary : AppColors.textMuted,
+            ),
           ),
         ),
       ],

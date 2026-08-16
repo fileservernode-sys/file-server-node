@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -6,21 +7,32 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
 /// Step 3 — File-Server Credentials Screen with Explicit Credential Separation Callout
-class SetupCredentialsScreen extends StatefulWidget {
+class SetupCredentialsScreen extends ConsumerStatefulWidget {
   const SetupCredentialsScreen({super.key});
 
   @override
-  State<SetupCredentialsScreen> createState() => _SetupCredentialsScreenState();
+  ConsumerState<SetupCredentialsScreen> createState() =>
+      _SetupCredentialsScreenState();
 }
 
-class _SetupCredentialsScreenState extends State<SetupCredentialsScreen> {
+class _SetupCredentialsScreenState
+    extends ConsumerState<SetupCredentialsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
+  late final TextEditingController _usernameController;
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final currentSetup = ref.read(setupStateProvider);
+    _usernameController =
+        TextEditingController(text: currentSetup.fileServerUsername);
+  }
 
   @override
   void dispose() {
@@ -152,6 +164,10 @@ class _SetupCredentialsScreenState extends State<SetupCredentialsScreen> {
                       icon: Icons.arrow_forward,
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
+                          ref.read(setupStateProvider.notifier).setCredentials(
+                                username: _usernameController.text,
+                                password: _passwordController.text,
+                              );
                           Navigator.pushNamed(context, '/server/setup/review');
                         }
                       },
