@@ -91,11 +91,25 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     const hostHeader = (request.headers.host || '').split(':')[0].toLowerCase();
     const query = request.query as Record<string, any> | undefined;
+
+    // Exact hostnames that serve the main marketing landing website & dashboard
+    const mainWebsiteHosts = new Set([
+      'viewduration.com',
+      'www.viewduration.com',
+      'remotenode.net',
+      'www.remotenode.net',
+      'localhost',
+      '127.0.0.1'
+    ]);
+
+    // Detect if this request is targeting a Personal File Manager subdomain or endpoint
     const isSubdomain =
-      hostHeader.startsWith('srv-') ||
       urlPath.startsWith('/file-manager') ||
       !!query?.['endpoint'] ||
-      !!query?.['deviceId'];
+      !!query?.['deviceId'] ||
+      hostHeader.startsWith('srv-') ||
+      hostHeader.startsWith('node-') ||
+      (!mainWebsiteHosts.has(hostHeader) && hostHeader.includes('.'));
 
     const baseDir = isSubdomain ? getWebDir() : getFrontendDir();
     let relativePath = urlPath === '/' ? '/index.html' : urlPath;
