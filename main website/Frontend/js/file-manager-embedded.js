@@ -216,25 +216,29 @@ const ApiService = {
 };
 
 // ---------------------------------------------------------------------------
-// File Server Auth — adapted for embedded mode
-// Credentials are for the Android file server, NOT the ViewDuration account.
-// The login request is proxied through ViewDuration to Android.
+// File Server Auth — integrated with ViewDuration account authentication
+// Single Sign-On: The authenticated ViewDuration account is used directly.
+// No secondary username/password prompt is presented to the user.
 // ---------------------------------------------------------------------------
 const FileServerAuth = {
-  TOKEN_KEY: 'rn_file_server_token',
+  TOKEN_KEY: 'rn_auth_token',
 
   getToken() {
-    return sessionStorage.getItem(this.TOKEN_KEY);
+    return localStorage.getItem(this.TOKEN_KEY) || EmbeddedFileManager.viewDurationToken;
   },
 
   setToken(token) {
-    // Use sessionStorage (not localStorage) — token is per-session only
-    sessionStorage.setItem(this.TOKEN_KEY, token);
+    // Session managed via ViewDuration auth
   },
 
   logout() {
-    sessionStorage.removeItem(this.TOKEN_KEY);
-    window.location.reload();
+    if (window.AuthService && window.AuthService.logoutUser) {
+      window.AuthService.logoutUser();
+    } else {
+      localStorage.removeItem('rn_auth_token');
+      localStorage.removeItem('rn_user_data');
+      window.location.href = 'login.html';
+    }
   },
 
   isAuthenticated() {
@@ -243,32 +247,7 @@ const FileServerAuth = {
   },
 
   async login(username, password) {
-    try {
-      const base = EmbeddedFileManager.getApiBase();
-      const sid = EmbeddedFileManager.serverId;
-      const viewDurationToken = EmbeddedFileManager.viewDurationToken;
-
-      // POST to ViewDuration backend — NOT directly to 127.0.0.1:8080
-      const res = await fetch(`${base}/file-manager/${sid}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${viewDurationToken}`
-        },
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-      if ((res.ok || data.success) && data.data?.token) {
-        this.setToken(data.data.token);
-        return { success: true };
-      }
-      return {
-        success: false,
-        error: data.error?.message || data.data?.error?.message || 'Invalid file-server credentials'
-      };
-    } catch (e) {
-      return { success: false, error: e.message || 'Connection error' };
-    }
+    return { success: true };
   }
 };
 

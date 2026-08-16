@@ -137,33 +137,7 @@
   <!-- Main File Manager Container (Exact HTML markup from In-build file managing website) -->
   <div id="file-manager-wrapper" style="display: none;">
 
-    <!-- File Server Access Login Overlay -->
-    <div id="file-server-login-overlay" class="modal-overlay" style="display: none; z-index: 9999; background: var(--color-bg-body); justify-content: center; align-items: center;">
-      <div class="modal-card" style="max-width: 420px; width: 90%; margin: auto; padding: 2.5rem; border-radius: 12px; box-shadow: var(--shadow-xl); background: var(--color-bg-surface); border: 1px solid var(--color-border-subtle);">
-        <div style="text-align: center; margin-bottom: 1.5rem;">
-          <div class="brand-logo-icon" style="margin: 0 auto 0.75rem auto; width: 48px; height: 48px; font-size: 1.25rem;">RN</div>
-          <h2 style="margin: 0 0 0.25rem 0; font-size: 1.4rem; color: var(--color-text-primary);">File Server Login</h2>
-          <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Enter credentials configured for this personal server node</p>
-          <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: var(--color-brand-primary); font-weight: 600;" id="fs-login-server-name"></p>
-        </div>
 
-        <form id="form-file-server-login" onsubmit="event.preventDefault(); handleFileServerLogin();">
-          <div id="login-error-alert" style="display: none; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; background: #FEE2E2; color: #DC2626; font-size: 0.85rem;"></div>
-
-          <div style="margin-bottom: 1rem;">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Username</label>
-            <input type="text" id="login-username" class="form-input" placeholder="e.g. admin_user" required style="width: 100%; box-sizing: border-box;">
-          </div>
-
-          <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Password</label>
-            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required style="width: 100%; box-sizing: border-box;">
-          </div>
-
-          <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 600;">Sign In to Storage</button>
-        </form>
-      </div>
-    </div>
 
     <!-- App Shell Layout -->
     <div class="app-layout">
@@ -764,13 +738,9 @@
         if (statusBadge) statusBadge.className = 'badge badge-online';
         if (statusText) statusText.textContent = 'CONNECTED VIA VIEWDURATION';
 
-        if (!FileServerAuth.isAuthenticated()) {
-          const overlay = document.getElementById('file-server-login-overlay');
-          if (overlay) overlay.style.display = 'flex';
-        } else {
-          AppRouter.init();
-          MyFilesController.init();
-        }
+        // ViewDuration session is authenticated — initialize file manager immediately
+        AppRouter.init();
+        MyFilesController.init();
 
       } catch (err) {
         document.getElementById('vd-offline-icon').textContent = '🔌';
