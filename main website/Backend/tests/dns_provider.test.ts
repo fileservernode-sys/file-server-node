@@ -45,17 +45,17 @@ describe('DNS Provider Abstraction & Dynamic Gateway Subdomain Integration', () 
 
   test('EndpointService generates clean deterministic node hostnames with gateway testing subdomain', () => {
     const hostname = EndpointService.generateHostname('srv_123456');
-    assert.strictEqual(hostname, 'srv_123456.gateway.viewduration.com');
+    assert.strictEqual(hostname, 'srv_123456.viewduration.com');
   });
 
   test('EndpointService allows seamless production domain substitution without code changes', () => {
-    EndpointService.setGatewayDomain('gateway.example-production.net');
+    EndpointService.setBaseDomain('example-production.net');
 
     const hostname = EndpointService.generateHostname('srv_production_99');
-    assert.strictEqual(hostname, 'srv_production_99.gateway.example-production.net');
+    assert.strictEqual(hostname, 'node-ion_99.example-production.net');
 
     assert.strictEqual(
-      EndpointService.validateHostname('srv_production_99.gateway.example-production.net'),
+      EndpointService.validateHostname('node-ion_99.example-production.net'),
       true
     );
   });

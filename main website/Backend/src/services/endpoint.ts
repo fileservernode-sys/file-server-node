@@ -64,14 +64,20 @@ export class EndpointService {
   }
 
   /**
-   * Generates a clean, deterministic remote endpoint hostname for a server instance using the configured gateway domain.
-   * e.g. srv_123456.gateway.viewduration.com
+   * Generates a clean, short, human-friendly remote endpoint hostname for a server instance.
+   * e.g. node-a5qylx.viewduration.com (or srv-123456.gateway.viewduration.com)
    */
   static generateHostname(serverId: string, customDomain?: string): string {
-    const domain = customDomain || this.gatewayDomain;
+    const domain = customDomain || this.baseDomain;
     const cleanId = serverId.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-    const shortId = cleanId.length > 8 ? cleanId : `srv_${cleanId}`;
-    return `${shortId}.${domain}`;
+    // If it's a long 25-char cuid, extract a clean 6-character short suffix
+    const shortSlug =
+      cleanId.length > 10
+        ? `node-${cleanId.slice(-6)}`
+        : cleanId.startsWith('srv') || cleanId.startsWith('node')
+        ? cleanId
+        : `node-${cleanId}`;
+    return `${shortSlug}.${domain}`;
   }
 
   /**
