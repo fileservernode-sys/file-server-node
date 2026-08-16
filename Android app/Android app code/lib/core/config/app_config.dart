@@ -33,7 +33,7 @@ class AppConfig {
     return const AppConfig(
       environment: 'testing',
       baseDomain: 'viewduration.com',
-      apiBaseUrl: 'https://api.viewduration.com/api/v1',
+      apiBaseUrl: 'https://gateway.viewduration.com/api/v1',
       gatewayWsUrl: 'wss://gateway.viewduration.com',
       webRegistrationUrl: 'https://viewduration.com/pages/get-started.html',
       enableVerboseLogging: true,
