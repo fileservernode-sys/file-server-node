@@ -23,7 +23,7 @@ class AppConfig {
     return const AppConfig(
       environment: 'development',
       baseDomain: 'localhost',
-      websiteUrl: 'http://10.0.2.2:3000/',
+      websiteUrl: 'http://10.0.2.2:3000/?from=app',
       apiBaseUrl: 'http://10.0.2.2:4000/api/v1',
       gatewayWsUrl: 'ws://10.0.2.2:4001',
       webRegistrationUrl: 'http://10.0.2.2:3000/pages/get-started.html',
@@ -36,7 +36,7 @@ class AppConfig {
     return const AppConfig(
       environment: 'testing',
       baseDomain: 'viewduration.com',
-      websiteUrl: 'https://viewduration.com/',
+      websiteUrl: 'https://viewduration.com/?from=app',
       apiBaseUrl: 'https://gateway.viewduration.com/api/v1',
       gatewayWsUrl: 'wss://gateway.viewduration.com',
       webRegistrationUrl: 'https://viewduration.com/pages/get-started.html',
@@ -49,7 +49,7 @@ class AppConfig {
     return AppConfig(
       environment: 'production',
       baseDomain: baseDomain,
-      websiteUrl: 'https://$baseDomain/',
+      websiteUrl: 'https://$baseDomain/?from=app',
       apiBaseUrl: 'https://api.$baseDomain/api/v1',
       gatewayWsUrl: 'wss://gateway.$baseDomain',
       webRegistrationUrl: 'https://$baseDomain/pages/get-started.html',
