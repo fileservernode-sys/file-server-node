@@ -4,11 +4,15 @@
  */
 
 // Base API configuration: Automatically switches between local dev and live staging/production backend
-const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+const API_BASE_URL = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:' || !window.location.hostname)) 
   ? 'http://localhost:4000/api/v1' 
   : (window.location.hostname === 'gateway.viewduration.com' 
       ? '/api/v1' 
-      : 'https://gateway.viewduration.com/api/v1');
+      : (window.location.hostname.endsWith('viewduration.com') ? '/api/v1' : 'https://gateway.viewduration.com/api/v1'));
+
+if (typeof window !== 'undefined') {
+  window.API_BASE_URL = API_BASE_URL;
+}
 
 const AUTH_STORAGE_KEY = 'rn_auth_token';
 const USER_STORAGE_KEY = 'rn_user_data';

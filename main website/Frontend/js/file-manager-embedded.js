@@ -23,11 +23,18 @@ const EmbeddedFileManager = {
 
   // Resolve the API base URL: same-origin in production, localhost in dev
   getApiBase() {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
+    if (typeof window !== 'undefined' && window.API_BASE_URL) {
+      return window.API_BASE_URL;
+    }
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    const protocol = typeof window !== 'undefined' ? window.location.protocol : '';
+    if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
       return 'http://localhost:4000/api/v1';
     }
-    return '/api/v1';
+    if (host.endsWith('viewduration.com')) {
+      return '/api/v1';
+    }
+    return 'https://gateway.viewduration.com/api/v1';
   },
 
   init() {
