@@ -7,6 +7,7 @@ import { serverRoutes } from './server.js';
 import { gatewayRoutes } from './gateway.js';
 import { connectionRoutes } from './connection.js';
 import { endpointRoutes } from './endpoint.js';
+import { fileManagerRoutes } from './file-manager.js';
 import { createSuccessResponse } from '../schemas/response.js';
 
 export async function apiV1Routes(app: FastifyInstance): Promise<void> {
@@ -28,4 +29,5 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(gatewayRoutes);
   await app.register(connectionRoutes);
   await app.register(endpointRoutes);
+  await app.register(fileManagerRoutes);
 }

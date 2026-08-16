@@ -1230,6 +1230,86 @@ export class GatewayService {
     const statusCode = response.success ? 200 : 400;
     return reply.status(statusCode).send(response.data || response);
   }
+
+  /**
+   * Check if the gateway has an active live WebSocket connection for a given device.
+   * Used by the file-manager proxy routes to verify real connectivity before proxying.
+   */
+  public hasActiveConnectionForDevice(deviceId: string): boolean {
+    return this.deviceToConnectionMap.has(deviceId) &&
+      this.activeConnections.has(this.deviceToConnectionMap.get(deviceId)!);
+  }
+
+  /**
+   * Proxy a file-manager operation to an Android device identified by deviceId.
+   * Resolves the active WebSocket connection via deviceToConnectionMap,
+   * sends the FILE_REQUEST message, and awaits the FILE_RESPONSE.
+   * This is the server-side equivalent of what handleFastifyStorageRequest does
+   * via hostname, but uses deviceId directly for ViewDuration-authenticated requests.
+   */
+  public async handleProxiedFileRequestByDeviceId(
+    deviceId: string,
+    operation: string,
+    params: {
+      path?: string;
+      name?: string;
+      oldPath?: string;
+      newName?: string;
+    } = {}
+  ): Promise<any> {
+    const connId = this.deviceToConnectionMap.get(deviceId);
+    if (!connId || !this.activeConnections.has(connId)) {
+      return {
+        success: false,
+        error: {
+          code: 'DEVICE_OFFLINE',
+          message: 'Android file server host is offline or disconnected.'
+        }
+      };
+    }
+
+    const targetConn = this.activeConnections.get(connId)!;
+    const requestId = 'proxy-req-' + Math.random().toString(36).substring(2, 12);
+
+    const fileRequestMsg: HandshakeMessage = {
+      type: 'FILE_REQUEST',
+      requestId,
+      connectionId: connId,
+      operation,
+      path: params.path || '/',
+      name: params.name,
+      oldPath: params.oldPath,
+      newName: params.newName
+    };
+
+    const responsePromise = new Promise<any>((resolve) => {
+      const timer = setTimeout(() => {
+        if (this.pendingRequests.has(requestId)) {
+          this.timedOutRequests++;
+          this.pendingRequests.delete(requestId);
+          resolve({
+            success: false,
+            error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
+          });
+        }
+      }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
+
+      this.pendingRequests.set(requestId, {
+        requestId,
+        connectionId: connId,
+        operation,
+        httpResolver: (resp) => {
+          clearTimeout(timer);
+          resolve(resp.data || resp);
+        },
+        createdAt: Date.now(),
+        timer
+      });
+    });
+
+    targetConn.socket.send(JSON.stringify(fileRequestMsg));
+    return responsePromise;
+  }
 }
 
 export const defaultGatewayService = new GatewayService();
