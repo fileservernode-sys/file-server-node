@@ -4,7 +4,7 @@
   "description": "Control Plane Backend API for Remote Android Personal File Server Platform",
   "main": "dist/server.js",
   "scripts": {
-    "build": "prisma generate && tsc -p tsconfig.json && node -e \"const fs = require('fs'); fs.cpSync('src/gateway/web', 'dist/gateway/web', {recursive: true, force: true});\"",
+    "build": "prisma generate && tsc -p tsconfig.json && node -e \"const fs = require('fs'); if (fs.existsSync('src/gateway/web')) fs.cpSync('src/gateway/web', 'dist/gateway/web', {recursive: true, force: true});\"",
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "prisma:generate": "prisma generate",

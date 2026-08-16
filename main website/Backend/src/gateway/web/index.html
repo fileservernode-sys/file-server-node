@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RemoteNode | Personal File Server & Storage Host</title>
+  <meta name="description" content="Personal cloud and secure remote file storage hosted directly on your Android device.">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/file-manager.css">
+</head>
+<body>
+
+  <!-- File Server Access Login Overlay -->
+  <div id="file-server-login-overlay" class="modal-overlay" style="display: none; z-index: 9999; background: var(--color-background-primary); justify-content: center; align-items: center;">
+    <div class="modal-card" style="max-width: 420px; width: 90%; margin: auto; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); background: var(--color-surface); border: 1px solid var(--color-border);">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div class="brand-logo-icon" style="margin: 0 auto 0.75rem auto; width: 48px; height: 48px; font-size: 1.25rem;">RN</div>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.4rem; color: var(--color-text-primary);">File Server Login</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Enter credentials configured for this personal server node</p>
+      </div>
+      
+      <form id="form-file-server-login" onsubmit="event.preventDefault(); handleFileServerLogin();">
+        <div id="login-error-alert" style="display: none; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; background: #FEE2E2; color: #DC2626; font-size: 0.85rem;"></div>
+        
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Username / Email</label>
+          <input type="text" id="login-username" class="form-input" placeholder="e.g. admin_user" required style="width: 100%; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required style="width: 100%; box-sizing: border-box;">
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 600;">Sign In to Storage</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    
+    <!-- Desktop Left Sidebar -->
+    <aside class="app-sidebar" aria-label="Main Navigation">
+      <div>
+        <div class="sidebar-brand">
+          <div class="brand-logo-icon">RN</div>
+          <div class="brand-title-wrap">
+            <span class="brand-name">RemoteNode</span>
+            <span class="brand-tagline">Storage Host</span>
+          </div>
+        </div>
+
+        <nav class="nav-menu">
+          <a class="nav-link active" data-view="home" role="button" tabindex="0">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+          </a>
+          <a class="nav-link" data-view="files" role="button" tabindex="0">
+            <span class="nav-icon">📁</span>
+            <span>My Files</span>
+          </a>
+          <a class="nav-link" data-view="photos" role="button" tabindex="0">
+            <span class="nav-icon">🖼️</span>
+            <span>Photos</span>
+          </a>
+          <a class="nav-link" data-view="videos" role="button" tabindex="0">
+            <span class="nav-icon">🎬</span>
+            <span>Videos</span>
+          </a>
+          <a class="nav-link" data-view="storage" role="button" tabindex="0">
+            <span class="nav-icon">📊</span>
+            <span>Storage</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Mini Storage Widget in Sidebar -->
+      <div class="sidebar-storage-widget" id="sidebar-storage-widget">
+        <div class="sidebar-storage-header">
+          <span>Storage Used</span>
+          <span id="sidebar-storage-pct">0%</span>
+        </div>
+        <div class="storage-bar-track" style="height: 6px; margin: 8px 0 6px;">
+          <div id="sidebar-storage-bar" class="storage-bar-segment segment-photos" style="width: 0%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--color-text-muted);">
+          <span id="sidebar-storage-used">0 GB</span>
+          <span id="sidebar-storage-total">0 GB</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="app-main">
+      
+      <!-- Top Application Header -->
+      <header class="app-header">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem; display: none;" id="mobile-logo">RN</div>
+          <span id="connection-status-badge" class="badge badge-online">
+            <span class="status-dot"></span> <span id="connection-status-text">LOCAL SERVER ONLINE</span>
+          </span>
+        </div>
+
+        <div class="header-search-wrap">
+          <input type="text" id="global-search-input" class="form-input" placeholder="🔍 Search all files in storage..." aria-label="Search files">
+        </div>
+
+        <div class="header-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-quick-upload">
+            <span>📤</span> <span>Upload</span>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="FileServerAuth.logout()">
+            <span>Sign Out</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Containers -->
+      <main class="view-container">
+
+        <!-- ===================================================================
+             1. HOME VIEW
+             =================================================================== -->
+        <section id="view-home" class="view-section active" aria-labelledby="home-title">
+          <div class="page-header-block">
+            <div>
+              <h1 id="home-title" class="page-title">Personal Storage</h1>
+              <p class="page-description">Android device storage host running locally & remotely.</p>
+            </div>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button class="btn btn-secondary" onclick="AppRouter.navigate('files')">Browse All Files 📁</button>
+            </div>
+          </div>
+
+          <div class="home-grid">
+            <!-- Left: Storage Metrics & Category Breakdown -->
+            <div>
+              <div class="home-storage-card">
+                <div class="card-header">
+                  <div>
+                    <span class="card-subtext">DEVICE CAPACITY</span>
+                    <div class="storage-metrics-row">
+                      <span class="storage-number-main" id="home-storage-used-gb">0 GB</span>
+                      <span class="storage-number-sub" id="home-storage-total-gb">used of 0 GB</span>
+                    </div>
+                  </div>
+                  <span class="badge badge-neutral" id="home-storage-free-badge">0 GB Free</span>
+                </div>
+
+                <!-- Multi-segment Storage Bar -->
+                <div class="storage-bar-track" id="home-storage-bar-track">
+                  <div id="bar-photos" class="storage-bar-segment segment-photos" style="width: 0%;" title="Photos"></div>
+                  <div id="bar-videos" class="storage-bar-segment segment-videos" style="width: 0%;" title="Videos"></div>
+                  <div id="bar-docs" class="storage-bar-segment segment-docs" style="width: 0%;" title="Documents"></div>
+                  <div id="bar-audio" class="storage-bar-segment segment-audio" style="width: 0%;" title="Audio"></div>
+                  <div id="bar-archives" class="storage-bar-segment segment-archives" style="width: 0%;" title="Archives"></div>
+                  <div id="bar-other" class="storage-bar-segment segment-other" style="width: 0%;" title="Other"></div>
+                </div>
+
+                <!-- Category Cards Grid -->
+                <div class="category-cards-grid">
+                  <div class="category-card" onclick="AppRouter.navigate('photos')">
+                    <div class="category-card-icon icon-photos">🖼️</div>
+                    <span class="category-card-title">Photos</span>
+                    <span class="category-card-count" id="cat-count-photos">0 files</span>
+                    <span class="category-card-size" id="cat-size-photos">0 MB</span>
+                  </div>
+                  <div class="category-card" onclick="AppRouter.navigate('videos')">
+                    <div class="category-card-icon icon-videos">🎬</div>
+                    <span class="category-card-title">Videos</span>
+                    <span class="category-card-count" id="cat-count-videos">0 files</span>
+                    <span class="category-card-size" id="cat-size-videos">0 MB</span>
+                  </div>
+                  <div class="category-card" onclick="AppRouter.navigate('files')">
+                    <div class="category-card-icon icon-docs">📄</div>
+                    <span class="category-card-title">Documents</span>
+                    <span class="category-card-count" id="cat-count-docs">0 files</span>
+                    <span class="category-card-size" id="cat-size-docs">0 MB</span>
+                  </div>
+                  <div class="category-card" onclick="AppRouter.navigate('files')">
+                    <div class="category-card-icon icon-audio">🎵</div>
+                    <span class="category-card-title">Audio</span>
+                    <span class="category-card-count" id="cat-count-audio">0 files</span>
+                    <span class="category-card-size" id="cat-size-audio">0 MB</span>
+                  </div>
+                  <div class="category-card" onclick="AppRouter.navigate('files')">
+                    <div class="category-card-icon icon-archives">📦</div>
+                    <span class="category-card-title">Archives</span>
+                    <span class="category-card-count" id="cat-count-archives">0 files</span>
+                    <span class="category-card-size" id="cat-size-archives">0 MB</span>
+                  </div>
+                  <div class="category-card" onclick="AppRouter.navigate('storage')">
+                    <div class="category-card-icon icon-other">📊</div>
+                    <span class="category-card-title">Analytics</span>
+                    <span class="category-card-count" id="cat-count-total">0 total</span>
+                    <span class="category-card-size">View Stats</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recent Files Section -->
+              <div style="margin-top: var(--space-xl);">
+                <div class="card-header">
+                  <h2 class="card-title">Recent Files</h2>
+                  <a href="javascript:void(0)" onclick="AppRouter.navigate('files')" style="font-size: var(--font-size-xs); font-weight: 600;">View All</a>
+                </div>
+                <div id="home-recent-files-container">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Quick Actions & Server Status -->
+            <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+              <div class="card quick-actions-card">
+                <h2 class="card-title">Quick Actions</h2>
+                <button type="button" class="quick-action-btn" id="btn-home-upload">
+                  <span style="font-size: 1.25rem;">📤</span>
+                  <div style="text-align: left;">
+                    <div>Upload File</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Save files to phone storage</div>
+                  </div>
+                </button>
+                <button type="button" class="quick-action-btn" id="btn-home-new-folder">
+                  <span style="font-size: 1.25rem;">➕</span>
+                  <div style="text-align: left;">
+                    <div>Create Folder</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Organize your files</div>
+                  </div>
+                </button>
+                <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('photos')">
+                  <span style="font-size: 1.25rem;">🖼️</span>
+                  <div style="text-align: left;">
+                    <div>Browse Photos</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">View photo gallery</div>
+                  </div>
+                </button>
+                <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('storage')">
+                  <span style="font-size: 1.25rem;">📊</span>
+                  <div style="text-align: left;">
+                    <div>Storage Breakdown</div>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Inspect space usage</div>
+                  </div>
+                </button>
+              </div>
+
+              <!-- Storage Node Info Card -->
+              <div class="card">
+                <h2 class="card-title" style="margin-bottom: var(--space-xs);">Server Node Info</h2>
+                <div style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs);">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--color-text-muted);">Storage Root</span>
+                    <strong>RemoteNodeFiles/</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--color-text-muted);">Local Endpoint</span>
+                    <strong id="info-local-endpoint">127.0.0.1:8080</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--color-text-muted);">Security Protocol</span>
+                    <strong style="color: var(--color-status-online);">Sandboxed / TLS WSS</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             2. MY FILES VIEW
+             =================================================================== -->
+        <section id="view-files" class="view-section" aria-labelledby="files-title">
+          <div class="page-header-block">
+            <div>
+              <h1 id="files-title" class="page-title">My Files</h1>
+              <p class="page-description">Browse and manage all files stored in your Android phone.</p>
+            </div>
+            <div class="toolbar-group">
+              <button class="btn btn-primary" id="btn-files-new-folder">➕ New Folder</button>
+              <button class="btn btn-secondary" id="btn-files-upload">📤 Upload</button>
+              <button class="btn btn-secondary btn-icon" id="btn-files-refresh" title="Refresh">🔄</button>
+            </div>
+          </div>
+
+          <!-- Breadcrumbs Bar -->
+          <nav id="breadcrumb-container" class="breadcrumb-bar" aria-label="Breadcrumb navigation">
+            <span class="breadcrumb-item">Home</span>
+          </nav>
+
+          <!-- File Toolbar & Filters -->
+          <div class="file-toolbar">
+            <div class="toolbar-group">
+              <label for="sort-select" class="form-label" style="margin: 0; margin-right: 4px;">Sort by:</label>
+              <select id="sort-select" class="form-select" style="width: auto; min-height: 38px;">
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="name_desc">Name (Z-A)</option>
+                <option value="date_desc">Date (Newest first)</option>
+                <option value="date_asc">Date (Oldest first)</option>
+                <option value="size_desc">Size (Largest first)</option>
+                <option value="size_asc">Size (Smallest first)</option>
+              </select>
+            </div>
+
+            <div class="toolbar-group">
+              <button class="btn btn-secondary btn-sm" id="btn-view-list" title="List View">📑 List</button>
+              <button class="btn btn-secondary btn-sm" id="btn-view-grid" title="Grid View">🔲 Grid</button>
+            </div>
+          </div>
+
+          <!-- Dynamic File List / Table / Grid Container -->
+          <div id="file-list-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             3. PHOTOS VIEW
+             =================================================================== -->
+        <section id="view-photos" class="view-section" aria-labelledby="photos-title">
+          <div class="page-header-block">
+            <div>
+              <h1 id="photos-title" class="page-title">Photos</h1>
+              <p class="page-description">Images discovered in your personal storage sandbox.</p>
+            </div>
+            <div class="toolbar-group">
+              <button class="btn btn-primary" onclick="document.getElementById('file-picker').click()">Upload Photos</button>
+              <button class="btn btn-secondary btn-icon" id="btn-photos-refresh" title="Refresh">🔄</button>
+            </div>
+          </div>
+
+          <div id="photos-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             4. VIDEOS VIEW
+             =================================================================== -->
+        <section id="view-videos" class="view-section" aria-labelledby="videos-title">
+          <div class="page-header-block">
+            <div>
+              <h1 id="videos-title" class="page-title">Videos</h1>
+              <p class="page-description">Videos stored inside your personal Android file server.</p>
+            </div>
+            <div class="toolbar-group">
+              <button class="btn btn-primary" onclick="document.getElementById('file-picker').click()">Upload Videos</button>
+              <button class="btn btn-secondary btn-icon" id="btn-videos-refresh" title="Refresh">🔄</button>
+            </div>
+          </div>
+
+          <div id="videos-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </section>
+
+        <!-- ===================================================================
+             5. STORAGE VIEW
+             =================================================================== -->
+        <section id="view-storage" class="view-section" aria-labelledby="storage-title">
+          <div class="page-header-block">
+            <div>
+              <h1 id="storage-title" class="page-title">Storage Analytics</h1>
+              <p class="page-description">Detailed device capacity and categorized file intelligence.</p>
+            </div>
+            <button class="btn btn-secondary btn-icon" id="btn-storage-refresh" title="Refresh Stats">🔄</button>
+          </div>
+
+          <div class="storage-stats-grid">
+            <div class="storage-detail-card">
+              <span class="card-subtext">CAPACITY OVERVIEW</span>
+              <div class="storage-metrics-row">
+                <span class="storage-number-main" id="storage-page-used">0 GB</span>
+                <span class="storage-number-sub" id="storage-page-total">of 0 GB</span>
+              </div>
+              <div class="storage-bar-track" style="height: 14px;">
+                <div id="storage-page-bar-photos" class="storage-bar-segment segment-photos" style="width: 0%;"></div>
+                <div id="storage-page-bar-videos" class="storage-bar-segment segment-videos" style="width: 0%;"></div>
+                <div id="storage-page-bar-docs" class="storage-bar-segment segment-docs" style="width: 0%;"></div>
+                <div id="storage-page-bar-audio" class="storage-bar-segment segment-audio" style="width: 0%;"></div>
+                <div id="storage-page-bar-archives" class="storage-bar-segment segment-archives" style="width: 0%;"></div>
+                <div id="storage-page-bar-other" class="storage-bar-segment segment-other" style="width: 0%;"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs);">
+                <span>Free Space: <strong id="storage-page-free">0 GB</strong></span>
+                <span>Usage: <strong id="storage-page-pct">0%</strong></span>
+              </div>
+            </div>
+
+            <div class="storage-detail-card">
+              <span class="card-subtext">TOTAL FILES STORED</span>
+              <div class="storage-number-main" id="storage-page-file-count" style="margin-top: 4px;">0</div>
+              <span class="card-subtext">Files and media across RemoteNodeFiles sandbox</span>
+            </div>
+          </div>
+
+          <!-- Categories Breakdown Table -->
+          <div class="card" style="margin-bottom: var(--space-xl);">
+            <h2 class="card-title" style="margin-bottom: var(--space-md);">Storage Categories Breakdown</h2>
+            <div class="category-legend-grid" id="storage-category-legend-grid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Top Largest Files -->
+          <div class="card">
+            <h2 class="card-title">Top Largest Files</h2>
+            <div class="largest-files-table-wrap">
+              <table class="file-table" id="largest-files-table">
+                <thead>
+                  <tr>
+                    <th>File Name</th>
+                    <th>Category</th>
+                    <th>Size</th>
+                    <th>Modified Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="largest-files-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Mobile Responsive Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
+      <div class="mobile-nav-item active" data-view="home" role="button" tabindex="0">
+        <span class="mobile-nav-icon">🏠</span>
+        <span>Home</span>
+      </div>
+      <div class="mobile-nav-item" data-view="files" role="button" tabindex="0">
+        <span class="mobile-nav-icon">📁</span>
+        <span>Files</span>
+      </div>
+      <div class="mobile-nav-item" data-view="photos" role="button" tabindex="0">
+        <span class="mobile-nav-icon">🖼️</span>
+        <span>Photos</span>
+      </div>
+      <div class="mobile-nav-item" data-view="videos" role="button" tabindex="0">
+        <span class="mobile-nav-icon">🎬</span>
+        <span>Videos</span>
+      </div>
+      <div class="mobile-nav-item" data-view="storage" role="button" tabindex="0">
+        <span class="mobile-nav-icon">📊</span>
+        <span>Storage</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Hidden Multi-File Input -->
+  <input type="file" id="file-picker" multiple style="display: none;">
+
+  <!-- ===================================================================
+       MODAL DIALOGS
+       =================================================================== -->
+  <!-- Create New Folder Modal -->
+  <div id="modal-new-folder" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Folder</h3>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-new-folder')">✕</button>
+      </div>
+      <form id="form-new-folder">
+        <div class="form-group">
+          <label for="input-folder-name" class="form-label">Folder Name</label>
+          <input type="text" id="input-folder-name" class="form-input" placeholder="e.g. Work Documents" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-new-folder')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Folder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rename Item Modal -->
+  <div id="modal-rename" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Rename Item</h3>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-rename')">✕</button>
+      </div>
+      <form id="form-rename">
+        <input type="hidden" id="rename-old-path">
+        <div class="form-group">
+          <label for="input-rename-name" class="form-label">New Name</label>
+          <input type="text" id="input-rename-name" class="form-input" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-rename')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="modal-delete" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Confirm Deletion</h3>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-delete')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to permanently delete <strong id="delete-item-name"></strong>?</p>
+        <p style="font-size: var(--font-size-xs); color: var(--color-status-error); margin-top: 8px;">⚠️ This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-delete')">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete">Delete Permanently</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Image Preview Modal -->
+  <div id="modal-lightbox" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="lightbox-title">Image Preview</h3>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-lightbox')">✕</button>
+      </div>
+      <div class="lightbox-content">
+        <img id="lightbox-img" src="" alt="Preview image">
+      </div>
+      <div class="modal-footer">
+        <a id="lightbox-download-link" href="#" class="btn btn-secondary" download>Download</a>
+        <button type="button" class="btn btn-primary" onclick="UIManager.hideModal('modal-lightbox')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Player Modal -->
+  <div id="modal-video-player" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="video-player-title">Video Playback</h3>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideVideoModal()">✕</button>
+      </div>
+      <div class="lightbox-content">
+        <video id="video-player-el" controls style="max-height: 65vh; width: 100%;"></video>
+      </div>
+      <div class="modal-footer">
+        <a id="video-download-link" href="#" class="btn btn-secondary" download>Download Video</a>
+        <button type="button" class="btn btn-primary" onclick="UIManager.hideVideoModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- JavaScript Application Modules -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/file-manager.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
