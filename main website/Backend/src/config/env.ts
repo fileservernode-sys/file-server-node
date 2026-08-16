@@ -53,10 +53,10 @@ const envSchema = z.object({
       }
     ),
 
-  // Serverbyt SMTP Configuration Schema Parameters
-  SMTP_HOST: z.string().default('smtp.serverbyt.com'),
+  // StackMail / Serverbyt SMTP Configuration Schema Parameters
+  SMTP_HOST: z.string().default('smtp.stackmail.com'),
   SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USERNAME: z.string().default(''),
+  SMTP_USERNAME: z.string().default('noreply@viewduration.com'),
   SMTP_PASSWORD: z.string().default(''),
   SMTP_FROM_EMAIL: z.string().default('noreply@viewduration.com'),
   SMTP_FROM_NAME: z.string().default('RemoteNode File Server'),
