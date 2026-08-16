@@ -15,8 +15,14 @@ class MainActivity : FlutterActivity() {
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
                     val storageDir = context.filesDir.resolve("RemoteNodeFiles")
-                    val res = localServerEngine.start(port, storageDir)
+                    val res = localServerEngine.start(port, storageDir, context)
                     result.success(res)
+                }
+                "setCredentials" -> {
+                    val username = call.argument<String>("username")
+                    val password = call.argument<String>("password")
+                    localServerEngine.setCredentials(username, password)
+                    result.success(true)
                 }
                 "stopServer" -> {
                     val res = localServerEngine.stop()

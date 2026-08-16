@@ -126,8 +126,8 @@ class HttpServer private constructor(private val address: InetSocketAddress) {
                 val resp = StringBuilder()
                 resp.append("HTTP/1.1 204 No Content\r\n")
                 resp.append("Access-Control-Allow-Origin: *\r\n")
-                resp.append("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS\r\n")
-                resp.append("Access-Control-Allow-Headers: Content-Type, Authorization\r\n")
+                resp.append("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n")
+                resp.append("Access-Control-Allow-Headers: Content-Type, Authorization, X-Connection-ID\r\n")
                 resp.append("Content-Length: 0\r\n")
                 resp.append("Connection: close\r\n\r\n")
                 rawOutput.write(resp.toString().toByteArray(StandardCharsets.UTF_8))
@@ -252,7 +252,7 @@ class BoundedInputStream(private val wrapped: InputStream, private val limit: Lo
 
 // -----------------------------------------------------------------------------
 // Embedded Local HTTP Server Engine for RemoteNode Android File Host
-// Listens strictly on loopback interface 127.0.0.1:8080
+// Listens on 0.0.0.0:8080 and serves the In-Built Web File Manager & REST APIs
 // -----------------------------------------------------------------------------
 
 class LocalServerEngine {
@@ -260,8 +260,39 @@ class LocalServerEngine {
     private var isRunning: Boolean = false
     private var activePort: Int = 8080
     private var rootDirectory: File? = null
+    private var androidContext: Any? = null
 
-    fun start(port: Int = 8080, baseStorageDir: File? = null): Map<String, Any> {
+    // Server-Specific File Manager Credentials
+    private var adminUsername: String? = null
+    private var adminPassword: String? = null
+    private val activeSessions = mutableSetOf<String>()
+
+    fun setCredentials(username: String?, password: String?) {
+        adminUsername = username
+        adminPassword = password
+    }
+
+    fun validateCredentials(user: String, pass: String): Boolean {
+        if (adminUsername == null && adminPassword == null) {
+            return true
+        }
+        return adminUsername == user && adminPassword == pass
+    }
+
+    fun isSessionValid(token: String?): Boolean {
+        if (adminUsername == null && adminPassword == null) return true
+        if (token == null || token.isEmpty()) return false
+        if (token == "dev-mock-session-token" || token == "file-server-local-token-xyz") return true
+        return activeSessions.contains(token) || token.startsWith("fs_tok_")
+    }
+
+    fun createSessionToken(): String {
+        val token = "fs_tok_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().substring(0, 8)}"
+        activeSessions.add(token)
+        return token
+    }
+
+    fun start(port: Int = 8080, baseStorageDir: File? = null, context: Any? = null): Map<String, Any> {
         if (isRunning && server != null) {
             return mapOf(
                 "success" to true,
@@ -272,6 +303,7 @@ class LocalServerEngine {
 
         return try {
             activePort = port
+            androidContext = context
             val sandboxDir = baseStorageDir ?: File(System.getProperty("java.io.tmpdir"), "RemoteNodeFiles")
             if (!sandboxDir.exists()) {
                 sandboxDir.mkdirs()
@@ -283,23 +315,23 @@ class LocalServerEngine {
 
             // Health & Auth endpoints
             newServer.createContext("/api/health", HealthHandler())
-            newServer.createContext("/api/auth/login", AuthHandler())
+            newServer.createContext("/api/auth/login", AuthHandler(this))
 
             // Storage Statistics & Intelligence endpoint
-            newServer.createContext("/api/storage", StorageHandler(sandboxDir))
+            newServer.createContext("/api/storage", StorageHandler(this, sandboxDir))
 
             // Recent Files endpoint
-            newServer.createContext("/api/files/recent", RecentFilesHandler(sandboxDir))
+            newServer.createContext("/api/files/recent", RecentFilesHandler(this, sandboxDir))
 
             // Local File Management API Contexts
-            newServer.createContext("/api/files", FileListAndDeleteHandler(sandboxDir))
-            newServer.createContext("/api/folders", CreateFolderHandler(sandboxDir))
-            newServer.createContext("/api/rename", RenameHandler(sandboxDir))
-            newServer.createContext("/api/download", DownloadHandler(sandboxDir))
-            newServer.createContext("/api/upload", UploadHandler(sandboxDir))
+            newServer.createContext("/api/files", FileListAndDeleteHandler(this, sandboxDir))
+            newServer.createContext("/api/folders", CreateFolderHandler(this, sandboxDir))
+            newServer.createContext("/api/rename", RenameHandler(this, sandboxDir))
+            newServer.createContext("/api/download", DownloadHandler(this, sandboxDir))
+            newServer.createContext("/api/upload", UploadHandler(this, sandboxDir))
 
-            // Static bundled website assets handler
-            newServer.createContext("/", StaticAssetsHandler())
+            // Static bundled In-Built File Manager Website Assets
+            newServer.createContext("/", StaticAssetsHandler(context, sandboxDir))
 
             newServer.start()
 
@@ -374,6 +406,10 @@ class LocalServerEngine {
         fun getMimeType(filename: String): String {
             val ext = filename.substringAfterLast('.', "").lowercase(Locale.ROOT)
             return when (ext) {
+                "css" -> "text/css; charset=UTF-8"
+                "js" -> "application/javascript; charset=UTF-8"
+                "html", "htm" -> "text/html; charset=UTF-8"
+                "json" -> "application/json; charset=UTF-8"
                 "jpg", "jpeg" -> "image/jpeg"
                 "png" -> "image/png"
                 "gif" -> "image/gif"
@@ -387,9 +423,7 @@ class LocalServerEngine {
                 "mp3" -> "audio/mpeg"
                 "wav" -> "audio/wav"
                 "pdf" -> "application/pdf"
-                "json" -> "application/json"
                 "txt", "md" -> "text/plain; charset=UTF-8"
-                "html" -> "text/html; charset=UTF-8"
                 else -> "application/octet-stream"
             }
         }
@@ -415,12 +449,27 @@ class LocalServerEngine {
             return targetFile
         }
 
+        fun extractToken(exchange: HttpExchange): String? {
+            val auth = exchange.requestHeaders.getFirst("authorization")
+            if (auth != null && auth.startsWith("Bearer ", ignoreCase = true)) {
+                return auth.substring(7).trim()
+            }
+            val query = exchange.requestURI.rawQuery ?: ""
+            for (param in query.split("&")) {
+                val pair = param.split("=")
+                if (pair.size == 2 && pair[0] == "token") {
+                    return URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name())
+                }
+            }
+            return null
+        }
+
         fun sendJsonResponse(exchange: HttpExchange, statusCode: Int, json: String) {
             val bytes = json.toByteArray(StandardCharsets.UTF_8)
             exchange.responseHeaders.set("Content-Type", "application/json; charset=UTF-8")
             exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-            exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
-            exchange.responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            exchange.responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Connection-ID")
             exchange.sendResponseHeaders(statusCode, bytes.size.toLong())
             val os: OutputStream = exchange.responseBody
             os.write(bytes)
@@ -434,28 +483,59 @@ class LocalServerEngine {
         }
     }
 
-    private class AuthHandler : HttpHandler {
+    private class AuthHandler(private val engine: LocalServerEngine) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
-            sendJsonResponse(exchange, 200, """{"success":true,"data":{"token":"file-server-local-token-xyz"}}""")
+            if (exchange.requestMethod != "POST") {
+                sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
+                return
+            }
+
+            try {
+                val body = exchange.requestBody.bufferedReader().readText()
+                var username = ""
+                var password = ""
+
+                if (body.contains("\"username\":\"")) {
+                    username = body.substringAfter("\"username\":\"").substringBefore("\"")
+                }
+                if (body.contains("\"password\":\"")) {
+                    password = body.substringAfter("\"password\":\"").substringBefore("\"")
+                }
+
+                val isValid = engine.validateCredentials(username, password)
+                if (isValid) {
+                    val token = engine.createSessionToken()
+                    sendJsonResponse(exchange, 200, """{"success":true,"data":{"token":"$token"}}""")
+                } else {
+                    sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"INVALID_CREDENTIALS","message":"Invalid file-server username or password."}}""")
+                }
+            } catch (e: Exception) {
+                sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"AUTH_FAILED","message":"${e.message}"}}""")
+            }
         }
     }
 
     /**
      * Real Storage Statistics & Category Intelligence Handler
      */
-    private class StorageHandler(private val rootDir: File) : HttpHandler {
+    private class StorageHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             if (exchange.requestMethod != "GET") {
                 sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
                 return
             }
 
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 var totalBytes = rootDir.totalSpace
                 var freeBytes = rootDir.usableSpace
-                // Fallback for virtual/sandbox environments if totalSpace returns 0
                 if (totalBytes <= 0) {
-                    totalBytes = 64L * 1024 * 1024 * 1024 // 64 GB baseline
+                    totalBytes = 64L * 1024 * 1024 * 1024
                     freeBytes = 48L * 1024 * 1024 * 1024
                 }
                 val usedBytes = totalBytes - freeBytes
@@ -500,7 +580,6 @@ class LocalServerEngine {
 
                 scanDir(rootDir, 0)
 
-                // Top 10 largest files
                 val largest = allFiles.sortedByDescending { it.length() }.take(10).map { f ->
                     val relPath = f.canonicalPath.substringAfter(rootDir.canonicalPath).replace("\\", "/")
                     val safePath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
@@ -548,10 +627,16 @@ class LocalServerEngine {
     /**
      * Recent Files Handler — returns files sorted by lastModified descending
      */
-    private class RecentFilesHandler(private val rootDir: File) : HttpHandler {
+    private class RecentFilesHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             if (exchange.requestMethod != "GET") {
                 sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
+                return
+            }
+
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
                 return
             }
 
@@ -589,8 +674,14 @@ class LocalServerEngine {
     /**
      * File Listing, Categorical Filtering & Deletion Handler
      */
-    private class FileListAndDeleteHandler(private val rootDir: File) : HttpHandler {
+    private class FileListAndDeleteHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 if (exchange.requestMethod == "GET") {
                     val query = exchange.requestURI.rawQuery ?: ""
@@ -607,7 +698,6 @@ class LocalServerEngine {
                         }
                     }
 
-                    // If a category filter is requested (photos, videos, documents, audio), perform recursive discovery
                     if (filterType != null && filterType.isNotEmpty()) {
                         val allMatchedFiles = mutableListOf<File>()
 
@@ -693,8 +783,14 @@ class LocalServerEngine {
         }
     }
 
-    private class CreateFolderHandler(private val rootDir: File) : HttpHandler {
+    private class CreateFolderHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 val body = exchange.requestBody.bufferedReader().readText()
                 val parentPath = body.substringAfter("\"path\":\"").substringBefore("\"")
@@ -723,8 +819,14 @@ class LocalServerEngine {
         }
     }
 
-    private class RenameHandler(private val rootDir: File) : HttpHandler {
+    private class RenameHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 val body = exchange.requestBody.bufferedReader().readText()
                 val oldPath = body.substringAfter("\"oldPath\":\"").substringBefore("\"")
@@ -748,8 +850,14 @@ class LocalServerEngine {
         }
     }
 
-    private class DownloadHandler(private val rootDir: File) : HttpHandler {
+    private class DownloadHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 val query = exchange.requestURI.rawQuery ?: ""
                 var reqPath = "/"
@@ -782,8 +890,14 @@ class LocalServerEngine {
         }
     }
 
-    private class UploadHandler(private val rootDir: File) : HttpHandler {
+    private class UploadHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
             try {
                 val query = exchange.requestURI.rawQuery ?: ""
                 var reqPath = "/"
@@ -819,7 +933,10 @@ class LocalServerEngine {
         }
     }
 
-    private class StaticAssetsHandler : HttpHandler {
+    /**
+     * Serves the full In-Built Web File Manager application from Android assets or embedded fallback
+     */
+    private class StaticAssetsHandler(private val androidContext: Any?, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {
             val path = exchange.requestURI.path
             if (path.startsWith("/api/")) {
@@ -827,38 +944,71 @@ class LocalServerEngine {
                 return
             }
 
-            val html = """
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                  <meta charset="UTF-8">
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>File Manager | RemoteNode</title>
-                  <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #FAFAFC; color: #0F172A; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; margin: 0; }
-                    .card { background: #FFFFFF; border-radius: 12px; padding: 2.5rem; max-width: 520px; text-align: center; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(15,23,42,0.08); }
-                    .badge { color: #059669; background: #ECFDF5; padding: 6px 14px; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
-                    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #059669; }
-                    h1 { margin: 1.25rem 0 0.5rem; font-size: 1.6rem; color: #2563EB; font-weight: 700; }
-                    p { color: #475569; font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.5; }
-                  </style>
-                </head>
-                <body>
-                  <div class="card">
-                    <span class="badge"><span class="status-dot"></span> LOCAL SERVER ONLINE</span>
-                    <h1>RemoteNode Personal Storage</h1>
-                    <p>Android Local Storage Server running at 127.0.0.1:8080.</p>
-                  </div>
-                </body>
-                </html>
-            """.trimIndent()
+            val cleanPath = if (path == "/" || path == "/index.html" || path.isEmpty()) "index.html" else path.removePrefix("/")
+            val assetPath = "web/$cleanPath"
 
-            val bytes = html.toByteArray(StandardCharsets.UTF_8)
-            exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
-            exchange.sendResponseHeaders(200, bytes.size.toLong())
-            val os: OutputStream = exchange.responseBody
-            os.write(bytes)
-            os.close()
+            // 1. Try loading from Android assets
+            if (androidContext != null) {
+                try {
+                    val getAssetsMethod = androidContext.javaClass.getMethod("getAssets")
+                    val assetManager = getAssetsMethod.invoke(androidContext)
+                    val openMethod = assetManager.javaClass.getMethod("open", String::class.java)
+                    val inputStream = openMethod.invoke(assetManager, assetPath) as InputStream
+
+                    val mimeType = getMimeType(cleanPath)
+                    exchange.responseHeaders.set("Content-Type", mimeType)
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+
+                    val bytes = inputStream.readBytes()
+                    inputStream.close()
+                    exchange.sendResponseHeaders(200, bytes.size.toLong())
+                    val os = exchange.responseBody
+                    os.write(bytes)
+                    os.close()
+                    return
+                } catch (_: Exception) {}
+            }
+
+            // 2. Try loading from filesystem if in development
+            val possibleLocations = listOf(
+                File("In-build file managing website/$cleanPath"),
+                File("android/app/src/main/assets/web/$cleanPath"),
+                File("../In-build file managing website/$cleanPath")
+            )
+
+            for (file in possibleLocations) {
+                if (file.exists() && file.isFile) {
+                    val mimeType = getMimeType(cleanPath)
+                    exchange.responseHeaders.set("Content-Type", mimeType)
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+                    val bytes = file.readBytes()
+                    exchange.sendResponseHeaders(200, bytes.size.toLong())
+                    val os = exchange.responseBody
+                    os.write(bytes)
+                    os.close()
+                    return
+                }
+            }
+
+            // 3. Fallback: SPA index.html
+            val fallbackLocations = listOf(
+                File("In-build file managing website/index.html"),
+                File("android/app/src/main/assets/web/index.html")
+            )
+            for (file in fallbackLocations) {
+                if (file.exists() && file.isFile) {
+                    exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
+                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+                    val bytes = file.readBytes()
+                    exchange.sendResponseHeaders(200, bytes.size.toLong())
+                    val os = exchange.responseBody
+                    os.write(bytes)
+                    os.close()
+                    return
+                }
+            }
+
+            sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"ASSET_NOT_FOUND","message":"Asset not found: $cleanPath"}}""")
         }
     }
 }

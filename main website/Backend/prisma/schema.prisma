@@ -70,6 +70,7 @@ enum AuditEventType {
   DEVICE_REGISTERED
   DEVICE_CONNECTED
   DEVICE_DISCONNECTED
+  SERVER_CREATED
   SERVER_STARTED
   SERVER_STOPPED
   ENDPOINT_ASSIGNED
@@ -78,6 +79,8 @@ enum AuditEventType {
   REMOTE_CONNECTION_DISCONNECTED
   REMOTE_CONNECTION_FAILED
   SERVER_ENDPOINT_ALLOCATED
+  FILE_MANAGER_LOGIN_SUCCESS
+  FILE_MANAGER_LOGIN_FAILED
 }
 
 // -----------------------------------------------------------------------------
@@ -160,16 +163,19 @@ model Device {
 
 /// Logical File Server Service Instance running on Android Device
 model ServerInstance {
-  id              String               @id @default(cuid())
-  deviceId        String
-  status          ServerInstanceStatus @default(STOPPED)
-  startedAt       DateTime?
-  lastHeartbeatAt DateTime?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  id                String               @id @default(cuid())
+  deviceId          String
+  serverName        String?
+  adminUsername     String?
+  adminPasswordHash String?
+  status            ServerInstanceStatus @default(STOPPED)
+  startedAt         DateTime?
+  lastHeartbeatAt   DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
-  device          Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  endpoints       ServerEndpoint[]
+  device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  endpoints         ServerEndpoint[]
 
   @@index([deviceId])
   @@index([status])

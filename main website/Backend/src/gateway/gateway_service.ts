@@ -100,10 +100,47 @@ export class PrismaTokenValidator implements TokenValidator {
 
   async markConnected(connectionId: string, now: Date) {
     try {
-      await prisma.deviceConnection.update({
+      const conn = await prisma.deviceConnection.update({
         where: { id: connectionId },
-        data: { status: 'CONNECTED', connectedAt: now, lastHeartbeatAt: now }
+        data: { status: 'CONNECTED', connectedAt: now, lastHeartbeatAt: now },
+        include: { device: true }
       });
+
+      if (conn?.deviceId) {
+        await prisma.device.update({
+          where: { id: conn.deviceId },
+          data: { status: 'ONLINE', lastSeenAt: now }
+        });
+
+        await prisma.serverInstance.updateMany({
+          where: { deviceId: conn.deviceId },
+          data: { status: 'RUNNING', startedAt: now, lastHeartbeatAt: now }
+        });
+
+        const endpoints = await prisma.serverEndpoint.findMany({
+          where: {
+            serverInstance: { deviceId: conn.deviceId }
+          }
+        });
+
+        for (const ep of endpoints) {
+          await prisma.serverEndpoint.update({
+            where: { id: ep.id },
+            data: { status: 'ACTIVE' }
+          });
+        }
+
+        if (conn.device?.userId) {
+          await prisma.auditEvent.create({
+            data: {
+              userId: conn.device.userId,
+              deviceId: conn.deviceId,
+              eventType: 'REMOTE_CONNECTION_CONNECTED',
+              metadata: { connectionId, remoteEndpoint: conn.remoteEndpoint }
+            }
+          });
+        }
+      }
     } catch {
       // Ignore DB errors
     }
@@ -111,10 +148,47 @@ export class PrismaTokenValidator implements TokenValidator {
 
   async markDisconnected(connectionId: string, disconnectedAt: Date) {
     try {
-      await prisma.deviceConnection.update({
+      const conn = await prisma.deviceConnection.update({
         where: { id: connectionId },
-        data: { status: 'DISCONNECTED', disconnectedAt }
+        data: { status: 'DISCONNECTED', disconnectedAt },
+        include: { device: true }
       });
+
+      if (conn?.deviceId) {
+        await prisma.device.update({
+          where: { id: conn.deviceId },
+          data: { status: 'OFFLINE' }
+        });
+
+        await prisma.serverInstance.updateMany({
+          where: { deviceId: conn.deviceId },
+          data: { status: 'STOPPED' }
+        });
+
+        const endpoints = await prisma.serverEndpoint.findMany({
+          where: {
+            serverInstance: { deviceId: conn.deviceId }
+          }
+        });
+
+        for (const ep of endpoints) {
+          await prisma.serverEndpoint.update({
+            where: { id: ep.id },
+            data: { status: 'INACTIVE' }
+          });
+        }
+
+        if (conn.device?.userId) {
+          await prisma.auditEvent.create({
+            data: {
+              userId: conn.device.userId,
+              deviceId: conn.deviceId,
+              eventType: 'REMOTE_CONNECTION_DISCONNECTED',
+              metadata: { connectionId }
+            }
+          });
+        }
+      }
     } catch {
       // Ignore DB errors during socket cleanup
     }

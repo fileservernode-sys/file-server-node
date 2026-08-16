@@ -213,6 +213,9 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         deviceName: state.deviceName,
         installationId: installationId,
         sessionToken: sessionToken,
+        serverName: state.serverName,
+        adminUsername: state.fileServerUsername,
+        adminPassword: state.fileServerPassword,
       );
 
       String? registeredDeviceId;
@@ -224,10 +227,14 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       state = state.copyWith(deviceId: registeredDeviceId);
 
       // -----------------------------------------------------------------------
-      // Stage 1: Start Local HTTP File Server on Android (0.0.0.0:8080)
+      // Stage 1: Configure Credentials & Start Local HTTP File Server on Android (0.0.0.0:8080)
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 1);
       final serverService = _ref.read(serverServiceProvider);
+      await serverService.setCredentials(
+        username: state.fileServerUsername,
+        password: state.fileServerPassword,
+      );
       final startRes = await serverService.startServer(port: 8080);
       final localUrl = startRes['localUrl'] as String? ?? 'http://127.0.0.1:8080';
 

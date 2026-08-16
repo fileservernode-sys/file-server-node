@@ -1,0 +1,79 @@
+:root {
+  /* RemoteNode Brand Color Tokens */
+  --color-brand-primary: #2563EB;
+  --color-brand-primary-hover: #1D4ED8;
+  --color-brand-light: #EFF6FF;
+  --color-brand-subtle: #DBEAFE;
+
+  /* Neutral Text & Surface Tokens */
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+
+  --color-bg-body: #FAFAFC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-secondary: #F8FAFC;
+  --color-bg-tertiary: #F1F5F9;
+
+  --color-border-subtle: #E2E8F0;
+  --color-border-strong: #CBD5E1;
+
+  /* Status Colors */
+  --color-status-online: #059669;
+  --color-status-online-bg: #ECFDF5;
+  --color-status-warning: #D97706;
+  --color-status-warning-bg: #FFFBEB;
+  --color-status-error: #DC2626;
+  --color-status-error-bg: #FEF2F2;
+
+  /* Storage Category Tokens */
+  --color-cat-photos: #2563EB;
+  --color-cat-photos-bg: #EFF6FF;
+  --color-cat-videos: #7C3AED;
+  --color-cat-videos-bg: #F5F3FF;
+  --color-cat-docs: #D97706;
+  --color-cat-docs-bg: #FFFBEB;
+  --color-cat-audio: #DB2777;
+  --color-cat-audio-bg: #FDF2F8;
+  --color-cat-archives: #059669;
+  --color-cat-archives-bg: #ECFDF5;
+  --color-cat-other: #64748B;
+  --color-cat-other-bg: #F1F5F9;
+
+  /* Spacing Scale (8-pt Grid System) */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Radius Tokens */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Typography Scale */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+
+  /* Layout dimensions */
+  --sidebar-width: 260px;
+  --header-height: 64px;
+  --bottom-nav-height: 64px;
+}

@@ -11,6 +11,9 @@ abstract class DeviceRemoteDataSource {
     String platform = 'Android',
     String? osVersion,
     String? appVersion,
+    String? serverName,
+    String? adminUsername,
+    String? adminPassword,
   });
 
   Future<bool> sendHeartbeat({
@@ -47,6 +50,9 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
     String platform = 'Android',
     String? osVersion,
     String? appVersion,
+    String? serverName,
+    String? adminUsername,
+    String? adminPassword,
   }) async {
     try {
       final url = Uri.parse('$_baseUrl/devices/register');
@@ -59,6 +65,9 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         'platform': platform,
         'osVersion': osVersion ?? 'Android 14',
         'appVersion': appVersion ?? '1.0.0',
+        if (serverName != null) 'serverName': serverName,
+        if (adminUsername != null) 'adminUsername': adminUsername,
+        if (adminPassword != null) 'adminPassword': adminPassword,
       }));
 
       final res = await req.close().timeout(const Duration(seconds: 5));
@@ -70,6 +79,9 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         deviceName: deviceName,
         installationId: installationId,
         sessionToken: sessionToken,
+        serverName: serverName,
+        adminUsername: adminUsername,
+        adminPassword: adminPassword,
       );
     }
   }
@@ -140,6 +152,9 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
     String platform = 'Android',
     String? osVersion,
     String? appVersion,
+    String? serverName,
+    String? adminUsername,
+    String? adminPassword,
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
     return {

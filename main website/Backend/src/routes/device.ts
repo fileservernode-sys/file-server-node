@@ -4,12 +4,17 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
 
+import { hashPassword } from '../utils/crypto.js';
+
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
   platform: z.string().default('Android'),
   osVersion: z.string().optional(),
   appVersion: z.string().optional(),
-  installationId: z.string().min(1)
+  installationId: z.string().min(1),
+  serverName: z.string().optional(),
+  adminUsername: z.string().optional(),
+  adminPassword: z.string().optional()
 });
 
 const heartbeatSchema = z.object({
@@ -50,18 +55,19 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('Invalid device registration metadata. deviceName and installationId are required.');
     }
 
-    const { deviceName, platform, osVersion, appVersion, installationId } = body.data;
+    const { deviceName, platform, osVersion, appVersion, installationId, serverName, adminUsername, adminPassword } = body.data;
 
-    // Check if a device with this installationId already exists
+    // Check if a device with this name already exists for the user
     const existingDevice = await prisma.device.findFirst({
       where: {
-        // Look for device matching user or installationId metadata
         userId: user.id,
         deviceName: deviceName
       }
     });
 
     let device;
+    const adminPasswordHash = adminPassword ? hashPassword(adminPassword) : undefined;
+
     if (existingDevice) {
       // Idempotent update
       device = await prisma.device.update({
@@ -74,6 +80,32 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           lastSeenAt: new Date()
         }
       });
+
+      // Update or ensure ServerInstance exists
+      const existingServer = await prisma.serverInstance.findFirst({
+        where: { deviceId: device.id }
+      });
+
+      if (existingServer) {
+        await prisma.serverInstance.update({
+          where: { id: existingServer.id },
+          data: {
+            serverName: serverName || existingServer.serverName || deviceName,
+            adminUsername: adminUsername || existingServer.adminUsername,
+            ...(adminPasswordHash ? { adminPasswordHash } : {})
+          }
+        });
+      } else {
+        await prisma.serverInstance.create({
+          data: {
+            deviceId: device.id,
+            serverName: serverName || deviceName,
+            adminUsername: adminUsername,
+            adminPasswordHash: adminPasswordHash,
+            status: 'STARTING'
+          }
+        });
+      }
     } else {
       // Create new Device
       device = await prisma.device.create({
@@ -88,11 +120,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         }
       });
 
-      // Create initial ServerInstance (status STOPPED)
+      // Create initial ServerInstance (status STARTING)
       await prisma.serverInstance.create({
         data: {
           deviceId: device.id,
-          status: 'STOPPED'
+          serverName: serverName || deviceName,
+          adminUsername: adminUsername,
+          adminPasswordHash: adminPasswordHash,
+          status: 'STARTING'
         }
       });
 
@@ -101,6 +136,15 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           userId: user.id,
           deviceId: device.id,
           eventType: 'DEVICE_REGISTERED'
+        }
+      });
+
+      await prisma.auditEvent.create({
+        data: {
+          userId: user.id,
+          deviceId: device.id,
+          eventType: 'SERVER_CREATED',
+          metadata: { serverName: serverName || deviceName, adminUsername }
         }
       });
     }

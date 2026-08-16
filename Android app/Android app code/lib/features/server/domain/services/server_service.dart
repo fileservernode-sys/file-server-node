@@ -8,6 +8,7 @@ abstract class ServerService {
   Future<Map<String, dynamic>> getServerStatus();
   Future<String> getLocalUrl();
   Future<bool> openUrl(String url);
+  Future<bool> setCredentials({required String username, required String password});
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine
@@ -84,6 +85,19 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().openUrl(url);
     }
   }
+
+  @override
+  Future<bool> setCredentials({required String username, required String password}) async {
+    try {
+      final res = await _channel.invokeMethod<bool>('setCredentials', {
+        'username': username,
+        'password': password,
+      });
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().setCredentials(username: username, password: password);
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -133,6 +147,12 @@ class MockServerService implements ServerService {
 
   @override
   Future<bool> openUrl(String url) async {
+    await Future.delayed(const Duration(milliseconds: 50));
+    return true;
+  }
+
+  @override
+  Future<bool> setCredentials({required String username, required String password}) async {
     await Future.delayed(const Duration(milliseconds: 50));
     return true;
   }
