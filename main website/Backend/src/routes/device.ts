@@ -248,7 +248,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           lastSeenAt: d.lastSeenAt?.toISOString(),
           server: activeServer ? {
             id: activeServer.id,
+            serverName: activeServer.serverName || d.deviceName,
+            adminUsername: activeServer.adminUsername,
             status: activeServer.status,
+            localServerUrl: 'http://127.0.0.1:8080',
             startedAt: activeServer.startedAt?.toISOString(),
             endpoint: activeEndpoint ? {
               id: activeEndpoint.id,
@@ -322,7 +325,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         lastSeenAt: device.lastSeenAt?.toISOString(),
         server: activeServer ? {
           id: activeServer.id,
+          serverName: activeServer.serverName || device.deviceName,
+          adminUsername: activeServer.adminUsername,
           status: activeServer.status,
+          localServerUrl: 'http://127.0.0.1:8080',
           startedAt: activeServer.startedAt?.toISOString(),
           endpoint: activeEndpoint ? {
             id: activeEndpoint.id,

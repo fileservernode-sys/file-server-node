@@ -69,84 +69,22 @@
         </div>
 
         <!-- Section Title -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-xs);">
           <div>
             <h2 class="section-title" style="font-size: var(--font-size-xl); text-align: left; margin-bottom: var(--space-3xs);">
               Your Registered Servers
             </h2>
             <p class="text-secondary text-sm">Android storage nodes paired to this platform account.</p>
           </div>
-          <span class="text-xs text-muted">Auto-refreshes device status</span>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span id="refresh-indicator" class="text-xs text-muted">Auto-refreshes device status</span>
+            <button id="btn-manual-refresh" class="btn btn-ghost btn-sm" style="font-size: var(--font-size-xs);" title="Refresh servers">↻ Refresh</button>
+          </div>
         </div>
 
-        <!-- Registered Devices List Grid -->
+        <!-- Registered Devices List Grid (Populated dynamically from real DB) -->
         <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
-          
-          <!-- Sample Online Device Card -->
-          <div class="card card-hover" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm);">
-                <div>
-                  <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
-                    Pixel 6a Storage Node
-                  </h3>
-                  <span class="text-xs text-muted">Android 14 • App v1.4.2</span>
-                </div>
-                <span class="status-indicator status-online">ONLINE</span>
-              </div>
-
-              <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-                <div class="text-xs text-secondary" style="margin-bottom: 4px;">Local Server URL:</div>
-                <code style="font-size: var(--font-size-xs); color: var(--color-brand-primary); word-break: break-all;">http://127.0.0.1:8080</code>
-                <div class="text-xs text-muted" style="margin-top: 4px;">Remote Access: <em>NOT CONNECTED (Phase 2)</em></div>
-              </div>
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">
-                <span>Last Heartbeat: <strong>Just now</strong></span>
-                <span>Storage Host: <strong>128 GB</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sample Offline Device Card -->
-          <div class="card" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between; opacity: 0.9;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm);">
-                <div>
-                  <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
-                    Samsung S10 Host
-                  </h3>
-                  <span class="text-xs text-muted">Android 12 • App v1.3.0</span>
-                </div>
-                <span class="status-indicator status-offline">OFFLINE</span>
-              </div>
-
-              <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-                <div class="text-xs text-secondary" style="margin-bottom: 4px;">Local Server URL:</div>
-                <code style="font-size: var(--font-size-xs); color: var(--color-text-muted); word-break: break-all;">http://127.0.0.1:8080</code>
-              </div>
-            </div>
-
-            <div>
-              <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">
-                <span>Last Heartbeat: <strong>2 hours ago</strong></span>
-                <span>Storage Host: <strong>256 GB</strong></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Add Device Guidance Card -->
-          <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
-            <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
-            <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Register New Android Phone</h3>
-            <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
-              Download the Android app on your spare phone and log in with this account to pair a new storage server.
-            </p>
-            <a href="how-it-works.html" class="btn btn-outline btn-sm">View Pairing Setup Guide</a>
-          </div>
-
+          <!-- Dynamic real content rendered via JavaScript -->
         </div>
 
       </div>
@@ -161,6 +99,9 @@
 
   <script src="../js/auth.js"></script>
   <script>
+    // Global State
+    let isFetching = false;
+
     document.addEventListener('DOMContentLoaded', () => {
       const user = AuthService.getSavedUser();
       const token = AuthService.getAuthToken();
@@ -171,15 +112,269 @@
       }
 
       if (user) {
-        document.getElementById('user-email-header').textContent = user.email;
+        document.getElementById('user-email-header').textContent = user.email || 'User';
         document.getElementById('dashboard-user-name').textContent = user.fullName || 'Platform User Account';
-        document.getElementById('dashboard-user-email').textContent = user.email;
+        document.getElementById('dashboard-user-email').textContent = user.email || '';
       }
 
-      document.getElementById('btn-logout').addEventListener('click', () => {
+      document.getElementById('btn-logout')?.addEventListener('click', () => {
         AuthService.logoutUser();
       });
+
+      document.getElementById('btn-manual-refresh')?.addEventListener('click', () => {
+        loadUserServers(false);
+      });
+
+      // Initial Fetch
+      loadUserServers(false);
+
+      // Auto-refresh every 10 seconds
+      setInterval(() => {
+        loadUserServers(true);
+      }, 10000);
     });
+
+    /**
+     * Relative Time Formatter
+     */
+    function formatRelativeTime(dateString) {
+      if (!dateString) return 'Not available yet';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Not available yet';
+
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+      if (diffSec < 15) return 'Just now';
+      if (diffSec < 60) return `${diffSec}s ago`;
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `${diffDays}d ago`;
+    }
+
+    /**
+     * HTML Escaper
+     */
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
+    /**
+     * Copy Endpoint URL to Clipboard
+     */
+    function copyUrlToClipboard(url, btnEl) {
+      if (!navigator.clipboard) {
+        const temp = document.createElement('textarea');
+        temp.value = url;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+      } else {
+        navigator.clipboard.writeText(url).catch(() => {});
+      }
+
+      if (btnEl) {
+        const origText = btnEl.innerText;
+        btnEl.innerText = '✓ Copied!';
+        btnEl.style.color = 'var(--color-success, #059669)';
+        setTimeout(() => {
+          btnEl.innerText = origText;
+          btnEl.style.color = '';
+        }, 2000);
+      }
+    }
+
+    /**
+     * Fetch and Render Real User Servers from Backend Control Plane
+     */
+    async function loadUserServers(isBackground = false) {
+      if (isFetching) return;
+      isFetching = true;
+
+      const grid = document.getElementById('user-devices-grid');
+      const indicator = document.getElementById('refresh-indicator');
+
+      if (!isBackground && grid && grid.innerHTML.trim() === '') {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: 1 / -1; padding: var(--space-2xl); text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+              <span class="spinner" style="width: 20px; height: 20px;"></span>
+              <strong style="color: var(--color-text-primary);">Loading registered servers from database...</strong>
+            </div>
+            <p class="text-xs text-muted" style="margin: 0;">Querying control plane and endpoint mappings...</p>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await apiRequest('/devices', 'GET');
+
+        if (!res.ok || !res.data || res.data.success === false) {
+          if (!isBackground) {
+            grid.innerHTML = `
+              <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
+                <div style="font-size: 2rem; margin-bottom: var(--space-xs); color: #DC2626;">⚠️</div>
+                <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
+                <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">
+                  ${escapeHtml(res.data?.error?.message || 'Could not connect to backend control plane.')}
+                </p>
+                <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+              </div>
+            `;
+          }
+          isFetching = false;
+          return;
+        }
+
+        const devices = res.data.data?.devices || [];
+
+        if (devices.length === 0) {
+          // Zero registered servers: Render Clean Empty State + Pairing Guide Card
+          grid.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-2xl); border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary);">
+              <div style="font-size: 3rem; margin-bottom: var(--space-sm);">📱</div>
+              <h3 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+                No registered servers yet
+              </h3>
+              <p class="text-sm text-secondary" style="max-width: 480px; margin: 0 auto var(--space-lg) auto;">
+                Register an Android phone to create your personal storage server. Download the app and sign in with this account to pair your storage node.
+              </p>
+              <a href="how-it-works.html" class="btn btn-primary btn-sm">View Pairing Setup Guide</a>
+            </div>
+          `;
+        } else {
+          // Render Real Servers from Database
+          const cardsHtml = devices.map(device => {
+            const server = device.server;
+            const endpoint = server?.endpoint;
+            const connection = device.connection;
+
+            const isOnline = device.status === 'ONLINE' && server?.status === 'RUNNING';
+            const isStarting = server?.status === 'STARTING';
+
+            let statusBadge = '';
+            if (isOnline) {
+              statusBadge = `<span class="status-indicator status-online" style="display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot"></span> ONLINE</span>`;
+            } else if (isStarting) {
+              statusBadge = `<span class="status-indicator" style="background: #FEF3C7; color: #D97706; display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot" style="background: #D97706;"></span> STARTING</span>`;
+            } else {
+              statusBadge = `<span class="status-indicator status-offline" style="display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot"></span> OFFLINE</span>`;
+            }
+
+            const serverDisplayName = server?.serverName || device.deviceName || 'Personal File Server';
+            const platformInfo = `${escapeHtml(device.platform || 'Android')} ${escapeHtml(device.osVersion || '')} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
+            const localUrl = server?.localServerUrl || 'http://127.0.0.1:8080';
+            const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
+
+            let remoteSectionHtml = '';
+            if (endpoint && endpoint.status === 'ACTIVE' && endpoint.hostname) {
+              const publicUrl = `https://${endpoint.hostname}`;
+              remoteSectionHtml = `
+                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md); border: 1px solid rgba(5, 150, 105, 0.2);">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <span class="text-xs" style="font-weight: 600; color: #059669;">Public Subdomain Endpoint:</span>
+                    <span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">ACTIVE</span>
+                  </div>
+                  <code style="font-size: var(--font-size-xs); color: var(--color-brand-primary); word-break: break-all; display: block; margin-bottom: 8px;">${escapeHtml(publicUrl)}</code>
+                  <div style="display: flex; gap: var(--space-xs);">
+                    <button type="button" class="btn btn-outline btn-sm" style="flex: 1; padding: 4px 8px; font-size: 11px;" onclick="copyUrlToClipboard('${escapeHtml(publicUrl)}', this)">Copy Link</button>
+                    <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="flex: 1; padding: 4px 8px; font-size: 11px; text-align: center; text-decoration: none;">Open Link ↗</a>
+                  </div>
+                </div>
+              `;
+            } else if (endpoint && endpoint.hostname) {
+              remoteSectionHtml = `
+                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                  <div class="text-xs text-secondary" style="margin-bottom: 2px;">Subdomain:</div>
+                  <code style="font-size: var(--font-size-xs); color: var(--color-text-muted); word-break: break-all;">${escapeHtml(endpoint.hostname)}</code>
+                  <div class="text-xs" style="margin-top: 4px; color: #D97706;">Status: Connecting / Provisioning...</div>
+                </div>
+              `;
+            } else {
+              remoteSectionHtml = `
+                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+                  <div class="text-xs text-secondary" style="margin-bottom: 2px;">Remote Gateway:</div>
+                  <div class="text-xs text-muted">Provisioning...</div>
+                </div>
+              `;
+            }
+
+            return `
+              <div class="card card-hover" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm); gap: var(--space-xs);">
+                    <div>
+                      <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
+                        ${escapeHtml(serverDisplayName)}
+                      </h3>
+                      <span class="text-xs text-muted">${platformInfo}</span>
+                    </div>
+                    ${statusBadge}
+                  </div>
+
+                  <!-- Local URL -->
+                  <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-sm);">
+                    <div class="text-xs text-secondary" style="margin-bottom: 2px;">Local Server URL:</div>
+                    <code style="font-size: var(--font-size-xs); color: var(--color-text-primary); word-break: break-all;">${escapeHtml(localUrl)}</code>
+                  </div>
+
+                  <!-- Remote Subdomain Section -->
+                  ${remoteSectionHtml}
+                </div>
+
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: var(--font-size-xs); color: var(--color-text-muted); padding-top: var(--space-xs); border-top: 1px solid var(--color-border-subtle);">
+                    <span>Last Seen: <strong>${escapeHtml(lastSeenFormatted)}</strong></span>
+                    <span>Node ID: <strong>${escapeHtml(device.id.substring(0, 8))}</strong></span>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          // Append "Register New Android Phone" Guidance Card
+          const addCardHtml = `
+            <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+              <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
+              <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Pair Another Phone</h3>
+              <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
+                Install the Android app on an additional device and sign in with this account to pair another storage node.
+              </p>
+              <a href="how-it-works.html" class="btn btn-outline btn-sm">Setup Guide</a>
+            </div>
+          `;
+
+          grid.innerHTML = cardsHtml + addCardHtml;
+        }
+
+        if (indicator) {
+          indicator.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        }
+      } catch (err) {
+        if (!isBackground) {
+          grid.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
+              <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
+              <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">Failed to load device data.</p>
+              <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+            </div>
+          `;
+        }
+      } finally {
+        isFetching = false;
+      }
+    }
   </script>
 </body>
 </html>
