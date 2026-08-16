@@ -171,6 +171,24 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           final localUrl = await serverService.getLocalUrl();
           final isLocal = localStatus['status'] == 'ONLINE';
 
+          String? activeConnId = connId;
+          bool isGatewayConnected = isConn;
+
+          // Automatically connect outbound WebSocket to Gateway if device is registered
+          if (devId != null && devId.isNotEmpty) {
+            try {
+              final remoteService = _ref.read(remoteConnectionServiceProvider);
+              final connInfo = await remoteService.connect(
+                deviceId: devId,
+                sessionToken: sessionToken,
+              );
+              if (connInfo.isConnected) {
+                isGatewayConnected = true;
+                activeConnId = connInfo.connectionId ?? connId;
+              }
+            } catch (_) {}
+          }
+
           state = state.copyWith(
             deviceId: devId,
             serverInstanceId: srvId,
@@ -178,8 +196,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
             assignedSubdomain: hostname,
             publicUrl: pubUrl,
             endpointStatus: epStatus,
-            connectionId: connId,
-            isGatewayConnected: isConn,
+            connectionId: activeConnId,
+            isGatewayConnected: isGatewayConnected,
             isLocalOnline: isLocal,
             localServerUrl: localUrl,
           );
@@ -188,6 +206,58 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     } catch (_) {
       // Ignored if offline during initial sync
     }
+  }
+
+  /// Manually starts both local HTTP server engine and outbound Gateway WebSocket transport
+  Future<void> startServerNode() async {
+    final serverService = _ref.read(serverServiceProvider);
+    await serverService.startServer();
+
+    final devId = state.deviceId;
+    final authSession = _ref.read(authStateProvider).session;
+    final sessionToken = authSession?.accessToken;
+
+    if (devId != null && sessionToken != null && sessionToken.isNotEmpty) {
+      try {
+        final remoteService = _ref.read(remoteConnectionServiceProvider);
+        final connInfo = await remoteService.connect(
+          deviceId: devId,
+          sessionToken: sessionToken,
+        );
+        state = state.copyWith(
+          isLocalOnline: true,
+          isGatewayConnected: connInfo.isConnected,
+          connectionId: connInfo.connectionId ?? state.connectionId,
+        );
+      } catch (_) {}
+    } else {
+      state = state.copyWith(isLocalOnline: true);
+    }
+  }
+
+  /// Manually stops both local HTTP server engine and outbound Gateway WebSocket transport
+  Future<void> stopServerNode() async {
+    final serverService = _ref.read(serverServiceProvider);
+    await serverService.stopServer();
+
+    final connId = state.connectionId;
+    final authSession = _ref.read(authStateProvider).session;
+    final sessionToken = authSession?.accessToken;
+
+    if (connId != null && sessionToken != null && sessionToken.isNotEmpty) {
+      try {
+        final remoteService = _ref.read(remoteConnectionServiceProvider);
+        await remoteService.disconnect(
+          connectionId: connId,
+          sessionToken: sessionToken,
+        );
+      } catch (_) {}
+    }
+
+    state = state.copyWith(
+      isLocalOnline: false,
+      isGatewayConnected: false,
+    );
   }
 
   /// Executes the actual 6-stage setup & subdomain provisioning sequence

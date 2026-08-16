@@ -49,12 +49,10 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
     throw new ForbiddenError('You do not have permission to access this server');
   }
 
-  // 3. Server must be RUNNING
-  if (serverInstance.status !== 'RUNNING') {
-    return { serverInstance, device, activeConnectionId: null, offline: true };
-  }
+  // 3. Verify gateway has the live WebSocket for this device
+  const hasGatewayConnection = defaultGatewayService.hasActiveConnectionForDevice(device.id);
 
-  // 4. Resolve an active DeviceConnection
+  // 4. Resolve active DeviceConnection
   const activeConnection = await prisma.deviceConnection.findFirst({
     where: {
       deviceId: device.id,
@@ -63,29 +61,34 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
     orderBy: { connectedAt: 'desc' }
   });
 
-  // 5. Verify gateway has the live WebSocket for this device
-  const hasGatewayConnection = defaultGatewayService.hasActiveConnectionForDevice(device.id);
-
-  if (!activeConnection || !hasGatewayConnection) {
-    return { serverInstance, device, activeConnectionId: null, offline: true };
+  if (!hasGatewayConnection) {
+    return { serverInstance, device, activeConnectionId: activeConnection?.id || null, offline: true };
   }
 
-  // 6. Perform end-to-end HEALTH probe to verify real Android connection
+  // Self-heal serverInstance status if live WebSocket connection exists
+  if (serverInstance.status !== 'RUNNING') {
+    await prisma.serverInstance.update({
+      where: { id: serverInstance.id },
+      data: { status: 'RUNNING', lastHeartbeatAt: new Date() }
+    }).catch(() => {});
+  }
+
+  // 5. Perform end-to-end HEALTH probe to verify real Android connection
   try {
     const probe = await defaultGatewayService.handleProxiedFileRequestByDeviceId(device.id, 'HEALTH', {});
     if (!probe || probe.success === false) {
       console.warn(`[FILE_MANAGER] Health probe failed for deviceId=${device.id}`);
-      return { serverInstance, device, activeConnectionId: activeConnection.id, offline: true };
+      return { serverInstance, device, activeConnectionId: activeConnection?.id || null, offline: true };
     }
   } catch (err) {
     console.warn(`[FILE_MANAGER] Health probe error for deviceId=${device.id}:`, err);
-    return { serverInstance, device, activeConnectionId: activeConnection.id, offline: true };
+    return { serverInstance, device, activeConnectionId: activeConnection?.id || null, offline: true };
   }
 
   return {
     serverInstance,
     device,
-    activeConnectionId: activeConnection.id,
+    activeConnectionId: activeConnection?.id || null,
     offline: false
   };
 }

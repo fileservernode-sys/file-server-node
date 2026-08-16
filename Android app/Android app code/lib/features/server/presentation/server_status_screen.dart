@@ -49,41 +49,39 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
   Future<void> _handleStart() async {
     setState(() => _isLoading = true);
-    final service = ref.read(serverServiceProvider);
-    await service.startServer();
+    await ref.read(setupStateProvider.notifier).startServerNode();
     await _refreshServerStatus();
     if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Local HTTP File Server started on 0.0.0.0:8080')),
+            content: Text('File server & gateway transport started.')),
       );
     }
   }
 
   Future<void> _handleRestart() async {
     setState(() => _isLoading = true);
-    final service = ref.read(serverServiceProvider);
-    await service.restartServer();
+    await ref.read(setupStateProvider.notifier).stopServerNode();
+    await ref.read(setupStateProvider.notifier).startServerNode();
     await _refreshServerStatus();
     if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Local HTTP File Server restarted cleanly.')),
+            content: Text('File server & gateway transport restarted.')),
       );
     }
   }
 
   Future<void> _handleStop() async {
     setState(() => _isLoading = true);
-    final service = ref.read(serverServiceProvider);
-    await service.stopServer();
+    await ref.read(setupStateProvider.notifier).stopServerNode();
     await _refreshServerStatus();
     if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Local HTTP File Server stopped.')),
+        const SnackBar(content: Text('File server & gateway transport stopped.')),
       );
     }
   }
