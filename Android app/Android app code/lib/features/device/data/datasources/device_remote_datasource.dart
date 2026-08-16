@@ -70,19 +70,18 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         if (adminPassword != null) 'adminPassword': adminPassword,
       }));
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 8));
       final body = await res.transform(utf8.decoder).join();
       final json = jsonDecode(body) as Map<String, dynamic>;
       return json;
     } catch (e) {
-      return const MockDeviceRemoteDataSource().registerDevice(
-        deviceName: deviceName,
-        installationId: installationId,
-        sessionToken: sessionToken,
-        serverName: serverName,
-        adminUsername: adminUsername,
-        adminPassword: adminPassword,
-      );
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to connect to backend control plane: ${e.toString()}'
+        }
+      };
     }
   }
 

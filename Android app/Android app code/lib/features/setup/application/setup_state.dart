@@ -200,7 +200,15 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     );
 
     final authSession = _ref.read(authStateProvider).session;
-    final sessionToken = authSession?.accessToken ?? 'dev-mock-session-token';
+    if (authSession == null || authSession.accessToken.isEmpty) {
+      state = state.copyWith(
+        isProcessing: false,
+        endpointStatus: 'FAILED',
+        errorMessage: 'You must be signed in with your RemoteNode platform account to create a server.',
+      );
+      return false;
+    }
+    final sessionToken = authSession.accessToken;
     final installationId = 'inst-${state.deviceName.hashCode.abs()}';
 
     try {
@@ -218,12 +226,13 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         adminPassword: state.fileServerPassword,
       );
 
-      String? registeredDeviceId;
-      if (regResult['success'] == true && regResult['data'] != null) {
-        final dev = regResult['data']['device'];
-        registeredDeviceId = dev?['id'] as String?;
+      if (regResult['success'] != true || regResult['data'] == null) {
+        final errorMsg = regResult['error']?['message'] ?? 'Failed to register device node on database control plane.';
+        throw Exception(errorMsg);
       }
-      registeredDeviceId ??= 'device-node-$installationId';
+
+      final dev = regResult['data']['device'];
+      final registeredDeviceId = dev['id'] as String;
       state = state.copyWith(deviceId: registeredDeviceId);
 
       // -----------------------------------------------------------------------

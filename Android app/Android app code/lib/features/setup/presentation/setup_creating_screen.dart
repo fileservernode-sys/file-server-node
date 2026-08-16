@@ -145,10 +145,12 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                               const Icon(Icons.error_outline,
                                   color: AppColors.statusError, size: 20),
                               const SizedBox(width: AppSpacing.xs),
-                              Text(
-                                'Subdomain connection failed',
-                                style: AppTypography.cardTitle
-                                    .copyWith(color: AppColors.statusError),
+                              Expanded(
+                                child: Text(
+                                  'Subdomain connection failed',
+                                  style: AppTypography.cardTitle
+                                      .copyWith(color: AppColors.statusError),
+                                ),
                               ),
                             ],
                           ),
