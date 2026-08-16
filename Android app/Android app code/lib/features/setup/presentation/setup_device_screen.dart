@@ -38,6 +38,7 @@ class SetupDeviceScreen extends ConsumerWidget {
                 children: [
                   const SetupStepper(
                     currentStep: 1,
+                    totalSteps: 3,
                     stepTitle: 'Prepare Device',
                   ),
                   const SizedBox(height: AppSpacing.xl),

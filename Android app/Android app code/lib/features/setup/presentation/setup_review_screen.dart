@@ -34,7 +34,8 @@ class SetupReviewScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 4,
+                    currentStep: 3,
+                    totalSteps: 3,
                     stepTitle: 'Review Configuration',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -64,19 +65,12 @@ class SetupReviewScreen extends ConsumerWidget {
                         const Divider(height: AppSpacing.lg),
                         _ReviewRow(
                             label: 'Server Name', value: setup.serverName),
-                        const Divider(height: AppSpacing.lg),
-                        _ReviewRow(
-                            label: 'File-server Username',
-                            value: setup.fileServerUsername),
-                        const Divider(height: AppSpacing.lg),
-                        const _ReviewRow(
-                            label: 'File-server Password', value: '••••••••'),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // Security Reminder
+                  // Security Info
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
@@ -91,7 +85,7 @@ class SetupReviewScreen extends ConsumerWidget {
                         SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            'Your file-server credentials are separate from your platform account credentials.',
+                            'Server access is secured directly via your ViewDuration platform account.',
                             style: AppTypography.caption,
                           ),
                         ),
