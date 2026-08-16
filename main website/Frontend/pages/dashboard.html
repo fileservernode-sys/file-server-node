@@ -281,31 +281,31 @@
             if (endpoint && endpoint.status === 'ACTIVE' && endpoint.hostname) {
               const publicUrl = `https://${endpoint.hostname}`;
               remoteSectionHtml = `
-                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md); border: 1px solid rgba(5, 150, 105, 0.2);">
+                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md); border: 1px solid rgba(5, 150, 105, 0.3);">
                   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <span class="text-xs" style="font-weight: 600; color: #059669;">Public Subdomain Endpoint:</span>
+                    <span class="text-xs" style="font-weight: 600; color: #059669;">File Manager Ready:</span>
                     <span class="badge badge-success" style="font-size: 10px; padding: 2px 6px;">ACTIVE</span>
                   </div>
-                  <code style="font-size: var(--font-size-xs); color: var(--color-brand-primary); word-break: break-all; display: block; margin-bottom: 8px;">${escapeHtml(publicUrl)}</code>
+                  <code style="font-size: var(--font-size-xs); color: var(--color-brand-primary); word-break: break-all; display: block; margin-bottom: 8px; font-weight: 600;">${escapeHtml(publicUrl)}</code>
                   <div style="display: flex; gap: var(--space-xs);">
-                    <button type="button" class="btn btn-outline btn-sm" style="flex: 1; padding: 4px 8px; font-size: 11px;" onclick="copyUrlToClipboard('${escapeHtml(publicUrl)}', this)">Copy Link</button>
-                    <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="flex: 1; padding: 4px 8px; font-size: 11px; text-align: center; text-decoration: none;">Open Link ↗</a>
+                    <button type="button" class="btn btn-outline btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px;" onclick="copyUrlToClipboard('${escapeHtml(publicUrl)}', this)">Copy Link</button>
+                    <a href="${escapeHtml(publicUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="flex: 1; padding: 5px 8px; font-size: 11px; text-align: center; text-decoration: none;">Open File Manager ↗</a>
                   </div>
                 </div>
               `;
             } else if (endpoint && endpoint.hostname) {
               remoteSectionHtml = `
-                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
-                  <div class="text-xs text-secondary" style="margin-bottom: 2px;">Subdomain:</div>
+                <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md); border: 1px solid #FCD34D;">
+                  <div class="text-xs font-semibold" style="color: #D97706; margin-bottom: 2px;">Your server is being prepared...</div>
                   <code style="font-size: var(--font-size-xs); color: var(--color-text-muted); word-break: break-all;">${escapeHtml(endpoint.hostname)}</code>
-                  <div class="text-xs" style="margin-top: 4px; color: #D97706;">Status: Connecting / Provisioning...</div>
+                  <div class="text-xs text-muted" style="margin-top: 4px;">Status: Connecting to Gateway (auto-refreshing)...</div>
                 </div>
               `;
             } else {
               remoteSectionHtml = `
                 <div style="background: var(--color-bg-secondary); padding: var(--space-sm); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
                   <div class="text-xs text-secondary" style="margin-bottom: 2px;">Remote Gateway:</div>
-                  <div class="text-xs text-muted">Provisioning...</div>
+                  <div class="text-xs text-muted">Provisioning secure endpoint...</div>
                 </div>
               `;
             }

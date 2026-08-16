@@ -182,7 +182,8 @@ void main() {
       );
 
       expect(find.textContaining('Server Ready'), findsOneWidget);
-      expect(find.text('Your local file server is ready'), findsOneWidget);
+      expect(find.text('Your personal file server is running'), findsOneWidget);
+      expect(find.text('Open RemoteNode'), findsOneWidget);
       expect(find.text('http://127.0.0.1:8080'), findsOneWidget);
     });
 

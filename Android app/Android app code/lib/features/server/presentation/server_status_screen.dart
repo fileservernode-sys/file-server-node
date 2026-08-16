@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -161,7 +162,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // -----------------------------------------------------------
-                  // 1. Dedicated Public Server Access Card
+                  // 1. Central Web Access & Discovery Card
                   // -----------------------------------------------------------
                   AppCard(
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -178,12 +179,12 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                                 Icon(Icons.public_rounded,
                                     color: AppColors.primary, size: 22),
                                 SizedBox(width: AppSpacing.xs),
-                                Text('Public Server Endpoint',
+                                Text('Access Your Server',
                                     style: AppTypography.cardTitle),
                               ],
                             ),
                             StatusBadge(
-                              status: setup.endpointStatus == 'ACTIVE'
+                              status: setup.isGatewayConnected
                                   ? DeviceServerStatus.online
                                   : DeviceServerStatus.offline,
                             ),
@@ -191,93 +192,17 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         const Text(
-                          'Public access URL routed through ViewDuration Remote Gateway:',
+                          'Your server is running and active. Visit the RemoteNode website to access your file manager and manage storage.',
                           style: AppTypography.bodySmall,
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.sm),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusMd),
-                            border: Border.all(color: AppColors.borderSubtle),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.link_rounded,
-                                  size: 20, color: AppColors.primary),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: Text(
-                                  publicUrl,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                    fontFamily: 'monospace',
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.copy_rounded, size: 18),
-                                label: const Text('Copy Link'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: AppSpacing.sm),
-                                  side: const BorderSide(
-                                      color: AppColors.primary),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppSpacing.radiusMd),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  Clipboard.setData(
-                                      ClipboardData(text: publicUrl));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'Public link copied: $publicUrl'),
-                                      duration: const Duration(seconds: 3),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                icon: const Icon(Icons.open_in_browser_rounded,
-                                    size: 18),
-                                label: const Text('Open Link'),
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: AppSpacing.sm),
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        AppSpacing.radiusMd),
-                                  ),
-                                ),
-                                onPressed: () {
-                                  ref
-                                      .read(serverServiceProvider)
-                                      .openUrl(publicUrl);
-                                },
-                              ),
-                            ),
-                          ],
+                        PrimaryButton(
+                          label: 'Open RemoteNode',
+                          icon: Icons.open_in_browser_rounded,
+                          onPressed: () async {
+                            final serverService = ref.read(serverServiceProvider);
+                            await serverService.openUrl(AppConfig.current.websiteUrl);
+                          },
                         ),
                       ],
                     ),

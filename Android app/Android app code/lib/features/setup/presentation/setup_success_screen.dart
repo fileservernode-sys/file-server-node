@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -11,17 +11,14 @@ import '../../../core/widgets/status_badge.dart';
 import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
-/// Step 6 — Server Setup Success & Public Access Screen
+/// Step 6 — Server Setup Success & Main Website Redirection Screen
 class SetupSuccessScreen extends ConsumerWidget {
   const SetupSuccessScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setup = ref.watch(setupStateProvider);
-    final publicUrl = setup.publicUrl ??
-        (setup.assignedSubdomain != null
-            ? 'https://${setup.assignedSubdomain}'
-            : 'https://gateway.viewduration.com');
+    final websiteUrl = AppConfig.current.websiteUrl;
 
     return PopScope(
       canPop: false,
@@ -61,20 +58,20 @@ class SetupSuccessScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     const Text(
-                      'Your local file server is ready',
+                      'Your personal file server is running',
                       style: AppTypography.pageTitle,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     const Text(
-                      'This phone is now active as a file server node accessible locally and over the public internet.',
+                      'This device is now active as a personal storage server node. Visit RemoteNode to access your file manager.',
                       style: AppTypography.bodySmall,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
                     // -----------------------------------------------------------
-                    // 1. Dedicated Public Server Access Card
+                    // 1. Central Web Access & Discovery Card
                     // -----------------------------------------------------------
                     AppCard(
                       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -91,12 +88,12 @@ class SetupSuccessScreen extends ConsumerWidget {
                                   Icon(Icons.public_rounded,
                                       color: AppColors.primary, size: 22),
                                   SizedBox(width: AppSpacing.xs),
-                                  Text('Public Server Access',
+                                  Text('Access Your Server',
                                       style: AppTypography.cardTitle),
                                 ],
                               ),
                               StatusBadge(
-                                status: setup.endpointStatus == 'ACTIVE'
+                                status: setup.isGatewayConnected
                                     ? DeviceServerStatus.online
                                     : DeviceServerStatus.offline,
                               ),
@@ -104,64 +101,17 @@ class SetupSuccessScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           const Text(
-                            'Your server is publicly reachable through its unique secure subdomain endpoint:',
+                            'Your server is running and connected. Sign in to your account on the RemoteNode website to access your server and file manager.',
                             style: AppTypography.bodySmall,
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          Container(
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusMd),
-                              border: Border.all(
-                                  color: AppColors.primary.withValues(alpha: 0.4)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.link,
-                                    size: 18, color: AppColors.primary),
-                                const SizedBox(width: AppSpacing.sm),
-                                Expanded(
-                                  child: SelectableText(
-                                    publicUrl,
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: AppSpacing.xs),
-                                IconButton(
-                                  icon: const Icon(Icons.copy,
-                                      size: 18, color: AppColors.primary),
-                                  tooltip: 'Copy Link',
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 32,
-                                    minHeight: 32,
-                                  ),
-                                  onPressed: () {
-                                    Clipboard.setData(
-                                        ClipboardData(text: publicUrl));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            'Public access link copied: $publicUrl'),
-                                        duration: const Duration(seconds: 3),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            'Anyone with this secure link and your File Server credentials can access uploaded storage from any web browser worldwide.',
-                            style: AppTypography.caption
-                                .copyWith(color: AppColors.textSecondary),
+                          const SizedBox(height: AppSpacing.lg),
+                          PrimaryButton(
+                            label: 'Open RemoteNode',
+                            icon: Icons.open_in_browser_rounded,
+                            onPressed: () async {
+                              final serverService = ref.read(serverServiceProvider);
+                              await serverService.openUrl(websiteUrl);
+                            },
                           ),
                         ],
                       ),
@@ -169,7 +119,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                     const SizedBox(height: AppSpacing.lg),
 
                     // -----------------------------------------------------------
-                    // 2. Local Node & Gateway Status Card
+                    // 2. Local Node Details Card
                     // -----------------------------------------------------------
                     AppCard(
                       padding: const EdgeInsets.all(AppSpacing.xl),
@@ -198,27 +148,20 @@ class SetupSuccessScreen extends ConsumerWidget {
                               label: 'Server Name', value: setup.serverName),
                           const SizedBox(height: AppSpacing.xs),
                           _SuccessRow(
-                              label: 'Local Interface',
+                              label: 'Local Engine',
                               value: setup.localServerUrl),
                           const SizedBox(height: AppSpacing.xs),
                           _SuccessRow(
-                            label: 'Remote Gateway',
-                            value: setup.isGatewayConnected
-                                ? 'CONNECTED (gateway.viewduration.com)'
-                                : 'CONNECTED (Active)',
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          _SuccessRow(
-                            label: 'Endpoint Status',
-                            value: setup.endpointStatus,
+                            label: 'Node Status',
+                            value: setup.isLocalOnline ? 'ACTIVE' : 'STOPPED',
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xl),
 
-                    PrimaryButton(
-                      label: 'View Server Dashboard',
+                    SecondaryButton(
+                      label: 'View Local Node Status',
                       icon: Icons.dashboard_outlined,
                       onPressed: () {
                         Navigator.pushNamedAndRemoveUntil(
@@ -226,7 +169,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                       },
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    SecondaryButton(
+                    TertiaryButton(
                       label: 'Back to Home',
                       icon: Icons.home_outlined,
                       onPressed: () {
