@@ -13,11 +13,21 @@ const serverIdParamSchema = z.object({
 // Helper: Resolve authenticated ViewDuration user from Bearer token
 // ---------------------------------------------------------------------------
 async function getAuthUser(request: FastifyRequest) {
+  let token: string | null = null;
   const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else {
+    const query = request.query as Record<string, string> | undefined;
+    if (query?.token) {
+      token = query.token.trim();
+    }
   }
-  const token = authHeader.substring(7).trim();
+
+  if (!token) {
+    throw new UnauthorizedError('Missing or invalid Authorization Bearer header or token parameter');
+  }
+
   const session = await prisma.userSession.findFirst({
     where: { token, expiresAt: { gt: new Date() } },
     include: { user: true }
@@ -104,6 +114,7 @@ async function proxyToGateway(
     name?: string;
     oldPath?: string;
     newName?: string;
+    dataBase64?: string;
   } = {}
 ): Promise<any> {
   return defaultGatewayService.handleProxiedFileRequestByDeviceId(deviceId, operation, params);
@@ -317,7 +328,8 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const result = await proxyToGateway(device.id, 'UPLOAD', {
       path: body.path || '/',
-      name: body.name
+      name: body.name,
+      dataBase64: body.dataBase64
     });
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
@@ -344,8 +356,20 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('path query parameter is required');
     }
 
-    // For download, we proxy the request and let the gateway handle streaming
     const result = await proxyToGateway(device.id, 'DOWNLOAD', { path: query.path });
+
+    if (result?.success && result?.dataBase64) {
+      const buffer = Buffer.from(result.dataBase64, 'base64');
+      const filename = result.filename || query.path.split('/').pop() || 'download';
+      const mimeType = result.mimeType || 'application/octet-stream';
+
+      return reply
+        .header('Content-Type', mimeType)
+        .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
+        .header('Content-Length', buffer.length)
+        .send(buffer);
+    }
+
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 

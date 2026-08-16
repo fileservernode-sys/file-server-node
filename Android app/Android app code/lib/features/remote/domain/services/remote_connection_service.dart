@@ -309,6 +309,75 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         return;
       }
 
+      if (operation == 'UPLOAD') {
+        final path = msg['path'] as String? ?? '/';
+        final name = msg['name'] as String? ?? 'file.dat';
+        final dataBase64 = msg['dataBase64'] as String?;
+
+        if (dataBase64 != null) {
+          try {
+            final bytes = base64Decode(dataBase64);
+            final req = await _httpClient.postUrl(
+              Uri.parse('http://127.0.0.1:8080/api/upload?path=${Uri.encodeComponent(path)}&filename=${Uri.encodeComponent(name)}')
+            );
+            req.headers.set('content-type', 'application/octet-stream');
+            req.add(bytes);
+            final res = await req.close().timeout(const Duration(seconds: 30));
+            final body = await res.transform(utf8.decoder).join();
+            final jsonRes = jsonDecode(body) as Map<String, dynamic>;
+
+            await _transport.send({
+              'type': 'FILE_RESPONSE',
+              'requestId': requestId,
+              'success': jsonRes['success'] ?? true,
+              'data': jsonRes['data'] ?? {},
+              'error': jsonRes['error']
+            });
+            return;
+          } catch (err) {
+            await _transport.send({
+              'type': 'FILE_RESPONSE',
+              'requestId': requestId,
+              'success': false,
+              'error': {'code': 'UPLOAD_FAILED', 'message': err.toString()}
+            });
+            return;
+          }
+        }
+      }
+
+      if (operation == 'DOWNLOAD') {
+        final path = msg['path'] as String? ?? '/';
+        try {
+          final req = await _httpClient.getUrl(
+            Uri.parse('http://127.0.0.1:8080/api/download?path=${Uri.encodeComponent(path)}')
+          );
+          final res = await req.close().timeout(const Duration(seconds: 30));
+          final bytes = await res.fold<List<int>>(<int>[], (previous, element) => previous..addAll(element));
+          final dataBase64 = base64Encode(bytes);
+          final filename = path.split('/').lastWhere((element) => element.isNotEmpty, defaultValue: () => 'download');
+          final mimeType = res.headers.value('content-type') ?? 'application/octet-stream';
+
+          await _transport.send({
+            'type': 'FILE_RESPONSE',
+            'requestId': requestId,
+            'success': res.statusCode == 200,
+            'filename': filename,
+            'mimeType': mimeType,
+            'dataBase64': dataBase64
+          });
+          return;
+        } catch (err) {
+          await _transport.send({
+            'type': 'FILE_RESPONSE',
+            'requestId': requestId,
+            'success': false,
+            'error': {'code': 'DOWNLOAD_FAILED', 'message': err.toString()}
+          });
+          return;
+        }
+      }
+
       // Default fallback for unknown operation
       await _transport.send({
         'type': 'FILE_RESPONSE',

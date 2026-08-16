@@ -188,13 +188,24 @@ const ApiService = {
   },
 
   async uploadFile(targetPath, fileObject) {
-    // Initiate upload through authenticated backend proxy
-    // The backend proxies the upload command to the Android device via gateway
     try {
+      const buffer = await fileObject.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      const dataBase64 = window.btoa(binary);
+
       const res = await fetch(EmbeddedFileManager.url('upload'), {
         method: 'POST',
         headers: EmbeddedFileManager.getHeaders(),
-        body: JSON.stringify({ path: targetPath, name: fileObject.name })
+        body: JSON.stringify({
+          path: targetPath,
+          name: fileObject.name,
+          dataBase64: dataBase64
+        })
       });
       return await res.json();
     } catch (e) {

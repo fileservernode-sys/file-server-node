@@ -780,7 +780,11 @@ class LocalServerEngine {
                     sendJsonResponse(exchange, 200, """{"success":true,"data":{"items":[$items]}}""")
                 } else if (exchange.requestMethod == "DELETE") {
                     val body = exchange.requestBody.bufferedReader().readText()
-                    val pathValue = body.substringAfter("\"path\":\"").substringBefore("\"")
+                    val pathValue = try {
+                        org.json.JSONObject(body).optString("path", "")
+                    } catch (_: Exception) {
+                        body.substringAfter("\"path\"").substringAfter("\"").substringBefore("\"").trim()
+                    }
                     val targetFile = resolveSandboxPath(rootDir, pathValue)
 
                     if (targetFile.canonicalPath == rootDir.canonicalPath) {

@@ -1255,6 +1255,7 @@ export class GatewayService {
       name?: string;
       oldPath?: string;
       newName?: string;
+      dataBase64?: string;
     } = {}
   ): Promise<any> {
     const connId = this.deviceToConnectionMap.get(deviceId);
@@ -1274,7 +1275,7 @@ export class GatewayService {
 
     console.log(`[FILE_MANAGER] request deviceId=${deviceId} connectionId=${connId} operation=${operation} requestId=${requestId}`);
 
-    const fileRequestMsg: HandshakeMessage = {
+    const fileRequestMsg: any = {
       type: 'FILE_REQUEST',
       requestId,
       connectionId: connId,
@@ -1282,7 +1283,8 @@ export class GatewayService {
       path: params.path || '/',
       name: params.name,
       oldPath: params.oldPath,
-      newName: params.newName
+      newName: params.newName,
+      dataBase64: params.dataBase64
     };
 
     const responsePromise = new Promise<any>((resolve) => {
