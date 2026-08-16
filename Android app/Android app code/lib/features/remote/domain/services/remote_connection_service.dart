@@ -355,7 +355,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           final res = await req.close().timeout(const Duration(seconds: 30));
           final bytes = await res.fold<List<int>>(<int>[], (previous, element) => previous..addAll(element));
           final dataBase64 = base64Encode(bytes);
-          final filename = path.split('/').lastWhere((element) => element.isNotEmpty, defaultValue: () => 'download');
+          final filename = path.split('/').lastWhere((element) => element.isNotEmpty, orElse: () => 'download');
           final mimeType = res.headers.value('content-type') ?? 'application/octet-stream';
 
           await _transport.send({
