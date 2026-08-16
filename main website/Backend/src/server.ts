@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { config } from './config/env.js';
 import { disconnectDatabase } from './config/database.js';
 import { runStartupMigrations } from './services/db_migrator.js';
+import { defaultGatewayService } from './gateway/gateway_service.js';
 
 async function startServer() {
   try {
@@ -33,7 +34,10 @@ async function startServer() {
       host: config.HOST
     });
 
-    app.log.info(`🚀 Control Plane Backend running at ${address}/api/v1`);
+    // Attach Gateway WebSocket Transport Server to main HTTP server
+    defaultGatewayService.attachToHttpServer(app.server);
+
+    app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probe available at ${address}/api/v1/health`);
 
     // Graceful Shutdown Logic

@@ -32,7 +32,7 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(request.toJson()));
 
-      final res = await req.close().timeout(const Duration(seconds: 8));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       final responseBody = await res.transform(utf8.decoder).join();
       final json = jsonDecode(responseBody) as Map<String, dynamic>;
 
@@ -63,7 +63,7 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(request.toJson()));
 
-      final res = await req.close().timeout(const Duration(seconds: 8));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       final responseBody = await res.transform(utf8.decoder).join();
       final json = jsonDecode(responseBody) as Map<String, dynamic>;
 
@@ -94,7 +94,7 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode({'email': email}));
 
-      final res = await req.close().timeout(const Duration(seconds: 8));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       return res.statusCode == 200;
     } catch (e) {
       return false;

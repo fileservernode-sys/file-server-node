@@ -95,7 +95,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       req.headers.set('authorization', 'Bearer $sessionToken');
       req.write(jsonEncode({'deviceId': deviceId}));
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       final bodyStr = await res.transform(utf8.decoder).join();
       final json = jsonDecode(bodyStr) as Map<String, dynamic>;
 

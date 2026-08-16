@@ -75,7 +75,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         if (adminPassword != null) 'adminPassword': adminPassword,
       }));
 
-      final res = await req.close().timeout(const Duration(seconds: 8));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       final body = await res.transform(utf8.decoder).join();
       final json = jsonDecode(body) as Map<String, dynamic>;
       return json;
@@ -101,7 +101,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       req.headers.set('content-type', 'application/json');
       req.headers.set('authorization', 'Bearer $sessionToken');
 
-      final res = await req.close().timeout(const Duration(seconds: 3));
+      final res = await req.close().timeout(const Duration(seconds: 10));
       return res.statusCode == 200;
     } catch (e) {
       return true;
@@ -117,7 +117,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       final req = await _httpClient.getUrl(url);
       req.headers.set('authorization', 'Bearer $sessionToken');
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 20));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
@@ -135,7 +135,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       final req = await _httpClient.getUrl(url);
       req.headers.set('authorization', 'Bearer $sessionToken');
 
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 20));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
@@ -153,7 +153,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       final req = await _httpClient.deleteUrl(url);
       req.headers.set('authorization', 'Bearer $sessionToken');
 
-      final res = await req.close().timeout(const Duration(seconds: 8));
+      final res = await req.close().timeout(const Duration(seconds: 30));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {

@@ -26,11 +26,26 @@ class AuthSession {
   }
 
   factory AuthSession.fromJson(Map<String, dynamic> json) {
+    PlatformUser user;
+    if (json['user'] is Map<String, dynamic>) {
+      user = PlatformUser.fromJson(json['user'] as Map<String, dynamic>);
+    } else {
+      user = PlatformUser(
+        id: json['userId'] as String? ?? 'user-node',
+        email: json['email'] as String? ?? '',
+        emailVerified: true,
+        status: 'ACTIVE',
+        createdAt: DateTime.now(),
+      );
+    }
+
     return AuthSession(
-      accessToken: json['accessToken'] as String,
-      refreshToken: json['refreshToken'] as String,
-      user: PlatformUser.fromJson(json['user'] as Map<String, dynamic>),
-      expiresAt: DateTime.parse(json['expiresAt'] as String),
+      accessToken: (json['accessToken'] ?? json['token'] ?? '') as String,
+      refreshToken: (json['refreshToken'] ?? json['token'] ?? '') as String,
+      user: user,
+      expiresAt: json['expiresAt'] != null
+          ? DateTime.parse(json['expiresAt'] as String)
+          : DateTime.now().add(const Duration(days: 30)),
     );
   }
 }

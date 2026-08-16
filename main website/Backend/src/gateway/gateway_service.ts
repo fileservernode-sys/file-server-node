@@ -1094,4 +1094,123 @@ export class GatewayService {
   public getActiveTransferCount(): number {
     return this.activeTransfers.size;
   }
+
+  public attachToHttpServer(httpServer: http.Server): void {
+    if (this.wss) return;
+
+    this.httpServer = httpServer;
+    this.wss = new WebSocketServer({
+      server: httpServer,
+      maxPayload: this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES
+    });
+
+    this.wss.on('connection', (socket: WebSocket, req: http.IncomingMessage) => {
+      const remoteIp = req.socket.remoteAddress || '127.0.0.1';
+      this.handleSocketConnection(socket, remoteIp);
+    });
+
+    this.isListening = true;
+    this.startTime = Date.now();
+    this.log('info', 'Gateway WebSocket attached to main HTTP server', {
+      maxConnections: this.config.GATEWAY_MAX_CONNECTIONS
+    });
+  }
+
+  public async handleFastifyStorageRequest(request: any, reply: any): Promise<void> {
+    const rawUrl = request.raw.url || request.url || '';
+    const parsedUrl = new URL(rawUrl, `http://${request.headers.host || 'localhost'}`);
+    const pathname = parsedUrl.pathname;
+    const hostHeader = (request.headers.host || '').split(':')[0].toLowerCase();
+    const endpointQuery = parsedUrl.searchParams.get('endpoint');
+    const deviceIdQuery = parsedUrl.searchParams.get('deviceId');
+    const connectionIdHeader = request.headers['x-connection-id'] as string | undefined;
+
+    let resolvedConnId: string | null = null;
+
+    if (deviceIdQuery && this.deviceToConnectionMap.has(deviceIdQuery)) {
+      resolvedConnId = this.deviceToConnectionMap.get(deviceIdQuery) || null;
+    } else if (endpointQuery && this.hostnameToConnectionMap.has(endpointQuery)) {
+      resolvedConnId = this.hostnameToConnectionMap.get(endpointQuery) || null;
+    } else if (this.hostnameToConnectionMap.has(hostHeader)) {
+      resolvedConnId = this.hostnameToConnectionMap.get(hostHeader) || null;
+    } else if (connectionIdHeader && this.activeConnections.has(connectionIdHeader)) {
+      resolvedConnId = connectionIdHeader;
+    } else if (this.activeConnections.size === 1) {
+      resolvedConnId = Array.from(this.activeConnections.keys())[0];
+    }
+
+    const targetHostname = endpointQuery || hostHeader;
+
+    if (!resolvedConnId || !this.activeConnections.has(resolvedConnId)) {
+      const isUnknown = !this.hostnameToConnectionMap.has(targetHostname) && this.activeConnections.size === 0;
+      return reply.status(isUnknown ? 404 : 503).send({
+        success: false,
+        error: {
+          code: isUnknown ? 'SERVER_NOT_FOUND' : 'SERVER_OFFLINE',
+          message: isUnknown
+            ? `Server endpoint '${targetHostname}' is not recognized.`
+            : 'Android file server host is offline or disconnected.'
+        }
+      });
+    }
+
+    const targetConn = this.activeConnections.get(resolvedConnId)!;
+    const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+    const bodyPayload = (request.body && typeof request.body === 'object') ? request.body : {};
+
+    let operation = 'HEALTH';
+    if (pathname === '/api/storage') operation = 'STORAGE';
+    else if (pathname === '/api/files/recent') operation = 'RECENT';
+    else if (pathname === '/api/files' && request.method === 'GET') operation = 'LIST';
+    else if (pathname === '/api/folders' && request.method === 'POST') operation = 'CREATE_FOLDER';
+    else if (pathname === '/api/rename' && request.method === 'POST') operation = 'RENAME';
+    else if (pathname === '/api/files' && request.method === 'DELETE') operation = 'DELETE';
+
+    const fileRequestMsg: HandshakeMessage = {
+      type: 'FILE_REQUEST',
+      requestId,
+      connectionId: resolvedConnId,
+      operation,
+      path: (request.query as any)?.path || bodyPayload.path || '/',
+      name: (request.query as any)?.name || bodyPayload.name,
+      oldPath: bodyPayload.oldPath,
+      newName: bodyPayload.newName
+    };
+
+    const responsePromise = new Promise<any>((resolve) => {
+      const timer = setTimeout(() => {
+        if (this.pendingRequests.has(requestId)) {
+          this.timedOutRequests++;
+          this.pendingRequests.delete(requestId);
+          resolve({
+            type: 'FILE_RESPONSE',
+            requestId,
+            success: false,
+            error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
+          });
+        }
+      }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
+
+      this.pendingRequests.set(requestId, {
+        requestId,
+        connectionId: resolvedConnId!,
+        operation,
+        httpResolver: (resp) => {
+          clearTimeout(timer);
+          resolve(resp);
+        },
+        createdAt: Date.now(),
+        timer
+      });
+    });
+
+    targetConn.socket.send(JSON.stringify(fileRequestMsg));
+
+    const response = await responsePromise;
+    const statusCode = response.success ? 200 : 400;
+    return reply.status(statusCode).send(response.data || response);
+  }
 }
+
+export const defaultGatewayService = new GatewayService();
+

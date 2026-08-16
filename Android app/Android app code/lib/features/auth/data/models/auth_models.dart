@@ -65,8 +65,11 @@ class AuthResponse {
 
     AuthSession? session;
     if (payload['session'] != null) {
-      session =
-          AuthSession.fromJson(payload['session'] as Map<String, dynamic>);
+      final sessionMap = Map<String, dynamic>.from(payload['session'] as Map);
+      if (sessionMap['user'] == null && payload['user'] != null) {
+        sessionMap['user'] = payload['user'];
+      }
+      session = AuthSession.fromJson(sessionMap);
     } else if (payload['token'] != null && payload['user'] != null) {
       session = AuthSession(
         accessToken: payload['token'] as String,
