@@ -338,10 +338,12 @@ class LocalServerEngine {
             server = newServer
             isRunning = true
 
+            val ip = getDeviceIpAddress()
             mapOf(
                 "success" to true,
                 "port" to activePort,
-                "localUrl" to "http://127.0.0.1:$activePort"
+                "localUrl" to "http://$ip:$activePort",
+                "ipAddress" to ip
             )
         } catch (e: Exception) {
             isRunning = false
@@ -369,16 +371,40 @@ class LocalServerEngine {
         return start(port)
     }
 
+    fun getDeviceIpAddress(): String {
+        try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val iface = interfaces.nextElement()
+                if (iface.isLoopback || !iface.isUp) continue
+                val addresses = iface.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (addr is java.net.Inet4Address && !addr.isLoopbackAddress) {
+                        val host = addr.hostAddress
+                        if (host != null && host.isNotEmpty() && !host.startsWith("127.")) {
+                            return host
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return "127.0.0.1"
+    }
+
     fun getStatus(): Map<String, Any> {
+        val ip = getDeviceIpAddress()
         return mapOf(
             "status" to if (isRunning) "ONLINE" else "STOPPED",
             "port" to activePort,
-            "localUrl" to "http://127.0.0.1:$activePort"
+            "localUrl" to "http://$ip:$activePort",
+            "ipAddress" to ip
         )
     }
 
     fun getLocalUrl(): String {
-        return "http://127.0.0.1:$activePort"
+        val ip = getDeviceIpAddress()
+        return "http://$ip:$activePort"
     }
 
     /**
