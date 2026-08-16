@@ -70,6 +70,18 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
     return { serverInstance, device, activeConnectionId: null, offline: true };
   }
 
+  // 6. Perform end-to-end HEALTH probe to verify real Android connection
+  try {
+    const probe = await defaultGatewayService.handleProxiedFileRequestByDeviceId(device.id, 'HEALTH', {});
+    if (!probe || probe.success === false) {
+      console.warn(`[FILE_MANAGER] Health probe failed for deviceId=${device.id}`);
+      return { serverInstance, device, activeConnectionId: activeConnection.id, offline: true };
+    }
+  } catch (err) {
+    console.warn(`[FILE_MANAGER] Health probe error for deviceId=${device.id}:`, err);
+    return { serverInstance, device, activeConnectionId: activeConnection.id, offline: true };
+  }
+
   return {
     serverInstance,
     device,

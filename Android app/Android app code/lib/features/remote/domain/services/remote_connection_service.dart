@@ -330,13 +330,16 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     try {
       final req = await _httpClient
           .getUrl(Uri.parse('http://127.0.0.1:8080$pathQuery'));
-      final res = await req.close().timeout(const Duration(seconds: 3));
+      final res = await req.close().timeout(const Duration(seconds: 5));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
       return {
-        'success': true,
-        'data': {'items': []}
+        'success': false,
+        'error': {
+          'code': 'LOCAL_ENGINE_UNAVAILABLE',
+          'message': 'Failed to communicate with Android storage engine: ${e.toString()}'
+        }
       };
     }
   }
@@ -348,11 +351,17 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           await _httpClient.postUrl(Uri.parse('http://127.0.0.1:8080$path'));
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(payload));
-      final res = await req.close().timeout(const Duration(seconds: 3));
+      final res = await req.close().timeout(const Duration(seconds: 5));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
-      return {'success': true, 'data': {}};
+      return {
+        'success': false,
+        'error': {
+          'code': 'LOCAL_ENGINE_UNAVAILABLE',
+          'message': 'Failed to communicate with Android storage engine: ${e.toString()}'
+        }
+      };
     }
   }
 
@@ -363,11 +372,17 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           'DELETE', Uri.parse('http://127.0.0.1:8080$path'));
       req.headers.set('content-type', 'application/json');
       req.write(jsonEncode(payload));
-      final res = await req.close().timeout(const Duration(seconds: 3));
+      final res = await req.close().timeout(const Duration(seconds: 5));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
-      return {'success': true, 'data': {}};
+      return {
+        'success': false,
+        'error': {
+          'code': 'LOCAL_ENGINE_UNAVAILABLE',
+          'message': 'Failed to communicate with Android storage engine: ${e.toString()}'
+        }
+      };
     }
   }
 

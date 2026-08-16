@@ -1259,6 +1259,7 @@ export class GatewayService {
   ): Promise<any> {
     const connId = this.deviceToConnectionMap.get(deviceId);
     if (!connId || !this.activeConnections.has(connId)) {
+      console.warn(`[FILE_MANAGER] device offline deviceId=${deviceId}`);
       return {
         success: false,
         error: {
@@ -1269,7 +1270,9 @@ export class GatewayService {
     }
 
     const targetConn = this.activeConnections.get(connId)!;
-    const requestId = 'proxy-req-' + Math.random().toString(36).substring(2, 12);
+    const requestId = 'fm-' + Math.random().toString(36).substring(2, 12);
+
+    console.log(`[FILE_MANAGER] request deviceId=${deviceId} connectionId=${connId} operation=${operation} requestId=${requestId}`);
 
     const fileRequestMsg: HandshakeMessage = {
       type: 'FILE_REQUEST',
@@ -1287,6 +1290,7 @@ export class GatewayService {
         if (this.pendingRequests.has(requestId)) {
           this.timedOutRequests++;
           this.pendingRequests.delete(requestId);
+          console.error(`[FILE_MANAGER] timeout deviceId=${deviceId} requestId=${requestId} operation=${operation}`);
           resolve({
             success: false,
             error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
@@ -1300,13 +1304,15 @@ export class GatewayService {
         operation,
         httpResolver: (resp) => {
           clearTimeout(timer);
-          resolve(resp.data || resp);
+          console.log(`[GATEWAY] Android response received requestId=${requestId} success=${resp?.success !== false}`);
+          resolve(resp);
         },
         createdAt: Date.now(),
         timer
       });
     });
 
+    console.log(`[FILE_MANAGER] sending ${operation} request to Android requestId=${requestId}`);
     targetConn.socket.send(JSON.stringify(fileRequestMsg));
     return responsePromise;
   }
