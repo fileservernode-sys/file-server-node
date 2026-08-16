@@ -64,7 +64,7 @@ export class BrevoEmailService implements EmailService {
     const fromEmail = (process.env.SMTP_FROM_EMAIL || this.fromEmail).trim();
     const fromName = (process.env.SMTP_FROM_NAME || this.fromName).trim();
 
-    // 1. Primary: Brevo HTTPS REST API (Zero port-blocking issues on Render)
+    // 1. Primary: Brevo HTTPS REST API
     if (apiKey) {
       try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -89,15 +89,13 @@ export class BrevoEmailService implements EmailService {
         }
 
         const errorPayload: any = await response.json().catch(() => ({}));
-        console.error(`[Brevo Email API] Delivery error for ${to}: ${errorPayload?.message || response.statusText}`);
-        return false;
+        console.warn(`[Brevo Email API] REST API rejected delivery (${errorPayload?.message || response.statusText}). Falling back to Brevo SMTP Relay...`);
       } catch (err: any) {
-        console.error(`[Brevo Email API] Network error dispatching to ${to}: ${err?.message || 'Unknown error'}`);
-        return false;
+        console.warn(`[Brevo Email API] Network error (${err?.message}). Falling back to Brevo SMTP Relay...`);
       }
     }
 
-    // 2. Secondary: SMTP Relay (Port 587 / 465 / 2525)
+    // 2. Secondary: Brevo SMTP Relay (Port 587)
     const transporter = this.getTransporter();
     if (transporter) {
       try {
