@@ -44,7 +44,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
   HttpDeviceRemoteDataSource({
     HttpClient? httpClient,
     String? baseUrl,
-  })  : _httpClient = httpClient ?? HttpClient(),
+  })  : _httpClient = httpClient ?? (HttpClient()..badCertificateCallback = (cert, host, port) => true),
         _baseUrl = baseUrl ?? AppConfig.current.apiBaseUrl;
 
   @override
@@ -121,7 +121,13 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
-      return const MockDeviceRemoteDataSource().getUserDevices(sessionToken: sessionToken);
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to fetch user devices: ${e.toString()}'
+        }
+      };
     }
   }
 
@@ -139,7 +145,13 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
-      return const MockDeviceRemoteDataSource().getDevice(deviceId: deviceId, sessionToken: sessionToken);
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to get device: ${e.toString()}'
+        }
+      };
     }
   }
 

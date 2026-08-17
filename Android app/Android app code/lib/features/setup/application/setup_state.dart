@@ -213,7 +213,14 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     final serverService = _ref.read(serverServiceProvider);
     await serverService.startServer();
 
-    final authSession = _ref.read(authStateProvider).session;
+    var authSession = _ref.read(authStateProvider).session;
+    if (authSession == null) {
+      final secureStorage = _ref.read(secureStorageProvider);
+      authSession = await secureStorage.getSession();
+      if (authSession != null) {
+        await _ref.read(authStateProvider.notifier).restoreSession();
+      }
+    }
     final sessionToken = authSession?.accessToken;
 
     if (sessionToken != null && sessionToken.isNotEmpty) {
@@ -243,7 +250,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           state = state.copyWith(
             deviceId: devId,
             isLocalOnline: true,
-            isGatewayConnected: connInfo.isConnected,
+            isGatewayConnected: connInfo.isConnected || connInfo.status == RemoteConnectionState.connected,
             connectionId: connInfo.connectionId ?? state.connectionId,
           );
           return;

@@ -33,6 +33,9 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   void initState() {
     super.initState();
     _refreshServerStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(setupStateProvider.notifier).syncWithBackend();
+    });
   }
 
   Future<void> _refreshServerStatus() async {
