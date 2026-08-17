@@ -109,6 +109,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       _lastSessionToken = sessionToken;
 
       _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.connecting));
+      AppLogger.info('[RemoteConnection] Initiating connection registration for device: $deviceId');
 
       final url = Uri.parse('$_baseUrl/connections/register');
       final req = await _httpClient.postUrl(url);
@@ -119,6 +120,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       final res = await req.close().timeout(const Duration(seconds: 30));
       final bodyStr = await res.transform(utf8.decoder).join();
       final json = jsonDecode(bodyStr) as Map<String, dynamic>;
+      AppLogger.info('[RemoteConnection] Registration API result: status=${res.statusCode}, success=${json['success']}');
 
       if (res.statusCode == 200 && json['success'] == true) {
         final conn = json['data']['connection'];
@@ -134,7 +136,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
         bool wsConnected = false;
         try {
+          AppLogger.info('[RemoteConnection] Connecting transport to: ${AppConfig.current.gatewayWsUrl}');
           await _transport.connect(AppConfig.current.gatewayWsUrl);
+          AppLogger.info('[RemoteConnection] Transport connected. Sending AUTH handshake...');
           await _transport.send({
             'type': 'AUTH',
             'connectionToken': token,
@@ -144,10 +148,14 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           // Await Gateway AUTH_SUCCESS response with bounded timeout
           final authSuccess = await _authCompleter!.future.timeout(
             const Duration(seconds: 8),
-            onTimeout: () => false,
+            onTimeout: () {
+              AppLogger.warning('[RemoteConnection] Gateway AUTH_SUCCESS timed out after 8s');
+              return false;
+            },
           );
           wsConnected = authSuccess;
         } catch (e) {
+          AppLogger.warning('[RemoteConnection] First transport attempt failed, retrying...', e);
           try {
             await Future.delayed(const Duration(milliseconds: 800));
             _authCompleter = Completer<bool>();
@@ -159,10 +167,15 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
             });
             final authSuccess = await _authCompleter!.future.timeout(
               const Duration(seconds: 8),
-              onTimeout: () => false,
+              onTimeout: () {
+                AppLogger.warning('[RemoteConnection] Retry AUTH_SUCCESS timed out after 8s');
+                return false;
+              },
             );
             wsConnected = authSuccess;
-          } catch (_) {}
+          } catch (retryErr) {
+            AppLogger.error('[RemoteConnection] Retry transport attempt failed', retryErr);
+          }
         }
 
         _reconnectAttempts = 0;
@@ -175,6 +188,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           lastHeartbeatAt: DateTime.now(),
           errorMessage: wsConnected ? null : 'Failed to authenticate with Remote Gateway',
         );
+        AppLogger.info('[RemoteConnection] Updated connection info state to: ${newInfo.status} (connected: ${newInfo.isConnected})');
         _updateInfo(newInfo);
 
         if (wsConnected) {
@@ -185,12 +199,14 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
       final errorMsg = json['error']?['message'] ??
           'Failed to establish connection token with control plane (${res.statusCode})';
+      AppLogger.warning('[RemoteConnection] Registration error: $errorMsg');
       _updateInfo(RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
         errorMessage: errorMsg,
       ));
       return _currentInfo;
     } catch (e) {
+      AppLogger.error('[RemoteConnection] Connect network exception', e);
       _updateInfo(RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
         errorMessage: 'Network error connecting to control plane: ${e.toString()}',
@@ -203,11 +219,13 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     _transportSubscription?.cancel();
     _transportSubscription = _transport.messageStream.listen((msg) async {
       final type = msg['type'];
+      AppLogger.info('[RemoteConnection] Inbound transport event: $type');
       if (type == 'FILE_REQUEST') {
         await _handleRemoteFileRequest(msg);
       } else if (type == 'FILE_STREAM_CANCEL') {
         _handleStreamCancel(msg);
       } else if (type == 'AUTH_SUCCESS' || type == 'CONNECTED') {
+        AppLogger.info('[RemoteConnection] Gateway AUTH_SUCCESS verified!');
         if (_authCompleter != null && !_authCompleter!.isCompleted) {
           _authCompleter!.complete(true);
         }
@@ -220,6 +238,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           lastHeartbeatAt: DateTime.now(),
         ));
       } else if (type == 'AUTH_FAILURE') {
+        AppLogger.warning('[RemoteConnection] Gateway AUTH_FAILURE: ${msg['reason']}');
         if (_authCompleter != null && !_authCompleter!.isCompleted) {
           _authCompleter!.complete(false);
         }
@@ -232,6 +251,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           errorMessage: msg['reason'] as String? ?? 'Authentication rejected by gateway',
         ));
       } else if (type == 'PONG') {
+        AppLogger.info('[RemoteConnection] PONG received from gateway');
         _updateInfo(RemoteConnectionInfo(
           connectionId: _currentInfo.connectionId,
           remoteEndpoint: _currentInfo.remoteEndpoint,
@@ -241,6 +261,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           lastHeartbeatAt: DateTime.now(),
         ));
       } else if (type == 'DISCONNECT' || type == 'ERROR') {
+        AppLogger.warning('[RemoteConnection] Transport disconnected / error event: $type');
         if (!_isExplicitlyDisconnecting && _lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
           reconnect();
         }

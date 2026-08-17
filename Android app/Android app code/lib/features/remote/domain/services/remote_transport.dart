@@ -89,26 +89,32 @@ class WebSocketRemoteTransport implements RemoteTransport {
     Object? lastError;
     for (final targetUrl in urlsToTry) {
       try {
+        AppLogger.info('[WebSocketTransport] Attempting connection to: $targetUrl');
         final client = HttpClient()
           ..badCertificateCallback = (cert, host, port) => true;
         _socket = await WebSocket.connect(targetUrl, customClient: client)
             .timeout(const Duration(seconds: 12));
+        AppLogger.info('[WebSocketTransport] Connected successfully to: $targetUrl');
         _socket!.listen(
           (data) {
             try {
               final json = jsonDecode(data.toString()) as Map<String, dynamic>;
+              AppLogger.info('[WebSocketTransport] Inbound message: ${json['type']}');
               _controller.add(json);
             } catch (_) {}
           },
           onError: (err) {
+            AppLogger.warning('[WebSocketTransport] Socket error from $targetUrl', err);
             _controller.add({'type': 'ERROR', 'message': err.toString()});
           },
           onDone: () {
+            AppLogger.info('[WebSocketTransport] Socket closed / onDone from $targetUrl');
             _controller.add({'type': 'DISCONNECT'});
           },
         );
         return;
       } catch (e) {
+        AppLogger.warning('[WebSocketTransport] Failed connecting to $targetUrl', e);
         lastError = e;
       }
     }
@@ -119,14 +125,17 @@ class WebSocketRemoteTransport implements RemoteTransport {
   @override
   Future<void> send(Map<String, dynamic> message) async {
     if (!isConnected) {
+      AppLogger.warning('[WebSocketTransport] Send failed: socket is not connected');
       throw Exception('WebSocket is not connected');
     }
+    AppLogger.info('[WebSocketTransport] Outbound message: ${message['type']}');
     _socket!.add(jsonEncode(message));
   }
 
   @override
   Future<void> disconnect() async {
     if (_socket != null) {
+      AppLogger.info('[WebSocketTransport] Disconnecting socket');
       await _socket!.close();
       _socket = null;
     }
