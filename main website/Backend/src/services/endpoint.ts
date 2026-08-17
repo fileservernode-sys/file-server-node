@@ -85,18 +85,27 @@ export class EndpointService {
    * Idempotent: repeated calls do not create duplicate DNS records or endpoints.
    */
   static async reserveEndpoint(serverInstanceId: string) {
+    // Search for ANY existing endpoint for this server (regardless of status)
+    // to avoid P2002 unique constraint violations on restart cycles
     const existing = await prisma.serverEndpoint.findFirst({
-      where: { serverInstanceId, status: 'ACTIVE' }
+      where: { serverInstanceId }
     });
 
     if (existing) {
-      // Verify record exists in DNS provider
+      // Reactivate the existing record and re-verify DNS
       const existsInDns = await this.dnsProvider.verifyRecord(existing.hostname);
       if (!existsInDns) {
         await this.dnsProvider.provisionRecord({
           hostname: existing.hostname,
           target: this.gatewayDomain,
           type: 'CNAME'
+        });
+      }
+      // Ensure status is ACTIVE for this session
+      if (existing.status !== 'ACTIVE') {
+        await prisma.serverEndpoint.update({
+          where: { id: existing.id },
+          data: { status: 'ACTIVE' }
         });
       }
       return existing;
@@ -119,8 +128,11 @@ export class EndpointService {
       throw new Error(`Failed to provision DNS endpoint record: ${provisionRes.error || 'Unknown error'}`);
     }
 
-    const endpoint = await prisma.serverEndpoint.create({
-      data: {
+    // Use upsert to be safe against any remaining race conditions
+    const endpoint = await prisma.serverEndpoint.upsert({
+      where: { hostname },
+      update: { serverInstanceId, status: 'ACTIVE' },
+      create: {
         serverInstanceId,
         hostname,
         status: 'ACTIVE'
