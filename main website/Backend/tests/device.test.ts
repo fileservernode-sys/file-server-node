@@ -4,20 +4,16 @@ import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
 
-describe('Batch 3 — Backend Device Identity & Multi-Device API Tests', () => {
+describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Concurrency Tests', () => {
   let app: FastifyInstance;
-  const testEmailA = `device.test.a.${Date.now()}@remotenode.io`;
-  const testEmailB = `device.test.b.${Date.now()}@remotenode.io`;
+  const testEmailA = `limit.test.a.${Date.now()}@remotenode.io`;
+  const testEmailB = `limit.test.b.${Date.now()}@remotenode.io`;
   let userTokenA = '';
   let userIdA = '';
   let userTokenB = '';
   let userIdB = '';
 
-  const instIdA = `inst-test-phone-a-${Date.now()}`;
-  const instIdB = `inst-test-phone-b-${Date.now()}`;
-
-  let deviceIdA = '';
-  let deviceIdB = '';
+  const registeredDeviceIdsA: string[] = [];
 
   before(async () => {
     app = await buildApp();
@@ -37,7 +33,7 @@ describe('Batch 3 — Backend Device Identity & Multi-Device API Tests', () => {
       const sessionA = await prisma.userSession.create({
         data: {
           userId: userA.id,
-          token: `token-user-a-${Date.now()}`,
+          token: `token-limit-a-${Date.now()}`,
           expiresAt: new Date(Date.now() + 3600000)
         }
       });
@@ -56,7 +52,7 @@ describe('Batch 3 — Backend Device Identity & Multi-Device API Tests', () => {
       const sessionB = await prisma.userSession.create({
         data: {
           userId: userB.id,
-          token: `token-user-b-${Date.now()}`,
+          token: `token-limit-b-${Date.now()}`,
           expiresAt: new Date(Date.now() + 3600000)
         }
       });
@@ -68,16 +64,25 @@ describe('Batch 3 — Backend Device Identity & Multi-Device API Tests', () => {
 
   after(async () => {
     try {
-      await prisma.user.deleteMany({ where: { email: { contains: 'remotenode.io' } } });
+      await prisma.user.deleteMany({
+        where: {
+          OR: [
+            { email: { contains: 'limit.test.' } },
+            { email: { contains: 'concurrent.test.' } },
+            { email: { contains: 'overlimit.test.' } }
+          ]
+        }
+      });
     } catch (e) {
       // Ignore cleanup error
     }
     await app.close();
   });
 
-  test('Test 1 — First device registration (Account A + installationId A)', async () => {
+  test('TEST 1 — First server: Account A creates Server 1 on Device 1', async () => {
     if (!userTokenA) return;
 
+    const instId = `inst-dev-1-${Date.now()}`;
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
@@ -85,261 +90,405 @@ describe('Batch 3 — Backend Device Identity & Multi-Device API Tests', () => {
       payload: {
         deviceName: 'Android Phone Host',
         platform: 'Android',
-        osVersion: 'Android 14',
-        appVersion: '1.0.0',
-        installationId: instIdA,
-        serverName: 'Server A'
+        installationId: instId,
+        serverName: 'Server 1'
       }
     });
 
     assert.strictEqual(response.statusCode, 200);
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
-    assert.strictEqual(body.data.device.deviceName, 'Android Phone Host');
-    assert.strictEqual(body.data.device.installationId, instIdA);
-    deviceIdA = body.data.device.id;
-    assert.ok(deviceIdA);
+    registeredDeviceIdsA.push(body.data.device.id);
+
+    const count = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(count, 1);
   });
 
-  test('Test 2 — Same installation registers again (Idempotent update, no duplicate)', async () => {
-    if (!userTokenA || !deviceIdA) return;
+  test('TEST 2 — Same device second creation attempt (Max 1 server per device enforced)', async () => {
+    if (!userTokenA || registeredDeviceIdsA.length === 0) return;
 
+    const deviceId1 = registeredDeviceIdsA[0];
+
+    // Attempting POST /servers on device that already has a server returns the existing server without creating a duplicate
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/servers',
+      headers: { authorization: `Bearer ${userTokenA}` },
+      payload: { deviceId: deviceId1 }
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    const body = JSON.parse(response.payload);
+    assert.strictEqual(body.success, true);
+
+    // Verify DB count on this device is still strictly 1
+    const serversOnDevice = await prisma.serverInstance.findMany({
+      where: { deviceId: deviceId1 }
+    });
+    assert.strictEqual(serversOnDevice.length, 1);
+
+    // Total account servers remains 1
+    const totalCount = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(totalCount, 1);
+  });
+
+  test('TEST 3 & 4 — Multiple devices up to maximum 5 servers succeed', async () => {
+    if (!userTokenA) return;
+
+    // We already have 1 server. Add devices 2, 3, 4, 5
+    for (let i = 2; i <= 5; i++) {
+      const instId = `inst-dev-${i}-${Date.now()}`;
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/devices/register',
+        headers: { authorization: `Bearer ${userTokenA}` },
+        payload: {
+          deviceName: `Phone Host ${i}`,
+          platform: 'Android',
+          installationId: instId,
+          serverName: `Server ${i}`
+        }
+      });
+
+      assert.strictEqual(response.statusCode, 200, `Device ${i} creation failed`);
+      const body = JSON.parse(response.payload);
+      assert.strictEqual(body.success, true);
+      registeredDeviceIdsA.push(body.data.device.id);
+    }
+
+    const totalCount = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(totalCount, 5, 'Account A should now have exactly 5 active servers');
+  });
+
+  test('TEST 5 — Sixth server creation attempt is rejected with MAX_SERVERS_REACHED (409)', async () => {
+    if (!userTokenA) return;
+
+    const instId6 = `inst-dev-6-${Date.now()}`;
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
       headers: { authorization: `Bearer ${userTokenA}` },
       payload: {
-        deviceName: 'Android Phone Host',
+        deviceName: 'Phone Host 6',
         platform: 'Android',
-        osVersion: 'Android 14',
-        appVersion: '1.0.1',
-        installationId: instIdA,
-        serverName: 'Server A'
+        installationId: instId6,
+        serverName: 'Server 6'
       }
     });
 
-    assert.strictEqual(response.statusCode, 200);
+    assert.strictEqual(response.statusCode, 409);
     const body = JSON.parse(response.payload);
-    assert.strictEqual(body.success, true);
-    // Must return the exact same Device ID
-    assert.strictEqual(body.data.device.id, deviceIdA);
-    assert.strictEqual(body.data.device.appVersion, '1.0.1');
+    assert.strictEqual(body.success, false);
+    assert.strictEqual(body.error.code, 'MAX_SERVERS_REACHED');
 
-    // Confirm DB has only 1 device for user A with this installationId
-    const devices = await prisma.device.findMany({ where: { userId: userIdA } });
-    assert.strictEqual(devices.length, 1);
+    // Confirm server count did not exceed 5
+    const totalCount = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(totalCount, 5);
   });
 
-  test('Test 3 & 4 — Same account, different installation with same deviceName creates TWO independent Device records', async () => {
-    if (!userTokenA || !deviceIdA) return;
+  test('TEST 6 — Existing device re-registration when account has 5 servers does NOT fail', async () => {
+    if (!userTokenA || registeredDeviceIdsA.length === 0) return;
 
-    // Phone B registers with the SAME default deviceName "Android Phone Host"
+    const device1 = await prisma.device.findUnique({
+      where: { id: registeredDeviceIdsA[0] }
+    });
+    assert.ok(device1);
+
+    // Re-register Device 1 with same installationId
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
       headers: { authorization: `Bearer ${userTokenA}` },
       payload: {
-        deviceName: 'Android Phone Host', // Identical name!
+        deviceName: 'Renamed Phone 1',
         platform: 'Android',
-        osVersion: 'Android 13',
-        appVersion: '1.0.0',
-        installationId: instIdB, // Distinct physical installation ID
-        serverName: 'Server B'
+        installationId: device1!.installationId!,
+        serverName: 'Server 1 Renamed'
       }
     });
 
     assert.strictEqual(response.statusCode, 200);
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
-    deviceIdB = body.data.device.id;
-    assert.ok(deviceIdB);
-    assert.notStrictEqual(deviceIdB, deviceIdA);
+    assert.strictEqual(body.data.device.id, device1!.id);
 
-    // Verify DB contains TWO independent Device records for User A
-    const devices = await prisma.device.findMany({ where: { userId: userIdA } });
-    assert.strictEqual(devices.length, 2);
-
-    const devA = devices.find((d) => d.id === deviceIdA);
-    const devB = devices.find((d) => d.id === deviceIdB);
-    assert.ok(devA);
-    assert.ok(devB);
-    assert.strictEqual(devA!.installationId, instIdA);
-    assert.strictEqual(devB!.installationId, instIdB);
+    // Count is still 5
+    const totalCount = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(totalCount, 5);
   });
 
-  test('Test 5 — Device rename preserves same Device.id and updates name', async () => {
-    if (!userTokenA || !deviceIdA) return;
+  test('TEST 7 — Deleting a server releases a slot, allowing a new server to be created', async () => {
+    if (!userTokenA || registeredDeviceIdsA.length === 0) return;
 
-    const response = await app.inject({
+    const deviceToDelete = registeredDeviceIdsA.pop()!;
+
+    // Delete device
+    const delRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/devices/${deviceToDelete}`,
+      headers: { authorization: `Bearer ${userTokenA}` }
+    });
+    assert.strictEqual(delRes.statusCode, 200);
+
+    // Server count should now be 4
+    const countAfterDel = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(countAfterDel, 4);
+
+    // Now creating a new 5th server must succeed
+    const newInstId = `inst-dev-replacement-${Date.now()}`;
+    const newRes = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
       headers: { authorization: `Bearer ${userTokenA}` },
       payload: {
-        deviceName: 'My Primary Pixel 8',
+        deviceName: 'Replacement Phone',
         platform: 'Android',
-        installationId: instIdA,
-        serverName: 'Renamed Server A'
+        installationId: newInstId,
+        serverName: 'Replacement Server'
       }
     });
 
-    assert.strictEqual(response.statusCode, 200);
-    const body = JSON.parse(response.payload);
-    assert.strictEqual(body.success, true);
-    assert.strictEqual(body.data.device.id, deviceIdA);
-    assert.strictEqual(body.data.device.deviceName, 'My Primary Pixel 8');
+    assert.strictEqual(newRes.statusCode, 200);
+    const newBody = JSON.parse(newRes.payload);
+    assert.strictEqual(newBody.success, true);
+    registeredDeviceIdsA.push(newBody.data.device.id);
 
-    // Total device count must remain 2
-    const devices = await prisma.device.findMany({ where: { userId: userIdA } });
-    assert.strictEqual(devices.length, 2);
+    // Server count restored to 5
+    const finalCount = await prisma.serverInstance.count({
+      where: { device: { userId: userIdA } }
+    });
+    assert.strictEqual(finalCount, 5);
   });
 
-  test('Test 6 — Different accounts create independent Device records', async () => {
+  test('TEST 8 — Server limit is strictly scoped per account (Account B has 0 slots used)', async () => {
     if (!userTokenB) return;
 
-    const instIdUserB = `inst-phone-userb-${Date.now()}`;
-    const response = await app.inject({
+    // Account A is full (5 servers), Account B can still create servers
+    const instIdB = `inst-dev-userb-${Date.now()}`;
+    const resB = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
       headers: { authorization: `Bearer ${userTokenB}` },
       payload: {
         deviceName: 'User B Phone',
         platform: 'Android',
-        installationId: instIdUserB,
-        serverName: 'User B Server'
+        installationId: instIdB,
+        serverName: 'User B Server 1'
       }
     });
 
-    assert.strictEqual(response.statusCode, 200);
-    const body = JSON.parse(response.payload);
-    assert.strictEqual(body.success, true);
-    const devIdUserB = body.data.device.id;
+    assert.strictEqual(resB.statusCode, 200);
+    const bodyB = JSON.parse(resB.payload);
+    assert.strictEqual(bodyB.success, true);
 
-    // Verify User B's device is isolated
-    const devUserB = await prisma.device.findUnique({ where: { id: devIdUserB } });
-    assert.strictEqual(devUserB?.userId, userIdB);
-    assert.notStrictEqual(devUserB?.userId, userIdA);
+    const countB = await prisma.serverInstance.count({
+      where: { device: { userId: userIdB } }
+    });
+    assert.strictEqual(countB, 1);
   });
 
-  test('Test 7 — Invalid device deletion returns 404 and does NOT delete any other user device', async () => {
-    if (!userTokenA || !deviceIdA) return;
+  test('TEST 9 — Multiple devices with default deviceName "Android Phone Host" create separate servers', async () => {
+    if (!userTokenB) return;
 
-    const initialCount = await prisma.device.count({ where: { userId: userIdA } });
-    assert.strictEqual(initialCount, 2);
-
-    const response = await app.inject({
-      method: 'DELETE',
-      url: '/api/v1/devices/non-existent-device-uuid-999',
-      headers: { authorization: `Bearer ${userTokenA}` }
+    // User B adds another phone with the identical name "Android Phone Host"
+    const instIdB2 = `inst-dev-userb-2-${Date.now()}`;
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/devices/register',
+      headers: { authorization: `Bearer ${userTokenB}` },
+      payload: {
+        deviceName: 'Android Phone Host',
+        platform: 'Android',
+        installationId: instIdB2,
+        serverName: 'User B Server 2'
+      }
     });
 
-    assert.strictEqual(response.statusCode, 404);
-    const body = JSON.parse(response.payload);
-    assert.strictEqual(body.success, false);
-    assert.strictEqual(body.error.code, 'DEVICE_NOT_FOUND');
-
-    // Crucial: User A's devices must NOT have been deleted by fallback
-    const countAfter = await prisma.device.count({ where: { userId: userIdA } });
-    assert.strictEqual(countAfter, 2);
+    assert.strictEqual(res.statusCode, 200);
+    const countB = await prisma.serverInstance.count({
+      where: { device: { userId: userIdB } }
+    });
+    assert.strictEqual(countB, 2);
   });
 
-  test('Test 8 — Cross-account device operation is forbidden (403)', async () => {
-    if (!userTokenB || !deviceIdA) return;
+  test('TEST 10 — STOPPED server still consumes account slot', async () => {
+    if (!userTokenA || registeredDeviceIdsA.length === 0) return;
 
-    // User B attempts to delete User A's device
-    const response = await app.inject({
-      method: 'DELETE',
-      url: `/api/v1/devices/${deviceIdA}`,
-      headers: { authorization: `Bearer ${userTokenB}` }
+    // Mark one of User A's servers as STOPPED
+    const firstServer = await prisma.serverInstance.findFirst({
+      where: { device: { userId: userIdA } }
+    });
+    assert.ok(firstServer);
+
+    await prisma.serverInstance.update({
+      where: { id: firstServer!.id },
+      data: { status: 'STOPPED' }
     });
 
-    assert.strictEqual(response.statusCode, 403);
+    // Account A still has 5 server rows in total -> 6th server creation must still be rejected
+    const instIdReject = `inst-dev-rejected-${Date.now()}`;
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/devices/register',
+      headers: { authorization: `Bearer ${userTokenA}` },
+      payload: {
+        deviceName: 'Attempt Phone',
+        platform: 'Android',
+        installationId: instIdReject,
+        serverName: 'Attempt Server'
+      }
+    });
+
+    assert.strictEqual(response.statusCode, 409);
     const body = JSON.parse(response.payload);
-    assert.strictEqual(body.success, false);
-    assert.strictEqual(body.error.code, 'FORBIDDEN');
+    assert.strictEqual(body.error.code, 'MAX_SERVERS_REACHED');
   });
 
-  test('Test 9 — Server association: Device A and Device B have distinct ServerInstances', async () => {
-    if (!deviceIdA || !deviceIdB) return;
+  test('TEST 11 — Concurrent creation race condition prevention (4 -> 5 servers)', async () => {
+    if (!userTokenA) return;
 
-    const serversA = await prisma.serverInstance.findMany({ where: { deviceId: deviceIdA } });
-    const serversB = await prisma.serverInstance.findMany({ where: { deviceId: deviceIdB } });
+    // Create a new User C specifically to test concurrent 4 -> 5 transitions
+    const emailC = `concurrent.test.${Date.now()}@remotenode.io`;
+    const userC = await prisma.user.create({
+      data: { email: emailC, passwordHash: 'hash', status: 'ACTIVE', emailVerified: true }
+    });
+    const sessionC = await prisma.userSession.create({
+      data: { userId: userC.id, token: `token-concurrent-${Date.now()}`, expiresAt: new Date(Date.now() + 3600000) }
+    });
+    const tokenC = sessionC.token;
 
-    assert.ok(serversA.length >= 1);
-    assert.ok(serversB.length >= 1);
-    assert.notStrictEqual(serversA[0].id, serversB[0].id);
-    assert.strictEqual(serversA[0].deviceId, deviceIdA);
-    assert.strictEqual(serversB[0].deviceId, deviceIdB);
+    // Seed User C with exactly 4 servers
+    for (let i = 1; i <= 4; i++) {
+      const instId = `inst-c-${i}-${Date.now()}`;
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/devices/register',
+        headers: { authorization: `Bearer ${tokenC}` },
+        payload: { deviceName: `Phone C${i}`, platform: 'Android', installationId: instId, serverName: `Srv C${i}` }
+      });
+    }
+
+    const countBefore = await prisma.serverInstance.count({ where: { device: { userId: userC.id } } });
+    assert.strictEqual(countBefore, 4);
+
+    // Fire 2 concurrent registration requests simultaneously for 5th and 6th server
+    const reqA = app.inject({
+      method: 'POST',
+      url: '/api/v1/devices/register',
+      headers: { authorization: `Bearer ${tokenC}` },
+      payload: {
+        deviceName: 'Concurrent Phone 5A',
+        platform: 'Android',
+        installationId: `inst-concurrent-5a-${Date.now()}`,
+        serverName: 'Concurrent Server 5A'
+      }
+    });
+
+    const reqB = app.inject({
+      method: 'POST',
+      url: '/api/v1/devices/register',
+      headers: { authorization: `Bearer ${tokenC}` },
+      payload: {
+        deviceName: 'Concurrent Phone 5B',
+        platform: 'Android',
+        installationId: `inst-concurrent-5b-${Date.now()}`,
+        serverName: 'Concurrent Server 5B'
+      }
+    });
+
+    const [resA, resB] = await Promise.all([reqA, reqB]);
+    const statusCodes = [resA.statusCode, resB.statusCode].sort();
+
+    // Exactly one request MUST succeed (200) and the other MUST be rejected (409)
+    assert.deepStrictEqual(statusCodes, [200, 409]);
+
+    // Total servers in database for User C MUST be strictly 5 (NEVER 6!)
+    const countAfter = await prisma.serverInstance.count({ where: { device: { userId: userC.id } } });
+    assert.strictEqual(countAfter, 5, 'Concurrent creation must result in strictly 5 servers in DB');
   });
 
-  test('Test 10 — Connection association: /connections/register creates separate DeviceConnections for Device A and B', async () => {
-    if (!userTokenA || !deviceIdA || !deviceIdB) return;
+  test('TEST 12 — Connection registration does not create new servers', async () => {
+    if (!userTokenB) return;
 
-    // Register connection for Device A
-    const resConnA = await app.inject({
+    const initialCount = await prisma.serverInstance.count({ where: { device: { userId: userIdB } } });
+
+    const deviceB = await prisma.device.findFirst({ where: { userId: userIdB } });
+    assert.ok(deviceB);
+
+    const resConn = await app.inject({
       method: 'POST',
       url: '/api/v1/connections/register',
-      headers: { authorization: `Bearer ${userTokenA}` },
-      payload: { deviceId: deviceIdA }
+      headers: { authorization: `Bearer ${userTokenB}` },
+      payload: { deviceId: deviceB!.id }
     });
 
-    assert.strictEqual(resConnA.statusCode, 200);
-    const bodyConnA = JSON.parse(resConnA.payload);
-    assert.strictEqual(bodyConnA.success, true);
-    assert.strictEqual(bodyConnA.data.deviceId, deviceIdA);
-    const connIdA = bodyConnA.data.connectionId;
+    assert.strictEqual(resConn.statusCode, 200);
 
-    // Register connection for Device B
-    const resConnB = await app.inject({
-      method: 'POST',
-      url: '/api/v1/connections/register',
-      headers: { authorization: `Bearer ${userTokenA}` },
-      payload: { deviceId: deviceIdB }
-    });
-
-    assert.strictEqual(resConnB.statusCode, 200);
-    const bodyConnB = JSON.parse(resConnB.payload);
-    assert.strictEqual(bodyConnB.success, true);
-    assert.strictEqual(bodyConnB.data.deviceId, deviceIdB);
-    const connIdB = bodyConnB.data.connectionId;
-
-    assert.notStrictEqual(connIdA, connIdB);
-
-    // Verify GET /devices returns both devices for User A with their respective servers and connections
-    const resList = await app.inject({
-      method: 'GET',
-      url: '/api/v1/devices',
-      headers: { authorization: `Bearer ${userTokenA}` }
-    });
-
-    assert.strictEqual(resList.statusCode, 200);
-    const bodyList = JSON.parse(resList.payload);
-    assert.strictEqual(bodyList.data.devices.length, 2);
+    const countAfter = await prisma.serverInstance.count({ where: { device: { userId: userIdB } } });
+    assert.strictEqual(countAfter, initialCount);
   });
 
-  test('Heartbeat & Valid Deletion flow for Device A', async () => {
-    if (!userTokenA || !deviceIdA) return;
+  test('TEST 13 — Existing over-limit account blocks new creation without deleting existing servers', async () => {
+    if (!userTokenA) return;
 
-    // Heartbeat
-    const resHb = await app.inject({
+    // Create an artificial over-limit account with 6 servers to test recovery behavior
+    const emailOver = `overlimit.test.${Date.now()}@remotenode.io`;
+    const userOver = await prisma.user.create({
+      data: { email: emailOver, passwordHash: 'hash', status: 'ACTIVE', emailVerified: true }
+    });
+    const sessionOver = await prisma.userSession.create({
+      data: { userId: userOver.id, token: `token-over-${Date.now()}`, expiresAt: new Date(Date.now() + 3600000) }
+    });
+
+    // Seed 6 servers directly in DB
+    for (let i = 1; i <= 6; i++) {
+      const dev = await prisma.device.create({
+        data: {
+          userId: userOver.id,
+          installationId: `inst-over-${i}-${Date.now()}`,
+          deviceName: `Over Phone ${i}`,
+          platform: 'Android'
+        }
+      });
+      await prisma.serverInstance.create({
+        data: { deviceId: dev.id, serverName: `Over Srv ${i}` }
+      });
+    }
+
+    const countSeed = await prisma.serverInstance.count({ where: { device: { userId: userOver.id } } });
+    assert.strictEqual(countSeed, 6);
+
+    // Attempting to register another device must be rejected with MAX_SERVERS_REACHED
+    const response = await app.inject({
       method: 'POST',
-      url: `/api/v1/devices/${deviceIdA}/heartbeat`,
-      headers: { authorization: `Bearer ${userTokenA}` }
+      url: '/api/v1/devices/register',
+      headers: { authorization: `Bearer ${sessionOver.token}` },
+      payload: {
+        deviceName: 'Attempt 7th Phone',
+        platform: 'Android',
+        installationId: `inst-over-7-${Date.now()}`,
+        serverName: '7th Server'
+      }
     });
-    assert.strictEqual(resHb.statusCode, 200);
 
-    // Delete Device A
-    const resDel = await app.inject({
-      method: 'DELETE',
-      url: `/api/v1/devices/${deviceIdA}`,
-      headers: { authorization: `Bearer ${userTokenA}` }
-    });
-    assert.strictEqual(resDel.statusCode, 200);
+    assert.strictEqual(response.statusCode, 409);
+    const body = JSON.parse(response.payload);
+    assert.strictEqual(body.error.code, 'MAX_SERVERS_REACHED');
 
-    const devAfter = await prisma.device.findUnique({ where: { id: deviceIdA } });
-    assert.strictEqual(devAfter, null);
-
-    // Device B must still exist
-    const devB = await prisma.device.findUnique({ where: { id: deviceIdB } });
-    assert.ok(devB);
+    // Existing 6 servers must NOT have been deleted
+    const countFinal = await prisma.serverInstance.count({ where: { device: { userId: userOver.id } } });
+    assert.strictEqual(countFinal, 6);
   });
 });

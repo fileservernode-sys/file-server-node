@@ -42,3 +42,10 @@ export class ForbiddenError extends AppError {
     super(message, 403, errorCode);
   }
 }
+
+export class ConflictError extends AppError {
+  constructor(message = 'Resource conflict', errorCode = 'CONFLICT') {
+    super(message, 409, errorCode);
+  }
+}
+

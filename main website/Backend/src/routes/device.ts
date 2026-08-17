@@ -1,8 +1,9 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { Device } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
-import { ValidationError, UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
+import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
 import { hashPassword } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
@@ -47,6 +48,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/devices/register
    * Registers or updates an Android device node under the authenticated platform user.
+   * Enforces:
+   * 1. Max 5 active servers per account (MAX_SERVERS_REACHED)
+   * 2. Max 1 active server per device (idempotent reuse, no duplicate ServerInstance)
+   * 3. Concurrency safety via transactional row locking on User entity
    */
   app.post('/devices/register', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
@@ -57,6 +62,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const { deviceName, platform, osVersion, appVersion, installationId, serverName, adminUsername, adminPassword } = body.data;
+    const adminPasswordHash = adminPassword ? hashPassword(adminPassword) : undefined;
 
     // Check if a device with this installationId already exists for the user
     const existingDevice = await prisma.device.findUnique({
@@ -68,8 +74,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
-    let device;
-    const adminPasswordHash = adminPassword ? hashPassword(adminPassword) : undefined;
+    let device: Device;
 
     if (existingDevice) {
       // Idempotent update for the same physical device installation
@@ -84,74 +89,103 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         }
       });
 
-      // Update or ensure ServerInstance exists
-      const existingServer = await prisma.serverInstance.findFirst({
-        where: { deviceId: device.id }
-      });
+      // Update or ensure ServerInstance exists within transaction
+      await prisma.$transaction(async (tx) => {
+        // Lock user row to serialize concurrent modifications
+        await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
 
-      if (existingServer) {
-        await prisma.serverInstance.update({
-          where: { id: existingServer.id },
+        const existingServer = await tx.serverInstance.findFirst({
+          where: { deviceId: device.id }
+        });
+
+        if (existingServer) {
+          // Idempotent update for existing server on this device
+          await tx.serverInstance.update({
+            where: { id: existingServer.id },
+            data: {
+              serverName: serverName || existingServer.serverName || deviceName,
+              adminUsername: adminUsername || existingServer.adminUsername,
+              ...(adminPasswordHash ? { adminPasswordHash } : {})
+            }
+          });
+        } else {
+          // Check 5-server limit before creating a new ServerInstance
+          const serverCount = await tx.serverInstance.count({
+            where: { device: { userId: user.id } }
+          });
+
+          if (serverCount >= 5) {
+            throw new ConflictError('Your account has reached the maximum limit of 5 active servers.', 'MAX_SERVERS_REACHED');
+          }
+
+          await tx.serverInstance.create({
+            data: {
+              deviceId: device.id,
+              serverName: serverName || deviceName,
+              adminUsername: adminUsername,
+              adminPasswordHash: adminPasswordHash,
+              status: 'STARTING'
+            }
+          });
+        }
+      }, { maxWait: 15000, timeout: 30000 });
+    } else {
+      // Create new Device + ServerInstance atomically, enforcing 5-server limit
+      device = await prisma.$transaction(async (tx) => {
+        // Lock user row to serialize concurrent server creations for this account
+        await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
+
+        const serverCount = await tx.serverInstance.count({
+          where: { device: { userId: user.id } }
+        });
+
+        if (serverCount >= 5) {
+          throw new ConflictError('Your account has reached the maximum limit of 5 active servers.', 'MAX_SERVERS_REACHED');
+        }
+
+        const newDevice = await tx.device.create({
           data: {
-            serverName: serverName || existingServer.serverName || deviceName,
-            adminUsername: adminUsername || existingServer.adminUsername,
-            ...(adminPasswordHash ? { adminPasswordHash } : {})
+            userId: user.id,
+            installationId,
+            deviceName,
+            platform,
+            osVersion,
+            appVersion,
+            status: 'ONLINE',
+            lastSeenAt: new Date()
           }
         });
-      } else {
-        await prisma.serverInstance.create({
+
+        await tx.serverInstance.create({
           data: {
-            deviceId: device.id,
+            deviceId: newDevice.id,
             serverName: serverName || deviceName,
             adminUsername: adminUsername,
             adminPasswordHash: adminPasswordHash,
             status: 'STARTING'
           }
         });
-      }
-    } else {
-      // Create new Device record bound to this physical installation
-      device = await prisma.device.create({
-        data: {
-          userId: user.id,
-          installationId,
-          deviceName,
-          platform,
-          osVersion,
-          appVersion,
-          status: 'ONLINE',
-          lastSeenAt: new Date()
-        }
-      });
 
-      // Create initial ServerInstance (status STARTING)
-      await prisma.serverInstance.create({
-        data: {
-          deviceId: device.id,
-          serverName: serverName || deviceName,
-          adminUsername: adminUsername,
-          adminPasswordHash: adminPasswordHash,
-          status: 'STARTING'
-        }
-      });
+        await tx.auditEvent.create({
+          data: {
+            userId: user.id,
+            deviceId: newDevice.id,
+            eventType: 'DEVICE_REGISTERED',
+            metadata: { installationId }
+          }
+        });
 
-      await prisma.auditEvent.create({
-        data: {
-          userId: user.id,
-          deviceId: device.id,
-          eventType: 'DEVICE_REGISTERED',
-          metadata: { installationId }
-        }
-      });
+        await tx.auditEvent.create({
+          data: {
+            userId: user.id,
+            deviceId: newDevice.id,
+            eventType: 'SERVER_CREATED',
+            metadata: { serverName: serverName || deviceName, adminUsername }
+          }
+        });
 
-      await prisma.auditEvent.create({
-        data: {
-          userId: user.id,
-          deviceId: device.id,
-          eventType: 'SERVER_CREATED',
-          metadata: { serverName: serverName || deviceName, adminUsername }
-        }
-      });
+        return newDevice;
+      }, { maxWait: 15000, timeout: 30000 });
     }
 
     return reply.status(200).send(createSuccessResponse({

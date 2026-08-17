@@ -10,7 +10,10 @@ if (fs.existsSync(envPath)) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
       const [key, ...values] = trimmed.split('=');
-      const val = values.join('=').trim();
+      let val = values.join('=').trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
       if (key && val && !process.env[key.trim()]) {
         process.env[key.trim()] = val;
       }

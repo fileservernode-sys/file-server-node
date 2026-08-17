@@ -24,7 +24,7 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
 
   after(async () => {
     try {
-      await prisma.user.deleteMany({ where: { email: { contains: 'remotenode.io' } } });
+      await prisma.user.deleteMany({ where: { email: { contains: 'test.user.' } } });
     } catch {
       // Ignore if DB is disconnected in unit runner
     }
@@ -92,13 +92,12 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
       assert.strictEqual(body.data.requiresOtp, true);
       assert.strictEqual(body.data.email, testEmail);
 
-      const otpRecord = await prisma.emailOtp.findFirst({
+      const knownOtp = '123456';
+      await prisma.emailOtp.updateMany({
         where: { email: testEmail, used: false },
-        orderBy: { createdAt: 'desc' }
+        data: { otpCode: hashOtp(knownOtp) }
       });
-      if (otpRecord) {
-        generatedOtp = otpRecord.otpCode;
-      }
+      generatedOtp = knownOtp;
     }
   });
 

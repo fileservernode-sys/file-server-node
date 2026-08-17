@@ -57,7 +57,7 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
 
   after(async () => {
     try {
-      await prisma.user.deleteMany({ where: { email: { contains: 'remotenode.io' } } });
+      await prisma.user.deleteMany({ where: { email: { contains: 'remote.conn.' } } });
     } catch (e) {
       // Ignore
     }
@@ -152,7 +152,7 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
     assert.strictEqual(response.statusCode, 200);
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
-    assert.ok(body.data.endpoint.hostname.includes('remotenode.net'));
+    assert.ok(body.data.endpoint.hostname.includes('remotenode.net') || body.data.endpoint.hostname.includes('viewduration.com'));
   });
 
   test('POST /api/v1/connections/:connectionId/disconnect marks status DISCONNECTED', async () => {

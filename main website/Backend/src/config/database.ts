@@ -13,8 +13,8 @@ export const prisma = globalThis.prismaGlobal ?? new PrismaClient({
       // connection_limit=3 prevents pool exhaustion on Render free tier
       // connect_timeout=30 gives the DB enough time to wake from sleep
       // socket_timeout=60 tolerates slow queries on cold MySQL
-      url: process.env.DATABASE_URL
-        ? `${process.env.DATABASE_URL}${process.env.DATABASE_URL.includes('?') ? '&' : '?'}connection_limit=3&connect_timeout=30&socket_timeout=60&pool_timeout=30`
+      url: config.DATABASE_URL
+        ? `${config.DATABASE_URL}${config.DATABASE_URL.includes('?') ? '&' : '?'}connection_limit=3&connect_timeout=30&socket_timeout=60&pool_timeout=30`
         : undefined,
     },
   },
