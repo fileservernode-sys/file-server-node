@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/utils/logger.dart';
 import 'remote_transport.dart';
 
 /// Lifecycle States for Outbound Remote Connection State Machine

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../../../core/utils/logger.dart';
 
 /// Structured Transport Messages for Outbound Remote Gateway Handshake Protocol
 abstract class TransportMessage {
