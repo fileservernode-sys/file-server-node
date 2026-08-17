@@ -180,6 +180,15 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         await _handleRemoteFileRequest(msg);
       } else if (type == 'FILE_STREAM_CANCEL') {
         _handleStreamCancel(msg);
+      } else if (type == 'AUTH_SUCCESS' || type == 'CONNECTED') {
+        _currentInfo = RemoteConnectionInfo(
+          connectionId: msg['connectionId'] as String? ?? _currentInfo.connectionId,
+          remoteEndpoint: msg['remoteEndpoint'] as String? ?? _currentInfo.remoteEndpoint,
+          hostname: _currentInfo.hostname,
+          publicUrl: _currentInfo.publicUrl,
+          status: RemoteConnectionState.connected,
+          lastHeartbeatAt: DateTime.now(),
+        );
       } else if (type == 'DISCONNECT' || type == 'ERROR') {
         if (!_isExplicitlyDisconnecting && _lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
           reconnect();
