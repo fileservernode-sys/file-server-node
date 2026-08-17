@@ -57,7 +57,7 @@ class AppConfig {
     );
   }
 
-  static AppConfig _current = AppConfig.development();
+  static AppConfig _current = AppConfig.testing();
 
   static AppConfig get current => _current;
 

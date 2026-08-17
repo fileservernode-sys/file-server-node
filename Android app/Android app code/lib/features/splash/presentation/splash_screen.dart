@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../auth/application/auth_state.dart';
+import '../../setup/application/setup_state.dart';
 
 /// App Starting / Splash Screen with Fast Boot & Dynamic Session Discovery
 class SplashScreen extends ConsumerStatefulWidget {
@@ -46,14 +47,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkInitialSession() async {
-    // Ultra-fast session discovery for responsive app launch
+    await ref.read(authStateProvider.notifier).restoreSession();
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (!mounted) return;
 
     final authState = ref.read(authStateProvider);
     if (authState.status == AuthStatus.authenticated && authState.session != null) {
-      Navigator.pushReplacementNamed(context, '/home');
+      await ref.read(setupStateProvider.notifier).syncWithBackend();
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     } else {
       Navigator.pushReplacementNamed(context, '/login');
     }

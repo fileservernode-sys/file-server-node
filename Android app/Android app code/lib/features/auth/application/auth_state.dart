@@ -71,6 +71,21 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
   AuthStateNotifier(this._repository) : super(const AuthState());
 
+  /// Restores persisted AuthSession on app boot
+  Future<bool> restoreSession() async {
+    try {
+      final session = await _repository.getCurrentSession();
+      if (session != null && !session.isExpired) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          session: session,
+        );
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   /// Submits email and password credentials to Main Website backend
   Future<bool> login(String email, String password) async {
     state = state.copyWith(
