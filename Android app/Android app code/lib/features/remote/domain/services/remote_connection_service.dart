@@ -72,6 +72,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
   String? _lastDeviceId;
   String? _lastSessionToken;
+  bool _isExplicitlyDisconnecting = false;
 
   HttpRemoteConnectionService({
     HttpClient? httpClient,
@@ -114,6 +115,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
+        bool wsConnected = false;
         try {
           await _transport.connect(AppConfig.current.gatewayWsUrl);
 
@@ -125,8 +127,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
             'connectionToken': token,
             'deviceId': deviceId,
           });
+          wsConnected = true;
         } catch (e) {
-          // Fallback to control plane acknowledgment if gateway server is unreachable
+          // Log WebSocket connection issue
         }
 
         _reconnectAttempts = 0;
@@ -135,10 +138,14 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           remoteEndpoint: remoteEp,
           hostname: host,
           publicUrl: pubUrl,
-          status: RemoteConnectionState.connected,
+          status: wsConnected ? RemoteConnectionState.connected : RemoteConnectionState.failed,
           lastHeartbeatAt: DateTime.now(),
+          errorMessage: wsConnected ? null : 'Failed to establish WebSocket to Gateway',
         );
-        _startPingTimer();
+
+        if (wsConnected) {
+          _startPingTimer();
+        }
         return _currentInfo;
       }
 
@@ -167,7 +174,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       } else if (type == 'FILE_STREAM_CANCEL') {
         _handleStreamCancel(msg);
       } else if (type == 'DISCONNECT' || type == 'ERROR') {
-        if (_lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
+        if (!_isExplicitlyDisconnecting && _lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
           reconnect();
         }
       }
@@ -470,9 +477,11 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     required String connectionId,
     required String sessionToken,
   }) async {
+    _isExplicitlyDisconnecting = true;
     _pingTimer?.cancel();
     _reconnectTimer?.cancel();
     _transportSubscription?.cancel();
+    _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
 
     try {
       await _transport.send({'type': 'DISCONNECT'});
@@ -492,8 +501,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       // Ignore backend HTTP errors during disconnect
     }
 
-    _currentInfo =
-        const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
+    _isExplicitlyDisconnecting = false;
     return _currentInfo;
   }
 

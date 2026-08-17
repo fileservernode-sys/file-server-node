@@ -63,6 +63,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   Future<void> _handleRestart() async {
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).stopServerNode();
+    await Future.delayed(const Duration(milliseconds: 500));
     await ref.read(setupStateProvider.notifier).startServerNode();
     await _refreshServerStatus();
     if (mounted) {

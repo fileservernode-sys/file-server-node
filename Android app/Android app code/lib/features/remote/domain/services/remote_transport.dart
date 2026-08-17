@@ -82,7 +82,7 @@ class WebSocketRemoteTransport implements RemoteTransport {
     await disconnect();
     try {
       _socket =
-          await WebSocket.connect(url).timeout(const Duration(seconds: 5));
+          await WebSocket.connect(url).timeout(const Duration(seconds: 15));
       _socket!.listen(
         (data) {
           try {
