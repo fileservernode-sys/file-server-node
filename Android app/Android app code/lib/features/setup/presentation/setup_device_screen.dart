@@ -147,13 +147,10 @@ class _ChecklistTile extends StatelessWidget {
   final bool isCompleted;
   final String title;
   final String subtitle;
-  final Color? activeColor;
-
   const _ChecklistTile({
     required this.isCompleted,
     required this.title,
     required this.subtitle,
-    this.activeColor,
   });
 
   @override
@@ -164,7 +161,7 @@ class _ChecklistTile extends StatelessWidget {
           isCompleted
               ? Icons.check_circle_rounded
               : Icons.radio_button_unchecked,
-          color: isCompleted ? (activeColor ?? AppColors.statusOnline) : AppColors.textMuted,
+          color: isCompleted ? AppColors.statusOnline : AppColors.textMuted,
           size: 22,
         ),
         const SizedBox(width: AppSpacing.sm),
