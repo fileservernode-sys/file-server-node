@@ -86,6 +86,14 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     return false;
   }
 
+  /// Sets an active session for unit testing
+  void setSessionForTesting(AuthSession session) {
+    state = state.copyWith(
+      status: AuthStatus.authenticated,
+      session: session,
+    );
+  }
+
   /// Submits email and password credentials to Main Website backend
   Future<bool> login(String email, String password) async {
     state = state.copyWith(

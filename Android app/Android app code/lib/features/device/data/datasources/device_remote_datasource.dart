@@ -185,7 +185,8 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
 
 /// Mock Device Remote Data Source for Development Architecture
 class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
-  const MockDeviceRemoteDataSource();
+  final List<Map<String, dynamic>>? mockDevices;
+  const MockDeviceRemoteDataSource({this.mockDevices});
 
   @override
   Future<Map<String, dynamic>> registerDevice({
@@ -205,6 +206,7 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
       'data': {
         'device': {
           'id': 'device-node-uuid-${installationId.hashCode.abs()}',
+          'installationId': installationId,
           'deviceName': deviceName,
           'platform': platform,
           'osVersion': osVersion ?? 'Android 14',
@@ -230,12 +232,19 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
     required String sessionToken,
   }) async {
     await Future.delayed(const Duration(milliseconds: 200));
+    if (mockDevices != null) {
+      return {
+        'success': true,
+        'data': {'devices': mockDevices}
+      };
+    }
     return {
       'success': true,
       'data': {
         'devices': [
           {
             'id': 'mock-device-node-01',
+            'installationId': 'inst-mock-node-uuid-101',
             'deviceName': 'Android Phone Host',
             'platform': 'Android',
             'status': 'ONLINE',

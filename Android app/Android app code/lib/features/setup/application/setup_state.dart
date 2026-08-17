@@ -146,68 +146,106 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     );
   }
 
+  /// Central Current-Device Resolution (Batch 5):
+  /// Resolves the backend Device record belonging to THIS physical phone installation.
+  /// Uses [DeviceIdentityService] to obtain the local installationId and matches it
+  /// against the user's registered devices returned by the backend control plane.
+  /// Returns null if no device matching local installationId exists.
+  /// NEVER falls back to devices.first.
+  Future<Map<String, dynamic>?> resolveCurrentDevice({
+    required String sessionToken,
+  }) async {
+    final deviceIdentityService = _ref.read(deviceIdentityServiceProvider);
+    final localInstallationId = await deviceIdentityService.getInstallationId();
+
+    final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+    final res = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+
+    if (res['success'] == true && res['data'] != null) {
+      final devicesList = res['data']['devices'] as List<dynamic>?;
+      if (devicesList != null && devicesList.isNotEmpty) {
+        for (final d in devicesList) {
+          if (d is Map<String, dynamic>) {
+            final instId = d['installationId'] as String?;
+            if (instId == localInstallationId) {
+              return d;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   /// Syncs / Recovers existing device, server, and subdomain topology from MySQL Backend
+  /// for THIS physical installationId only.
   Future<void> syncWithBackend() async {
     final authSession = _ref.read(authStateProvider).session;
     final sessionToken = authSession?.accessToken ?? 'dev-mock-session-token';
 
     try {
-      final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
-      final res = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+      final currentDev = await resolveCurrentDevice(sessionToken: sessionToken);
 
-      if (res['success'] == true && res['data'] != null) {
-        final devicesList = res['data']['devices'] as List<dynamic>?;
-        if (devicesList != null && devicesList.isNotEmpty) {
-          final firstDev = devicesList.first as Map<String, dynamic>;
-          final devId = firstDev['id'] as String?;
-          final devName = firstDev['deviceName'] as String? ?? state.deviceName;
-          final srv = firstDev['server'] as Map<String, dynamic>?;
-          final srvId = srv?['id'] as String?;
-          final ep = srv?['endpoint'] as Map<String, dynamic>?;
-          final hostname = ep?['hostname'] as String?;
-          final pubUrl = ep?['publicUrl'] as String? ?? (hostname != null ? 'https://$hostname' : null);
-          final epStatus = ep?['status'] as String? ?? (hostname != null ? 'ACTIVE' : 'NOT_CREATED');
-          final conn = firstDev['connection'] as Map<String, dynamic>?;
-          final connId = conn?['id'] as String?;
-          final isConn = conn?['status'] == 'CONNECTED';
+      if (currentDev != null) {
+        final devId = currentDev['id'] as String?;
+        final devName = currentDev['deviceName'] as String? ?? state.deviceName;
+        final srv = currentDev['server'] as Map<String, dynamic>?;
+        final srvId = srv?['id'] as String?;
+        final ep = srv?['endpoint'] as Map<String, dynamic>?;
+        final hostname = ep?['hostname'] as String?;
+        final pubUrl = ep?['publicUrl'] as String? ?? (hostname != null ? 'https://$hostname' : null);
+        final epStatus = ep?['status'] as String? ?? (hostname != null ? 'ACTIVE' : 'NOT_CREATED');
+        final conn = currentDev['connection'] as Map<String, dynamic>?;
+        final connId = conn?['id'] as String?;
+        final isConn = conn?['status'] == 'CONNECTED';
 
-          // Check if local HTTP server is actually running
-          final serverService = _ref.read(serverServiceProvider);
-          final localStatus = await serverService.getServerStatus();
-          final localUrl = await serverService.getLocalUrl();
-          final isLocal = localStatus['status'] == 'ONLINE';
+        // Check if local HTTP server is actually running
+        final serverService = _ref.read(serverServiceProvider);
+        final localStatus = await serverService.getServerStatus();
+        final localUrl = await serverService.getLocalUrl();
+        final isLocal = localStatus['status'] == 'ONLINE';
 
-          String? activeConnId = connId;
-          bool isGatewayConnected = isConn;
+        String? activeConnId = connId;
+        bool isGatewayConnected = isConn;
 
-          // Automatically connect outbound WebSocket to Gateway if device is registered
-          if (devId != null && devId.isNotEmpty) {
-            try {
-              final remoteService = _ref.read(remoteConnectionServiceProvider);
-              final connInfo = await remoteService.connect(
-                deviceId: devId,
-                sessionToken: sessionToken,
-              );
-              if (connInfo.isConnected) {
-                isGatewayConnected = true;
-                activeConnId = connInfo.connectionId ?? connId;
-              }
-            } catch (_) {}
-          }
-
-          state = state.copyWith(
-            deviceId: devId,
-            serverInstanceId: srvId,
-            deviceName: devName,
-            assignedSubdomain: hostname,
-            publicUrl: pubUrl,
-            endpointStatus: epStatus,
-            connectionId: activeConnId,
-            isGatewayConnected: isGatewayConnected,
-            isLocalOnline: isLocal,
-            localServerUrl: localUrl,
-          );
+        // Automatically connect outbound WebSocket to Gateway if device is registered
+        if (devId != null && devId.isNotEmpty) {
+          try {
+            final remoteService = _ref.read(remoteConnectionServiceProvider);
+            final connInfo = await remoteService.connect(
+              deviceId: devId,
+              sessionToken: sessionToken,
+            );
+            if (connInfo.isConnected) {
+              isGatewayConnected = true;
+              activeConnId = connInfo.connectionId ?? connId;
+            }
+          } catch (_) {}
         }
+
+        state = state.copyWith(
+          deviceId: devId,
+          serverInstanceId: srvId,
+          deviceName: devName,
+          assignedSubdomain: hostname,
+          publicUrl: pubUrl,
+          endpointStatus: epStatus,
+          connectionId: activeConnId,
+          isGatewayConnected: isGatewayConnected,
+          isLocalOnline: isLocal,
+          localServerUrl: localUrl,
+        );
+      } else {
+        // Explicit "device not registered" for this installationId
+        state = state.copyWith(
+          deviceId: null,
+          serverInstanceId: null,
+          assignedSubdomain: null,
+          publicUrl: null,
+          connectionId: null,
+          isGatewayConnected: false,
+          endpointStatus: 'NOT_CREATED',
+        );
       }
     } catch (_) {
       // Ignored if offline during initial sync
@@ -215,6 +253,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
   }
 
   /// Manually starts both local HTTP server engine and outbound Gateway WebSocket transport
+  /// operating strictly on THIS phone's Device record.
   Future<void> startServerNode() async {
     AppLogger.info('[ServerLifecycle] START SERVER NODE: Starting local HTTP engine and remote gateway transport...');
     final serverService = _ref.read(serverServiceProvider);
@@ -231,20 +270,11 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     final sessionToken = authSession?.accessToken;
 
     if (sessionToken != null && sessionToken.isNotEmpty) {
-      String? devId = state.deviceId;
+      String? devId;
 
-      if (devId == null || devId.isEmpty) {
-        try {
-          final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
-          final res = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
-          if (res['success'] == true && res['data'] != null) {
-            final devicesList = res['data']['devices'] as List<dynamic>?;
-            if (devicesList != null && devicesList.isNotEmpty) {
-              final firstDev = devicesList.first as Map<String, dynamic>;
-              devId = firstDev['id'] as String?;
-            }
-          }
-        } catch (_) {}
+      final currentDev = await resolveCurrentDevice(sessionToken: sessionToken);
+      if (currentDev != null) {
+        devId = currentDev['id'] as String?;
       }
 
       if (devId != null && devId.isNotEmpty) {
@@ -433,11 +463,19 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     }
   }
 
-  /// Deletes the active server node, stops the local HTTP server, and purges backend database records
+  /// Deletes ONLY the active server node belonging to THIS physical phone installation (Batch 5).
+  /// Verifies device.installationId == localInstallationId before calling deleteDevice.
+  /// After successful deletion, clears local state for THIS device without affecting other devices in the account.
   Future<bool> deleteServer() async {
-    final devId = state.deviceId;
     final authSession = _ref.read(authStateProvider).session;
     final sessionToken = authSession?.accessToken;
+
+    if (sessionToken == null || sessionToken.isEmpty) {
+      state = state.copyWith(
+        errorMessage: 'Authentication session expired. Please sign in again before deleting server.',
+      );
+      return false;
+    }
 
     try {
       // 1. Stop local HTTP server engine on Android
@@ -452,50 +490,40 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final connId = state.connectionId ?? 'active-conn';
         await remoteService.disconnect(
           connectionId: connId,
-          sessionToken: sessionToken ?? '',
+          sessionToken: sessionToken,
         );
       } catch (_) {}
 
-      // 3. Delete from Backend Database control plane (removes Device, ServerInstance, ServerEndpoint)
-      if (sessionToken == null || sessionToken.isEmpty) {
-        state = state.copyWith(
-          errorMessage: 'Authentication session expired. Please sign in again before deleting server.',
-        );
-        return false;
-      }
+      // 3. Resolve device matching ONLY THIS physical phone installation
+      final deviceIdentityService = _ref.read(deviceIdentityServiceProvider);
+      final localInstallationId = await deviceIdentityService.getInstallationId();
 
-      final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
-      
-      // If active deviceId is tracked in memory, delete it first
-      if (devId != null && devId.isNotEmpty) {
+      final currentDev = await resolveCurrentDevice(sessionToken: sessionToken);
+
+      if (currentDev != null) {
+        final targetDeviceId = currentDev['id'] as String?;
+        final targetInstId = currentDev['installationId'] as String?;
+
+        // PART 9 — DELETE SAFETY: Verify device.installationId == localInstallationId
+        if (targetInstId == localInstallationId && targetDeviceId != null && targetDeviceId.isNotEmpty) {
+          final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+          await deviceDataSource.deleteDevice(
+            deviceId: targetDeviceId,
+            sessionToken: sessionToken,
+          );
+        }
+      } else if (state.deviceId != null && state.deviceId!.isNotEmpty) {
+        // Fallback: If device was registered in state, attempt single delete on state.deviceId
+        final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
         try {
           await deviceDataSource.deleteDevice(
-            deviceId: devId,
+            deviceId: state.deviceId!,
             sessionToken: sessionToken,
           );
         } catch (_) {}
       }
 
-      // Query all registered devices for this user account and delete all of them from MySQL
-      try {
-        final userDevicesRes = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
-        if (userDevicesRes['success'] == true && userDevicesRes['data'] != null) {
-          final devices = userDevicesRes['data']['devices'] as List<dynamic>?;
-          if (devices != null) {
-            for (final d in devices) {
-              final id = d['id'] as String?;
-              if (id != null && id.isNotEmpty) {
-                await deviceDataSource.deleteDevice(
-                  deviceId: id,
-                  sessionToken: sessionToken,
-                );
-              }
-            }
-          }
-        }
-      } catch (_) {}
-
-      // 4. Reset setup state
+      // 4. PART 10 — STATE CLEANUP: Reset setup state for THIS device only
       state = const SetupState();
       return true;
     } catch (e) {
