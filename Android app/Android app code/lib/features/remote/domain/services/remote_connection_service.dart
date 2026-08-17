@@ -84,7 +84,10 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     HttpClient? httpClient,
     String? baseUrl,
     RemoteTransport? transport,
-  })  : _httpClient = httpClient ?? (HttpClient()..badCertificateCallback = (cert, host, port) => true),
+  })  : _httpClient = httpClient ??
+            (HttpClient()
+              ..badCertificateCallback = (cert, host, port) =>
+                  AppConfig.current.environment != 'production'),
         _baseUrl = baseUrl ?? AppConfig.current.apiBaseUrl,
         _transport = transport ?? WebSocketRemoteTransport(),
         _currentInfo = const RemoteConnectionInfo(

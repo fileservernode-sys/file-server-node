@@ -21,7 +21,10 @@ class HttpAuthRemoteDataSource implements AuthRemoteDataSource {
   HttpAuthRemoteDataSource({
     HttpClient? httpClient,
     String? baseUrl,
-  })  : _httpClient = httpClient ?? (HttpClient()..badCertificateCallback = (cert, host, port) => true),
+  })  : _httpClient = httpClient ??
+            (HttpClient()
+              ..badCertificateCallback = (cert, host, port) =>
+                  AppConfig.current.environment != 'production'),
         _baseUrl = baseUrl ?? AppConfig.current.apiBaseUrl;
 
   @override

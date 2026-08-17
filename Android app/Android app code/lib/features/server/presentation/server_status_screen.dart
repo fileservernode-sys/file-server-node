@@ -4,6 +4,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/logger.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
@@ -50,6 +51,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   }
 
   Future<void> _handleStart() async {
+    AppLogger.info('[ServerControl] START SERVER triggered');
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).startServerNode();
     await _refreshServerStatus();
@@ -63,6 +65,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   }
 
   Future<void> _handleRestart() async {
+    AppLogger.info('[ServerControl] RESTART SERVER triggered');
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).stopServerNode();
     await Future.delayed(const Duration(milliseconds: 500));
@@ -78,6 +81,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   }
 
   Future<void> _handleStop() async {
+    AppLogger.info('[ServerControl] STOP SERVER triggered');
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).stopServerNode();
     await _refreshServerStatus();

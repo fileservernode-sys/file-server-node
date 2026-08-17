@@ -5,6 +5,7 @@ import '../../auth/application/auth_state.dart';
 import '../../device/data/datasources/device_remote_datasource.dart';
 import '../../remote/domain/services/remote_connection_service.dart';
 import '../../server/domain/services/server_service.dart';
+import '../../../core/utils/logger.dart';
 
 /// Immutable Setup Configuration, Real Subdomain, and Live State Representation
 class SetupState {
@@ -210,6 +211,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
 
   /// Manually starts both local HTTP server engine and outbound Gateway WebSocket transport
   Future<void> startServerNode() async {
+    AppLogger.info('[ServerLifecycle] START SERVER NODE: Starting local HTTP engine and remote gateway transport...');
     final serverService = _ref.read(serverServiceProvider);
     await serverService.startServer();
 
@@ -253,16 +255,19 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
             isGatewayConnected: connInfo.isConnected || connInfo.status == RemoteConnectionState.connected,
             connectionId: connInfo.connectionId ?? state.connectionId,
           );
+          AppLogger.info('[ServerLifecycle] Server node started successfully (Local Engine: ONLINE, Gateway: ${connInfo.isConnected ? "CONNECTED" : "DISCONNECTED"})');
           return;
         } catch (_) {}
       }
     }
 
     state = state.copyWith(isLocalOnline: true);
+    AppLogger.info('[ServerLifecycle] Server node started (Local Engine: ONLINE)');
   }
 
   /// Manually stops both local HTTP server engine and outbound Gateway WebSocket transport
   Future<void> stopServerNode() async {
+    AppLogger.info('[ServerLifecycle] STOP SERVER NODE: Stopping local HTTP engine and remote gateway transport...');
     final serverService = _ref.read(serverServiceProvider);
     await serverService.stopServer();
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/utils/logger.dart';
 
 /// Structured Transport Messages for Outbound Remote Gateway Handshake Protocol
@@ -92,7 +93,8 @@ class WebSocketRemoteTransport implements RemoteTransport {
       try {
         AppLogger.info('[WebSocketTransport] Attempting connection to: $targetUrl');
         final client = HttpClient()
-          ..badCertificateCallback = (cert, host, port) => true;
+          ..badCertificateCallback = (cert, host, port) =>
+              AppConfig.current.environment != 'production';
         _socket = await WebSocket.connect(targetUrl, customClient: client)
             .timeout(const Duration(seconds: 12));
         AppLogger.info('[WebSocketTransport] Connected successfully to: $targetUrl');
