@@ -58,11 +58,13 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
     const { deviceName, platform, osVersion, appVersion, installationId, serverName, adminUsername, adminPassword } = body.data;
 
-    // Check if a device with this name already exists for the user
-    const existingDevice = await prisma.device.findFirst({
+    // Check if a device with this installationId already exists for the user
+    const existingDevice = await prisma.device.findUnique({
       where: {
-        userId: user.id,
-        deviceName: deviceName
+        userId_installationId: {
+          userId: user.id,
+          installationId: installationId
+        }
       }
     });
 
@@ -70,7 +72,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     const adminPasswordHash = adminPassword ? hashPassword(adminPassword) : undefined;
 
     if (existingDevice) {
-      // Idempotent update
+      // Idempotent update for the same physical device installation
       device = await prisma.device.update({
         where: { id: existingDevice.id },
         data: {
@@ -108,10 +110,11 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         });
       }
     } else {
-      // Create new Device
+      // Create new Device record bound to this physical installation
       device = await prisma.device.create({
         data: {
           userId: user.id,
+          installationId,
           deviceName,
           platform,
           osVersion,
@@ -136,7 +139,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         data: {
           userId: user.id,
           deviceId: device.id,
-          eventType: 'DEVICE_REGISTERED'
+          eventType: 'DEVICE_REGISTERED',
+          metadata: { installationId }
         }
       });
 
@@ -153,6 +157,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(200).send(createSuccessResponse({
       device: {
         id: device.id,
+        installationId: device.installationId,
         deviceName: device.deviceName,
         platform: device.platform,
         osVersion: device.osVersion,
@@ -241,6 +246,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
         return {
           id: d.id,
+          installationId: d.installationId,
           deviceName: d.deviceName,
           platform: d.platform,
           osVersion: d.osVersion,
@@ -318,6 +324,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     return reply.status(200).send(createSuccessResponse({
       device: {
         id: device.id,
+        installationId: device.installationId,
         deviceName: device.deviceName,
         platform: device.platform,
         osVersion: device.osVersion,
@@ -366,7 +373,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     const identifier = params.data.deviceId;
 
     // Search by device UUID or linked ServerInstance ID
-    let device = await prisma.device.findFirst({
+    const device = await prisma.device.findFirst({
       where: {
         OR: [
           { id: identifier },
@@ -382,21 +389,6 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         connections: true
       }
     });
-
-    // Fallback: If not found by exact ID, find any device owned by this user
-    if (!device) {
-      device = await prisma.device.findFirst({
-        where: { userId: user.id },
-        include: {
-          servers: {
-            include: {
-              endpoints: true
-            }
-          },
-          connections: true
-        }
-      });
-    }
 
     if (!device) {
       return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
