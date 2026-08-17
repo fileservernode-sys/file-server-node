@@ -18,24 +18,24 @@
     <div class="modal-card" style="max-width: 420px; width: 90%; margin: auto; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); background: var(--color-surface); border: 1px solid var(--color-border);">
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <div class="brand-logo-icon" style="margin: 0 auto 0.75rem auto; width: 48px; height: 48px; font-size: 1.25rem;">RN</div>
-        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.4rem; color: var(--color-text-primary);">File Server Login</h2>
-        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Enter credentials configured for this personal server node</p>
+        <h2 style="margin: 0 0 0.25rem 0; font-size: 1.4rem; color: var(--color-text-primary);">Sign In to Personal Storage</h2>
+        <p style="margin: 0; font-size: 0.85rem; color: var(--color-text-muted);">Sign in with your registered account email &amp; password</p>
       </div>
       
       <form id="form-file-server-login" onsubmit="event.preventDefault(); handleFileServerLogin();">
         <div id="login-error-alert" style="display: none; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; background: #FEE2E2; color: #DC2626; font-size: 0.85rem;"></div>
         
         <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Username / Email</label>
-          <input type="text" id="login-username" class="form-input" placeholder="e.g. admin_user" required style="width: 100%; box-sizing: border-box;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">Email Address</label>
+          <input type="email" id="login-username" class="form-input" placeholder="name@example.com" required style="width: 100%; box-sizing: border-box;">
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">File Server Password</label>
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--color-text-primary);">Password</label>
           <input type="password" id="login-password" class="form-input" placeholder="••••••••" required style="width: 100%; box-sizing: border-box;">
         </div>
 
-        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 600;">Sign In to Storage</button>
+        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-weight: 600;">Sign In with Email</button>
       </form>
     </div>
   </div>

@@ -517,22 +517,20 @@ class LocalServerEngine {
 
             try {
                 val body = exchange.requestBody.bufferedReader().readText()
-                var username = ""
-                var password = ""
+                val json = try { org.json.JSONObject(body) } catch (_: Exception) { null }
+                val email = json?.optString("email")?.ifEmpty { null }
+                    ?: json?.optString("username")?.ifEmpty { null }
+                    ?: body.substringAfter("\"email\":\"").substringBefore("\"")
+                        .ifEmpty { body.substringAfter("\"username\":\"").substringBefore("\"") }
+                val password = json?.optString("password")?.ifEmpty { null }
+                    ?: body.substringAfter("\"password\":\"").substringBefore("\"")
 
-                if (body.contains("\"username\":\"")) {
-                    username = body.substringAfter("\"username\":\"").substringBefore("\"")
-                }
-                if (body.contains("\"password\":\"")) {
-                    password = body.substringAfter("\"password\":\"").substringBefore("\"")
-                }
-
-                val isValid = engine.validateCredentials(username, password)
+                val isValid = engine.validateCredentials(email, password)
                 if (isValid) {
                     val token = engine.createSessionToken()
                     sendJsonResponse(exchange, 200, """{"success":true,"data":{"token":"$token"}}""")
                 } else {
-                    sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"INVALID_CREDENTIALS","message":"Invalid file-server username or password."}}""")
+                    sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"INVALID_CREDENTIALS","message":"Invalid email or password."}}""")
                 }
             } catch (e: Exception) {
                 sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"AUTH_FAILED","message":"${e.message}"}}""")
