@@ -1,5 +1,6 @@
 import '../../../../core/storage/secure_storage_service.dart';
 import '../../data/datasources/device_remote_datasource.dart';
+import '../services/device_identity_service.dart';
 
 abstract class DeviceRepository {
   Future<String> getOrCreateInstallationId();
@@ -15,24 +16,21 @@ abstract class DeviceRepository {
 
 class DeviceRepositoryImpl implements DeviceRepository {
   final DeviceRemoteDataSource _remoteDataSource;
-  final SecureStorageService _secureStorageService;
+  final DeviceIdentityService _identityService;
 
   DeviceRepositoryImpl({
     DeviceRemoteDataSource? remoteDataSource,
+    DeviceIdentityService? identityService,
     SecureStorageService? secureStorageService,
   })  : _remoteDataSource = remoteDataSource ?? HttpDeviceRemoteDataSource(),
-        _secureStorageService =
-            secureStorageService ?? InMemorySecureStorageService();
+        _identityService = identityService ??
+            MethodChannelDeviceIdentityService(
+              storage: secureStorageService ?? FileSecureStorageService(),
+            );
 
   @override
   Future<String> getOrCreateInstallationId() async {
-    const key = 'device_installation_id';
-    var installationId = await _secureStorageService.read(key: key);
-    if (installationId == null || installationId.isEmpty) {
-      installationId = 'inst-node-${DateTime.now().millisecondsSinceEpoch}';
-      await _secureStorageService.write(key: key, value: installationId);
-    }
-    return installationId;
+    return _identityService.getInstallationId();
   }
 
   @override

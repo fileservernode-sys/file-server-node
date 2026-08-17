@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:remote_node_app/core/routing/app_router.dart';
-import 'package:remote_node_app/features/splash/presentation/splash_screen.dart';
 
 void main() {
   group('SplashScreen Widget Tests', () {

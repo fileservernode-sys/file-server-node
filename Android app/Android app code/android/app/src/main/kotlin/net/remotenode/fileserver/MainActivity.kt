@@ -1,8 +1,12 @@
 package net.remotenode.fileserver
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
@@ -12,6 +16,19 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
+                "getInstallationId" -> {
+                    try {
+                        val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)
+                        var installationId = prefs.getString("installation_id", null)
+                        if (installationId.isNullOrEmpty()) {
+                            installationId = "inst-" + UUID.randomUUID().toString()
+                            prefs.edit().putString("installation_id", installationId).apply()
+                        }
+                        result.success(installationId)
+                    } catch (e: Exception) {
+                        result.error("IDENTITY_ERROR", e.message, null)
+                    }
+                }
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
                     val storageDir = context.filesDir.resolve("RemoteNodeFiles")
@@ -46,8 +63,8 @@ class MainActivity : FlutterActivity() {
                     val url = call.argument<String>("url")
                     if (url != null) {
                         try {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                             result.success(true)
                         } catch (e: Exception) {

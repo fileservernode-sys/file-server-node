@@ -107,4 +107,40 @@ class FileSecureStorageService implements SecureStorageService {
   }
 }
 
-class InMemorySecureStorageService extends FileSecureStorageService {}
+class InMemorySecureStorageService implements SecureStorageService {
+  AuthSession? _session;
+  final Map<String, String> _kvStore = {};
+
+  @override
+  Future<void> saveSession(AuthSession session) async {
+    _session = session;
+  }
+
+  @override
+  Future<AuthSession?> getSession() async {
+    if (_session != null && _session!.isExpired) {
+      _session = null;
+    }
+    return _session;
+  }
+
+  @override
+  Future<void> clearSession() async {
+    _session = null;
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    _kvStore[key] = value;
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _kvStore[key];
+  }
+
+  @override
+  Future<void> delete({required String key}) async {
+    _kvStore.remove(key);
+  }
+}

@@ -50,7 +50,7 @@ void main() {
     test('Generates and persists stable privacy-minimal installationId',
         () async {
       final id1 = await deviceRepository.getOrCreateInstallationId();
-      expect(id1, startsWith('inst-node-'));
+      expect(id1, startsWith('inst-'));
 
       final id2 = await deviceRepository.getOrCreateInstallationId();
       expect(id2, equals(id1));

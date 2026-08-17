@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/application/auth_state.dart';
 import '../../device/data/datasources/device_remote_datasource.dart';
+import '../../device/domain/services/device_identity_service.dart';
 import '../../remote/domain/services/remote_connection_service.dart';
 import '../../server/domain/services/server_service.dart';
 import '../../../core/utils/logger.dart';
@@ -93,6 +94,10 @@ class SetupState {
 }
 
 /// Riverpod Providers for Device, Server, & Remote Services
+final deviceIdentityServiceProvider = Provider<DeviceIdentityService>((ref) {
+  return MethodChannelDeviceIdentityService();
+});
+
 final deviceRemoteDataSourceProvider = Provider<DeviceRemoteDataSource>((ref) {
   return HttpDeviceRemoteDataSource();
 });
@@ -310,7 +315,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       return false;
     }
     final sessionToken = authSession.accessToken;
-    final installationId = 'inst-${state.deviceName.hashCode.abs()}';
+    final deviceIdentityService = _ref.read(deviceIdentityServiceProvider);
+    final installationId = await deviceIdentityService.getInstallationId();
 
     try {
       // -----------------------------------------------------------------------
