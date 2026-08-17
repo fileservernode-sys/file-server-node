@@ -7,7 +7,17 @@ declare global {
 }
 
 export const prisma = globalThis.prismaGlobal ?? new PrismaClient({
-  log: config.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
+  log: config.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      // connection_limit=3 prevents pool exhaustion on Render free tier
+      // connect_timeout=30 gives the DB enough time to wake from sleep
+      // socket_timeout=60 tolerates slow queries on cold MySQL
+      url: process.env.DATABASE_URL
+        ? `${process.env.DATABASE_URL}${process.env.DATABASE_URL.includes('?') ? '&' : '?'}connection_limit=3&connect_timeout=30&socket_timeout=60&pool_timeout=30`
+        : undefined,
+    },
+  },
 });
 
 if (config.NODE_ENV !== 'production') {
@@ -24,6 +34,19 @@ export async function checkDatabaseReadiness(): Promise<boolean> {
   } catch (error) {
     return false;
   }
+}
+
+/**
+ * Attempts to reconnect Prisma after a connection pool error.
+ * Safe to call fire-and-forget.
+ */
+export async function reconnectDatabase(): Promise<void> {
+  try {
+    await prisma.$disconnect();
+  } catch (_) { /* ignore */ }
+  try {
+    await prisma.$connect();
+  } catch (_) { /* ignore */ }
 }
 
 /**
