@@ -118,10 +118,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         bool wsConnected = false;
         try {
           await _transport.connect(AppConfig.current.gatewayWsUrl);
-
-          // Listen for incoming FILE_REQUEST messages over transport stream
           _setupTransportMessageListener();
-
           await _transport.send({
             'type': 'AUTH',
             'connectionToken': token,
@@ -129,7 +126,17 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           });
           wsConnected = true;
         } catch (e) {
-          // Log WebSocket connection issue
+          try {
+            await Future.delayed(const Duration(milliseconds: 800));
+            await _transport.connect(AppConfig.current.gatewayWsUrl);
+            _setupTransportMessageListener();
+            await _transport.send({
+              'type': 'AUTH',
+              'connectionToken': token,
+              'deviceId': deviceId,
+            });
+            wsConnected = true;
+          } catch (_) {}
         }
 
         _reconnectAttempts = 0;

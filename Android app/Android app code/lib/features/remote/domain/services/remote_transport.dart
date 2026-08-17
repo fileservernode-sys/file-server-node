@@ -80,29 +80,40 @@ class WebSocketRemoteTransport implements RemoteTransport {
   @override
   Future<void> connect(String url) async {
     await disconnect();
-    try {
-      _socket =
-          await WebSocket.connect(url).timeout(const Duration(seconds: 15));
-      _socket!.listen(
-        (data) {
-          try {
-            final json = jsonDecode(data.toString()) as Map<String, dynamic>;
-            _controller.add(json);
-          } catch (e) {
-            // Ignore malformed payloads
-          }
-        },
-        onError: (err) {
-          _controller.add({'type': 'ERROR', 'message': err.toString()});
-        },
-        onDone: () {
-          _controller.add({'type': 'DISCONNECT'});
-        },
-      );
-    } catch (e) {
-      _controller.add({'type': 'ERROR', 'message': e.toString()});
-      rethrow;
+    final urlsToTry = <String>[
+      url,
+      if (!url.contains('file-server-node-1.onrender.com'))
+        'wss://file-server-node-1.onrender.com',
+    ];
+
+    Object? lastError;
+    for (final targetUrl in urlsToTry) {
+      try {
+        final client = HttpClient()
+          ..badCertificateCallback = (cert, host, port) => true;
+        _socket = await WebSocket.connect(targetUrl, customClient: client)
+            .timeout(const Duration(seconds: 12));
+        _socket!.listen(
+          (data) {
+            try {
+              final json = jsonDecode(data.toString()) as Map<String, dynamic>;
+              _controller.add(json);
+            } catch (_) {}
+          },
+          onError: (err) {
+            _controller.add({'type': 'ERROR', 'message': err.toString()});
+          },
+          onDone: () {
+            _controller.add({'type': 'DISCONNECT'});
+          },
+        );
+        return;
+      } catch (e) {
+        lastError = e;
+      }
     }
+    _controller.add({'type': 'ERROR', 'message': lastError.toString()});
+    throw lastError ?? Exception('WebSocket connection failed');
   }
 
   @override
