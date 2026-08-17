@@ -128,7 +128,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       HttpClientResponse? res;
       Map<String, dynamic>? json;
 
-      while (registerAttempts < 3) {
+      // Up to 8 attempts with 4s gaps = ~32s window, enough for Render free-tier cold start
+      const int maxRegisterAttempts = 8;
+      while (registerAttempts < maxRegisterAttempts) {
         registerAttempts++;
         final url = Uri.parse('$_baseUrl/connections/register');
         final req = await _httpClient.postUrl(url);
@@ -144,15 +146,15 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           json = null;
         }
 
-        AppLogger.info('[RemoteConnection] Registration API result (attempt $registerAttempts): status=${res.statusCode}, success=${json?['success']}');
+        AppLogger.info('[RemoteConnection] Registration API result (attempt $registerAttempts/$maxRegisterAttempts): status=${res.statusCode}, success=${json?["success"]}');
 
         if (res.statusCode == 200 && json != null && json['success'] == true) {
           break;
         }
 
-        if (res.statusCode >= 500 && registerAttempts < 3) {
-          AppLogger.warning('[RemoteConnection] Database/server warming up (${res.statusCode}), retrying in 1.5s...');
-          await Future.delayed(const Duration(milliseconds: 1500));
+        if (res.statusCode >= 500 && registerAttempts < maxRegisterAttempts) {
+          AppLogger.warning('[RemoteConnection] Database/server warming up (${res.statusCode}), retrying in 4s... ($registerAttempts/$maxRegisterAttempts)');
+          await Future.delayed(const Duration(seconds: 4));
         } else {
           break;
         }
@@ -167,6 +169,11 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
         _authCompleter = Completer<bool>();
+
+        // Cancel any old subscription BEFORE connecting the new socket so that
+        // the old socket's onDone event never fires into a live listener.
+        _transportSubscription?.cancel();
+        _transportSubscription = null;
 
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
         bool wsConnected = false;
