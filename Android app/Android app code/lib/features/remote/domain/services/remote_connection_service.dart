@@ -103,11 +103,20 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     }
   }
 
+  bool _isConnecting = false;
+
   @override
   Future<RemoteConnectionInfo> connect({
     required String deviceId,
     required String sessionToken,
   }) async {
+    if (_isConnecting) {
+      AppLogger.info('[RemoteConnection] Connection attempt already in progress, returning current state');
+      return _currentInfo;
+    }
+    _isConnecting = true;
+    _reconnectTimer?.cancel();
+
     try {
       _lastDeviceId = deviceId;
       _lastSessionToken = sessionToken;
@@ -158,13 +167,13 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
         _authCompleter = Completer<bool>();
-        _setupTransportMessageListener();
 
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
         bool wsConnected = false;
         try {
           AppLogger.info('[RemoteConnection] Connecting transport to: ${AppConfig.current.gatewayWsUrl}');
           await _transport.connect(AppConfig.current.gatewayWsUrl);
+          _setupTransportMessageListener();
           AppLogger.info('[RemoteConnection] Transport connected. Sending AUTH handshake...');
           await _transport.send({
             'type': 'AUTH',
@@ -187,6 +196,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
             await Future.delayed(const Duration(milliseconds: 800));
             _authCompleter = Completer<bool>();
             await _transport.connect(AppConfig.current.gatewayWsUrl);
+            _setupTransportMessageListener();
             await _transport.send({
               'type': 'AUTH',
               'connectionToken': token,
@@ -239,6 +249,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         errorMessage: 'Network error connecting to control plane: ${e.toString()}',
       ));
       return _currentInfo;
+    } finally {
+      _isConnecting = false;
     }
   }
 
