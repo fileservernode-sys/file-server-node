@@ -46,12 +46,13 @@ async function findUserDevices() {
 
       return {
         id: d.id,
+        serverId: server?.id || null,
         name: server?.serverName || d.deviceName || 'Personal File Server',
         status,
         serverStatus: serverStatusText,
         lastSeen: d.lastSeenAt ? formatRelativeTime(d.lastSeenAt) : 'Not available yet',
         endpoint: publicUrl || (endpoint?.hostname ? `https://${endpoint.hostname} (Connecting)` : 'Provisioning...'),
-        canAccess: !!publicUrl,
+        canAccess: isOnline && !!server?.id,
         storageStats: `${d.platform || 'Android'} ${d.osVersion || ''} • App v${d.appVersion || '1.0.0'}`
       };
     });
@@ -163,8 +164,8 @@ function renderDeviceCards(devices, container) {
     const currentStatus = statusMap[device.status] || statusMap.offline;
 
     let ctaButtonHtml = '';
-    if (device.status === 'online' && device.canAccess) {
-      ctaButtonHtml = `<a href="${escapeHtml(device.endpoint)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="width: 100%; text-align: center; text-decoration: none;">Open File Server ↗</a>`;
+    if (device.status === 'online' && device.canAccess && device.serverId) {
+      ctaButtonHtml = `<a href="file-manager.html?server=${escapeHtml(device.serverId)}" class="btn btn-primary" style="width: 100%; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">📁 Open File Manager</a>`;
     } else if (device.status === 'connecting') {
       ctaButtonHtml = `<button class="btn btn-secondary" disabled style="width: 100%;"><span class="spinner"></span> Connecting Server...</button>`;
     } else {

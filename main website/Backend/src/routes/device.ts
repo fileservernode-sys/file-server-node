@@ -483,7 +483,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           metadata: { action: 'SERVER_DELETED', deviceId: targetDeviceId, deviceName: targetDeviceName }
         }
       });
-    });
+    }, { maxWait: 15000, timeout: 30000 });
 
     return reply.status(200).send(createSuccessResponse({
       message: 'Server, allocated subdomain endpoint, and all associated node data successfully deleted.'

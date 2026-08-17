@@ -73,6 +73,7 @@
           <div>
             <h2 class="section-title" style="font-size: var(--font-size-xl); text-align: left; margin-bottom: var(--space-3xs);">
               Your Registered Servers
+              <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; margin-left: 8px; vertical-align: middle;">0 / 5 Servers</span>
             </h2>
             <p class="text-secondary text-sm">Android storage nodes paired to this platform account.</p>
           </div>
@@ -215,6 +216,16 @@
 
         const devices = res.data.data?.devices || [];
 
+        const countBadge = document.getElementById('server-count-badge');
+        if (countBadge) {
+          countBadge.textContent = `${devices.length} / 5 Servers`;
+          if (devices.length >= 5) {
+            countBadge.className = 'badge badge-warning';
+          } else {
+            countBadge.className = 'badge badge-accent';
+          }
+        }
+
         if (devices.length === 0) {
           // Zero registered servers: Render Clean Empty State + Pairing Guide Card
           grid.innerHTML = `
@@ -253,8 +264,7 @@
 
             const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
 
-            // File manager button — always navigates internally to viewduration.com
-            // NEVER shows the gateway subdomain URL to the user
+            // File manager button — passes server.id explicitly in URL
             let fileManagerButtonHtml = '';
             if (isOnline && server?.id) {
               fileManagerButtonHtml = `
@@ -311,17 +321,30 @@
             `;
           }).join('');
 
-          // Append "Register New Android Phone" Guidance Card
-          const addCardHtml = `
-            <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
-              <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
-              <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Pair Another Phone</h3>
-              <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
-                Install the Android app on an additional device and sign in with this account to pair another storage node.
-              </p>
-              <a href="how-it-works.html" class="btn btn-outline btn-sm">Setup Guide</a>
-            </div>
-          `;
+          // Append "Register New Android Phone" Guidance Card (or Limit Reached Card)
+          let addCardHtml = '';
+          if (devices.length >= 5) {
+            addCardHtml = `
+              <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+                <div style="font-size: 2rem; margin-bottom: var(--space-xs);">🔒</div>
+                <span class="badge badge-warning" style="margin-bottom: var(--space-xs); font-weight: 600;">5 / 5 Servers Registered</span>
+                <p class="text-xs text-secondary" style="margin: 0; max-width: 240px;">
+                  Account limit reached (5 / 5 servers). Delete an existing server node to pair a new device.
+                </p>
+              </div>
+            `;
+          } else {
+            addCardHtml = `
+              <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+                <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
+                <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Pair Another Phone</h3>
+                <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
+                  Install the Android app on an additional device and sign in with this account to pair another storage node.
+                </p>
+                <a href="how-it-works.html" class="btn btn-outline btn-sm">Setup Guide</a>
+              </div>
+            `;
+          }
 
           grid.innerHTML = cardsHtml + addCardHtml;
         }
@@ -355,6 +378,17 @@
       try {
         const res = await apiRequest(`/devices/${deviceId}`, 'DELETE');
         if (res.ok && res.data && res.data.success) {
+          await loadUserServers(false);
+        } else if (res.status === 409 || res.data?.error?.code === 'MAX_SERVERS_REACHED') {
+          alert('Account Server Limit: Account has reached maximum allowed servers (5). Delete an existing server to register a new phone.');
+          btnElement.disabled = false;
+          btnElement.innerHTML = originalText;
+        } else if (res.status === 403) {
+          alert('Access Denied: You do not have permission to delete this server.');
+          btnElement.disabled = false;
+          btnElement.innerHTML = originalText;
+        } else if (res.status === 404) {
+          alert('Server Not Found: This device or server may have already been deleted.');
           await loadUserServers(false);
         } else {
           alert(res.data?.error?.message || 'Failed to delete server.');
