@@ -88,18 +88,38 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       resolvedGatewayId = activeGateway?.id;
     }
 
+    // Reuse existing connection record or create if not present
+    let connection = await prisma.deviceConnection.findFirst({
+      where: { deviceId },
+      orderBy: { createdAt: 'desc' }
+    });
+
     const token = `conn-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 
-    const connection = await prisma.deviceConnection.create({
-      data: {
-        deviceId,
-        gatewayNodeId: resolvedGatewayId,
-        connectionToken: token,
-        remoteEndpoint: remoteEndpointStr,
-        status: 'CONNECTING',
-        lastHeartbeatAt: new Date()
-      }
-    });
+    if (connection) {
+      connection = await prisma.deviceConnection.update({
+        where: { id: connection.id },
+        data: {
+          gatewayNodeId: resolvedGatewayId,
+          connectionToken: token,
+          remoteEndpoint: remoteEndpointStr,
+          status: 'CONNECTING',
+          lastHeartbeatAt: new Date(),
+          disconnectedAt: null
+        }
+      });
+    } else {
+      connection = await prisma.deviceConnection.create({
+        data: {
+          deviceId,
+          gatewayNodeId: resolvedGatewayId,
+          connectionToken: token,
+          remoteEndpoint: remoteEndpointStr,
+          status: 'CONNECTING',
+          lastHeartbeatAt: new Date()
+        }
+      });
+    }
 
     await prisma.auditEvent.create({
       data: {

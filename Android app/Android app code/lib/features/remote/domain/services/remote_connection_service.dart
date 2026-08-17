@@ -40,6 +40,8 @@ class RemoteConnectionInfo {
 
 /// Service Interface for Outbound Remote Gateway Connection Management
 abstract class RemoteConnectionService {
+  Stream<RemoteConnectionInfo> get statusStream;
+
   Future<RemoteConnectionInfo> connect({
     required String deviceId,
     required String sessionToken,
@@ -62,6 +64,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   final HttpClient _httpClient;
   final String _baseUrl;
   final RemoteTransport _transport;
+  final StreamController<RemoteConnectionInfo> _statusController =
+      StreamController<RemoteConnectionInfo>.broadcast();
 
   RemoteConnectionInfo _currentInfo;
   int _reconnectAttempts = 0;
@@ -69,6 +73,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   Timer? _reconnectTimer;
   Timer? _pingTimer;
   StreamSubscription? _transportSubscription;
+  Completer<bool>? _authCompleter;
 
   String? _lastDeviceId;
   String? _lastSessionToken;
@@ -85,6 +90,16 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
             status: RemoteConnectionState.disconnected);
 
   @override
+  Stream<RemoteConnectionInfo> get statusStream => _statusController.stream;
+
+  void _updateInfo(RemoteConnectionInfo info) {
+    _currentInfo = info;
+    if (!_statusController.isClosed) {
+      _statusController.add(info);
+    }
+  }
+
+  @override
   Future<RemoteConnectionInfo> connect({
     required String deviceId,
     required String sessionToken,
@@ -93,8 +108,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       _lastDeviceId = deviceId;
       _lastSessionToken = sessionToken;
 
-      _currentInfo =
-          const RemoteConnectionInfo(status: RemoteConnectionState.connecting);
+      _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.connecting));
 
       final url = Uri.parse('$_baseUrl/connections/register');
       final req = await _httpClient.postUrl(url);
@@ -114,41 +128,54 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final pubUrl = conn['publicUrl'] as String? ?? remoteEp;
         final token = conn['connectionToken'] as String? ?? 'mock-token';
 
+        _authCompleter = Completer<bool>();
+        _setupTransportMessageListener();
+
         // Establish Outbound Gateway Transport Connection (ws:// in dev, wss:// in prod)
         bool wsConnected = false;
         try {
           await _transport.connect(AppConfig.current.gatewayWsUrl);
-          _setupTransportMessageListener();
           await _transport.send({
             'type': 'AUTH',
             'connectionToken': token,
             'deviceId': deviceId,
           });
-          wsConnected = true;
+
+          // Await Gateway AUTH_SUCCESS response with bounded timeout
+          final authSuccess = await _authCompleter!.future.timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => false,
+          );
+          wsConnected = authSuccess;
         } catch (e) {
           try {
             await Future.delayed(const Duration(milliseconds: 800));
+            _authCompleter = Completer<bool>();
             await _transport.connect(AppConfig.current.gatewayWsUrl);
-            _setupTransportMessageListener();
             await _transport.send({
               'type': 'AUTH',
               'connectionToken': token,
               'deviceId': deviceId,
             });
-            wsConnected = true;
+            final authSuccess = await _authCompleter!.future.timeout(
+              const Duration(seconds: 8),
+              onTimeout: () => false,
+            );
+            wsConnected = authSuccess;
           } catch (_) {}
         }
 
         _reconnectAttempts = 0;
-        _currentInfo = RemoteConnectionInfo(
+        final newInfo = RemoteConnectionInfo(
           connectionId: connId,
           remoteEndpoint: remoteEp,
           hostname: host,
           publicUrl: pubUrl,
           status: wsConnected ? RemoteConnectionState.connected : RemoteConnectionState.failed,
           lastHeartbeatAt: DateTime.now(),
-          errorMessage: wsConnected ? null : 'Failed to establish WebSocket to Gateway',
+          errorMessage: wsConnected ? null : 'Failed to authenticate with Remote Gateway',
         );
+        _updateInfo(newInfo);
 
         if (wsConnected) {
           _startPingTimer();
@@ -158,16 +185,16 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
       final errorMsg = json['error']?['message'] ??
           'Failed to establish connection token with control plane (${res.statusCode})';
-      _currentInfo = RemoteConnectionInfo(
+      _updateInfo(RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
         errorMessage: errorMsg,
-      );
+      ));
       return _currentInfo;
     } catch (e) {
-      _currentInfo = RemoteConnectionInfo(
+      _updateInfo(RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
         errorMessage: 'Network error connecting to control plane: ${e.toString()}',
-      );
+      ));
       return _currentInfo;
     }
   }
@@ -181,14 +208,38 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       } else if (type == 'FILE_STREAM_CANCEL') {
         _handleStreamCancel(msg);
       } else if (type == 'AUTH_SUCCESS' || type == 'CONNECTED') {
-        _currentInfo = RemoteConnectionInfo(
+        if (_authCompleter != null && !_authCompleter!.isCompleted) {
+          _authCompleter!.complete(true);
+        }
+        _updateInfo(RemoteConnectionInfo(
           connectionId: msg['connectionId'] as String? ?? _currentInfo.connectionId,
           remoteEndpoint: msg['remoteEndpoint'] as String? ?? _currentInfo.remoteEndpoint,
           hostname: _currentInfo.hostname,
           publicUrl: _currentInfo.publicUrl,
           status: RemoteConnectionState.connected,
           lastHeartbeatAt: DateTime.now(),
-        );
+        ));
+      } else if (type == 'AUTH_FAILURE') {
+        if (_authCompleter != null && !_authCompleter!.isCompleted) {
+          _authCompleter!.complete(false);
+        }
+        _updateInfo(RemoteConnectionInfo(
+          connectionId: _currentInfo.connectionId,
+          remoteEndpoint: _currentInfo.remoteEndpoint,
+          hostname: _currentInfo.hostname,
+          publicUrl: _currentInfo.publicUrl,
+          status: RemoteConnectionState.failed,
+          errorMessage: msg['reason'] as String? ?? 'Authentication rejected by gateway',
+        ));
+      } else if (type == 'PONG') {
+        _updateInfo(RemoteConnectionInfo(
+          connectionId: _currentInfo.connectionId,
+          remoteEndpoint: _currentInfo.remoteEndpoint,
+          hostname: _currentInfo.hostname,
+          publicUrl: _currentInfo.publicUrl,
+          status: _currentInfo.status,
+          lastHeartbeatAt: DateTime.now(),
+        ));
       } else if (type == 'DISCONNECT' || type == 'ERROR') {
         if (!_isExplicitlyDisconnecting && _lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
           reconnect();
@@ -581,6 +632,9 @@ class MockRemoteConnectionService implements RemoteConnectionService {
   const MockRemoteConnectionService({
     RemoteConnectionState initialState = RemoteConnectionState.disconnected,
   }) : _initialState = initialState;
+
+  @override
+  Stream<RemoteConnectionInfo> get statusStream => const Stream.empty();
 
   @override
   Future<RemoteConnectionInfo> connect({

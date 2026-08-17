@@ -64,14 +64,14 @@ void main() {
     });
 
     test(
-        'HttpRemoteConnectionService performs exponential backoff on reconnect',
+        'HttpRemoteConnectionService safely handles reconnect without cached session',
         () async {
       final service = HttpRemoteConnectionService();
 
-      // Trigger reconnect
+      // Trigger reconnect without prior connection
       final info = await service.reconnect();
-      expect(info.status, RemoteConnectionState.connected);
-      expect(info.isConnected, isTrue);
+      expect(info.status, RemoteConnectionState.disconnected);
+      expect(info.isConnected, isFalse);
     });
   });
 }
