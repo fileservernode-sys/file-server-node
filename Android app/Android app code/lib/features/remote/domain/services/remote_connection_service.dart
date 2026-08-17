@@ -115,18 +115,41 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.connecting));
       AppLogger.info('[RemoteConnection] Initiating connection registration for device: $deviceId');
 
-      final url = Uri.parse('$_baseUrl/connections/register');
-      final req = await _httpClient.postUrl(url);
-      req.headers.set('content-type', 'application/json');
-      req.headers.set('authorization', 'Bearer $sessionToken');
-      req.write(jsonEncode({'deviceId': deviceId}));
+      int registerAttempts = 0;
+      HttpClientResponse? res;
+      Map<String, dynamic>? json;
 
-      final res = await req.close().timeout(const Duration(seconds: 30));
-      final bodyStr = await res.transform(utf8.decoder).join();
-      final json = jsonDecode(bodyStr) as Map<String, dynamic>;
-      AppLogger.info('[RemoteConnection] Registration API result: status=${res.statusCode}, success=${json['success']}');
+      while (registerAttempts < 3) {
+        registerAttempts++;
+        final url = Uri.parse('$_baseUrl/connections/register');
+        final req = await _httpClient.postUrl(url);
+        req.headers.set('content-type', 'application/json');
+        req.headers.set('authorization', 'Bearer $sessionToken');
+        req.write(jsonEncode({'deviceId': deviceId}));
 
-      if (res.statusCode == 200 && json['success'] == true) {
+        res = await req.close().timeout(const Duration(seconds: 30));
+        final bodyStr = await res.transform(utf8.decoder).join();
+        try {
+          json = jsonDecode(bodyStr) as Map<String, dynamic>;
+        } catch (_) {
+          json = null;
+        }
+
+        AppLogger.info('[RemoteConnection] Registration API result (attempt $registerAttempts): status=${res.statusCode}, success=${json?['success']}');
+
+        if (res.statusCode == 200 && json != null && json['success'] == true) {
+          break;
+        }
+
+        if (res.statusCode >= 500 && registerAttempts < 3) {
+          AppLogger.warning('[RemoteConnection] Database/server warming up (${res.statusCode}), retrying in 1.5s...');
+          await Future.delayed(const Duration(milliseconds: 1500));
+        } else {
+          break;
+        }
+      }
+
+      if (res != null && res.statusCode == 200 && json != null && json['success'] == true) {
         final conn = json['data']['connection'];
         final connId = conn['id'] as String?;
         final remoteEp = conn['remoteEndpoint'] as String?;
@@ -201,8 +224,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         return _currentInfo;
       }
 
-      final errorMsg = json['error']?['message'] ??
-          'Failed to establish connection token with control plane (${res.statusCode})';
+      final errorMsg = json?['error']?['message'] ??
+          'Failed to establish connection token with control plane (${res?.statusCode ?? 500})';
       AppLogger.warning('[RemoteConnection] Registration error: $errorMsg');
       _updateInfo(RemoteConnectionInfo(
         status: RemoteConnectionState.failed,
