@@ -32,12 +32,7 @@ class FileSecureStorageService implements SecureStorageService {
     _cachedSession = session;
     try {
       final file = _getFile();
-      await file.writeAsString(jsonEncode({
-        'token': session.accessToken,
-        'email': session.email,
-        'userId': session.userId,
-        'expiresAt': session.expiresAt.toIso8601String(),
-      }));
+      await file.writeAsString(jsonEncode(session.toJson()));
     } catch (_) {}
   }
 
@@ -56,14 +51,9 @@ class FileSecureStorageService implements SecureStorageService {
       if (await file.exists()) {
         final content = await file.readAsString();
         final json = jsonDecode(content) as Map<String, dynamic>;
-        final expiresAt = DateTime.parse(json['expiresAt'] as String);
-        if (expiresAt.isAfter(DateTime.now())) {
-          _cachedSession = AuthSession(
-            accessToken: json['token'] as String,
-            email: json['email'] as String? ?? 'user@viewduration.com',
-            userId: json['userId'] as String? ?? 'user-id',
-            expiresAt: expiresAt,
-          );
+        final session = AuthSession.fromJson(json);
+        if (!session.isExpired) {
+          _cachedSession = session;
           return _cachedSession;
         }
       }
