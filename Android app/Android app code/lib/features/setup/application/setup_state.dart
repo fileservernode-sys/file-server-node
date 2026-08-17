@@ -213,26 +213,45 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     final serverService = _ref.read(serverServiceProvider);
     await serverService.startServer();
 
-    final devId = state.deviceId;
     final authSession = _ref.read(authStateProvider).session;
     final sessionToken = authSession?.accessToken;
 
-    if (devId != null && sessionToken != null && sessionToken.isNotEmpty) {
-      try {
-        final remoteService = _ref.read(remoteConnectionServiceProvider);
-        final connInfo = await remoteService.connect(
-          deviceId: devId,
-          sessionToken: sessionToken,
-        );
-        state = state.copyWith(
-          isLocalOnline: true,
-          isGatewayConnected: connInfo.isConnected,
-          connectionId: connInfo.connectionId ?? state.connectionId,
-        );
-      } catch (_) {}
-    } else {
-      state = state.copyWith(isLocalOnline: true);
+    if (sessionToken != null && sessionToken.isNotEmpty) {
+      String? devId = state.deviceId;
+
+      if (devId == null || devId.isEmpty) {
+        try {
+          final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+          final res = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+          if (res['success'] == true && res['data'] != null) {
+            final devicesList = res['data']['devices'] as List<dynamic>?;
+            if (devicesList != null && devicesList.isNotEmpty) {
+              final firstDev = devicesList.first as Map<String, dynamic>;
+              devId = firstDev['id'] as String?;
+            }
+          }
+        } catch (_) {}
+      }
+
+      if (devId != null && devId.isNotEmpty) {
+        try {
+          final remoteService = _ref.read(remoteConnectionServiceProvider);
+          final connInfo = await remoteService.connect(
+            deviceId: devId,
+            sessionToken: sessionToken,
+          );
+          state = state.copyWith(
+            deviceId: devId,
+            isLocalOnline: true,
+            isGatewayConnected: connInfo.isConnected,
+            connectionId: connInfo.connectionId ?? state.connectionId,
+          );
+          return;
+        } catch (_) {}
+      }
     }
+
+    state = state.copyWith(isLocalOnline: true);
   }
 
   /// Manually stops both local HTTP server engine and outbound Gateway WebSocket transport

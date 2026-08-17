@@ -79,6 +79,7 @@ class WebSocketRemoteTransport implements RemoteTransport {
 
   @override
   Future<void> connect(String url) async {
+    await disconnect();
     try {
       _socket =
           await WebSocket.connect(url).timeout(const Duration(seconds: 5));

@@ -70,6 +70,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   Timer? _pingTimer;
   StreamSubscription? _transportSubscription;
 
+  String? _lastDeviceId;
+  String? _lastSessionToken;
+
   HttpRemoteConnectionService({
     HttpClient? httpClient,
     String? baseUrl,
@@ -86,6 +89,9 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     required String sessionToken,
   }) async {
     try {
+      _lastDeviceId = deviceId;
+      _lastSessionToken = sessionToken;
+
       _currentInfo =
           const RemoteConnectionInfo(status: RemoteConnectionState.connecting);
 
@@ -160,6 +166,10 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         await _handleRemoteFileRequest(msg);
       } else if (type == 'FILE_STREAM_CANCEL') {
         _handleStreamCancel(msg);
+      } else if (type == 'DISCONNECT' || type == 'ERROR') {
+        if (_lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
+          reconnect();
+        }
       }
     });
   }
@@ -504,16 +514,15 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
     // Exponential Backoff: 1s, 2s, 4s, 8s, 16s (max 30s)
     final delaySeconds = (1 << (_reconnectAttempts - 1)).clamp(1, 30);
-
     await Future.delayed(Duration(seconds: delaySeconds));
 
-    _currentInfo = RemoteConnectionInfo(
-      connectionId: _currentInfo.connectionId ?? 'reconnected-conn',
-      remoteEndpoint: _currentInfo.remoteEndpoint,
-      status: RemoteConnectionState.connected,
-      lastHeartbeatAt: DateTime.now(),
-    );
-    _startPingTimer();
+    final devId = _lastDeviceId;
+    final token = _lastSessionToken;
+    if (devId != null && token != null && token.isNotEmpty) {
+      return connect(deviceId: devId, sessionToken: token);
+    }
+
+    _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
     return _currentInfo;
   }
 
