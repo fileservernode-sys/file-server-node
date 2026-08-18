@@ -81,6 +81,53 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   }
 
   Future<void> _handleStop() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.pause_circle_outline, color: AppColors.textSecondary, size: 24),
+            SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text('Stop Local Server?',
+                  style: AppTypography.cardTitle,
+                  overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Stopping the server will temporarily disable local file hosting and remote access.\n\n'
+          'Your files remain safe on this phone. You can restart the server engine at any time.',
+          style: AppTypography.bodySmall,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.textPrimary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Stop Server'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
     AppLogger.info('[ServerControl] STOP SERVER triggered');
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).stopServerNode();
@@ -97,21 +144,42 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Server?'),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded,
+                color: AppColors.statusError, size: 24),
+            SizedBox(width: AppSpacing.xs),
+            Flexible(
+              child: Text('Delete Server Node?',
+                  style: AppTypography.cardTitle,
+                  overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ),
         content: const Text(
           'Are you sure you want to permanently delete this file server?\n\n'
           'This will stop the local server engine, remove your allocated subdomain, '
-          'and delete all server records from the database.',
+          'and delete all server records from the database. Your physical files remain safe on this phone.',
+          style: AppTypography.bodySmall,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: const Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.statusError,
               foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete Permanently'),
@@ -148,9 +216,16 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const AppHeader(
+      appBar: AppHeader(
         title: 'Server Node Details',
         showBackButton: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_outlined, size: 20),
+            onPressed: _refreshServerStatus,
+            tooltip: 'Refresh Status',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Center(
@@ -175,15 +250,21 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.public_rounded,
-                                    color: AppColors.primary, size: 22),
-                                SizedBox(width: AppSpacing.xs),
-                                Text('Access Your Server',
-                                    style: AppTypography.cardTitle),
-                              ],
+                            const Expanded(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.public_rounded,
+                                      color: AppColors.primary, size: 22),
+                                  SizedBox(width: AppSpacing.xs),
+                                  Flexible(
+                                    child: Text('Access Your Server',
+                                        style: AppTypography.cardTitle,
+                                        overflow: TextOverflow.ellipsis),
+                                  ),
+                                ],
+                              ),
                             ),
+                            const SizedBox(width: AppSpacing.xs),
                             StatusBadge(
                               status: setup.isGatewayConnected
                                   ? DeviceServerStatus.online
@@ -220,24 +301,38 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.dns_rounded,
-                                size: 36, color: AppColors.primary),
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.sm),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySubtle,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                              ),
+                              child: const Icon(Icons.dns_rounded,
+                                  size: 28, color: AppColors.primary),
+                            ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(setup.deviceName,
-                                      style: AppTypography.cardTitle),
+                                  Text(
+                                    setup.deviceName.isNotEmpty
+                                        ? setup.deviceName
+                                        : 'Personal File Server',
+                                    style: AppTypography.cardTitle,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                   const SizedBox(height: AppSpacing.xxs),
                                   Text(
                                     'Node ID: ${setup.deviceId ?? 'inst-local-node-01'}',
                                     style: AppTypography.caption
                                         .copyWith(fontFamily: 'monospace'),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ],
                               ),
                             ),
+                            const SizedBox(width: AppSpacing.xs),
                             StatusBadge(
                               status: _isLocalRunning
                                   ? DeviceServerStatus.online
@@ -250,12 +345,16 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         const SizedBox(height: AppSpacing.md),
                         _StatusRow(
                           label: 'Server Name',
-                          value: setup.serverName,
+                          value: setup.serverName.isNotEmpty
+                              ? setup.serverName
+                              : 'Personal File Server',
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
                           label: 'Device Host',
-                          value: setup.deviceName,
+                          value: setup.deviceName.isNotEmpty
+                              ? setup.deviceName
+                              : 'Android Device',
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
@@ -277,7 +376,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
                           label: 'Gateway Status',
-                          value: setup.endpointStatus == 'ACTIVE' ? 'ACTIVE' : setup.endpointStatus,
+                          value: setup.endpointStatus,
                         ),
                       ],
                     ),
@@ -341,6 +440,7 @@ class _StatusRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: AppTypography.caption),
+        const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text(
             value,
