@@ -34,8 +34,8 @@ class SetupReviewScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 4,
-                    totalSteps: 4,
+                    currentStep: 3,
+                    totalSteps: 3,
                     stepTitle: 'Review Configuration',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -73,10 +73,10 @@ class SetupReviewScreen extends ConsumerWidget {
                                 : 'Personal File Server'),
                         const Divider(height: AppSpacing.lg),
                         _ReviewRow(
-                            label: 'File-server Username',
+                            label: 'Account Email',
                             value: setup.fileServerUsername.isNotEmpty
                                 ? setup.fileServerUsername
-                                : 'admin_user'),
+                                : 'account_user'),
                         const Divider(height: AppSpacing.lg),
                         const _ReviewRow(
                             label: 'Local Interface',
@@ -101,7 +101,7 @@ class SetupReviewScreen extends ConsumerWidget {
                         SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            'Server access is secured directly via your ViewDuration platform account.',
+                            'Server access uses your registered platform email and password.',
                             style: AppTypography.caption,
                           ),
                         ),

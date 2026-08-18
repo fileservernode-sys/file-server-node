@@ -146,7 +146,7 @@ void main() {
 
       expect(find.textContaining('Review Configuration'), findsOneWidget);
       expect(find.text('Configuration Summary'), findsOneWidget);
-      expect(find.textContaining('ViewDuration platform account'), findsOneWidget);
+      expect(find.textContaining('registered platform email and password'), findsOneWidget);
       expect(find.text('Create Server'), findsOneWidget);
     });
 

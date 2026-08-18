@@ -243,15 +243,15 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         const Divider(),
                         _buildSettingTile(
-                          icon: Icons.vpn_key_outlined,
-                          title: 'File-Server Credentials',
+                          icon: Icons.shield_outlined,
+                          title: 'Registered Account Login',
                           subtitle:
-                              'Username: ${setupState.fileServerUsername}',
+                              'Account: ${setupState.fileServerUsername}',
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Re-configure file-server credentials in Setup Wizard.'),
+                                    'File Manager login uses your registered platform account email and password.'),
                               ),
                             );
                           },

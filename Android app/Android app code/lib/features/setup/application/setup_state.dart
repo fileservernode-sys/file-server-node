@@ -127,10 +127,15 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     required String deviceName,
     String description = '',
   }) {
+    final authState = _ref.read(authStateProvider);
+    final userEmail = authState.session?.user.email ?? authState.pendingEmail ?? '';
+
     state = state.copyWith(
       serverName: serverName.trim(),
       deviceName: deviceName.trim(),
       description: description.trim(),
+      fileServerUsername: userEmail.isNotEmpty ? userEmail : 'account_user',
+      fileServerPassword: 'registered_account_auth',
       errorMessage: null,
     );
   }
