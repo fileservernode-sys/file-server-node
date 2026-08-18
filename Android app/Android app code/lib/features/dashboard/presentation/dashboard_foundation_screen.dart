@@ -102,7 +102,7 @@ class DashboardFoundationScreen extends StatelessWidget {
                                   ),
                                   SizedBox(height: 2),
                                   Text(
-                                    'Android Phone → Physical Storage Host',
+                                    'Android Phone - Physical Storage Host',
                                     style: AppTypography.caption,
                                   ),
                                 ],

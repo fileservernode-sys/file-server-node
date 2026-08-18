@@ -162,7 +162,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     const Text(
-                                      'Android Phone → Physical Storage Host',
+                                      'Android Phone - Physical Storage Host',
                                       style: AppTypography.caption,
                                     ),
                                   ],
