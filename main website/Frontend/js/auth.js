@@ -198,6 +198,8 @@ async function logoutUser() {
 window.AuthService = {
   getAuthToken,
   getSavedUser,
+  saveSession,
+  clearSession,
   registerUser,
   loginUser,
   verifyOtp,

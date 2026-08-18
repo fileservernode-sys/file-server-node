@@ -286,15 +286,35 @@
         return;
       }
 
-      if (user) {
-        document.getElementById('user-email-header').textContent = user.email || 'User';
-        document.getElementById('dashboard-user-name').textContent = user.fullName || 'Platform User Account';
-        document.getElementById('dashboard-user-email').textContent = user.email || '';
-        
-        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+      function updateUserUI(userData) {
+        if (!userData) return;
+        if (userData.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = userData.email;
+          const emailSub = document.getElementById('dashboard-user-email');
+          if (emailSub) emailSub.textContent = userData.email;
+        }
+        if (userData.fullName) {
+          const nameEl = document.getElementById('dashboard-user-name');
+          if (nameEl) nameEl.textContent = userData.fullName;
+        }
+        const initialLetter = (userData.fullName || userData.email || 'U').charAt(0).toUpperCase();
         const avatarEl = document.getElementById('user-avatar-initial');
         if (avatarEl) avatarEl.textContent = initialLetter;
       }
+
+      if (user) {
+        updateUserUI(user);
+      }
+
+      // Fetch fresh profile from /auth/me
+      apiRequest('/auth/me', 'GET').then(res => {
+        if (res.ok && res.data && res.data.success && res.data.data?.user) {
+          const freshUser = res.data.data.user;
+          AuthService.saveSession(token, freshUser);
+          updateUserUI(freshUser);
+        }
+      }).catch(() => {});
 
       document.getElementById('btn-logout')?.addEventListener('click', () => {
         AuthService.logoutUser();
