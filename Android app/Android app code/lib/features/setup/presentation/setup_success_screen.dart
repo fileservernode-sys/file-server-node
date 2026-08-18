@@ -47,7 +47,8 @@ class SetupSuccessScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SetupStepper(
-                      currentStep: 6,
+                      currentStep: 4,
+                      totalSteps: 4,
                       stepTitle: 'Server Ready',
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -83,15 +84,21 @@ class SetupSuccessScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Row(
-                                children: [
-                                  Icon(Icons.public_rounded,
-                                      color: AppColors.primary, size: 22),
-                                  SizedBox(width: AppSpacing.xs),
-                                  Text('Access Your Server',
-                                      style: AppTypography.cardTitle),
-                                ],
+                              const Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.public_rounded,
+                                        color: AppColors.primary, size: 22),
+                                    SizedBox(width: AppSpacing.xs),
+                                    Flexible(
+                                      child: Text('Access Your Server',
+                                          style: AppTypography.cardTitle,
+                                          overflow: TextOverflow.ellipsis),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: AppSpacing.xs),
                               StatusBadge(
                                 status: setup.isGatewayConnected
                                     ? DeviceServerStatus.online
@@ -104,7 +111,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                             'Your server is running and connected. Sign in to your account on the RemoteNode website to access your server and file manager.',
                             style: AppTypography.bodySmall,
                           ),
-                          const SizedBox(height: AppSpacing.lg),
+                          const SizedBox(height: AppSpacing.md),
                           PrimaryButton(
                             label: 'Open RemoteNode',
                             icon: Icons.open_in_browser_rounded,
@@ -129,8 +136,12 @@ class SetupSuccessScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Local Node Details',
-                                  style: AppTypography.cardTitle),
+                              const Expanded(
+                                child: Text('Local Node Details',
+                                    style: AppTypography.cardTitle,
+                                    overflow: TextOverflow.ellipsis),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
                               StatusBadge(
                                 status: setup.isLocalOnline
                                     ? DeviceServerStatus.online
@@ -142,10 +153,16 @@ class SetupSuccessScreen extends ConsumerWidget {
                           const Divider(),
                           const SizedBox(height: AppSpacing.md),
                           _SuccessRow(
-                              label: 'Server Host', value: setup.deviceName),
+                              label: 'Server Host',
+                              value: setup.deviceName.isNotEmpty
+                                  ? setup.deviceName
+                                  : 'Android Host'),
                           const SizedBox(height: AppSpacing.xs),
                           _SuccessRow(
-                              label: 'Server Name', value: setup.serverName),
+                              label: 'Server Name',
+                              value: setup.serverName.isNotEmpty
+                                  ? setup.serverName
+                                  : 'Personal File Server'),
                           const SizedBox(height: AppSpacing.xs),
                           _SuccessRow(
                               label: 'Local Engine',

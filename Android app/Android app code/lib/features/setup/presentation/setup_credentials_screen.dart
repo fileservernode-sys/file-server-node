@@ -64,6 +64,7 @@ class _SetupCredentialsScreenState
                   children: [
                     const SetupStepper(
                       currentStep: 3,
+                      totalSteps: 4,
                       stepTitle: 'Create File-Server Credentials',
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -161,7 +162,7 @@ class _SetupCredentialsScreenState
 
                     PrimaryButton(
                       label: 'Continue',
-                      icon: Icons.arrow_forward,
+                      icon: Icons.arrow_forward_rounded,
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
                           ref.read(setupStateProvider.notifier).setCredentials(
@@ -171,6 +172,11 @@ class _SetupCredentialsScreenState
                           Navigator.pushNamed(context, '/server/setup/review');
                         }
                       },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    SecondaryButton(
+                      label: 'Back',
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),

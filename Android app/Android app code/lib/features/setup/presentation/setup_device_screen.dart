@@ -38,7 +38,7 @@ class SetupDeviceScreen extends ConsumerWidget {
                 children: [
                   const SetupStepper(
                     currentStep: 1,
-                    totalSteps: 3,
+                    totalSteps: 4,
                     stepTitle: 'Prepare Device',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -55,9 +55,11 @@ class SetupDeviceScreen extends ConsumerWidget {
                               const Icon(Icons.check_circle_rounded,
                                   color: AppColors.statusOnline, size: 22),
                               const SizedBox(width: AppSpacing.sm),
-                              Text('Server Already Configured',
-                                  style: AppTypography.cardTitle
-                                      .copyWith(color: AppColors.statusOnline)),
+                              Expanded(
+                                child: Text('Server Already Configured',
+                                    style: AppTypography.cardTitle
+                                        .copyWith(color: AppColors.statusOnline)),
+                              ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
@@ -81,6 +83,41 @@ class SetupDeviceScreen extends ConsumerWidget {
                     style: AppTypography.bodySmall,
                   ),
                   const SizedBox(height: AppSpacing.xl),
+
+                  // Physical Device Storage Host Callout Card
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    color: AppColors.primarySubtle.withValues(alpha: 0.5),
+                    borderColor: AppColors.primary.withValues(alpha: 0.3),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.phone_android_rounded,
+                                size: 24, color: AppColors.primary),
+                            SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text('Physical Storage Host',
+                                  style: AppTypography.cardTitle),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Host Device: ${setup.deviceName.isNotEmpty ? setup.deviceName : "Android Device"}',
+                          style: AppTypography.bodySmall
+                              .copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: AppSpacing.xxs),
+                        const Text(
+                          'Your files remain stored on this phone. RemoteNode provides secure remote access without moving your files to cloud storage.',
+                          style: AppTypography.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Device Preparation Conceptual Checklist
                   const AppCard(
@@ -118,7 +155,7 @@ class SetupDeviceScreen extends ConsumerWidget {
                   if (!isAlreadyConfigured)
                     PrimaryButton(
                       label: 'Continue',
-                      icon: Icons.arrow_forward,
+                      icon: Icons.arrow_forward_rounded,
                       onPressed: () {
                         Navigator.pushNamed(
                             context, '/server/setup/configuration');

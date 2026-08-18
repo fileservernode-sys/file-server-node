@@ -34,8 +34,8 @@ class SetupReviewScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 3,
-                    totalSteps: 3,
+                    currentStep: 4,
+                    totalSteps: 4,
                     stepTitle: 'Review Configuration',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -61,10 +61,26 @@ class SetupReviewScreen extends ConsumerWidget {
                             style: AppTypography.cardTitle),
                         const SizedBox(height: AppSpacing.md),
                         _ReviewRow(
-                            label: 'Host Device', value: setup.deviceName),
+                            label: 'Host Device',
+                            value: setup.deviceName.isNotEmpty
+                                ? setup.deviceName
+                                : 'Android Device'),
                         const Divider(height: AppSpacing.lg),
                         _ReviewRow(
-                            label: 'Server Name', value: setup.serverName),
+                            label: 'Server Name',
+                            value: setup.serverName.isNotEmpty
+                                ? setup.serverName
+                                : 'Personal File Server'),
+                        const Divider(height: AppSpacing.lg),
+                        _ReviewRow(
+                            label: 'File-server Username',
+                            value: setup.fileServerUsername.isNotEmpty
+                                ? setup.fileServerUsername
+                                : 'admin_user'),
+                        const Divider(height: AppSpacing.lg),
+                        const _ReviewRow(
+                            label: 'Local Interface',
+                            value: 'Port 8080 (Loopback)'),
                       ],
                     ),
                   ),

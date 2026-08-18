@@ -67,7 +67,7 @@ class _SetupConfigurationScreenState
                   children: [
                     const SetupStepper(
                       currentStep: 2,
-                      totalSteps: 3,
+                      totalSteps: 4,
                       stepTitle: 'Configure Server',
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -116,7 +116,7 @@ class _SetupConfigurationScreenState
                     const SizedBox(height: AppSpacing.xxl),
                     PrimaryButton(
                       label: 'Continue',
-                      icon: Icons.arrow_forward,
+                      icon: Icons.arrow_forward_rounded,
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
                           ref.read(setupStateProvider.notifier).setConfiguration(
@@ -125,9 +125,14 @@ class _SetupConfigurationScreenState
                                 description: _descriptionController.text,
                               );
                           Navigator.pushNamed(
-                              context, '/server/setup/review');
+                              context, '/server/setup/credentials');
                         }
                       },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    SecondaryButton(
+                      label: 'Back',
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),

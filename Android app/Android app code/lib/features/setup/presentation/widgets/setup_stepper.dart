@@ -12,7 +12,7 @@ class SetupStepper extends StatelessWidget {
   const SetupStepper({
     super.key,
     required this.currentStep,
-    this.totalSteps = 3,
+    this.totalSteps = 4,
     required this.stepTitle,
   });
 

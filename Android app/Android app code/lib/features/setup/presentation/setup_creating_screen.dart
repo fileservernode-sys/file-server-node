@@ -67,8 +67,8 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 3,
-                    totalSteps: 3,
+                    currentStep: 4,
+                    totalSteps: 4,
                     stepTitle: 'Create Server',
                   ),
                   const SizedBox(height: AppSpacing.xl),
