@@ -1,14 +1,15 @@
 /* ==========================================================================
-   APP SHELL LAYOUT (Sidebar + Main + Responsive Navigation)
+   APP SHELL LAYOUT (Desktop Sidebar + Top Header + Responsive Grid)
    ========================================================================== */
 .app-layout {
   display: flex;
   min-height: 100vh;
   width: 100%;
   position: relative;
+  background-color: var(--color-bg-body);
 }
 
-/* Sidebar Navigation */
+/* Desktop Sidebar Navigation */
 .app-sidebar {
   width: var(--sidebar-width);
   background-color: var(--color-bg-surface);
@@ -22,13 +23,14 @@
   height: 100vh;
   padding: var(--space-md);
   z-index: 100;
+  box-shadow: 1px 0 0 0 rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-xs) 0 var(--space-md);
+  padding: var(--space-xs) var(--space-xs) var(--space-md);
   border-bottom: 1px solid var(--color-border-subtle);
   margin-bottom: var(--space-md);
 }
@@ -43,7 +45,8 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-base);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
 .brand-title-wrap {
@@ -55,11 +58,25 @@
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
 .brand-tagline {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-2xs);
   color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.nav-section-title {
+  font-size: var(--font-size-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-sm);
+  margin-bottom: var(--space-xs);
 }
 
 /* Nav links */
@@ -83,6 +100,7 @@
   transition: all 0.15s ease-in-out;
   cursor: pointer;
   user-select: none;
+  border: 1px solid transparent;
 }
 
 .nav-link:hover {
@@ -91,15 +109,25 @@
   text-decoration: none;
 }
 
+.nav-link:focus-visible {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: -2px;
+}
+
 .nav-link.active {
   background-color: var(--color-brand-light);
   color: var(--color-brand-primary);
+  border-color: var(--color-brand-subtle);
+  font-weight: 700;
 }
 
 .nav-icon {
-  font-size: 1.2rem;
-  width: 24px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 /* Sidebar mini storage card */
@@ -107,7 +135,7 @@
   background-color: var(--color-bg-secondary);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
-  padding: var(--space-sm);
+  padding: var(--space-md);
   margin-top: var(--space-md);
 }
 
@@ -116,7 +144,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: var(--font-size-xs);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text-secondary);
 }
 
@@ -134,7 +162,7 @@
   background-color: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border-subtle);
   min-height: var(--header-height);
-  padding: var(--space-xs) var(--space-lg);
+  padding: 0 var(--space-xl);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -142,11 +170,19 @@
   position: sticky;
   top: 0;
   z-index: 90;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .header-search-wrap {
   flex: 1;
   max-width: 480px;
+  position: relative;
+}
+
+.header-search-wrap input {
+  width: 100%;
+  min-height: 40px;
+  padding-left: var(--space-md);
 }
 
 .header-actions {
@@ -157,8 +193,8 @@
 
 /* View Container */
 .view-container {
-  padding: var(--space-lg);
-  max-width: 1360px;
+  padding: var(--space-xl);
+  max-width: 1440px;
   width: 100%;
   margin: 0 auto;
   flex: 1;
@@ -189,15 +225,16 @@
 }
 
 .page-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-xl);
   font-weight: 700;
   color: var(--color-text-primary);
+  letter-spacing: -0.01em;
 }
 
 .page-description {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-top: var(--space-2xs);
+  margin-top: 2px;
 }
 
 /* Bottom Navigation for Mobile */
@@ -235,7 +272,9 @@
 }
 
 .mobile-nav-icon {
-  font-size: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ==========================================================================

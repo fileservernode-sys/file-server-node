@@ -47,15 +47,19 @@ const StorageUtils = {
   },
 
   getFileIcon(category, isDir) {
-    if (isDir) return AppIcons.folder;
-    switch (category) {
-      case 'photos': return AppIcons.photo;
-      case 'videos': return AppIcons.video;
-      case 'documents': return AppIcons.document;
-      case 'audio': return AppIcons.audio;
-      case 'archives': return AppIcons.archive;
-      default: return AppIcons.document;
+    let iconSvg = AppIcons.document;
+    if (isDir) iconSvg = AppIcons.folder;
+    else {
+      switch (category) {
+        case 'photos': iconSvg = AppIcons.photo; break;
+        case 'videos': iconSvg = AppIcons.video; break;
+        case 'documents': iconSvg = AppIcons.document; break;
+        case 'audio': iconSvg = AppIcons.audio; break;
+        case 'archives': iconSvg = AppIcons.archive; break;
+        default: iconSvg = AppIcons.document; break;
+      }
     }
+    return `<span class="file-icon-badge">${iconSvg}</span>`;
   }
 };
 
@@ -330,14 +334,14 @@ const MyFilesController = {
     if (!container) return;
 
     const parts = path.split('/').filter(Boolean);
-    let html = `<span class="breadcrumb-item" onclick="MyFilesController.loadDirectory('/')">Root</span>`;
+    let html = `<span class="breadcrumb-item" onclick="MyFilesController.loadDirectory('/')">${AppIcons.home} <span>Root</span></span>`;
     let accum = '';
 
     parts.forEach((p) => {
       accum += '/' + p;
       const target = accum;
       html += `
-        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-separator">${AppIcons.chevronRight}</span>
         <span class="breadcrumb-item" onclick="MyFilesController.loadDirectory('${target}')">${p}</span>
       `;
     });
@@ -349,10 +353,11 @@ const MyFilesController = {
     const container = document.getElementById('file-list-container');
     if (container) {
       container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">${AppIcons.refresh}</div>
-          <div class="empty-title">Loading files...</div>
-          <div class="empty-desc">Accessing Android storage host...</div>
+        <div style="padding: 16px; background-color: var(--color-bg-surface); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md);">
+          <div class="skeleton skeleton-row" style="height: 48px; margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton-row" style="height: 48px; margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton-row" style="height: 48px; margin-bottom: 8px;"></div>
+          <div class="skeleton skeleton-row" style="height: 48px;"></div>
         </div>
       `;
     }
@@ -375,6 +380,19 @@ const MyFilesController = {
   renderFiles(items) {
     const container = document.getElementById('file-list-container');
     if (!container) return;
+
+    // Update view mode toggle active classes
+    const btnList = document.getElementById('btn-view-list');
+    const btnGrid = document.getElementById('btn-view-grid');
+    if (btnList && btnGrid) {
+      if (this.viewMode === 'grid') {
+        btnGrid.classList.add('active');
+        btnList.classList.remove('active');
+      } else {
+        btnList.classList.add('active');
+        btnGrid.classList.remove('active');
+      }
+    }
 
     if (items.length === 0) {
       container.innerHTML = `
@@ -402,7 +420,7 @@ const MyFilesController = {
         const safeName = item.name.replace(/'/g, "\\'");
 
         html += `
-          <div class="file-grid-card">
+          <div class="file-grid-card" id="grid-item-${safePath}">
             <div class="grid-card-preview" onclick="${isDir ? `MyFilesController.loadDirectory('${safePath}')` : `FileManagerHelper.openItem('${safePath}', '${safeName}', '${item.category}')`}">
               ${isImage ? `<img src="${downloadUrl}" alt="${item.name}" loading="lazy" onerror="this.parentElement.innerHTML='${AppIcons.photo.replace(/'/g, "\\'")}'">` : icon}
             </div>
@@ -430,10 +448,10 @@ const MyFilesController = {
         const safeName = item.name.replace(/'/g, "\\'");
 
         html += `
-          <tr>
+          <tr id="row-item-${safePath}">
             <td>
               <div class="file-cell-name" onclick="${isDir ? `MyFilesController.loadDirectory('${safePath}')` : `FileManagerHelper.openItem('${safePath}', '${safeName}', '${item.category}')`}">
-                <span>${icon}</span>
+                ${icon}
                 <span>${item.name}</span>
               </div>
             </td>

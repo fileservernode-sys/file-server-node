@@ -132,13 +132,13 @@
 }
 
 /* ==========================================================================
-   BREADCRUMB & TOOLBAR
+   BREADCRUMB & DESKTOP TOOLBAR
    ========================================================================== */
 .breadcrumb-bar {
   display: flex;
   align-items: center;
   gap: var(--space-2xs);
-  padding: var(--space-sm) var(--space-md);
+  padding: 10px 16px;
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
@@ -146,20 +146,33 @@
   overflow-x: auto;
   white-space: nowrap;
   font-size: var(--font-size-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .breadcrumb-item {
-  color: var(--color-brand-primary);
+  color: var(--color-text-secondary);
   font-weight: 600;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .breadcrumb-item:hover {
-  text-decoration: underline;
+  background-color: var(--color-bg-secondary);
+  color: var(--color-brand-primary);
+  text-decoration: none;
 }
 
 .breadcrumb-separator {
   color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
 }
 
 .file-toolbar {
@@ -167,8 +180,13 @@
   justify-content: space-between;
   align-items: center;
   gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   margin-bottom: var(--space-md);
   flex-wrap: wrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .toolbar-group {
@@ -178,8 +196,26 @@
   flex-wrap: wrap;
 }
 
+.selection-toolbar {
+  background-color: var(--color-brand-light);
+  border: 1px solid var(--color-brand-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.selection-count {
+  font-weight: 700;
+  color: var(--color-brand-primary);
+  font-size: var(--font-size-sm);
+}
+
 /* ==========================================================================
-   MY FILES — LIST VIEW & GRID VIEW
+   MY FILES — DESKTOP LIST VIEW & GRID VIEW
    ========================================================================== */
 /* List View (Table Format) */
 .file-table-wrap {
@@ -187,6 +223,7 @@
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-md);
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .file-table {
@@ -198,26 +235,40 @@
 
 .file-table th {
   background-color: var(--color-bg-secondary);
-  padding: var(--space-sm) var(--space-md);
-  font-weight: 600;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--color-text-secondary);
   border-bottom: 1px solid var(--color-border-subtle);
   user-select: none;
 }
 
 .file-table td {
-  padding: var(--space-sm) var(--space-md);
+  padding: 12px 16px;
   border-bottom: 1px solid var(--color-border-subtle);
   color: var(--color-text-primary);
   vertical-align: middle;
+  height: 56px;
+  box-sizing: border-box;
 }
 
 .file-table tr:last-child td {
   border-bottom: none;
 }
 
+.file-table tr {
+  transition: background-color 0.12s ease;
+}
+
 .file-table tr:hover td {
   background-color: var(--color-bg-secondary);
+}
+
+.file-table tr.selected td {
+  background-color: var(--color-brand-light);
+  border-bottom-color: var(--color-brand-subtle);
 }
 
 .file-cell-name {
@@ -226,10 +277,22 @@
   gap: var(--space-sm);
   font-weight: 600;
   cursor: pointer;
+  color: var(--color-text-primary);
 }
 
 .file-cell-name:hover {
   color: var(--color-brand-primary);
+}
+
+.file-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 /* Grid View (Card Grid) */
@@ -250,21 +313,28 @@
   gap: var(--space-sm);
   transition: all 0.15s ease-in-out;
   cursor: pointer;
+  position: relative;
 }
 
 .file-grid-card:hover {
   border-color: var(--color-brand-primary);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.file-grid-card.selected {
+  border-color: var(--color-brand-primary);
+  background-color: var(--color-brand-light);
+  box-shadow: 0 0 0 2px var(--color-brand-primary);
 }
 
 .grid-card-preview {
-  height: 100px;
+  height: 110px;
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
   overflow: hidden;
 }
 
