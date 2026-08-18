@@ -3,8 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="RemoteNode documentation center, setup guides, device management instructions, and troubleshooting resources.">
-  <title>Documentation | RemoteNode — Personal File Server</title>
+  <meta name="description" content="RemoteNode technical documentation center: Android phone server installation guides, storage permissions, 5-device pairing limits, security credentials, and troubleshooting.">
+  <meta name="keywords" content="RemoteNode documentation, Android server guide, phone file server docs, self-hosted storage hub, mobile NAS documentation">
+  <title>Documentation Hub & Knowledge Base | RemoteNode — Personal File Server</title>
+
+  <!-- Canonical URL & Open Graph SEO -->
+  <link rel="canonical" href="https://remotenode.net/documentation">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Documentation Hub & Knowledge Base | RemoteNode">
+  <meta property="og:description" content="Comprehensive technical guides for provisioning, securing, and managing your personal Android phone servers.">
+  <meta property="og:url" content="https://remotenode.net/documentation">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Documentation Hub & Knowledge Base | RemoteNode">
+  <meta name="twitter:description" content="Complete setup, security, and troubleshooting documentation for RemoteNode personal storage nodes.">
+
+  <!-- TechArticle JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "RemoteNode Technical Documentation & Platform Knowledge Base",
+    "description": "Guides and references for Android file server provisioning, storage permissions, gateway routing, and credential security.",
+    "articleSection": "Documentation",
+    "inLanguage": "en"
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -16,32 +41,70 @@
   <!-- HEADER -->
   <header class="site-header" id="header">
     <div class="container header-container">
-      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-      <nav class="desktop-nav">
+      
+      <!-- Brand Logo / Text Mark -->
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Main Navigation">
         <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
-        <a href="documentation.html" class="nav-link is-active">Documentation</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
         <a href="pricing.html" class="nav-link">Pricing</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
+
+      <!-- Desktop Header Actions -->
       <div class="header-actions">
-        <a href="login.html" class="btn btn-ghost">Sign In</a>
-        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+        <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
-      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
+
     </div>
   </header>
 
   <!-- MOBILE DRAWER -->
   <div class="drawer-backdrop" aria-hidden="true"></div>
-  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
     <div class="drawer-header">
-      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
-      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div class="drawer-nav-list">
       <a href="product.html" class="drawer-nav-link">Product</a>
@@ -52,9 +115,9 @@
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
     </div>
-    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
-      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
-      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
     </div>
   </aside>
 
@@ -68,9 +131,9 @@
       </div>
       <div class="page-header-content">
         <div class="page-header-eyebrow"><span class="badge badge-accent">Help Center & Guides</span></div>
-        <h1 class="page-header-title">Documentation Hub</h1>
+        <h1 class="page-header-title">Documentation & Knowledge Base</h1>
         <p class="page-header-subtitle">
-          Everything you need to know about setting up your account, configuring your Android phone, and managing remote storage.
+          Comprehensive setup guides, Android app installation tutorials, storage permission walkthroughs, and troubleshooting instructions.
         </p>
       </div>
     </div>
@@ -83,70 +146,106 @@
         <div class="grid-3-col">
           
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="10 8 16 12 10 16 10 8"></polygon>
+              </svg>
+            </div>
             <h3 class="card-title">Getting Started</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Core guides for account setup and initial app installation.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ Creating your platform account</a></li>
-              <li><a href="#" class="nav-link">➔ Installing the Flutter Android app</a></li>
-              <li><a href="#" class="nav-link">➔ Linking your Android device</a></li>
-              <li><a href="#" class="nav-link">➔ Creating file server credentials</a></li>
-              <li><a href="#" class="nav-link">➔ Starting Server Mode</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating your platform account</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Installing the Flutter Android app</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Linking your Android device</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating file server credentials</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Starting Server Mode</a></li>
             </ul>
           </div>
 
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
             <h3 class="card-title">Using Your File Server</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Guides for managing files via the in-built web file manager.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ Browsing directories & storage stats</a></li>
-              <li><a href="#" class="nav-link">➔ Uploading & downloading files</a></li>
-              <li><a href="#" class="nav-link">➔ Creating, moving & deleting folders</a></li>
-              <li><a href="#" class="nav-link">➔ Viewing photos & streaming videos</a></li>
-              <li><a href="#" class="nav-link">➔ Managing permitted storage locations</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Browsing directories & storage stats</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Uploading & downloading files</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating, moving & deleting folders</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Viewing photos & streaming videos</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Managing permitted storage locations</a></li>
             </ul>
           </div>
 
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
             <h3 class="card-title">Remote Access</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Understanding connection states and routing endpoints.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ How gateway outbound routing works</a></li>
-              <li><a href="#" class="nav-link">➔ Server status indicators explained</a></li>
-              <li><a href="#" class="nav-link">➔ Resolving assigned subdomains</a></li>
-              <li><a href="#" class="nav-link">➔ Connection stability tips</a></li>
+              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> How gateway outbound routing works</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Server status indicators explained</a></li>
+              <li><a href="server-access.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Resolving assigned subdomains</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Connection stability tips</a></li>
             </ul>
           </div>
 
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
             <h3 class="card-title">Android Device Setup</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Optimizing Android storage and background execution.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ Granting storage permissions</a></li>
-              <li><a href="#" class="nav-link">➔ Disabling battery saver optimizations</a></li>
-              <li><a href="#" class="nav-link">➔ Autostart & background execution</a></li>
-              <li><a href="#" class="nav-link">➔ Handling low-storage conditions</a></li>
+              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Granting storage permissions</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Disabling battery saver optimizations</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Autostart & background execution</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Handling low-storage conditions</a></li>
             </ul>
           </div>
 
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
             <h3 class="card-title">Troubleshooting</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Diagnosing offline statuses and network errors.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ Server showing OFFLINE state</a></li>
-              <li><a href="#" class="nav-link">➔ Gateway connection timeouts</a></li>
-              <li><a href="#" class="nav-link">➔ Invalid file-server password</a></li>
-              <li><a href="#" class="nav-link">➔ Unstable Wi-Fi reconnect sequence</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Server showing OFFLINE state</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Gateway connection timeouts</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Invalid file-server password</a></li>
+              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Unstable Wi-Fi reconnect sequence</a></li>
             </ul>
           </div>
 
           <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
             <h3 class="card-title">Security & Privacy</h3>
             <p class="card-description" style="margin-bottom: var(--space-md);">Overview of data isolation and authentication separation.</p>
             <ul class="footer-link-list">
-              <li><a href="#" class="nav-link">➔ Platform Account vs File-Server Auth</a></li>
-              <li><a href="#" class="nav-link">➔ Local storage security model</a></li>
-              <li><a href="#" class="nav-link">➔ Revoking registered devices</a></li>
-              <li><a href="#" class="nav-link">➔ Path traversal protection standards</a></li>
+              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Platform Account vs File-Server Auth</a></li>
+              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Local storage security model</a></li>
+              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Revoking registered devices</a></li>
+              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Path traversal protection standards</a></li>
             </ul>
           </div>
 
@@ -167,35 +266,54 @@
   </main>
 
   <!-- FOOTER -->
+  <!-- FOOTER -->
   <footer class="site-footer">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
         </div>
+
         <div>
           <h4 class="footer-col-title">Product</h4>
           <ul class="footer-link-list">
             <li><a href="product.html" class="footer-link">Product Overview</a></li>
             <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
             <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Company</h4>
           <ul class="footer-link-list">
-            <li><a href="about.html" class="footer-link">About Us</a></li>
-            <li><a href="contact.html" class="footer-link">Contact</a></li>
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Legal</h4>
           <ul class="footer-link-list">
@@ -204,8 +322,10 @@
           </ul>
         </div>
       </div>
+
       <div class="footer-bottom">
         <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
     </div>
   </footer>

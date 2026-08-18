@@ -1,5 +1,6 @@
 /* ==========================================================================
-   BASE STYLES - RESET & TYPOGRAPHY FOUNDATIONS
+   BASE STYLES - RESET, TYPOGRAPHY FOUNDATIONS & GLOBAL UTILITIES
+   Phase MW-1 — Batch MW-1.2: Premium Design System Foundation
    ========================================================================== */
 
 *, *::before, *::after {
@@ -12,75 +13,82 @@ html {
   font-size: 100%;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-body);
   color: var(--color-text-secondary);
-  background-color: var(--color-background);
+  background-color: var(--color-bg-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-/* Headings */
+/* Headings Hierarchy */
 h1, h2, h3, h4, h5, h6 {
   color: var(--color-text-primary);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-heading);
-  letter-spacing: -0.02em;
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 h1 {
-  font-size: var(--font-size-4xl);
+  font-size: var(--font-size-h1);
   font-weight: var(--font-weight-bold);
-  letter-spacing: -0.03em;
+  letter-spacing: var(--letter-spacing-tight);
 }
 
 h2 {
-  font-size: var(--font-size-3xl);
-  letter-spacing: -0.025em;
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-heading);
 }
 
 h3 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-semibold);
 }
 
 h4 {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-h4);
+  font-weight: var(--font-weight-semibold);
 }
 
 p {
   margin-bottom: var(--space-md);
+  color: var(--color-text-secondary);
 }
 
 p:last-child {
   margin-bottom: 0;
 }
 
-/* Links */
+/* Global Link States */
 a {
-  color: var(--color-accent);
+  color: var(--color-brand-accent);
   text-decoration: none;
-  transition: color var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-accent-hover);
+  color: var(--color-brand-accent-hover);
 }
 
-/* Accessible Focus States */
+/* Accessible Focus Ring */
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-border-focus);
   outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
 /* Form Defaults */
 input, button, select, textarea {
-  font: inherit;
+  font-family: inherit;
+  font-size: inherit;
   color: inherit;
 }
 
@@ -90,25 +98,126 @@ button {
   background: none;
 }
 
-/* Images & Media */
+/* Media & SVG Reset */
 img, svg {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* Lists */
+/* Lists Reset */
 ul, ol {
   list-style: none;
 }
 
-/* Code */
-code, pre {
+/* --------------------------------------------------------------------------
+   TECHNICAL & MONOSPACE TYPOGRAPHY
+   -------------------------------------------------------------------------- */
+code, pre, kbd, .tech-text, .server-id, .endpoint-url, .mono-number, .step-number {
   font-family: var(--font-family-mono);
-  font-size: 0.9em;
+  font-size: var(--font-size-technical);
+  letter-spacing: var(--letter-spacing-mono);
 }
 
-/* Utilities */
+code {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-primary);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+
+pre {
+  background-color: var(--color-brand-primary);
+  color: var(--color-text-on-dark);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+}
+
+/* --------------------------------------------------------------------------
+   LUCIDE SVG ICON SYSTEM FOUNDATION
+   Monochrome, 24x24 box model, 2px stroke weight, currentColor fill
+   -------------------------------------------------------------------------- */
+.icon {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  stroke-width: var(--icon-stroke-width);
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.icon-sm {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+.icon-md {
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+}
+
+.icon-lg {
+  width: var(--icon-size-lg);
+  height: var(--icon-size-lg);
+}
+
+.icon-xl {
+  width: var(--icon-size-xl);
+  height: var(--icon-size-xl);
+}
+
+.icon-inline {
+  margin-right: var(--space-xs);
+}
+
+/* --------------------------------------------------------------------------
+   ACCESSIBILITY: PREFERS-REDUCED-MOTION
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   SUBTLE CUSTOM SCROLLBAR
+   -------------------------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-subtle);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Global Hidden Utility */
 .hidden {
   display: none !important;
 }
+

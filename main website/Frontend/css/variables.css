@@ -1,78 +1,19 @@
 /* ==========================================================================
-   DESIGN SYSTEM TOKENS - REMOTE ANDROID PERSONAL FILE SERVER PLATFORM
-   Shared Design Token Architecture for Main Website, App & File Manager
+   REMOTE NODE DESIGN SYSTEM TOKENS
+   Phase MW-1 — Batch MW-1.2: Premium Design System Foundation
    ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. GOOGLE FONTS IMPORT (Plus Jakarta Sans & JetBrains Mono)
+   -------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
 
 :root {
   /* ------------------------------------------------------------------------
-     1. COLOR PALETTE (Light / Minimalist / Luxury Tech)
+     1. TYPOGRAPHY SYSTEM
      ------------------------------------------------------------------------ */
-  /* Brand Core */
-  --color-primary: #0F172A;            /* Deep Slate Navy (High Contrast) */
-  --color-primary-hover: #1E293B;      /* Slate Hover */
-  --color-primary-light: #F8FAFC;      /* Subtle tint surface */
-  --color-accent: #2563EB;             /* Refined Royal Blue Accent */
-  --color-accent-hover: #1D4ED8;       /* Deep Accent Hover */
-  --color-accent-subtle: #EFF6FF;      /* Light Blue Pill Fill */
-
-  /* Neutral Backgrounds & Surfaces */
-  --color-background: #FAFAFC;        /* Soft Off-White Page Canvas */
-  --color-surface: #FFFFFF;           /* Crisp White Surface */
-  --color-surface-secondary: #F1F5F9; /* Elevated Neutral Surface */
-  --color-surface-tertiary: #E2E8F0;  /* Subtle Grid/Card Fill */
-
-  /* Text & Content Hierarchy */
-  --color-text-primary: #0F172A;      /* Primary Headings / Body High Contrast */
-  --color-text-secondary: #475569;    /* Body Standard / Paragraphs */
-  --color-text-muted: #64748B;        /* Helper Text / Subtitles */
-  --color-text-subtle: #94A3B8;       /* Placeholders / De-emphasized */
-
-  /* Borders & Dividers */
-  --color-border: #E2E8F0;            /* Default Container Border */
-  --color-border-subtle: #F1F5F9;     /* Light Inner Divider */
-  --color-border-hover: #CBD5E1;      /* Hover State Border */
-
-  /* Status Tokens (Accessible Color + Text + Icon combo) */
-  --color-online: #059669;            /* Emerald Green - Server Online */
-  --color-online-bg: #ECFDF5;
-  --color-offline: #64748B;           /* Neutral Slate - Server Offline */
-  --color-offline-bg: #F1F5F9;
-  --color-connecting: #D97706;        /* Amber - Connecting / Syncing */
-  --color-connecting-bg: #FFFBEB;
-  --color-reconnecting: #D97706;      /* Amber - Reconnecting */
-  --color-reconnecting-bg: #FFFBEB;
-
-  --color-success: #059669;           /* Emerald Green */
-  --color-success-bg: #ECFDF5;
-  --color-warning: #D97706;           /* Amber */
-  --color-warning-bg: #FFFBEB;
-  --color-error: #DC2626;             /* Crimson Red */
-  --color-error-bg: #FEF2F2;
-  --color-info: #2563EB;              /* Blue Info */
-  --color-info-bg: #EFF6FF;
-
-  /* ------------------------------------------------------------------------
-     2. TYPOGRAPHY SYSTEM
-     ------------------------------------------------------------------------ */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  /* Font Sizes */
-  --font-size-xs: 0.75rem;    /* 12px - Captions / Micro badging */
-  --font-size-sm: 0.875rem;   /* 14px - Helper text / Small buttons */
-  --font-size-md: 1rem;       /* 16px - Base Body Text */
-  --font-size-lg: 1.125rem;   /* 18px - Body Large / Subtitles */
-  --font-size-xl: 1.25rem;    /* 20px - Card Headings / H4 */
-  --font-size-2xl: 1.5rem;    /* 24px - Section H3 */
-  --font-size-3xl: 2rem;      /* 32px - Section H2 */
-  --font-size-4xl: 2.5rem;    /* 40px - Main H1 */
-  --font-size-5xl: 3.25rem;   /* 52px - Hero Display Title */
-
-  /* Line Heights */
-  --line-height-tight: 1.15;
-  --line-height-heading: 1.25;
-  --line-height-body: 1.6;
-  --line-height-relaxed: 1.75;
+  --font-family-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Font Weights */
   --font-weight-regular: 400;
@@ -80,8 +21,118 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
+  /* Semantic Typography Scale */
+  --font-size-display: clamp(2.75rem, 5vw, 4rem);      /* 44px - 64px Hero Display */
+  --font-size-h1: clamp(2.25rem, 4vw, 3.25rem);       /* 36px - 52px Page H1 */
+  --font-size-h2: clamp(1.75rem, 3vw, 2.375rem);      /* 28px - 38px Section H2 */
+  --font-size-h3: clamp(1.375rem, 2vw, 1.75rem);      /* 22px - 28px Section H3 */
+  --font-size-h4: 1.25rem;                           /* 20px Card Title / H4 */
+  --font-size-body-lg: 1.125rem;                     /* 18px Body Large / Subtitles */
+  --font-size-body: 1rem;                            /* 16px Base Body Text */
+  --font-size-body-sm: 0.875rem;                     /* 14px Helper Text / Controls */
+  --font-size-caption: 0.75rem;                      /* 12px Micro Badges / Captions */
+  --font-size-technical: 0.875rem;                    /* 14px Monospace Values */
+
+  /* Legacy Scale Backward Compatibility Aliases */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+  --font-size-5xl: 3.25rem;
+
+  /* Line Heights */
+  --line-height-tight: 1.15;
+  --line-height-heading: 1.25;
+  --line-height-body: 1.6;
+  --line-height-relaxed: 1.75;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.035em;
+  --letter-spacing-heading: -0.025em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-mono: -0.01em;
+
   /* ------------------------------------------------------------------------
-     3. SPACING SCALE (8-pt Grid System)
+     2. COLOR PALETTE & SEMANTIC TOKENS
+     ------------------------------------------------------------------------ */
+  /* Brand Core Tokens */
+  --color-brand-primary: #0F172A;        /* Slate Navy 900 */
+  --color-brand-primary-hover: #1E293B;  /* Slate Navy 800 */
+  --color-brand-accent: #2563EB;         /* Royal Indigo 600 */
+  --color-brand-accent-hover: #1D4ED8;   /* Royal Indigo 700 */
+  --color-brand-accent-subtle: #EFF6FF;  /* Royal Indigo Tint 50 */
+
+  /* Backgrounds & Surfaces */
+  --color-bg-page: #F8FAFC;            /* Soft Off-White Canvas */
+  --color-bg-surface: #FFFFFF;         /* Crisp White Surface */
+  --color-bg-subtle: #F1F5F9;          /* Neutral Container Fill */
+  --color-bg-tertiary: #E2E8F0;        /* Subtle Border/Grid Fill */
+  --color-bg-elevated: #FFFFFF;        /* Elevated Floating Surface */
+
+  /* Text & Content Hierarchy */
+  --color-text-primary: #0F172A;      /* Primary Headings & High Contrast Text */
+  --color-text-secondary: #334155;    /* High-legibility Body Text */
+  --color-text-muted: #64748B;        /* Subtitles, Captions & Labels */
+  --color-text-subtle: #94A3B8;       /* Placeholders & De-emphasized Text */
+  --color-text-on-dark: #FFFFFF;      /* Inverted High-Contrast Text */
+
+  /* Borders & Dividers */
+  --color-border: #E2E8F0;            /* Default Container Border */
+  --color-border-subtle: #F1F5F9;     /* Light Inner Divider */
+  --color-border-hover: #CBD5E1;      /* Hover State Border */
+  --color-border-focus: #2563EB;      /* Accessible Focus Border */
+
+  /* Semantic Status & Alert Tokens */
+  --color-status-online: #059669;        /* Emerald Green 600 */
+  --color-status-online-bg: #ECFDF5;     /* Emerald Green Tint 50 */
+  --color-status-offline: #64748B;       /* Slate 500 */
+  --color-status-offline-bg: #F1F5F9;    /* Slate Tint 100 */
+  --color-status-connecting: #D97706;    /* Amber 600 */
+  --color-status-connecting-bg: #FFFBEB; /* Amber Tint 50 */
+  --color-status-error: #DC2626;         /* Crimson Red 600 */
+  --color-status-error-bg: #FEF2F2;      /* Crimson Red Tint 50 */
+  --color-status-success: #059669;       /* Emerald Green 600 */
+  --color-status-success-bg: #ECFDF5;
+  --color-status-warning: #D97706;       /* Amber 600 */
+  --color-status-warning-bg: #FFFBEB;
+  --color-status-info: #2563EB;          /* Royal Blue 600 */
+  --color-status-info-bg: #EFF6FF;
+
+  /* Backward Compatibility Aliases */
+  --color-primary: var(--color-brand-primary);
+  --color-primary-hover: var(--color-brand-primary-hover);
+  --color-primary-light: #F8FAFC;
+  --color-accent: var(--color-brand-accent);
+  --color-accent-hover: var(--color-brand-accent-hover);
+  --color-accent-subtle: var(--color-brand-accent-subtle);
+  --color-background: var(--color-bg-page);
+  --color-surface: var(--color-bg-surface);
+  --color-surface-secondary: var(--color-bg-subtle);
+  --color-surface-tertiary: var(--color-bg-tertiary);
+  --color-online: var(--color-status-online);
+  --color-online-bg: var(--color-status-online-bg);
+  --color-offline: var(--color-status-offline);
+  --color-offline-bg: var(--color-status-offline-bg);
+  --color-connecting: var(--color-status-connecting);
+  --color-connecting-bg: var(--color-status-connecting-bg);
+  --color-reconnecting: var(--color-status-connecting);
+  --color-reconnecting-bg: var(--color-status-connecting-bg);
+  --color-success: var(--color-status-success);
+  --color-success-bg: var(--color-status-success-bg);
+  --color-warning: var(--color-status-warning);
+  --color-warning-bg: var(--color-status-warning-bg);
+  --color-error: var(--color-status-error);
+  --color-error-bg: var(--color-status-error-bg);
+  --color-info: var(--color-status-info);
+  --color-info-bg: var(--color-status-info-bg);
+
+  /* ------------------------------------------------------------------------
+     3. SPACING SCALE (Strict 8-pt / 4-pt Grid System)
      ------------------------------------------------------------------------ */
   --space-2xs: 0.25rem;  /* 4px */
   --space-xs: 0.5rem;    /* 8px */
@@ -94,27 +145,46 @@
   --space-4xl: 6rem;     /* 96px */
 
   /* ------------------------------------------------------------------------
-     4. ELEVATION & SHADOWS (Restrained Luxury Depth)
+     4. BORDER RADIUS SYSTEM
      ------------------------------------------------------------------------ */
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-
-  /* ------------------------------------------------------------------------
-     5. BORDER RADII
-     ------------------------------------------------------------------------ */
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 24px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
   --radius-full: 9999px;
 
   /* ------------------------------------------------------------------------
-     6. TRANSITIONS & Z-INDEX
+     5. ELEVATION & SHADOW SYSTEM (Refined Slate Ambient Shadows)
+     ------------------------------------------------------------------------ */
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 8px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 20px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 24px 32px -8px rgba(15, 23, 42, 0.1), 0 8px 12px -4px rgba(15, 23, 42, 0.04);
+
+  /* ------------------------------------------------------------------------
+     6. BORDER TOKENS
+     ------------------------------------------------------------------------ */
+  --border-width-thin: 1px;
+  --border-style-default: solid;
+
+  /* ------------------------------------------------------------------------
+     7. ICON SYSTEM TOKENS (Lucide SVG Specification)
+     ------------------------------------------------------------------------ */
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
+  --icon-size-xl: 32px;
+  --icon-stroke-width: 2px;
+
+  /* ------------------------------------------------------------------------
+     8. TRANSITIONS, MOTION & Z-INDEX
      ------------------------------------------------------------------------ */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
   --z-header: 100;
   --z-overlay: 200;
@@ -123,9 +193,10 @@
   --z-toast: 500;
 
   /* ------------------------------------------------------------------------
-     7. CONTAINER WIDTHS
+     9. CONTAINER WIDTHS
      ------------------------------------------------------------------------ */
   --container-max-width: 1200px;
   --container-wide-max-width: 1400px;
   --container-narrow-max-width: 800px;
 }
+

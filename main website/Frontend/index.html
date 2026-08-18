@@ -24,13 +24,23 @@
   <!-- =========================================================================
        HEADER & NAVIGATION
        ========================================================================= -->
+  <!-- =========================================================================
+       HEADER & NAVIGATION
+       ========================================================================= -->
   <header class="site-header" id="header">
     <div class="container header-container">
       
-      <!-- Brand Logo / Text Mark Placeholder -->
+      <!-- Brand Logo / Text Mark -->
       <a href="index.html" class="brand-mark" aria-label="RemoteNode Homepage">
-        <span class="brand-icon">RN</span>
-        <span>RemoteNode</span>
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
       </a>
 
       <!-- Desktop Navigation -->
@@ -46,13 +56,13 @@
 
       <!-- Desktop Header Actions -->
       <div class="header-actions">
-        <a href="pages/login.html" class="btn btn-ghost">Sign In</a>
-        <a href="pages/get-started.html" class="btn btn-primary">Get Started</a>
+        <a href="pages/login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
+        <a href="pages/get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
 
       <!-- Mobile Menu Toggle Button -->
-      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
@@ -64,14 +74,21 @@
 
   <!-- Mobile Drawer & Backdrop -->
   <div class="drawer-backdrop" aria-hidden="true"></div>
-  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
     <div class="drawer-header">
-      <span class="brand-mark">
-        <span class="brand-icon">RN</span>
-        <span>RemoteNode</span>
-      </span>
-      <button class="btn btn-ghost drawer-close-btn" aria-label="Close Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <a href="index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -86,9 +103,9 @@
       <a href="pages/contact.html" class="drawer-nav-link">Contact</a>
       <a href="pages/faq.html" class="drawer-nav-link">FAQ</a>
     </div>
-    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
-      <a href="pages/login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
-      <a href="pages/get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    <div class="drawer-actions">
+      <a href="pages/login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="pages/get-started.html" class="btn btn-primary btn-block">Get Started</a>
     </div>
   </aside>
 
@@ -102,12 +119,13 @@
         <div class="hero-content">
           <div class="hero-eyebrow">
             <span class="badge badge-accent">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
               </svg>
-              Personal Cloud Infrastructure
+              Personal Remote Cloud Infrastructure
             </span>
           </div>
 
@@ -120,16 +138,16 @@
           </p>
 
           <div class="hero-cta-group">
-            <a href="#get-started" class="btn btn-primary btn-lg">Get Started</a>
-            <a href="#how-it-works" class="btn btn-secondary btn-lg">See How It Works</a>
+            <a href="pages/get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="pages/how-it-works.html" class="btn btn-secondary btn-lg">See How It Works</a>
           </div>
 
           <div class="hero-trust-note">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
-            <span>Files remain strictly on your Android device storage. No complex router setup needed.</span>
+            <span>Files remain strictly on your Android device storage. Outbound secure gateway.</span>
           </div>
         </div>
 
@@ -141,20 +159,20 @@
               <span class="window-dot"></span>
               <span class="window-dot"></span>
             </div>
-            <span class="badge badge-subtle">Remote Architecture Overview</span>
+            <span class="badge badge-subtle">Live Architecture Node Status</span>
           </div>
 
           <div class="visual-flow-card">
             <div class="visual-flow-node">
               <div class="visual-flow-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                   <line x1="12" y1="18" x2="12.01" y2="18"></line>
                 </svg>
               </div>
               <div>
-                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Android Storage Host</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Primary Data Host</span>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Android Storage Host Node</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Primary Physical Storage Host</span>
               </div>
             </div>
             <span class="status-indicator status-online">
@@ -166,13 +184,13 @@
           <div class="visual-flow-card">
             <div class="visual-flow-node">
               <div class="visual-flow-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
               </div>
               <div>
-                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Outbound Secure Tunnel</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Encrypted Gateway Connection</span>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Outbound Gateway Relay</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">TLS Encrypted Relay Tunnel</span>
               </div>
             </div>
             <span class="status-indicator status-connecting">
@@ -184,7 +202,7 @@
           <div class="visual-flow-card">
             <div class="visual-flow-node">
               <div class="visual-flow-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="2" y1="12" x2="22" y2="12"></line>
                   <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
@@ -192,7 +210,7 @@
               </div>
               <div>
                 <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Remote Web File Manager</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Access Anywhere via Browser</span>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Accessible Anywhere via Browser</span>
               </div>
             </div>
             <span class="badge badge-accent">HTTPS</span>
@@ -214,23 +232,36 @@
           </div>
           <h2 class="section-title">How your old phone becomes a personal server</h2>
           <p class="section-subtitle">
-            The platform provides the intelligent software and secure connectivity around your hardware so your files remain local and accessible.
+            The platform provides intelligent software and secure connectivity around your hardware so your files remain local and accessible.
           </p>
         </div>
 
         <div class="concept-flow-wrapper">
           <div class="concept-node">
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">01. Android Phone</strong>
+            <span class="component-pill-header">STAGE 01</span>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Android Phone</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Unused / Old Device</span>
           </div>
-          <div class="concept-arrow">➔</div>
+          <div class="concept-arrow">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
           <div class="concept-node">
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">02. Install App</strong>
+            <span class="component-pill-header">STAGE 02</span>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Install App</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Flutter Server App</span>
           </div>
-          <div class="concept-arrow">➔</div>
+          <div class="concept-arrow">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
           <div class="concept-node">
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">03. Outbound Link</strong>
+            <span class="component-pill-header">STAGE 03</span>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Outbound Link</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Secure Gateway Tunnel</span>
           </div>
         </div>
@@ -308,7 +339,7 @@
         <div class="grid-3-col">
           <div class="card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                 <line x1="12" y1="18" x2="12.01" y2="18"></line>
               </svg>
@@ -319,7 +350,7 @@
 
           <div class="card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -331,7 +362,7 @@
 
           <div class="card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="2" y1="12" x2="22" y2="12"></line>
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
@@ -363,19 +394,19 @@
 
         <div class="components-card-grid">
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 01</span>
-            <h3 class="card-title">Main Website</h3>
+            <span class="component-pill-header">PILLAR 01</span>
+            <h3 class="card-title">Main Control Website</h3>
             <p class="card-description">The platform control plane for account management, email verification, documentation, device status monitoring, and server discovery.</p>
           </div>
 
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 02</span>
+            <span class="component-pill-header">PILLAR 02</span>
             <h3 class="card-title">Android Application</h3>
             <p class="card-description">The Flutter device management application running on your phone to configure credentials, start Server Mode, and maintain gateway health.</p>
           </div>
 
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 03</span>
+            <span class="component-pill-header">PILLAR 03</span>
             <h3 class="card-title">In-Built File Manager</h3>
             <p class="card-description">An ultra-lightweight file management website served directly from your Android phone for browsing, uploading, downloading, and media playback.</p>
           </div>
@@ -403,7 +434,7 @@
         <div class="grid-4-col">
           <div class="card feature-card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
               </svg>
             </div>
@@ -413,7 +444,7 @@
 
           <div class="card feature-card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                 <circle cx="8.5" cy="8.5" r="1.5"></circle>
                 <polyline points="21 15 16 10 5 21"></polyline>
@@ -425,7 +456,7 @@
 
           <div class="card feature-card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
               </svg>
             </div>
@@ -435,7 +466,7 @@
 
           <div class="card feature-card card-hover">
             <div class="feature-icon-wrapper">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
               </svg>
             </div>
@@ -466,7 +497,11 @@
 
           <div class="security-points-list">
             <div class="security-point-item">
-              <div class="security-check-icon">✓</div>
+              <div class="security-check-icon">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
               <div>
                 <strong style="color: var(--color-text-primary);">Local Storage Ownership:</strong>
                 <span style="color: var(--color-text-secondary);"> Your files reside on your phone's storage media. The central cloud plane holds metadata and endpoint mapping only.</span>
@@ -474,7 +509,11 @@
             </div>
 
             <div class="security-point-item">
-              <div class="security-check-icon">✓</div>
+              <div class="security-check-icon">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
               <div>
                 <strong style="color: var(--color-text-primary);">Outbound Secure Architecture:</strong>
                 <span style="color: var(--color-text-secondary);"> Android servers connect outbound to our gateway, removing the risk of open router ports and exposed home networks.</span>
@@ -482,7 +521,11 @@
             </div>
 
             <div class="security-point-item">
-              <div class="security-check-icon">✓</div>
+              <div class="security-check-icon">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
               <div>
                 <strong style="color: var(--color-text-primary);">Strict Credential Separation:</strong>
                 <span style="color: var(--color-text-secondary);"> Platform authentication manages device registration; dedicated server credentials authorize file operations.</span>
@@ -509,7 +552,7 @@
           </div>
           <div style="background-color: rgba(255, 255, 255, 0.08); padding: var(--space-xl); border-radius: var(--radius-lg); text-align: center;">
             <span style="font-size: var(--font-size-3xl); font-weight: bold; color: #10B981; display: block; margin-bottom: var(--space-xs);">100% Useful</span>
-            <span style="font-size: var(--font-size-sm); color: var(--color-surface-secondary);">Eco-friendly hardware repurposing for home infrastructure.</span>
+            <span style="font-size: var(--font-size-sm); color: #94A3B8;">Eco-friendly hardware repurposing for home infrastructure.</span>
           </div>
         </div>
 
@@ -546,8 +589,8 @@
           </div>
           <span class="equation-operator">=</span>
           <div class="equation-box" style="background-color: var(--color-accent-subtle); border-color: rgba(37, 99, 235, 0.3);">
-            <strong style="display: block; color: var(--color-accent);">PERSONAL FILE SERVER</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-accent);">Remote Access</span>
+            <strong style="display: block; color: var(--color-brand-primary);">PERSONAL FILE SERVER</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-brand-primary);">Remote Access</span>
           </div>
         </div>
 
@@ -614,12 +657,12 @@
       <div class="container">
         
         <div class="pricing-preview-card">
-          <span class="badge badge-accent" style="margin-bottom: var(--space-md);">Flexible Plans</span>
-          <h2 class="section-title">Plans designed for different storage and usage needs</h2>
+          <span class="badge badge-accent" style="margin-bottom: var(--space-md);">Free Community Tier</span>
+          <h2 class="section-title">Zero Monthly Storage Fees</h2>
           <p class="section-subtitle" style="margin-bottom: var(--space-xl);">
-            Transparent pricing options will be announced as gateway scaling tiers open.
+            Host up to 5 paired Android phone servers for free without monthly storage fees.
           </p>
-          <a href="#get-started" class="btn btn-primary btn-lg">Join Early Access Waitlist</a>
+          <a href="pages/pricing.html" class="btn btn-primary btn-lg">View Full Pricing Tiers</a>
         </div>
 
       </div>
@@ -638,16 +681,48 @@
             <p class="section-subtitle" style="margin-bottom: var(--space-lg);">
               Explore step-by-step guides on installing the Android app, granting storage permissions, configuring server credentials, and troubleshooting connection states.
             </p>
-            <a href="#explore-docs" class="btn btn-secondary">Explore Documentation</a>
+            <a href="pages/documentation.html" class="btn btn-secondary">Explore Documentation</a>
           </div>
 
           <div class="card">
             <h3 class="card-title">Popular Setup Guides</h3>
             <ul style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md);">
-              <li><a href="#" class="nav-link">➔ Android App Installation & Initial Setup</a></li>
-              <li><a href="#" class="nav-link">➔ Creating Dedicated File Server Credentials</a></li>
-              <li><a href="#" class="nav-link">➔ Understanding Gateway Connection Statuses</a></li>
-              <li><a href="#" class="nav-link">➔ Battery Optimization & Background Execution Guide</a></li>
+              <li>
+                <a href="pages/documentation.html" class="nav-link" style="display: flex; align-items: center; gap: 8px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <span>Android App Installation & Initial Setup</span>
+                </a>
+              </li>
+              <li>
+                <a href="pages/documentation.html" class="nav-link" style="display: flex; align-items: center; gap: 8px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <span>Creating Dedicated File Server Credentials</span>
+                </a>
+              </li>
+              <li>
+                <a href="pages/documentation.html" class="nav-link" style="display: flex; align-items: center; gap: 8px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <span>Understanding Gateway Connection Statuses</span>
+                </a>
+              </li>
+              <li>
+                <a href="pages/documentation.html" class="nav-link" style="display: flex; align-items: center; gap: 8px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                  <span>Battery Optimization & Background Execution Guide</span>
+                </a>
+              </li>
             </ul>
           </div>
         </div>
@@ -667,30 +742,35 @@
             Start transforming your spare Android smartphone into a secure, self-hosted, remotely accessible personal cloud file server today.
           </p>
           <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
-            <a href="#register" class="btn btn-primary btn-lg">Get Started Free</a>
-            <a href="#docs" class="btn btn-secondary btn-lg">Read Documentation</a>
+            <a href="pages/get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="pages/how-it-works.html" class="btn btn-secondary btn-lg">Explore How It Works</a>
           </div>
         </div>
 
       </div>
-    </div>
     </section>
   </main>
 
-  <!-- =========================================================================
+    <!-- =========================================================================
        FOOTER
        ========================================================================= -->
   <footer class="site-footer">
     <div class="container">
-      
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="index.html" class="brand-mark">
-            <span class="brand-icon">RN</span>
+          <a href="index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
             <span>RemoteNode</span>
           </a>
           <p class="footer-tagline">
-            Converting unused smartphones into remotely accessible personal file servers.
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
           </p>
         </div>
 
@@ -700,7 +780,7 @@
             <li><a href="pages/product.html" class="footer-link">Product Overview</a></li>
             <li><a href="pages/how-it-works.html" class="footer-link">How It Works</a></li>
             <li><a href="pages/pricing.html" class="footer-link">Pricing</a></li>
-            <li><a href="pages/product.html#components" class="footer-link">3 Components</a></li>
+            <li><a href="pages/get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
 
@@ -708,18 +788,16 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="pages/documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="pages/how-it-works.html" class="footer-link">Setup Guides</a></li>
-            <li><a href="pages/faq.html" class="footer-link">FAQ</a></li>
-            <li><a href="pages/documentation.html" class="footer-link">Help Center</a></li>
+            <li><a href="pages/faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="pages/server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
 
         <div>
           <h4 class="footer-col-title">Company</h4>
           <ul class="footer-link-list">
-            <li><a href="pages/about.html" class="footer-link">About Us</a></li>
-            <li><a href="pages/contact.html" class="footer-link">Contact</a></li>
-            <li><a href="pages/privacy.html" class="footer-link">Privacy Concept</a></li>
+            <li><a href="pages/about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="pages/contact.html" class="footer-link">Contact Support</a></li>
           </ul>
         </div>
 
@@ -728,16 +806,14 @@
           <ul class="footer-link-list">
             <li><a href="pages/terms.html" class="footer-link">Terms of Service</a></li>
             <li><a href="pages/privacy.html" class="footer-link">Privacy Policy</a></li>
-            <li><a href="pages/privacy.html" class="footer-link">Security Overview</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
         <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
-        <div>Shared-hosting ready • Lightweight HTML/CSS/JS foundation</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
-
     </div>
   </footer>
 

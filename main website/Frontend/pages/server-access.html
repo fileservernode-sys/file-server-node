@@ -13,11 +13,25 @@
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header class="site-header" id="header">
+  <!-- SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
     <div class="container header-container">
-      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-      <nav class="desktop-nav">
+      
+      <!-- Brand Logo / Text Mark -->
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Main Navigation">
         <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
@@ -26,22 +40,46 @@
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
+
+      <!-- Desktop Header Actions -->
       <div class="header-actions">
-        <a href="login.html" class="btn btn-ghost">Sign In</a>
-        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+        <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
-      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
+
     </div>
   </header>
 
   <!-- MOBILE DRAWER -->
   <div class="drawer-backdrop" aria-hidden="true"></div>
-  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
     <div class="drawer-header">
-      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
-      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div class="drawer-nav-list">
       <a href="product.html" class="drawer-nav-link">Product</a>
@@ -52,22 +90,27 @@
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
     </div>
-    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
-      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
-      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
     </div>
   </aside>
 
   <!-- PAGE HEADER -->
-  <section class="page-header">
+  <section class="page-header" style="background: var(--color-surface); border-bottom: 1px solid var(--color-border-subtle); padding: var(--space-xl) 0;">
     <div class="container">
       <div class="breadcrumbs">
         <a href="../index.html" class="breadcrumb-link">Home</a>
         <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">Server Access</span>
+        <span class="breadcrumb-current">Server Discovery</span>
       </div>
       <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-accent">Platform Device Discovery</span></div>
+        <div class="page-header-eyebrow">
+          <span class="badge badge-accent" style="display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"></path><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"></path><circle cx="12" cy="12" r="2"></circle><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"></path><path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2"></path></svg>
+            <span>Platform Device Discovery</span>
+          </span>
+        </div>
         <h1 class="page-header-title">Access Your Personal File Server</h1>
         <p class="page-header-subtitle">
           Enter the registered email address associated with your platform account to find online server endpoints.
@@ -76,15 +119,18 @@
     </div>
   </section>
 
-  <main>
-    <section class="section-wrapper">
+  <main style="background-color: var(--color-bg-secondary); min-height: calc(100vh - 240px); padding-bottom: var(--space-4xl);">
+    <section class="section-wrapper" style="padding-top: var(--space-2xl);">
       <div class="container" style="max-width: 840px;">
         
         <!-- PRIVACY & DATA ISOLATION CALLOUT -->
-        <div class="alert alert-info" style="margin-bottom: var(--space-2xl);">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          <div>
-            <strong>Architecture Notice:</strong> Entering your platform email locates registered Android servers. Your files remain stored physically on your phone host, not on this main website.
+        <div class="alert alert-info" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid var(--color-brand-primary); padding: var(--space-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary); flex-shrink: 0; margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <div>
+              <strong style="color: var(--color-text-primary); font-size: var(--font-size-sm); display: block; margin-bottom: 2px;">Architecture Guarantee</strong>
+              <span class="text-sm text-secondary" style="line-height: var(--line-height-relaxed);">Entering your platform email locates registered Android servers. Your files remain stored physically on your phone host, not on this main website.</span>
+            </div>
           </div>
         </div>
 
@@ -92,16 +138,19 @@
              STATE 1: INITIAL EMAIL INPUT FORM
              =================================================================== -->
         <div id="state-initial">
-          <div class="card" style="padding: var(--space-2xl);">
-            <h2 class="card-title" style="margin-bottom: var(--space-xs);">Locate Registered Servers</h2>
-            <p class="card-description" style="margin-bottom: var(--space-lg);">Enter your platform email to query server status.</p>
+          <div class="card" style="padding: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); box-shadow: var(--shadow-md);">
+            <h2 class="card-title" style="margin-bottom: var(--space-xs); font-size: var(--font-size-xl);">Locate Registered Servers</h2>
+            <p class="card-description" style="margin-bottom: var(--space-lg); color: var(--color-text-muted);">Enter your platform email to query server status.</p>
 
             <form id="server-lookup-form">
               <div class="form-group">
                 <label for="lookup-email-input" class="form-label">Platform Account Email Address</label>
-                <input type="email" id="lookup-email-input" class="form-input" placeholder="e.g. user@viewduration.com" required>
+                <input type="email" id="lookup-email-input" class="form-input" placeholder="name@example.com" required autocomplete="email">
               </div>
-              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Find My Server</button>
+              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <span>Find My Server</span>
+              </button>
             </form>
           </div>
         </div>
@@ -110,25 +159,25 @@
              STATE 2: LOADING SKELETON STATE
              =================================================================== -->
         <div id="state-loading" style="display: none;">
-          <div class="card" style="padding: var(--space-2xl); margin-bottom: var(--space-lg); text-align: center;">
+          <div class="card" style="padding: var(--space-2xl); margin-bottom: var(--space-lg); text-align: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);">
             <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-md); margin-bottom: var(--space-md);">
               <span class="spinner" style="width: 24px; height: 24px;"></span>
               <strong style="font-size: var(--font-size-lg); color: var(--color-text-primary);">Searching for registered servers...</strong>
             </div>
-            <p class="card-description">Querying cloud control plane and gateway routing status...</p>
+            <p class="card-description" style="margin: 0; color: var(--color-text-muted);">Querying cloud control plane and gateway routing status...</p>
           </div>
 
           <!-- Skeleton Loaders Grid -->
-          <div class="grid-2-col">
-            <div class="card" style="padding: var(--space-xl);">
-              <div class="skeleton skeleton-title"></div>
-              <div class="skeleton skeleton-text"></div>
-              <div class="skeleton skeleton-text" style="width: 70%;"></div>
+          <div class="grid-2-col" style="gap: var(--space-lg);">
+            <div class="card" style="padding: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);">
+              <div class="skeleton-box" style="width: 140px; height: 20px; margin-bottom: 12px;"></div>
+              <div class="skeleton-box" style="width: 100%; height: 40px; margin-bottom: 12px;"></div>
+              <div class="skeleton-box" style="width: 70%; height: 16px;"></div>
             </div>
-            <div class="card" style="padding: var(--space-xl);">
-              <div class="skeleton skeleton-title"></div>
-              <div class="skeleton skeleton-text"></div>
-              <div class="skeleton skeleton-text" style="width: 60%;"></div>
+            <div class="card" style="padding: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);">
+              <div class="skeleton-box" style="width: 140px; height: 20px; margin-bottom: 12px;"></div>
+              <div class="skeleton-box" style="width: 100%; height: 40px; margin-bottom: 12px;"></div>
+              <div class="skeleton-box" style="width: 60%; height: 16px;"></div>
             </div>
           </div>
         </div>
@@ -137,12 +186,12 @@
              STATE 3: ACCOUNT NOT FOUND STATE
              =================================================================== -->
         <div id="state-not-found" style="display: none;">
-          <div class="card" style="padding: var(--space-2xl); text-align: center;">
+          <div class="card" style="padding: var(--space-2xl); text-align: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);">
             <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-surface-secondary); color: var(--color-text-muted); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
             </div>
-            <h2 class="card-title">No Registered Account Found</h2>
-            <p class="card-description" style="max-width: 500px; margin: 0 auto var(--space-xl) auto;">
+            <h2 class="card-title" style="font-size: var(--font-size-xl);">No Registered Account Found</h2>
+            <p class="card-description" style="max-width: 500px; margin: 0 auto var(--space-xl) auto; color: var(--color-text-secondary);">
               We couldn't locate a platform account associated with that email address. Please verify your email or create a new account.
             </p>
             <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
@@ -156,12 +205,12 @@
              STATE 4: NO DEVICES LINKED STATE
              =================================================================== -->
         <div id="state-no-devices" style="display: none;">
-          <div class="card" style="padding: var(--space-2xl); text-align: center;">
-            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-accent-subtle); color: var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          <div class="card" style="padding: var(--space-2xl); text-align: center; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl);">
+            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
             </div>
-            <h2 class="card-title">No Server Connected Yet</h2>
-            <p class="card-description" style="max-width: 540px; margin: 0 auto var(--space-xl) auto;">
+            <h2 class="card-title" style="font-size: var(--font-size-xl);">No Server Connected Yet</h2>
+            <p class="card-description" style="max-width: 540px; margin: 0 auto var(--space-xl) auto; color: var(--color-text-secondary);">
               Your account exists, but no Android phone has been registered as a server host. Install our Android app and start Server Mode on your phone to link it.
             </p>
             <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
@@ -175,16 +224,16 @@
              STATE 5: DEVICES FOUND STATE (Multi-device Grid)
              =================================================================== -->
         <div id="state-devices-found" style="display: none;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-xs);">
             <div>
               <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: 2px;">Your Registered Servers</h2>
-              <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Select an online server to open its file management website.</p>
+              <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); margin: 0;">Select an online server to open its file management website.</p>
             </div>
-            <button class="btn btn-ghost btn-sm" data-action="reset-lookup">Change Email</button>
+            <button class="btn btn-ghost btn-sm" data-action="reset-lookup" style="color: var(--color-brand-primary);">Change Email</button>
           </div>
 
           <!-- Dynamic Devices Container -->
-          <div id="device-list-grid" class="grid-2-col" style="margin-bottom: var(--space-3xl);">
+          <div id="device-list-grid" class="grid-2-col" style="margin-bottom: var(--space-3xl); gap: var(--space-lg);">
             <!-- Rendered by server-discovery.js -->
           </div>
         </div>
@@ -193,12 +242,12 @@
              STATE 6: RECOVERABLE ERROR STATE
              =================================================================== -->
         <div id="state-error" style="display: none;">
-          <div class="card" style="padding: var(--space-2xl); text-align: center; border-color: rgba(220, 38, 38, 0.3);">
-            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: var(--color-error-bg); color: var(--color-error); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <div class="card" style="padding: var(--space-2xl); text-align: center; background: var(--color-surface); border: 1px solid var(--color-border); border-color: rgba(220, 38, 38, 0.3); border-radius: var(--radius-xl);">
+            <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background-color: #FEF2F2; color: #DC2626; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md) auto;">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
             </div>
-            <h2 class="card-title">Connection Timeout</h2>
-            <p class="card-description" style="max-width: 480px; margin: 0 auto var(--space-xl) auto;">
+            <h2 class="card-title" style="font-size: var(--font-size-xl); color: #991B1B;">Connection Timeout</h2>
+            <p class="card-description" style="max-width: 480px; margin: 0 auto var(--space-xl) auto; color: #B91C1C;">
               Unable to reach the server discovery service. Please check your internet connection and try again.
             </p>
             <div style="display: flex; gap: var(--space-md); justify-content: center;">
@@ -209,11 +258,18 @@
         </div>
 
         <!-- EDUCATIONAL EXPLANATION BOX -->
-        <div class="card" style="background-color: var(--color-surface-secondary); border-color: var(--color-border); margin-top: var(--space-3xl);">
-          <h3 class="card-title" style="font-size: var(--font-size-md);">How Remote Discovery Works</h3>
-          <p class="card-description">
-            When Server Mode is enabled, your Android phone establishes a secure outbound tunnel to our gateway. The main website resolves your account to your active phone endpoint so you can access your file manager remotely without manual router port forwarding.
-          </p>
+        <div class="card" style="background-color: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); margin-top: var(--space-3xl); box-shadow: var(--shadow-sm);">
+          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="font-size: var(--font-size-md); font-weight: var(--font-weight-bold); margin-bottom: var(--space-2xs); color: var(--color-text-primary);">How Remote Discovery Works</h3>
+              <p class="card-description" style="margin: 0; line-height: var(--line-height-relaxed); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+                When Server Mode is enabled, your Android phone establishes a secure outbound tunnel to our gateway. The main website resolves your account to your active phone endpoint so you can access your file manager remotely without manual router port forwarding.
+              </p>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -225,32 +281,49 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
         </div>
+
         <div>
           <h4 class="footer-col-title">Product</h4>
           <ul class="footer-link-list">
             <li><a href="product.html" class="footer-link">Product Overview</a></li>
             <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
             <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="server-access.html" class="footer-link">Find Server</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Company</h4>
           <ul class="footer-link-list">
-            <li><a href="about.html" class="footer-link">About Us</a></li>
-            <li><a href="contact.html" class="footer-link">Contact</a></li>
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Legal</h4>
           <ul class="footer-link-list">
@@ -259,8 +332,10 @@
           </ul>
         </div>
       </div>
+
       <div class="footer-bottom">
         <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
     </div>
   </footer>

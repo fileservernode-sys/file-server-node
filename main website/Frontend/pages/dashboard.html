@@ -13,94 +13,268 @@
 </head>
 <body>
 
-  <!-- Site Header -->
-  <header class="site-header" id="site-header">
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
     <div class="container header-container">
-      <a href="../index.html" class="logo" aria-label="RemoteNode Homepage">
-        <span class="logo-mark">RN</span>
-        <span class="logo-text">RemoteNode</span>
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
       </a>
 
-      <nav class="nav-desktop">
+      <!-- Authenticated Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
         <a href="dashboard.html" class="nav-link active">Dashboard</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help & FAQ</a>
       </nav>
 
+      <!-- User Account Controls -->
       <div class="header-actions">
-        <span id="user-email-header" class="text-sm font-semibold" style="color: var(--color-text-secondary); margin-right: var(--space-sm);">User</span>
-        <button type="button" id="btn-logout" class="btn btn-outline btn-sm">Sign Out</button>
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of RemoteNode Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
       </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </header>
 
-  <main>
-    <!-- Page Header Banner -->
-    <section class="page-header" style="padding: var(--space-xl) 0 var(--space-lg);">
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="dashboard.html" class="drawer-nav-link active">Dashboard</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="faq.html" class="drawer-nav-link">Help & FAQ</a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <main style="background-color: var(--color-bg-secondary); min-height: calc(100vh - 200px); padding-bottom: var(--space-4xl);">
+    
+    <!-- PAGE HEADER BANNER -->
+    <section class="page-header" style="background: var(--color-surface); border-bottom: 1px solid var(--color-border-subtle); padding: var(--space-xl) 0;">
       <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-md);">
           <div>
-            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs);">
-              <h1 id="dashboard-user-name" class="page-title" style="margin-bottom: 0;">Platform Account</h1>
-              <span class="badge badge-success">✓ Email Verified</span>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <h1 id="dashboard-user-name" class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Platform Account</h1>
+              <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: var(--font-size-xs);">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Email Verified</span>
+              </span>
             </div>
-            <p id="dashboard-user-email" class="page-subtitle" style="margin-bottom: 0;">Loading account credentials...</p>
+            <p id="dashboard-user-email" class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Loading account credentials...</p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Main Dashboard Section -->
-    <section class="section" style="padding-top: 0;">
-      <div class="container">
-        
-        <!-- Privacy & Control Plane Callout Banner -->
-        <div class="callout-box" style="margin-bottom: var(--space-xl); background: var(--color-bg-secondary); border-left: 4px solid var(--color-brand-primary);">
-          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
-            <div style="font-size: 1.5rem;">🔒</div>
-            <div>
-              <h3 style="font-size: var(--font-size-base); font-weight: 600; margin-bottom: var(--space-2xs); color: var(--color-text-primary);">
-                Control Plane & Device Privacy Policy
-              </h3>
-              <p class="text-sm text-secondary" style="margin-bottom: 0;">
-                Your platform account manages device ownership and server routing. Your personal files <strong>remain on your Android phone host</strong> and are accessed using dedicated file-server credentials created during Android app server setup.
-              </p>
-            </div>
+    <div class="container" style="margin-top: var(--space-xl);">
+      
+      <!-- OVERVIEW METRIC SUMMARY CARDS -->
+      <div class="dashboard-stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--green">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
           </div>
-        </div>
-
-        <!-- Section Title -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-xs);">
           <div>
-            <h2 class="section-title" style="font-size: var(--font-size-xl); text-align: left; margin-bottom: var(--space-3xs);">
-              Your Registered Servers
-              <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; margin-left: 8px; vertical-align: middle;">0 / 5 Servers</span>
-            </h2>
-            <p class="text-secondary text-sm">Android storage nodes paired to this platform account.</p>
-          </div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
-            <span id="refresh-indicator" class="text-xs text-muted">Auto-refreshes device status</span>
-            <button id="btn-manual-refresh" class="btn btn-ghost btn-sm" style="font-size: var(--font-size-xs);" title="Refresh servers">↻ Refresh</button>
+            <div class="stat-card-title">Online Servers</div>
+            <div class="stat-card-value" id="stat-online-servers">0</div>
           </div>
         </div>
 
-        <!-- Registered Devices List Grid (Populated dynamically from real DB) -->
-        <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
-          <!-- Dynamic real content rendered via JavaScript -->
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--blue">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Linked Devices</div>
+            <div class="stat-card-value" id="stat-linked-devices">0</div>
+          </div>
         </div>
 
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--amber">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Server Slots</div>
+            <div class="stat-card-value" id="stat-capacity-slots">0 / 5</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--purple">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Gateway Tunnel</div>
+            <div class="stat-card-value" style="font-size: var(--font-size-md); color: var(--color-brand-primary);">TLS 1.3 Active</div>
+          </div>
+        </div>
       </div>
-    </section>
+
+      <!-- CONTROL PLANE & PRIVACY CALLOUT BOX -->
+      <div class="callout-box" style="margin-bottom: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid var(--color-brand-primary); padding: var(--space-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+          <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div>
+            <h3 style="font-size: var(--font-size-body); font-weight: var(--font-weight-bold); margin-bottom: var(--space-2xs); color: var(--color-text-primary);">
+              Control Plane & Device Privacy Guarantee
+            </h3>
+            <p class="text-sm text-secondary" style="margin-bottom: 0; line-height: var(--line-height-relaxed);">
+              Your RemoteNode platform account manages device ownership and server routing. Your personal files <strong>remain 100% on your Android phone host storage</strong> and are accessed directly using dedicated file-server credentials created during server setup.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION TITLE & CONTROLS -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-xs);">
+        <div>
+          <h2 class="section-title" style="font-size: var(--font-size-h4); text-align: left; margin-bottom: var(--space-2xs); display: flex; align-items: center; gap: var(--space-sm);">
+            <span>Your Registered Servers</span>
+            <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; vertical-align: middle;">0 / 5 Servers</span>
+          </h2>
+          <p class="text-secondary text-sm" style="margin: 0;">Android storage nodes paired to this platform account.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <span id="refresh-indicator" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Auto-refreshes device status</span>
+          <button id="btn-manual-refresh" class="btn btn-ghost btn-sm" style="font-size: var(--font-size-caption);" title="Refresh servers">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- REGISTERED DEVICES GRID (Populated dynamically from database) -->
+      <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
+        <!-- Skeleton loading placeholder rendered immediately by script -->
+      </div>
+
+    </div>
   </main>
 
+  <!-- FOOTER -->
   <footer class="site-footer">
-    <div class="container footer-bottom" style="border: none;">
-      <p>&copy; 2026 RemoteNode. All rights reserved.</p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
+      </div>
     </div>
   </footer>
 
+  <!-- CORE SCRIPTS -->
+  <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/server-discovery.js"></script>
   <script>
-    // Global State
     let isFetching = false;
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -116,6 +290,10 @@
         document.getElementById('user-email-header').textContent = user.email || 'User';
         document.getElementById('dashboard-user-name').textContent = user.fullName || 'Platform User Account';
         document.getElementById('dashboard-user-email').textContent = user.email || '';
+        
+        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
       }
 
       document.getElementById('btn-logout')?.addEventListener('click', () => {
@@ -126,7 +304,8 @@
         loadUserServers(false);
       });
 
-      // Initial Fetch
+      // Initial Render & Fetch
+      renderSkeletonLoaders();
       loadUserServers(false);
 
       // Auto-refresh every 10 seconds
@@ -134,6 +313,32 @@
         loadUserServers(true);
       }, 10000);
     });
+
+    /**
+     * Render Skeleton Card Loaders
+     */
+    function renderSkeletonLoaders() {
+      const grid = document.getElementById('user-devices-grid');
+      if (!grid) return;
+      grid.innerHTML = `
+        <div class="card" style="padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-md);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="skeleton-box" style="width: 140px; height: 20px;"></div>
+            <div class="skeleton-box" style="width: 70px; height: 20px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 100%; height: 40px;"></div>
+          <div class="skeleton-box" style="width: 100%; height: 16px;"></div>
+        </div>
+        <div class="card" style="padding: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-md);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="skeleton-box" style="width: 140px; height: 20px;"></div>
+            <div class="skeleton-box" style="width: 70px; height: 20px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 100%; height: 40px;"></div>
+          <div class="skeleton-box" style="width: 100%; height: 16px;"></div>
+        </div>
+      `;
+    }
 
     /**
      * Relative Time Formatter
@@ -170,8 +375,6 @@
       })[match]);
     }
 
-
-
     /**
      * Fetch and Render Real User Servers from Backend Control Plane
      */
@@ -182,18 +385,6 @@
       const grid = document.getElementById('user-devices-grid');
       const indicator = document.getElementById('refresh-indicator');
 
-      if (!isBackground && grid && grid.innerHTML.trim() === '') {
-        grid.innerHTML = `
-          <div class="card" style="grid-column: 1 / -1; padding: var(--space-2xl); text-align: center;">
-            <div style="display: flex; align-items: center; justify-content: center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
-              <span class="spinner" style="width: 20px; height: 20px;"></span>
-              <strong style="color: var(--color-text-primary);">Loading registered servers from database...</strong>
-            </div>
-            <p class="text-xs text-muted" style="margin: 0;">Querying control plane and endpoint mappings...</p>
-          </div>
-        `;
-      }
-
       try {
         const res = await apiRequest('/devices', 'GET');
 
@@ -201,12 +392,14 @@
           if (!isBackground) {
             grid.innerHTML = `
               <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
-                <div style="font-size: 2rem; margin-bottom: var(--space-xs); color: #DC2626;">⚠️</div>
+                <div style="width: 48px; height: 48px; margin: 0 auto var(--space-xs); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
                 <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
                 <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">
                   ${escapeHtml(res.data?.error?.message || 'Could not connect to backend control plane.')}
                 </p>
-                <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+                <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry Connection</button>
               </div>
             `;
           }
@@ -215,6 +408,12 @@
         }
 
         const devices = res.data.data?.devices || [];
+
+        // Update Overview Stat Metrics
+        const onlineCount = devices.filter(d => d.status === 'ONLINE' && d.server?.status === 'RUNNING').length;
+        document.getElementById('stat-online-servers').textContent = onlineCount;
+        document.getElementById('stat-linked-devices').textContent = devices.length;
+        document.getElementById('stat-capacity-slots').textContent = `${devices.length} / 5`;
 
         const countBadge = document.getElementById('server-count-badge');
         if (countBadge) {
@@ -227,92 +426,107 @@
         }
 
         if (devices.length === 0) {
-          // Zero registered servers: Render Clean Empty State + Pairing Guide Card
+          // Zero registered servers: Clean Zero-Emoji Empty State
           grid.innerHTML = `
-            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-2xl); border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary);">
-              <div style="font-size: 3rem; margin-bottom: var(--space-sm);">📱</div>
+            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-2xl); border: 2px dashed var(--color-border-subtle); background: var(--color-surface); border-radius: var(--radius-xl);">
+              <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              </div>
               <h3 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">
                 No registered servers yet
               </h3>
               <p class="text-sm text-secondary" style="max-width: 480px; margin: 0 auto var(--space-lg) auto;">
-                Register an Android phone to create your personal storage server. Download the app and sign in with this account to pair your storage node.
+                Register an Android phone to create your personal storage server. Download the app and sign in with this account to pair your first storage node.
               </p>
-              <a href="how-it-works.html" class="btn btn-primary btn-sm">View Pairing Setup Guide</a>
+              <a href="how-it-works.html" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+                <span>View Setup Guide</span>
+              </a>
             </div>
           `;
         } else {
-          // Render Real Servers from Database
+          // Render Real Server Instance Cards
           const cardsHtml = devices.map(device => {
             const server = device.server;
-            const endpoint = server?.endpoint;
-            const connection = device.connection;
-
+            const endpoint = server?.endpoint || (server?.id ? `${server.id}.remotenode.net` : null);
             const isOnline = device.status === 'ONLINE' && server?.status === 'RUNNING';
             const isStarting = server?.status === 'STARTING';
 
             let statusBadge = '';
             if (isOnline) {
-              statusBadge = `<span class="status-indicator status-online" style="display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot"></span> ONLINE</span>`;
+              statusBadge = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> ONLINE</span>`;
             } else if (isStarting) {
-              statusBadge = `<span class="status-indicator" style="background: #FEF3C7; color: #D97706; display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot" style="background: #D97706;"></span> STARTING</span>`;
+              statusBadge = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> STARTING</span>`;
             } else {
-              statusBadge = `<span class="status-indicator status-offline" style="display: inline-flex; align-items: center; gap: 4px;"><span class="status-dot"></span> OFFLINE</span>`;
+              statusBadge = `<span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border); display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); display: inline-block;"></span> OFFLINE</span>`;
             }
 
             const serverDisplayName = server?.serverName || device.deviceName || 'Personal File Server';
             const platformInfo = `${escapeHtml(device.platform || 'Android')} ${escapeHtml(device.osVersion || '')} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
-
             const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
 
-            // File manager button — passes server.id explicitly in URL
+            // File Manager Access Button (Preserves server.id in URL parameter)
             let fileManagerButtonHtml = '';
             if (isOnline && server?.id) {
               fileManagerButtonHtml = `
-                <a href="file-manager.html?server=${escapeHtml(server.id)}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; font-weight: 600; text-decoration: none; margin-bottom: var(--space-md);">
-                  <span style="font-size: 1rem;">📁</span> Open File Manager
+                <a href="file-manager.html?server=${escapeHtml(server.id)}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-weight: 600; text-decoration: none; margin-bottom: var(--space-md);">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  <span>Open File Manager</span>
                 </a>
               `;
             } else if (server?.id) {
               fileManagerButtonHtml = `
                 <div style="margin-bottom: var(--space-md);">
-                  <button type="button" disabled class="btn btn-secondary btn-sm" style="width: 100%; opacity: 0.5; cursor: not-allowed; padding: 10px;">
-                    📁 File Manager Unavailable
+                  <button type="button" disabled class="btn btn-secondary btn-sm" style="width: 100%; opacity: 0.6; cursor: not-allowed; padding: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>File Manager Unavailable</span>
                   </button>
-                  <p class="text-xs text-muted" style="text-align: center; margin-top: 4px;">Start the server on your Android device to enable file manager access.</p>
+                  <p class="text-xs text-muted" style="text-align: center; margin-top: 4px;">Start the server on your Android device to enable remote file access.</p>
                 </div>
               `;
             } else {
               fileManagerButtonHtml = `
                 <div style="margin-bottom: var(--space-md);">
-                  <button type="button" disabled class="btn btn-secondary btn-sm" style="width: 100%; opacity: 0.5; cursor: not-allowed; padding: 10px;">
-                    📁 Server Offline
+                  <button type="button" disabled class="btn btn-secondary btn-sm" style="width: 100%; opacity: 0.6; cursor: not-allowed; padding: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Server Offline</span>
                   </button>
                 </div>
               `;
             }
 
+            const endpointDisplayHtml = endpoint ? `
+              <div style="margin-bottom: var(--space-md);">
+                <div class="text-xs text-muted" style="margin-bottom: 2px;">Remote Endpoint</div>
+                <div class="server-card-endpoint">${escapeHtml(endpoint)}</div>
+              </div>
+            ` : '';
+
             return `
-              <div class="card card-hover" style="border: 1px solid var(--color-border-subtle); display: flex; flex-direction: column; justify-content: space-between;">
+              <div class="card card-hover" style="border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); padding: var(--space-xl); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
                 <div>
                   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm); gap: var(--space-xs);">
                     <div>
                       <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
                         ${escapeHtml(serverDisplayName)}
                       </h3>
-                      <span class="text-xs text-muted">${platformInfo}</span>
+                      <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
+                        <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                        ${platformInfo}
+                      </span>
                     </div>
                     ${statusBadge}
                   </div>
 
-                  <!-- File Manager Access Button -->
+                  ${endpointDisplayHtml}
                   ${fileManagerButtonHtml}
                 </div>
 
                 <div>
-                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-xs); color: var(--color-text-muted); padding-top: var(--space-xs); border-top: 1px solid var(--color-border-subtle);">
-                    <span>Last Seen: <strong>${escapeHtml(lastSeenFormatted)}</strong></span>
-                    <button type="button" class="btn btn-outline btn-sm" style="color: #DC2626; border-color: rgba(220, 38, 38, 0.3); padding: 3px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;" onclick="deleteUserServer('${escapeHtml(device.id)}', '${escapeHtml(serverDisplayName)}', this)">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <div style="display: flex; justify-content: space-between; align-items: center; font-size: var(--font-size-xs); color: var(--color-text-muted); padding-top: var(--space-sm); border-top: 1px solid var(--color-border-subtle);">
+                    <span>Last Seen: <strong style="color: var(--color-text-primary); font-family: var(--font-family-mono);">${escapeHtml(lastSeenFormatted)}</strong></span>
+                    <button type="button" class="btn btn-ghost btn-sm" style="color: #DC2626; padding: 4px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;" onclick="deleteUserServer('${escapeHtml(device.id)}', '${escapeHtml(serverDisplayName)}', this)">
+                      <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                       Delete
                     </button>
                   </div>
@@ -321,25 +535,29 @@
             `;
           }).join('');
 
-          // Append "Register New Android Phone" Guidance Card (or Limit Reached Card)
+          // Append "Pair Another Phone" Guidance Card (or Limit Reached Card)
           let addCardHtml = '';
           if (devices.length >= 5) {
             addCardHtml = `
-              <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
-                <div style="font-size: 2rem; margin-bottom: var(--space-xs);">🔒</div>
+              <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-surface); border-radius: var(--radius-xl); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+                <div style="width: 44px; height: 44px; margin-bottom: var(--space-xs); background: rgba(245, 158, 11, 0.1); color: #D97706; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                </div>
                 <span class="badge badge-warning" style="margin-bottom: var(--space-xs); font-weight: 600;">5 / 5 Servers Registered</span>
-                <p class="text-xs text-secondary" style="margin: 0; max-width: 240px;">
+                <p class="text-xs text-secondary" style="margin: 0; max-width: 240px; line-height: var(--line-height-relaxed);">
                   Account limit reached (5 / 5 servers). Delete an existing server node to pair a new device.
                 </p>
               </div>
             `;
           } else {
             addCardHtml = `
-              <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-bg-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
-                <div style="font-size: 2rem; margin-bottom: var(--space-sm);">📱</div>
+              <div class="card" style="border: 2px dashed var(--color-border); background: var(--color-surface); border-radius: var(--radius-xl); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
+                <div style="width: 44px; height: 44px; margin-bottom: var(--space-sm); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                </div>
                 <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Pair Another Phone</h3>
-                <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
-                  Install the Android app on an additional device and sign in with this account to pair another storage node.
+                <p class="text-xs text-secondary" style="margin-bottom: var(--space-md); max-width: 240px;">
+                  Install the Android app on an additional device and sign in to pair another storage node.
                 </p>
                 <a href="how-it-works.html" class="btn btn-outline btn-sm">Setup Guide</a>
               </div>
@@ -357,8 +575,8 @@
           grid.innerHTML = `
             <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
               <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
-              <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">Failed to load device data.</p>
-              <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+              <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">Failed to query device data.</p>
+              <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry Connection</button>
             </div>
           `;
         }

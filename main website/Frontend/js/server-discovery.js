@@ -165,7 +165,12 @@ function renderDeviceCards(devices, container) {
 
     let ctaButtonHtml = '';
     if (device.status === 'online' && device.canAccess && device.serverId) {
-      ctaButtonHtml = `<a href="file-manager.html?server=${escapeHtml(device.serverId)}" class="btn btn-primary" style="width: 100%; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">📁 Open File Manager</a>`;
+      ctaButtonHtml = `
+        <a href="file-manager.html?server=${escapeHtml(device.serverId)}" class="btn btn-primary" style="width: 100%; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Open File Manager</span>
+        </a>
+      `;
     } else if (device.status === 'connecting') {
       ctaButtonHtml = `<button class="btn btn-secondary" disabled style="width: 100%;"><span class="spinner"></span> Connecting Server...</button>`;
     } else {
@@ -230,7 +235,7 @@ function copyEndpointToClipboard(text, btnElement) {
 
   if (btnElement) {
     const originalText = btnElement.innerText;
-    btnElement.innerText = "✓ Copied!";
+    btnElement.innerText = "Copied!";
     btnElement.style.color = "var(--color-success, #059669)";
     
     setTimeout(() => {

@@ -13,70 +13,266 @@
 </head>
 <body>
 
-  <!-- Site Header -->
-  <header class="site-header" id="site-header">
+  <!-- SITE HEADER -->
+  <header class="site-header" id="header">
     <div class="container header-container">
-      <a href="../index.html" class="logo" aria-label="RemoteNode Homepage">
-        <span class="logo-mark">RN</span>
-        <span class="logo-text">RemoteNode</span>
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
       </a>
+
+      <nav class="desktop-nav" aria-label="Main Navigation">
+        <a href="product.html" class="nav-link">Product</a>
+        <a href="how-it-works.html" class="nav-link">How It Works</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+        <a href="faq.html" class="nav-link">FAQ</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
+      </div>
+
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </header>
 
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <a href="product.html" class="drawer-nav-link">Product</a>
+      <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
+      <a href="about.html" class="drawer-nav-link">About</a>
+      <a href="contact.html" class="drawer-nav-link">Contact</a>
+      <a href="faq.html" class="drawer-nav-link">FAQ</a>
+    </div>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
+    </div>
+  </aside>
+
+  <!-- MAIN OTP COMPOSITION -->
   <main>
-    <section class="section" style="min-height: 80vh; display: flex; align-items: center;">
-      <div class="container container-sm">
-        <div class="auth-card card" style="text-align: center;">
-          <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(2, 132, 199, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-            ✉️
-          </div>
+    <section class="auth-page-section">
+      <div class="container">
+        
+        <div class="auth-split-wrapper">
+          
+          <!-- LEFT BRAND PANEL -->
+          <div class="auth-brand-side">
+            <div>
+              <div class="auth-brand-badge">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Two-Factor Account Verification</span>
+              </div>
 
-          <h1 class="auth-title">Verify Email Security Code</h1>
-          <p class="auth-subtitle">
-            Enter the 6-digit code sent to <strong id="target-email-display">your registered email</strong> to complete verification.
-          </p>
+              <h2 class="auth-brand-headline">Security verification required.</h2>
+              <p class="auth-brand-desc">
+                We've dispatched a 6-digit one-time passcode to confirm ownership of your email address and authorize platform registration.
+              </p>
 
-          <div id="otp-error-alert" class="alert alert-error hidden" style="margin-bottom: var(--space-md); text-align: left;">
-            <span id="otp-error-message"></span>
-          </div>
+              <div class="auth-feature-list">
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Email Protection</div>
+                    <div class="auth-feature-sub">Verifies email ownership before granting device registry access.</div>
+                  </div>
+                </div>
 
-          <div id="otp-success-alert" class="alert alert-success hidden" style="margin-bottom: var(--space-md); text-align: left;">
-            <span id="otp-success-message"></span>
-          </div>
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Time-Sensitive Code</div>
+                    <div class="auth-feature-sub">Codes expire automatically to prevent unauthorized access.</div>
+                  </div>
+                </div>
 
-          <form id="otp-verification-form">
-            <div style="display: flex; gap: var(--space-xs); justify-content: center; margin: var(--space-lg) 0;">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
-              <input type="text" maxlength="1" class="otp-input form-control" style="width: 48px; height: 56px; text-align: center; font-size: var(--font-size-xl); font-weight: 700;" autocomplete="off" required inputmode="numeric" pattern="[0-9]">
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Isolated Storage Vault</div>
+                    <div class="auth-feature-sub">Your phone file-server password remains separate.</div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <button type="submit" id="btn-verify-otp" class="btn btn-primary btn-block btn-lg" style="margin-bottom: var(--space-md);">
-              Verify Code & Continue
-            </button>
-          </form>
+            <div class="auth-brand-footer">
+              <span>ONE-TIME PASSCODE</span>
+              <span>AES-256 ENCRYPTED</span>
+            </div>
+          </div>
 
-          <p class="auth-footer-text" style="margin-top: var(--space-md);">
-            Didn't receive the code? <button type="button" id="btn-resend-otp" class="text-link" style="background: none; border: none; padding: 0; cursor: pointer; color: var(--color-brand-primary); font-weight: 600;">Resend Code (<span id="resend-countdown">60</span>s)</button>
-          </p>
+          <!-- RIGHT FORM PANEL -->
+          <div class="auth-card-side">
+            
+            <div class="auth-card-header" style="text-align: center;">
+              <div style="width: 52px; height: 52px; margin: 0 auto var(--space-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
 
-          <p class="text-muted text-xs" style="margin-top: var(--space-lg);">
-            Security Note: Email OTP verification protects your platform account. Your Android phone file-server password remains separate.
-          </p>
+              <h1 class="auth-card-title">Verify Email Code</h1>
+              <p class="auth-card-subtitle">
+                Enter the 6-digit code sent to <strong id="target-email-display" style="color: var(--color-text-primary);">your registered email</strong>.
+              </p>
+            </div>
+
+            <!-- Alerts -->
+            <div id="otp-error-alert" class="alert alert-error hidden" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span id="otp-error-message"></span>
+            </div>
+
+            <div id="otp-success-alert" class="alert alert-success hidden" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <span id="otp-success-message"></span>
+            </div>
+
+            <!-- Form -->
+            <form id="otp-verification-form">
+              <div class="otp-cells-container">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 1">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 2">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 3">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 4">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 5">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 6">
+              </div>
+
+              <button type="submit" id="btn-verify-otp" class="btn btn-primary btn-lg" style="width: 100%; margin-bottom: var(--space-md);">
+                Verify Code & Continue
+              </button>
+            </form>
+
+            <div style="text-align: center; margin-top: var(--space-xs);">
+              <button type="button" id="btn-resend-otp" class="btn btn-ghost" style="font-size: var(--font-size-sm); color: var(--color-brand-primary); font-weight: var(--font-weight-semibold);">
+                Resend Code (<span id="resend-countdown">60</span>s)
+              </button>
+            </div>
+
+            <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-xs); color: var(--color-text-muted);">
+              Need to change your email? <a href="get-started.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Back to Registration</a>
+            </div>
+
+          </div>
+
         </div>
+
       </div>
     </section>
   </main>
 
+  <!-- FOOTER -->
   <footer class="site-footer">
-    <div class="container footer-bottom" style="border: none;">
-      <p>&copy; 2026 RemoteNode. All rights reserved.</p>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
+      </div>
     </div>
   </footer>
 
+  <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {

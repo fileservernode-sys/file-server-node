@@ -27,14 +27,22 @@ const StorageUtils = {
   },
 
   getFileIcon(category, isDir) {
-    if (isDir) return '📁';
+    if (isDir) {
+      return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>';
+    }
     switch (category) {
-      case 'photos': return '🖼️';
-      case 'videos': return '🎬';
-      case 'documents': return '📄';
-      case 'audio': return '🎵';
-      case 'archives': return '📦';
-      default: return '📄';
+      case 'photos':
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10B981;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+      case 'videos':
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #F59E0B;"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>';
+      case 'documents':
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #2563EB;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>';
+      case 'audio':
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #EC4899;"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
+      case 'archives':
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #8B5CF6;"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>';
+      default:
+        return '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-text-secondary);"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>';
     }
   }
 };
@@ -167,7 +175,7 @@ const HomeController = {
 
     container.innerHTML = `
       <div class="empty-state" style="padding: 24px;">
-        <div class="empty-icon" style="font-size: 1.8rem;">🔄</div>
+        <div class="empty-icon" style="font-size: 1.8rem;"><span class="spinner" style="width: 24px; height: 24px;"></span></div>
         <div class="empty-title" style="font-size: 1rem;">Loading recent files...</div>
       </div>
     `;
@@ -176,7 +184,7 @@ const HomeController = {
     if (!res.success || !Array.isArray(res.data?.items) || res.data.items.length === 0) {
       container.innerHTML = `
         <div class="empty-state" style="padding: 32px;">
-          <div class="empty-icon">📁</div>
+          <div class="empty-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div class="empty-title">No recent files yet</div>
           <div class="empty-desc">Uploaded files and media will appear here automatically.</div>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-picker').click()">Upload First File</button>
@@ -206,9 +214,9 @@ const HomeController = {
           <td>${StorageUtils.formatDate(item.modifiedAt)}</td>
           <td>
             <div style="display: flex; gap: 4px;">
-              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>
-              <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete">🗑️</button>
+              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
+              <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename" aria-label="Rename file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
           </td>
         </tr>
@@ -323,14 +331,12 @@ const MyFilesController = {
     });
 
     container.innerHTML = html;
-  },
-
-  renderLoading() {
+    renderLoading() {
     const container = document.getElementById('file-list-container');
     if (container) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">🔄</div>
+          <div class="empty-icon"><span class="spinner" style="width: 24px; height: 24px;"></span></div>
           <div class="empty-title">Loading files...</div>
           <div class="empty-desc">Accessing Android storage host...</div>
         </div>
@@ -343,7 +349,7 @@ const MyFilesController = {
     if (container) {
       container.innerHTML = `
         <div class="empty-state" style="border-color: var(--color-status-error);">
-          <div class="empty-icon">⚠️</div>
+          <div class="empty-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #DC2626;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
           <div class="empty-title">Error Loading Directory</div>
           <div class="empty-desc">${msg}</div>
           <button class="btn btn-primary btn-sm" onclick="MyFilesController.loadDirectory('${this.currentPath}')">Retry</button>
@@ -359,12 +365,12 @@ const MyFilesController = {
     if (items.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">📁</div>
+          <div class="empty-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
           <div class="empty-title">This folder is empty</div>
           <div class="empty-desc">Upload files or create folders to get started.</div>
           <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn btn-primary btn-sm" onclick="UIManager.showModal('modal-new-folder')">➕ New Folder</button>
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-picker').click()">📤 Upload File</button>
+            <button class="btn btn-primary btn-sm" onclick="UIManager.showModal('modal-new-folder')">New Folder</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('file-picker').click()">Upload File</button>
           </div>
         </div>
       `;
@@ -384,16 +390,16 @@ const MyFilesController = {
         html += `
           <div class="file-grid-card">
             <div class="grid-card-preview" onclick="${isDir ? `MyFilesController.loadDirectory('${safePath}')` : `FileManagerHelper.openItem('${safePath}', '${safeName}', '${item.category}')`}">
-              ${isImage ? `<img src="${downloadUrl}" alt="${item.name}" loading="lazy" onerror="this.parentElement.textContent='🖼️'">` : icon}
+              ${isImage ? `<img src="${downloadUrl}" alt="${item.name}" loading="lazy" onerror="this.parentElement.innerHTML='<svg class=\\'icon icon-md\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg>'">` : icon}
             </div>
             <div class="grid-card-info" onclick="${isDir ? `MyFilesController.loadDirectory('${safePath}')` : `FileManagerHelper.openItem('${safePath}', '${safeName}', '${item.category}')`}">
               <div class="grid-card-name" title="${item.name}">${item.name}</div>
               <div class="grid-card-meta">${isDir ? 'Folder' : StorageUtils.formatBytes(item.sizeBytes)} • ${StorageUtils.formatDate(item.modifiedAt)}</div>
             </div>
             <div class="grid-card-actions">
-              ${!isDir ? `<a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>` : ''}
-              <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename">✏️</button>
-              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete">🗑️</button>
+              ${!isDir ? `<a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>` : ''}
+              <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename" aria-label="Rename file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
           </div>
         `;
@@ -421,9 +427,9 @@ const MyFilesController = {
             <td>${StorageUtils.formatDate(item.modifiedAt)}</td>
             <td>
               <div style="display: flex; gap: 4px;">
-                ${!isDir ? `<a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>` : ''}
-                <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename">✏️</button>
-                <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete">🗑️</button>
+                ${!isDir ? `<a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>` : ''}
+                <button class="btn btn-secondary btn-sm" onclick="FileManagerHelper.promptRename('${safePath}', '${safeName}')" title="Rename" aria-label="Rename file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
+                <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}')" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
               </div>
             </td>
           </tr>
@@ -447,7 +453,7 @@ const PhotosController = {
 
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🔄</div>
+        <div class="empty-icon"><span class="spinner" style="width: 24px; height: 24px;"></span></div>
         <div class="empty-title">Discovering photos...</div>
       </div>
     `;
@@ -456,7 +462,7 @@ const PhotosController = {
     if (!res.success || !Array.isArray(res.data?.items) || res.data.items.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">🖼️</div>
+          <div class="empty-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>
           <div class="empty-title">No photos found</div>
           <div class="empty-desc">Images (.jpg, .png, .webp, .gif) in your storage sandbox will be displayed here.</div>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-picker').click()">Upload Photos</button>
@@ -476,14 +482,14 @@ const PhotosController = {
       html += `
         <div class="photo-tile">
           <div class="photo-thumb-wrap" onclick="UIManager.showLightbox('${safeName}', '${downloadUrl}', '${downloadUrl}')">
-            <img src="${downloadUrl}" alt="${photo.name}" loading="lazy" onerror="this.parentElement.innerHTML='<span style=\\'font-size:2rem;\\'>🖼️</span>'">
+            <img src="${downloadUrl}" alt="${photo.name}" loading="lazy" onerror="this.parentElement.innerHTML='<svg class=\\'icon icon-md\\' viewBox=\\'0 0 24 24\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'2\\'><rect x=\\'3\\' y=\\'3\\' width=\\'18\\' height=\\'18\\' rx=\\'2\\' ry=\\'2\\'></rect><circle cx=\\'8.5\\' cy=\\'8.5\\' r=\\'1.5\\'></circle><polyline points=\\'21 15 16 10 5 21\\'></polyline></svg>'">
           </div>
           <div class="photo-meta-bar">
             <span class="photo-name" title="${photo.name}">${photo.name}</span>
             <span class="photo-size">${StorageUtils.formatBytes(photo.sizeBytes)} • ${StorageUtils.formatDate(photo.modifiedAt)}</span>
             <div style="display: flex; gap: 4px; margin-top: 6px; justify-content: flex-end;">
-              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>
-              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => PhotosController.load())" title="Delete">🗑️</button>
+              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
+              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => PhotosController.load())" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
           </div>
         </div>
@@ -507,7 +513,7 @@ const VideosController = {
 
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🔄</div>
+        <div class="empty-icon"><span class="spinner" style="width: 24px; height: 24px;"></span></div>
         <div class="empty-title">Discovering videos...</div>
       </div>
     `;
@@ -516,7 +522,7 @@ const VideosController = {
     if (!res.success || !Array.isArray(res.data?.items) || res.data.items.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-icon">🎬</div>
+          <div class="empty-icon"><svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg></div>
           <div class="empty-title">No videos found</div>
           <div class="empty-desc">Videos (.mp4, .mkv, .webm, .mov) stored on your Android server will appear here.</div>
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-picker').click()">Upload Videos</button>
@@ -536,14 +542,14 @@ const VideosController = {
       html += `
         <div class="video-card">
           <div class="video-poster-wrap" onclick="UIManager.showVideoModal('${safeName}', '${downloadUrl}', '${downloadUrl}')">
-            <div class="video-play-btn">▶</div>
+            <div class="video-play-btn"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
           </div>
           <div style="padding: 12px;">
             <div style="font-weight: 700; font-size: var(--font-size-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${video.name}">${video.name}</div>
             <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 4px;">${StorageUtils.formatBytes(video.sizeBytes)} • ${StorageUtils.formatDate(video.modifiedAt)}</div>
             <div style="display: flex; gap: 4px; margin-top: 8px; justify-content: flex-end;">
-              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>
-              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => VideosController.load())" title="Delete">🗑️</button>
+              <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
+              <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => VideosController.load())" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div>
           </div>
         </div>
@@ -663,10 +669,18 @@ const StorageController = {
               <td>${StorageUtils.formatDate(f.modifiedAt)}</td>
               <td>
                 <div style="display: flex; gap: 4px;">
-                  <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download">⬇️</a>
-                  <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => StorageController.load())" title="Delete">🗑️</button>
+                  <a href="${downloadUrl}" class="btn btn-secondary btn-sm" download title="Download" aria-label="Download file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></a>
+                  <button class="btn btn-danger btn-sm" onclick="FileManagerHelper.promptDelete('${safePath}', '${safeName}', () => StorageController.load())" title="Delete" aria-label="Delete file"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div>
               </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = rows;
+      }
+    }
+  }
+};     </td>
             </tr>
           `;
         });

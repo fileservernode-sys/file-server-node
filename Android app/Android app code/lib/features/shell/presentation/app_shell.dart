@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../server/presentation/server_screen.dart';
@@ -48,16 +49,23 @@ class _AppShellState extends State<AppShell> {
           border: Border(
             top: BorderSide(color: AppColors.borderSubtle, width: 1.0),
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x0A0F172A),
+              blurRadius: 8,
+              offset: Offset(0, -2),
+            ),
+          ],
         ),
         child: SafeArea(
           child: SizedBox(
-            height: 56.0,
+            height: 60.0,
             child: Row(
               children: [
                 _buildNavItem(
                   index: 0,
-                  icon: Icons.home_outlined,
-                  activeIcon: Icons.home,
+                  icon: Icons.space_dashboard_outlined,
+                  activeIcon: Icons.space_dashboard,
                   label: 'Home',
                 ),
                 _buildNavItem(
@@ -104,17 +112,31 @@ class _AppShellState extends State<AppShell> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isSelected ? activeIcon : icon,
-                color: color,
-                size: 22,
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primarySubtle
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                ),
+                child: Icon(
+                  isSelected ? activeIcon : icon,
+                  color: color,
+                  size: 20,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 label,
                 style: AppTypography.caption.copyWith(
                   color: color,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11.0,
                 ),
               ),
             ],

@@ -119,6 +119,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     let filePath = path.normalize(path.join(baseDir, relativePath));
 
+    // 1. Direct file match
     if (filePath.startsWith(baseDir) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -126,7 +127,32 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.send(fs.createReadStream(filePath));
     }
 
-    // Fallback to index.html for SPA routes
+    // 2. Clean SEO slug match (e.g. /product -> /product.html or /pages/product.html)
+    if (!path.extname(relativePath)) {
+      const candidates = [
+        path.normalize(path.join(baseDir, `${relativePath}.html`)),
+        path.normalize(path.join(baseDir, 'pages', `${relativePath}.html`)),
+        path.normalize(path.join(baseDir, 'pages', relativePath))
+      ];
+
+      for (const candidate of candidates) {
+        if (candidate.startsWith(baseDir) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          reply.type('text/html; charset=utf-8');
+          return reply.send(fs.createReadStream(candidate));
+        }
+      }
+    }
+
+    // 3. Direct /pages/ route match with .html fallback
+    if (relativePath.startsWith('/pages/')) {
+      const pageFile = path.normalize(path.join(baseDir, relativePath));
+      if (pageFile.startsWith(baseDir) && fs.existsSync(pageFile) && fs.statSync(pageFile).isFile()) {
+        reply.type('text/html; charset=utf-8');
+        return reply.send(fs.createReadStream(pageFile));
+      }
+    }
+
+    // 4. Fallback to index.html for SPA routes
     const indexPath = path.join(baseDir, 'index.html');
     if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
       reply.type('text/html; charset=utf-8');

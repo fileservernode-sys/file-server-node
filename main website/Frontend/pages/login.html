@@ -16,8 +16,22 @@
   <!-- HEADER -->
   <header class="site-header" id="header">
     <div class="container header-container">
-      <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-      <nav class="desktop-nav">
+      
+      <!-- Brand Logo / Text Mark -->
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Main Navigation">
         <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
@@ -26,22 +40,46 @@
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
+
+      <!-- Desktop Header Actions -->
       <div class="header-actions">
-        <a href="login.html" class="btn btn-ghost is-active">Sign In</a>
-        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+        <a href="login.html" class="btn btn-ghost active" id="header-btn-signin">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
-      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
       </button>
+
     </div>
   </header>
 
   <!-- MOBILE DRAWER -->
   <div class="drawer-backdrop" aria-hidden="true"></div>
-  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu">
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
     <div class="drawer-header">
-      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
-      <button class="btn btn-ghost drawer-close-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
     <div class="drawer-nav-list">
       <a href="product.html" class="drawer-nav-link">Product</a>
@@ -52,51 +90,128 @@
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
     </div>
-    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
-      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
-      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
     </div>
   </aside>
 
+  <!-- MAIN AUTH COMPOSITION -->
   <main>
-    <section class="section-wrapper">
-      <div class="container" style="max-width: 480px;">
-        <div class="card" style="padding: var(--space-2xl);">
+    <section class="auth-page-section">
+      <div class="container">
+        
+        <div class="auth-split-wrapper">
           
-          <div style="text-align: center; margin-bottom: var(--space-xl);">
-            <span class="brand-mark" style="justify-content: center; margin-bottom: var(--space-sm);">
-              <span class="brand-icon">RN</span> RemoteNode
-            </span>
-            <h1 style="font-size: var(--font-size-2xl); font-weight: bold; color: var(--color-text-primary);">Sign In to Platform</h1>
-            <p style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Manage your registered devices and endpoints.</p>
+          <!-- LEFT BRAND PANEL -->
+          <div class="auth-brand-side">
+            <div>
+              <div class="auth-brand-badge">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <span>Control Plane Account Access</span>
+              </div>
+
+              <h2 class="auth-brand-headline">Manage your personal server infrastructure.</h2>
+              <p class="auth-brand-desc">
+                Sign into your platform account to view live device statuses, manage server registrations, and configure secure outbound gateway access.
+              </p>
+
+              <div class="auth-feature-list">
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Local Storage Host</div>
+                    <div class="auth-feature-sub">Files remain on your Android phone media host.</div>
+                  </div>
+                </div>
+
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Dual Auth Isolation</div>
+                    <div class="auth-feature-sub">Platform login is separated from file-server credentials.</div>
+                  </div>
+                </div>
+
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Outbound Relay Route</div>
+                    <div class="auth-feature-sub">No router port forwarding or public IP required.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="auth-brand-footer">
+              <span>REMOTENODE PLATFORM v1.0</span>
+              <span>TLS 1.3 SECURED</span>
+            </div>
           </div>
 
-          <form id="login-form">
+          <!-- RIGHT FORM PANEL -->
+          <div class="auth-card-side">
+            
+            <div class="auth-card-header">
+              <h1 class="auth-card-title">Sign In to Platform</h1>
+              <p class="auth-card-subtitle">Enter your account credentials to access your control plane.</p>
+            </div>
+
+            <!-- Error Alert Container -->
             <div id="login-error-alert" class="alert alert-error hidden" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <span id="login-error-message"></span>
             </div>
 
-            <div class="form-group">
-              <label for="login-email" class="form-label">Email Address</label>
-              <input type="email" id="login-email" class="form-input" placeholder="name@example.com" required>
-            </div>
-
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <label for="login-password" class="form-label">Password</label>
-                <a href="forgot-password.html" style="font-size: var(--font-size-xs); color: var(--color-accent);">Forgot password?</a>
+            <!-- Form -->
+            <form id="login-form">
+              
+              <div class="form-group">
+                <label for="login-email" class="form-label">Email Address</label>
+                <input type="email" id="login-email" class="form-input" placeholder="name@example.com" required autocomplete="email">
               </div>
-              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
+                  <label for="login-password" class="form-label" style="margin-bottom: 0;">Password</label>
+                  <a href="forgot-password.html" style="font-size: var(--font-size-xs); color: var(--color-brand-primary); font-weight: var(--font-weight-medium);">Forgot password?</a>
+                </div>
+                <div class="password-toggle-wrapper">
+                  <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                  <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" onclick="togglePasswordVisibility('login-password', this)">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" id="btn-login-submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: var(--space-sm);">
+                Sign In with Email
+              </button>
+            </form>
+
+            <div class="auth-divider">
+              <span>Or sign in with</span>
             </div>
 
-            <button type="submit" id="btn-login-submit" class="btn btn-primary btn-lg" style="width: 100%;">Sign In with Email</button>
-          </form>
+            <button type="button" class="btn-google" onclick="alert('Google Sign-In integrates with backend Google Identity provider.')">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Continue with Google</span>
+            </button>
 
-          <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
-            Don't have an account? <a href="get-started.html" style="font-weight: var(--font-weight-semibold);">Create an Account</a>
+            <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+              Don't have an account? <a href="get-started.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Create an Account</a>
+            </div>
+
           </div>
 
         </div>
+
       </div>
     </section>
   </main>
@@ -106,31 +221,49 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
         </div>
+
         <div>
           <h4 class="footer-col-title">Product</h4>
           <ul class="footer-link-list">
             <li><a href="product.html" class="footer-link">Product Overview</a></li>
             <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
             <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Company</h4>
           <ul class="footer-link-list">
-            <li><a href="about.html" class="footer-link">About Us</a></li>
-            <li><a href="contact.html" class="footer-link">Contact</a></li>
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Legal</h4>
           <ul class="footer-link-list">
@@ -139,8 +272,10 @@
           </ul>
         </div>
       </div>
+
       <div class="footer-bottom">
         <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
     </div>
   </footer>
@@ -148,6 +283,18 @@
   <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
   <script>
+    function togglePasswordVisibility(inputId, btnEl) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+      } else {
+        input.type = 'password';
+        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const loginForm = document.getElementById('login-form');
       const submitBtn = document.getElementById('btn-login-submit');

@@ -3,8 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Explore the RemoteNode personal Android file server platform components, architecture, and local-first storage capabilities.">
-  <title>Product Overview | RemoteNode — Personal File Server</title>
+  <meta name="description" content="Explore the RemoteNode personal Android file server platform components, architecture, local-first storage capabilities, hardware requirements, and cloud vs self-hosted comparison.">
+  <meta name="keywords" content="Android file server architecture, personal cloud product, phone server host, self-hosted NAS alternative, RemoteNode product overview">
+  <title>Product Overview & Technical Architecture | RemoteNode — Personal File Server</title>
+
+  <!-- Canonical URL & Open Graph SEO -->
+  <link rel="canonical" href="https://remotenode.net/product">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Product Overview & Technical Architecture | RemoteNode">
+  <meta property="og:description" content="Explore the 3 core pillars of RemoteNode personal phone file servers, hardware specifications, and self-hosted privacy model.">
+  <meta property="og:url" content="https://remotenode.net/product">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Product Overview & Technical Architecture | RemoteNode">
+  <meta name="twitter:description" content="Learn how RemoteNode converts Android smartphones into private, remotely accessible personal cloud nodes.">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "RemoteNode Architecture Platform",
+    "operatingSystem": "Android 8.0+",
+    "applicationCategory": "UtilitiesApplication",
+    "description": "Personal Android file server platform converting idle smartphones into self-hosted storage nodes.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -16,13 +46,23 @@
   <!-- HEADER -->
   <header class="site-header" id="header">
     <div class="container header-container">
+      
+      <!-- Brand Logo / Text Mark -->
       <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
-        <span class="brand-icon">RN</span>
-        <span>RemoteNode</span>
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
       </a>
 
+      <!-- Desktop Navigation -->
       <nav class="desktop-nav" aria-label="Main Navigation">
-        <a href="product.html" class="nav-link is-active">Product</a>
+        <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
         <a href="pricing.html" class="nav-link">Pricing</a>
@@ -31,28 +71,41 @@
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
 
+      <!-- Desktop Header Actions -->
       <div class="header-actions">
-        <a href="login.html" class="btn btn-ghost">Sign In</a>
-        <a href="get-started.html" class="btn btn-primary">Get Started</a>
+        <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
+        <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
 
-      <button class="mobile-menu-toggle" aria-label="Toggle Navigation Menu" aria-expanded="false">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- Mobile Menu Toggle Button -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
+
     </div>
   </header>
 
   <!-- MOBILE DRAWER -->
   <div class="drawer-backdrop" aria-hidden="true"></div>
-  <aside class="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
     <div class="drawer-header">
-      <span class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</span>
-      <button class="btn btn-ghost drawer-close-btn" aria-label="Close Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
@@ -67,9 +120,9 @@
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
     </div>
-    <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-sm);">
-      <a href="login.html" class="btn btn-secondary" style="width: 100%;">Sign In</a>
-      <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Get Started</a>
+    <div class="drawer-actions">
+      <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
+      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
     </div>
   </aside>
 
@@ -83,11 +136,11 @@
       </div>
       <div class="page-header-content">
         <div class="page-header-eyebrow">
-          <span class="badge badge-accent">Platform Overview</span>
+          <span class="badge badge-accent">Platform Architecture & Capabilities</span>
         </div>
         <h1 class="page-header-title">The Complete Personal File Server Infrastructure</h1>
         <p class="page-header-subtitle">
-          Learn how our three core components work in harmony to turn your unused Android phone into a secure, self-hosted personal cloud.
+          Discover how RemoteNode's three integrated software pillars turn hardware you already own into an end-to-end encrypted, remotely accessible personal cloud storage host.
         </p>
       </div>
     </div>
@@ -100,56 +153,166 @@
         <div class="section-header">
           <div class="section-eyebrow"><span class="badge badge-subtle">System Architecture</span></div>
           <h2 class="section-title">Three unified software pillars</h2>
-          <p class="section-subtitle">A clear division of responsibility ensures security, speed, and privacy.</p>
+          <p class="section-subtitle">A strict separation of concerns ensures privacy, high-throughput file transfers, and Zero-Trust isolation.</p>
         </div>
 
         <div class="components-card-grid">
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 01</span>
-            <h3 class="card-title">Main Control Website</h3>
-            <p class="card-description">Account registry, device ownership verification, server status reporting, and discovery endpoint routing.</p>
+            <span class="component-pill-header">PILLAR 01</span>
+            <h3 class="card-title">Main Control Website & Registry</h3>
+            <p class="card-description">
+              Handles user authentication, device ownership verification, 5-server registration limits, live status telemetry, and secure endpoint discovery. Never stores or inspects your personal files.
+            </p>
           </div>
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 02</span>
-            <h3 class="card-title">Flutter Android Application</h3>
-            <p class="card-description">Runs Server Mode on your phone, manages storage permissions, configures dedicated server login credentials, and maintains gateway tunnels.</p>
+            <span class="component-pill-header">PILLAR 02</span>
+            <h3 class="card-title">Flutter Android Storage Host App</h3>
+            <p class="card-description">
+              Executes the background server process on your Android phone, provisions dedicated server authentication credentials, manages Android storage permissions, and maintains outbound WebSocket relay tunnels.
+            </p>
           </div>
           <div class="card card-hover">
-            <span class="component-pill-header">COMPONENT 03</span>
-            <h3 class="card-title">In-Built Web File Manager</h3>
-            <p class="card-description">Ultra-lightweight web server hosted on the phone itself for browsing, uploading, downloading, and streaming media directly from phone storage.</p>
+            <span class="component-pill-header">PILLAR 03</span>
+            <h3 class="card-title">Embedded Web File Manager</h3>
+            <p class="card-description">
+              An ultra-optimized web app compiled directly into the Android application. Provides desktop-grade file browsing, multi-file uploads, media streaming, and directory management directly from phone hardware.
+            </p>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CONCEPTUAL ARCHITECTURE DIAGRAM -->
+    <!-- DETAILED COMPARISON SECTION -->
     <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header section-header-center">
+          <div class="section-eyebrow"><span class="badge badge-accent">Architectural Comparison</span></div>
+          <h2 class="section-title">Why RemoteNode vs Cloud & NAS</h2>
+          <p class="section-subtitle">Compare self-hosted Android node infrastructure against subscription cloud storage and traditional home NAS units.</p>
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: var(--space-xl);">
+          <table class="pricing-comparison-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+            <thead>
+              <tr style="border-bottom: 2px solid var(--color-border-subtle); text-align: left;">
+                <th style="padding: var(--space-md);">Feature / Architecture</th>
+                <th style="padding: var(--space-md); color: var(--color-brand-primary);">RemoteNode Phone Server</th>
+                <th style="padding: var(--space-md);">Cloud Storage (Google/Dropbox)</th>
+                <th style="padding: var(--space-md);">Traditional Home NAS (Synology)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: var(--space-md); font-weight: 600;">Data Ownership & Physical Storage</td>
+                <td style="padding: var(--space-md); font-weight: 700; color: var(--color-brand-primary);">100% Local Phone Storage</td>
+                <td style="padding: var(--space-md);">Third-Party Public Cloud</td>
+                <td style="padding: var(--space-md);">Local Hard Disk Array</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: var(--space-md); font-weight: 600;">Hardware Upfront Cost</td>
+                <td style="padding: var(--space-md); font-weight: 700; color: var(--color-brand-primary);">$0 (Use Old Phone)</td>
+                <td style="padding: var(--space-md);">$0 (Requires Subscriptions)</td>
+                <td style="padding: var(--space-md);">$350 – $900+ (Drives + Enclosure)</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: var(--space-md); font-weight: 600;">Router Port Forwarding Needed</td>
+                <td style="padding: var(--space-md); font-weight: 700; color: var(--color-brand-primary);">No (Outbound Tunnel)</td>
+                <td style="padding: var(--space-md);">N/A</td>
+                <td style="padding: var(--space-md);">Yes / Dynamic DNS Setup</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: var(--space-md); font-weight: 600;">Power Consumption</td>
+                <td style="padding: var(--space-md); font-weight: 700; color: var(--color-brand-primary);">2W – 5W (Micro-power)</td>
+                <td style="padding: var(--space-md);">N/A</td>
+                <td style="padding: var(--space-md);">35W – 90W Always-On</td>
+              </tr>
+              <tr>
+                <td style="padding: var(--space-md); font-weight: 600;">Multi-Device Management</td>
+                <td style="padding: var(--space-md); font-weight: 700; color: var(--color-brand-primary);">Up to 5 Paired Servers</td>
+                <td style="padding: var(--space-md);">Single Account Quota</td>
+                <td style="padding: var(--space-md);">Per-Box Configuration</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONCEPTUAL ARCHITECTURE DIAGRAM -->
+    <section class="section-wrapper">
       <div class="container">
         <div class="section-header section-header-center">
           <div class="section-eyebrow"><span class="badge badge-accent">Conceptual Flow</span></div>
           <h2 class="section-title">End-to-End Request Journey</h2>
+          <p class="section-subtitle">How a file request travels securely from your browser to your phone host.</p>
         </div>
 
         <div class="concept-flow-wrapper">
           <div class="concept-node">
             <strong style="display: block; color: var(--color-text-primary);">01. User Request</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Remote Browser</span>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Remote Web Browser</span>
           </div>
-          <div class="concept-arrow">➔</div>
+          <div class="concept-arrow">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
           <div class="concept-node">
             <strong style="display: block; color: var(--color-text-primary);">02. Control Plane</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Account & Device Lookup</span>
           </div>
-          <div class="concept-arrow">➔</div>
-          <div class="concept-node">
-            <strong style="display: block; color: var(--color-text-primary);">03. Secure Gateway</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Outbound Route</span>
+          <div class="concept-arrow">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
           </div>
-          <div class="concept-arrow">➔</div>
+          <div class="concept-node">
+            <strong style="display: block; color: var(--color-text-primary);">03. Gateway Tunnel</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">TLS Relay Tunnels</span>
+          </div>
+          <div class="concept-arrow">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
           <div class="concept-node">
             <strong style="display: block; color: var(--color-text-primary);">04. Android Host</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">File Manager & Storage</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HARDWARE REQUIREMENTS SECTION -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Hardware Specs</span></div>
+          <h2 class="section-title">Android Phone Host Hardware Requirements</h2>
+          <p class="section-subtitle">RemoteNode is lightweight and designed to run reliably even on legacy mobile hardware.</p>
+        </div>
+
+        <div class="grid-3-col">
+          <div class="card card-hover">
+            <h3 class="card-title">Operating System</h3>
+            <p class="card-description">
+              Android 8.0 (Oreo) or higher. Fully compatible with Android 9, 10, 11, 12, 13, 14, and 15 custom ROMs and stock OEM builds.
+            </p>
+          </div>
+          <div class="card card-hover">
+            <h3 class="card-title">Memory & CPU</h3>
+            <p class="card-description">
+              Minimum 1.5 GB RAM and Dual-Core ARM64 / ARMv7 processor. Operates smoothly with minimal memory footprint during file transfers.
+            </p>
+          </div>
+          <div class="card card-hover">
+            <h3 class="card-title">Network & Battery</h3>
+            <p class="card-description">
+              Wi-Fi 802.11 b/g/n/ac or 4G/5G Cellular connection. Battery optimization whitelist setting recommended for uninterrupted 24/7 background hosting.
+            </p>
           </div>
         </div>
       </div>
@@ -160,7 +323,7 @@
       <div class="container">
         <div class="final-cta-banner">
           <h2 class="final-cta-title">Ready to build your personal server?</h2>
-          <p class="final-cta-description">Set up your free account today and start transforming your unused smartphone.</p>
+          <p class="final-cta-description">Set up your free account today and start transforming your unused smartphone into personal infrastructure.</p>
           <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
         </div>
       </div>
@@ -172,32 +335,49 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="../index.html" class="brand-mark"><span class="brand-icon">RN</span> RemoteNode</a>
-          <p class="footer-tagline">Converting unused smartphones into remotely accessible personal file servers.</p>
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="RemoteNode Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>RemoteNode</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
         </div>
+
         <div>
           <h4 class="footer-col-title">Product</h4>
           <ul class="footer-link-list">
             <li><a href="product.html" class="footer-link">Product Overview</a></li>
             <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
             <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ</a></li>
-            <li><a href="contact.html" class="footer-link">Support</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Company</h4>
           <ul class="footer-link-list">
-            <li><a href="about.html" class="footer-link">About Us</a></li>
-            <li><a href="contact.html" class="footer-link">Contact</a></li>
+            <li><a href="about.html" class="footer-link">About RemoteNode</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
           </ul>
         </div>
+
         <div>
           <h4 class="footer-col-title">Legal</h4>
           <ul class="footer-link-list">
@@ -206,8 +386,10 @@
           </ul>
         </div>
       </div>
+
       <div class="footer-bottom">
         <div>&copy; 2026 RemoteNode Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
     </div>
   </footer>
