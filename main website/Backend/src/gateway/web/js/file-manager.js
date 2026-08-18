@@ -718,14 +718,22 @@ const StorageController = {
 // GLOBAL ACTION HELPERS
 // =============================================================================
 const FileManagerHelper = {
-  openItem(path, name, category) {
+  openItem(path, name, category, itemDetails = {}) {
     const downloadUrl = ApiService.getDownloadUrl(path);
-    if (category === 'photos') {
+    if (category === 'photos' || category === 'images' || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(name)) {
       UIManager.showLightbox(name, downloadUrl, downloadUrl);
-    } else if (category === 'videos') {
+    } else if (category === 'videos' || /\.(mp4|webm|mkv|mov|avi)$/i.test(name)) {
       UIManager.showVideoModal(name, downloadUrl, downloadUrl);
+    } else if (category === 'audio' || /\.(mp3|wav|ogg|m4a|flac)$/i.test(name)) {
+      UIManager.showAudioModal(name, downloadUrl, downloadUrl);
     } else {
-      window.open(downloadUrl, '_blank');
+      UIManager.showFileInfoModal({
+        name: name,
+        path: path,
+        category: category || 'Document',
+        sizeBytes: itemDetails.sizeBytes,
+        modifiedAt: itemDetails.modifiedAt
+      });
     }
   },
 
