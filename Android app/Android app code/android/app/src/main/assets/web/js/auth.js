@@ -23,12 +23,12 @@ const FileServerAuth = {
     return !!token && token.length > 5;
   },
 
-  async login(username, password) {
+  async login(email, password) {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ email, username: email, password })
       });
       const data = await res.json();
       if (res.ok && data.success && data.data?.token) {
@@ -37,7 +37,7 @@ const FileServerAuth = {
       }
       return {
         success: false,
-        error: data.error?.message || 'Invalid file-server username or password'
+        error: data.error?.message || 'Invalid email address or password'
       };
     } catch (e) {
       return { success: false, error: e.message || 'Connection error to file server' };

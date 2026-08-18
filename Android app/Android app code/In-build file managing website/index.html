@@ -55,23 +55,23 @@
 
         <nav class="nav-menu">
           <a class="nav-link active" data-view="home" role="button" tabindex="0">
-            <span class="nav-icon">🏠</span>
+            <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
             <span>Home</span>
           </a>
           <a class="nav-link" data-view="files" role="button" tabindex="0">
-            <span class="nav-icon">📁</span>
+            <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
             <span>My Files</span>
           </a>
           <a class="nav-link" data-view="photos" role="button" tabindex="0">
-            <span class="nav-icon">🖼️</span>
+            <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>
             <span>Photos</span>
           </a>
           <a class="nav-link" data-view="videos" role="button" tabindex="0">
-            <span class="nav-icon">🎬</span>
+            <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></span>
             <span>Videos</span>
           </a>
           <a class="nav-link" data-view="storage" role="button" tabindex="0">
-            <span class="nav-icon">📊</span>
+            <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></span>
             <span>Storage</span>
           </a>
         </nav>
@@ -106,12 +106,12 @@
         </div>
 
         <div class="header-search-wrap">
-          <input type="text" id="global-search-input" class="form-input" placeholder="🔍 Search all files in storage..." aria-label="Search files">
+          <input type="text" id="global-search-input" class="form-input" placeholder="Search all files in storage..." aria-label="Search files">
         </div>
 
         <div class="header-actions">
           <button type="button" class="btn btn-primary btn-sm" id="btn-quick-upload">
-            <span>📤</span> <span>Upload</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> <span>Upload</span>
           </button>
           <button type="button" class="btn btn-secondary btn-sm" onclick="FileServerAuth.logout()">
             <span>Sign Out</span>
@@ -129,10 +129,10 @@
           <div class="page-header-block">
             <div>
               <h1 id="home-title" class="page-title">Personal Storage</h1>
-              <p class="page-description">Android device storage host running locally & remotely.</p>
+              <p class="page-description">Android device storage host running locally &amp; remotely.</p>
             </div>
             <div style="display: flex; gap: var(--space-xs);">
-              <button class="btn btn-secondary" onclick="AppRouter.navigate('files')">Browse All Files 📁</button>
+              <button class="btn btn-secondary" onclick="AppRouter.navigate('files')">Browse All Files</button>
             </div>
           </div>
 
@@ -164,37 +164,37 @@
                 <!-- Category Cards Grid -->
                 <div class="category-cards-grid">
                   <div class="category-card" onclick="AppRouter.navigate('photos')">
-                    <div class="category-card-icon icon-photos">🖼️</div>
+                    <div class="category-card-icon icon-photos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
                     <span class="category-card-title">Photos</span>
                     <span class="category-card-count" id="cat-count-photos">0 files</span>
                     <span class="category-card-size" id="cat-size-photos">0 MB</span>
                   </div>
                   <div class="category-card" onclick="AppRouter.navigate('videos')">
-                    <div class="category-card-icon icon-videos">🎬</div>
+                    <div class="category-card-icon icon-videos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></div>
                     <span class="category-card-title">Videos</span>
                     <span class="category-card-count" id="cat-count-videos">0 files</span>
                     <span class="category-card-size" id="cat-size-videos">0 MB</span>
                   </div>
                   <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-docs">📄</div>
+                    <div class="category-card-icon icon-docs"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
                     <span class="category-card-title">Documents</span>
                     <span class="category-card-count" id="cat-count-docs">0 files</span>
                     <span class="category-card-size" id="cat-size-docs">0 MB</span>
                   </div>
                   <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-audio">🎵</div>
+                    <div class="category-card-icon icon-audio"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
                     <span class="category-card-title">Audio</span>
                     <span class="category-card-count" id="cat-count-audio">0 files</span>
                     <span class="category-card-size" id="cat-size-audio">0 MB</span>
                   </div>
                   <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-archives">📦</div>
+                    <div class="category-card-icon icon-archives"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg></div>
                     <span class="category-card-title">Archives</span>
                     <span class="category-card-count" id="cat-count-archives">0 files</span>
                     <span class="category-card-size" id="cat-size-archives">0 MB</span>
                   </div>
                   <div class="category-card" onclick="AppRouter.navigate('storage')">
-                    <div class="category-card-icon icon-other">📊</div>
+                    <div class="category-card-icon icon-other"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></div>
                     <span class="category-card-title">Analytics</span>
                     <span class="category-card-count" id="cat-count-total">0 total</span>
                     <span class="category-card-size">View Stats</span>
@@ -219,28 +219,28 @@
               <div class="card quick-actions-card">
                 <h2 class="card-title">Quick Actions</h2>
                 <button type="button" class="quick-action-btn" id="btn-home-upload">
-                  <span style="font-size: 1.25rem;">📤</span>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
                   <div style="text-align: left;">
                     <div>Upload File</div>
                     <div style="font-size: 0.75rem; color: var(--color-text-muted);">Save files to phone storage</div>
                   </div>
                 </button>
                 <button type="button" class="quick-action-btn" id="btn-home-new-folder">
-                  <span style="font-size: 1.25rem;">➕</span>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                   <div style="text-align: left;">
                     <div>Create Folder</div>
                     <div style="font-size: 0.75rem; color: var(--color-text-muted);">Organize your files</div>
                   </div>
                 </button>
                 <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('photos')">
-                  <span style="font-size: 1.25rem;">🖼️</span>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
                   <div style="text-align: left;">
                     <div>Browse Photos</div>
                     <div style="font-size: 0.75rem; color: var(--color-text-muted);">View photo gallery</div>
                   </div>
                 </button>
                 <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('storage')">
-                  <span style="font-size: 1.25rem;">📊</span>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg>
                   <div style="text-align: left;">
                     <div>Storage Breakdown</div>
                     <div style="font-size: 0.75rem; color: var(--color-text-muted);">Inspect space usage</div>
@@ -280,9 +280,9 @@
               <p class="page-description">Browse and manage all files stored in your Android phone.</p>
             </div>
             <div class="toolbar-group">
-              <button class="btn btn-primary" id="btn-files-new-folder">➕ New Folder</button>
-              <button class="btn btn-secondary" id="btn-files-upload">📤 Upload</button>
-              <button class="btn btn-secondary btn-icon" id="btn-files-refresh" title="Refresh">🔄</button>
+              <button class="btn btn-primary" id="btn-files-new-folder"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> New Folder</button>
+              <button class="btn btn-secondary" id="btn-files-upload"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> Upload</button>
+              <button class="btn btn-secondary btn-icon" id="btn-files-refresh" title="Refresh"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
             </div>
           </div>
 
@@ -306,8 +306,8 @@
             </div>
 
             <div class="toolbar-group">
-              <button class="btn btn-secondary btn-sm" id="btn-view-list" title="List View">📑 List</button>
-              <button class="btn btn-secondary btn-sm" id="btn-view-grid" title="Grid View">🔲 Grid</button>
+              <button class="btn btn-secondary btn-sm" id="btn-view-list" title="List View"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg> List</button>
+              <button class="btn btn-secondary btn-sm" id="btn-view-grid" title="Grid View"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg> Grid</button>
             </div>
           </div>
 
@@ -328,7 +328,7 @@
             </div>
             <div class="toolbar-group">
               <button class="btn btn-primary" onclick="document.getElementById('file-picker').click()">Upload Photos</button>
-              <button class="btn btn-secondary btn-icon" id="btn-photos-refresh" title="Refresh">🔄</button>
+              <button class="btn btn-secondary btn-icon" id="btn-photos-refresh" title="Refresh"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
             </div>
           </div>
 
@@ -348,7 +348,7 @@
             </div>
             <div class="toolbar-group">
               <button class="btn btn-primary" onclick="document.getElementById('file-picker').click()">Upload Videos</button>
-              <button class="btn btn-secondary btn-icon" id="btn-videos-refresh" title="Refresh">🔄</button>
+              <button class="btn btn-secondary btn-icon" id="btn-videos-refresh" title="Refresh"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
             </div>
           </div>
 
@@ -366,7 +366,7 @@
               <h1 id="storage-title" class="page-title">Storage Analytics</h1>
               <p class="page-description">Detailed device capacity and categorized file intelligence.</p>
             </div>
-            <button class="btn btn-secondary btn-icon" id="btn-storage-refresh" title="Refresh Stats">🔄</button>
+            <button class="btn btn-secondary btn-icon" id="btn-storage-refresh" title="Refresh Stats"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
           </div>
 
           <div class="storage-stats-grid">
@@ -433,23 +433,23 @@
     <!-- Mobile Responsive Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
       <div class="mobile-nav-item active" data-view="home" role="button" tabindex="0">
-        <span class="mobile-nav-icon">🏠</span>
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
         <span>Home</span>
       </div>
       <div class="mobile-nav-item" data-view="files" role="button" tabindex="0">
-        <span class="mobile-nav-icon">📁</span>
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
         <span>Files</span>
       </div>
       <div class="mobile-nav-item" data-view="photos" role="button" tabindex="0">
-        <span class="mobile-nav-icon">🖼️</span>
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>
         <span>Photos</span>
       </div>
       <div class="mobile-nav-item" data-view="videos" role="button" tabindex="0">
-        <span class="mobile-nav-icon">🎬</span>
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></span>
         <span>Videos</span>
       </div>
       <div class="mobile-nav-item" data-view="storage" role="button" tabindex="0">
-        <span class="mobile-nav-icon">📊</span>
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></span>
         <span>Storage</span>
       </div>
     </nav>
@@ -466,7 +466,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Create New Folder</h3>
-        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-new-folder')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-new-folder')" aria-label="Close modal"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <form id="form-new-folder">
         <div class="form-group">
@@ -486,7 +486,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Rename Item</h3>
-        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-rename')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-rename')" aria-label="Close modal"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <form id="form-rename">
         <input type="hidden" id="rename-old-path">
@@ -507,11 +507,11 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3 class="modal-title">Confirm Deletion</h3>
-        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-delete')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-delete')" aria-label="Close modal"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <div class="modal-body">
         <p>Are you sure you want to permanently delete <strong id="delete-item-name"></strong>?</p>
-        <p style="font-size: var(--font-size-xs); color: var(--color-status-error); margin-top: 8px;">⚠️ This action cannot be undone.</p>
+        <p style="font-size: var(--font-size-xs); color: var(--color-status-error); margin-top: 8px;">This action cannot be undone.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-delete')">Cancel</button>
@@ -525,7 +525,7 @@
     <div class="modal-card modal-card-lg">
       <div class="modal-header">
         <h3 class="modal-title" id="lightbox-title">Image Preview</h3>
-        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-lightbox')">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-lightbox')" aria-label="Close modal"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <div class="lightbox-content">
         <img id="lightbox-img" src="" alt="Preview image">
@@ -542,7 +542,7 @@
     <div class="modal-card modal-card-lg">
       <div class="modal-header">
         <h3 class="modal-title" id="video-player-title">Video Playback</h3>
-        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideVideoModal()">✕</button>
+        <button class="btn btn-ghost btn-sm" onclick="UIManager.hideVideoModal()" aria-label="Close modal"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
       </div>
       <div class="lightbox-content">
         <video id="video-player-el" controls style="max-height: 65vh; width: 100%;"></video>
