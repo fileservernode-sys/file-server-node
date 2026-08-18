@@ -762,18 +762,69 @@ const FileManagerHelper = {
     if (!fileList || fileList.length === 0) return;
     const targetPath = MyFilesController.currentPath || '/';
 
+    UIManager.showModal('modal-upload');
+    const queueContainer = document.getElementById('modal-upload-queue');
+    if (queueContainer) {
+      let queueHtml = '';
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        queueHtml += `
+          <div class="upload-queue-card" id="upload-item-${i}">
+            <div class="upload-file-icon">${AppIcons.document}</div>
+            <div class="upload-file-meta">
+              <div class="upload-file-name">${file.name}</div>
+              <div class="upload-file-size">${StorageUtils.formatBytes(file.size)} • <span id="upload-status-${i}">Queued</span></div>
+              <div class="upload-progress-bar-wrap">
+                <div class="upload-progress-bar-fill" id="upload-progress-${i}" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      queueContainer.innerHTML = queueHtml;
+    }
+
+    let successCount = 0;
     for (let i = 0; i < fileList.length; i++) {
       const file = fileList[i];
-      UIManager.showToast(`Uploading (${i + 1}/${fileList.length}) ${file.name}...`, 'online');
+      const statusEl = document.getElementById(`upload-status-${i}`);
+      const progressEl = document.getElementById(`upload-progress-${i}`);
+
+      if (statusEl) statusEl.textContent = 'Uploading...';
+      if (progressEl) progressEl.style.width = '50%';
+
       const res = await ApiService.uploadFile(targetPath, file);
-      if (!res.success) {
-        UIManager.showToast(res.error?.message || `Failed to upload ${file.name}`, 'error');
+
+      if (res.success) {
+        successCount++;
+        if (statusEl) {
+          statusEl.textContent = 'Completed';
+          statusEl.style.color = 'var(--color-status-online)';
+        }
+        if (progressEl) {
+          progressEl.style.width = '100%';
+          progressEl.style.backgroundColor = 'var(--color-status-online)';
+        }
+      } else {
+        if (statusEl) {
+          statusEl.textContent = res.error?.message || 'Failed';
+          statusEl.style.color = 'var(--color-status-error)';
+        }
+        if (progressEl) {
+          progressEl.style.width = '100%';
+          progressEl.style.backgroundColor = 'var(--color-status-error)';
+        }
       }
     }
 
-    UIManager.showToast('Uploads completed', 'online');
-    MyFilesController.load();
-    HomeController.load();
+    if (successCount > 0) {
+      UIManager.showToast(`${successCount} file(s) uploaded successfully`, 'online');
+      MyFilesController.load();
+      HomeController.load();
+    }
+    setTimeout(() => {
+      UIManager.hideModal('modal-upload');
+    }, 1200);
   },
 
   async handleCreateFolder(name) {

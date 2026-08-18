@@ -23,8 +23,37 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 3. Quick Upload Button Triggers
-  document.getElementById('btn-quick-upload')?.addEventListener('click', () => filePicker?.click());
-  document.getElementById('btn-home-upload')?.addEventListener('click', () => filePicker?.click());
+  document.getElementById('btn-quick-upload')?.addEventListener('click', () => {
+    UIManager.showModal('modal-upload');
+  });
+  document.getElementById('btn-home-upload')?.addEventListener('click', () => {
+    UIManager.showModal('modal-upload');
+  });
+
+  // 3b. Drag & Drop Upload Zone Bindings
+  const dropZone = document.getElementById('upload-drop-zone');
+  window.addEventListener('dragover', (e) => e.preventDefault());
+  window.addEventListener('drop', (e) => {
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      e.preventDefault();
+      FileManagerHelper.handleUpload(e.dataTransfer.files);
+    }
+  });
+
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        FileManagerHelper.handleUpload(e.dataTransfer.files);
+      }
+    });
+  }
 
   // 4. Quick New Folder Button Triggers
   document.getElementById('btn-home-new-folder')?.addEventListener('click', () => {
