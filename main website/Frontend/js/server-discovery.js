@@ -26,7 +26,6 @@ async function findUserDevices() {
 
     const mappedDevices = rawDevices.map(d => {
       const server = d.server;
-      const endpoint = server?.endpoint;
       const isOnline = d.status === 'ONLINE' && server?.status === 'RUNNING';
       const isStarting = server?.status === 'STARTING';
 
@@ -40,9 +39,26 @@ async function findUserDevices() {
         serverStatusText = 'Starting Server...';
       }
 
-      const publicUrl = endpoint && endpoint.status === 'ACTIVE' && endpoint.hostname
-        ? `https://${endpoint.hostname}`
-        : null;
+      const rawEndpoint = server?.endpoint;
+      let endpointHost = null;
+
+      if (rawEndpoint) {
+        if (typeof rawEndpoint === 'string') {
+          endpointHost = rawEndpoint.replace(/^https?:\/\//i, '');
+        } else if (typeof rawEndpoint === 'object') {
+          endpointHost = rawEndpoint.hostname || (rawEndpoint.publicUrl ? rawEndpoint.publicUrl.replace(/^https?:\/\//i, '') : null);
+        }
+      }
+
+      if (!endpointHost && d.connection?.remoteEndpoint) {
+        endpointHost = d.connection.remoteEndpoint.replace(/^https?:\/\//i, '');
+      }
+
+      if (!endpointHost && server?.id) {
+        endpointHost = `${server.id}.remotenode.net`;
+      }
+
+      const publicUrl = endpointHost ? `https://${endpointHost}` : null;
 
       return {
         id: d.id,
@@ -51,7 +67,7 @@ async function findUserDevices() {
         status,
         serverStatus: serverStatusText,
         lastSeen: d.lastSeenAt ? formatRelativeTime(d.lastSeenAt) : 'Not available yet',
-        endpoint: publicUrl || (endpoint?.hostname ? `https://${endpoint.hostname} (Connecting)` : 'Provisioning...'),
+        endpoint: publicUrl || 'Provisioning...',
         canAccess: isOnline && !!server?.id,
         storageStats: `${d.platform || 'Android'} ${d.osVersion || ''} • App v${d.appVersion || '1.0.0'}`
       };

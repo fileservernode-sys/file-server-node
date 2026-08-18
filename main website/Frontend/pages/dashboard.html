@@ -446,9 +446,31 @@
           `;
         } else {
           // Render Real Server Instance Cards
-          const cardsHtml = devices.map(device => {
             const server = device.server;
-            const endpoint = server?.endpoint || (server?.id ? `${server.id}.remotenode.net` : null);
+            const rawEndpoint = server?.endpoint;
+            let endpointText = null;
+
+            if (rawEndpoint) {
+              if (typeof rawEndpoint === 'string') {
+                endpointText = rawEndpoint;
+              } else if (typeof rawEndpoint === 'object') {
+                endpointText = rawEndpoint.hostname || rawEndpoint.publicUrl || null;
+              }
+            }
+
+            if (!endpointText && device.connection?.remoteEndpoint) {
+              endpointText = device.connection.remoteEndpoint;
+            }
+
+            if (!endpointText && server?.id) {
+              endpointText = `${server.id}.remotenode.net`;
+            }
+
+            if (endpointText && endpointText.startsWith('http')) {
+              endpointText = endpointText.replace(/^https?:\/\//i, '');
+            }
+
+            const endpoint = endpointText;
             const isOnline = device.status === 'ONLINE' && server?.status === 'RUNNING';
             const isStarting = server?.status === 'STARTING';
 
