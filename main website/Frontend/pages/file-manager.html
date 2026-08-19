@@ -7,13 +7,10 @@
   <meta name="description" content="Remotely view, upload, stream, and manage files physically hosted on your linked Android device.">
 
   <!-- Core & Shared Platform Stylesheets -->
-  <link rel="stylesheet" href="../css/variables.css">
-  <link rel="stylesheet" href="../css/base.css">
-  <link rel="stylesheet" href="../css/components.css">
-  <link rel="stylesheet" href="../css/layout.css">
-  <link rel="stylesheet" href="../css/sections.css">
-
-  <!-- Dedicated Storage Web Application Stylesheet -->
+  <link rel="stylesheet" href="../file-manager-assets/css/variables.css">
+  <link rel="stylesheet" href="../file-manager-assets/css/base.css">
+  <link rel="stylesheet" href="../file-manager-assets/css/components.css">
+  <link rel="stylesheet" href="../file-manager-assets/css/layout.css">
   <link rel="stylesheet" href="../file-manager-assets/css/file-manager.css">
 </head>
 <body style="background-color: var(--color-bg-secondary); overflow-x: hidden;">
@@ -663,14 +660,14 @@
       }
 
       if (typeof EmbeddedFileManager !== 'undefined') {
-        const initResult = EmbeddedFileManager.init();
-        if (!initResult.success) {
-          showOffline(initResult.error || 'No target server selected.');
+        const isInitialized = EmbeddedFileManager.init();
+        if (!isInitialized) {
+          showOffline('No target server selected or authentication session expired.');
           return;
         }
 
         try {
-          const apiBase = (typeof RN_CONFIG !== 'undefined' ? RN_CONFIG.API_BASE_URL : 'http://localhost:3000/api/v1');
+          const apiBase = EmbeddedFileManager.getApiBase();
           const res = await fetch(`${apiBase}/file-manager/${EmbeddedFileManager.serverId}/access`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });

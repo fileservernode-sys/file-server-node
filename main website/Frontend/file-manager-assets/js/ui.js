@@ -69,6 +69,62 @@ const UIManager = {
     this.hideModal('modal-video-player');
   },
 
+  showAudioModal(title, audioUrl, downloadUrl) {
+    const titleEl = document.getElementById('audio-player-title');
+    const audioEl = document.getElementById('audio-player-el');
+    const downloadEl = document.getElementById('audio-download-link');
+
+    if (titleEl) titleEl.textContent = title;
+    if (audioEl) {
+      audioEl.src = audioUrl;
+      audioEl.load();
+      audioEl.play().catch(() => {});
+    }
+    if (downloadEl) {
+      downloadEl.href = downloadUrl;
+      downloadEl.setAttribute('download', title);
+    }
+
+    this.showModal('modal-audio-player');
+  },
+
+  hideAudioModal() {
+    const audioEl = document.getElementById('audio-player-el');
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.src = '';
+    }
+    this.hideModal('modal-audio-player');
+  },
+
+  showFileInfoModal(item) {
+    const nameEl = document.getElementById('file-info-name');
+    const categoryEl = document.getElementById('file-info-category');
+    const sizeEl = document.getElementById('file-info-size');
+    const modifiedEl = document.getElementById('file-info-modified');
+    const pathEl = document.getElementById('file-info-path');
+    const iconContainer = document.getElementById('file-info-icon-container');
+    const downloadEl = document.getElementById('file-info-download-link');
+
+    if (nameEl) nameEl.textContent = item.name || 'File Details';
+    if (categoryEl) categoryEl.textContent = (item.category || 'File').toUpperCase();
+    if (sizeEl) sizeEl.textContent = item.sizeBytes ? StorageUtils.formatBytes(item.sizeBytes) : '—';
+    if (modifiedEl) modifiedEl.textContent = item.modifiedAt ? StorageUtils.formatDate(item.modifiedAt) : '—';
+    if (pathEl) pathEl.textContent = item.path || '/';
+
+    if (iconContainer) {
+      iconContainer.innerHTML = StorageUtils.getFileIcon(item.name, item.isDir);
+    }
+
+    if (downloadEl) {
+      const downloadUrl = item.path ? ApiService.getDownloadUrl(item.path) : '#';
+      downloadEl.href = downloadUrl;
+      downloadEl.setAttribute('download', item.name || 'file');
+    }
+
+    this.showModal('modal-file-info');
+  },
+
   showRenameDialog(itemPath, currentName, onSaveCallback) {
     document.getElementById('rename-old-path').value = itemPath;
     const inputEl = document.getElementById('input-rename-name');
