@@ -48,6 +48,29 @@ img, video {
   display: block;
 }
 
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+svg.icon,
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.icon-xs { width: 14px !important; height: 14px !important; }
+.icon-sm { width: 16px !important; height: 16px !important; }
+.icon-md { width: 20px !important; height: 20px !important; }
+.icon-lg { width: 24px !important; height: 24px !important; }
+.icon-xl { width: 32px !important; height: 32px !important; }
+.icon-2xl { width: 48px !important; height: 48px !important; }
+
 ul, ol {
   list-style: none;
 }
