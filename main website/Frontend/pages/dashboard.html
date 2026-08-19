@@ -492,8 +492,8 @@
             }
 
             const endpoint = endpointText;
-            const isOnline = device.status === 'ONLINE' && server?.status === 'RUNNING';
-            const isStarting = server?.status === 'STARTING';
+            const isOnline = device.status === 'ONLINE' && server?.status !== 'STOPPED';
+            const isStarting = server?.status === 'STARTING' && device.status !== 'ONLINE';
 
             let statusBadge = '';
             if (isOnline) {

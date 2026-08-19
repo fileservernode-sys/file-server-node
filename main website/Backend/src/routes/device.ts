@@ -105,6 +105,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             data: {
               serverName: serverName || existingServer.serverName || deviceName,
               adminUsername: adminUsername || existingServer.adminUsername,
+              status: 'RUNNING',
               ...(adminPasswordHash ? { adminPasswordHash } : {})
             }
           });
@@ -124,7 +125,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
               serverName: serverName || deviceName,
               adminUsername: adminUsername,
               adminPasswordHash: adminPasswordHash,
-              status: 'STARTING'
+              status: 'RUNNING'
             }
           });
         }
@@ -162,7 +163,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             serverName: serverName || deviceName,
             adminUsername: adminUsername,
             adminPasswordHash: adminPasswordHash,
-            status: 'STARTING'
+            status: 'RUNNING'
           }
         });
 
@@ -234,10 +235,13 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
-    // Update server instance heartbeat if active
+    // Update server instance heartbeat AND status
     await prisma.serverInstance.updateMany({
       where: { deviceId },
-      data: { lastHeartbeatAt: now }
+      data: { 
+        status: 'RUNNING',
+        lastHeartbeatAt: now 
+      }
     });
 
     return reply.status(200).send(createSuccessResponse({
