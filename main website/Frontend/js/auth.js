@@ -11,10 +11,7 @@ function getCalculatedApiBase() {
   if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
     return 'http://localhost:4000/api/v1';
   }
-  if (host === 'gateway.viewduration.com') {
-    return '/api/v1';
-  }
-  return 'https://gateway.viewduration.com/api/v1';
+  return '/api/v1';
 }
 
 const API_BASE_URL = getCalculatedApiBase();
@@ -70,8 +67,9 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
   const candidates = [
     window.API_BASE_URL,
     getCalculatedApiBase(),
-    'https://gateway.viewduration.com/api/v1',
     '/api/v1',
+    'https://file-server-node-1.onrender.com/api/v1',
+    'https://gateway.viewduration.com/api/v1',
     'http://localhost:4000/api/v1'
   ].filter((url, index, self) => url && self.indexOf(url) === index);
 
