@@ -466,6 +466,7 @@
           `;
         } else {
           // Render Real Server Instance Cards
+          const cardsHtml = devices.map(device => {
             const server = device.server;
             const rawEndpoint = server?.endpoint;
             let endpointText = null;

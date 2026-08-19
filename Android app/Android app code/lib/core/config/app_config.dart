@@ -35,11 +35,11 @@ class AppConfig {
   factory AppConfig.testing() {
     return const AppConfig(
       environment: 'testing',
-      baseDomain: 'file-server-node-1.onrender.com',
-      websiteUrl: 'https://file-server-node-1.onrender.com/?from=app',
-      apiBaseUrl: 'https://file-server-node-1.onrender.com/api/v1',
-      gatewayWsUrl: 'wss://file-server-node-1.onrender.com',
-      webRegistrationUrl: 'https://file-server-node-1.onrender.com/pages/get-started.html',
+      baseDomain: 'viewduration.com',
+      websiteUrl: 'https://viewduration.com/?from=app',
+      apiBaseUrl: 'https://gateway.viewduration.com/api/v1',
+      gatewayWsUrl: 'wss://gateway.viewduration.com',
+      webRegistrationUrl: 'https://viewduration.com/pages/get-started.html',
       enableVerboseLogging: true,
     );
   }
