@@ -538,30 +538,6 @@
               `;
             }
 
-            const endpointDisplayHtml = endpoint ? `
-              <div style="margin-bottom: var(--space-md);">
-                <div class="text-xs text-muted" style="margin-bottom: 2px;">Remote Endpoint</div>
-                <div class="server-card-endpoint">${escapeHtml(endpoint)}</div>
-              </div>
-            ` : '';
-
-            return `
-              <div class="card card-hover" style="border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface); padding: var(--space-xl); display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
-                <div>
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-sm); gap: var(--space-xs);">
-                    <div>
-                      <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px;">
-                        ${escapeHtml(serverDisplayName)}
-                      </h3>
-                      <span class="text-xs text-muted" style="display: flex; align-items: center; gap: 4px;">
-                        <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
-                        ${platformInfo}
-                      </span>
-                    </div>
-                    ${statusBadge}
-                  </div>
-
-                  ${endpointDisplayHtml}
                   ${fileManagerButtonHtml}
                 </div>
 
