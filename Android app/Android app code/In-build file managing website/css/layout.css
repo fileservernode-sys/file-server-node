@@ -200,12 +200,14 @@
   flex: 1;
 }
 
-.view-section {
+.view-section,
+.view-content {
   display: none;
   animation: viewFadeIn 0.15s ease-out;
 }
 
-.view-section.active {
+.view-section.active,
+.view-content.active {
   display: block;
 }
 

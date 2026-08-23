@@ -95,12 +95,14 @@ const AppRouter = {
       }
     });
 
-    // Toggle active view sections
-    document.querySelectorAll('.view-section').forEach((section) => {
+    // Toggle active view sections and enforce display property
+    document.querySelectorAll('.view-section, .view-content').forEach((section) => {
       if (section.id === `view-${viewName}`) {
         section.classList.add('active');
+        section.style.display = 'block';
       } else {
         section.classList.remove('active');
+        section.style.display = 'none';
       }
     });
 
