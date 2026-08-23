@@ -235,26 +235,62 @@
           </div>
 
           <div class="home-grid">
-            <div>
-              <div class="home-storage-card">
-                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                  <h3 class="card-title" style="font-size: var(--font-size-md);">Host Capacity</h3>
-                  <span class="badge badge-accent" id="home-storage-free-badge">-- GB Free</span>
-                </div>
-                
-                <div class="storage-metrics-row">
-                  <span class="storage-number-main" id="home-storage-used-gb">0 GB</span>
-                  <span class="storage-number-sub" id="home-storage-total-gb">of 64 GB</span>
+              <!-- Storage Overview Widget (Image Matched) -->
+              <div class="storage-overview-container">
+                <h2 class="storage-overview-header">Storage Overview</h2>
+
+                <!-- 4-Card Overview Grid -->
+                <div class="storage-cards-grid">
+                  <div class="storage-stat-card card-total">
+                    <span class="stat-card-label">TOTAL CAPACITY</span>
+                    <span class="stat-card-value" id="home-storage-total">0 GB</span>
+                  </div>
+
+                  <div class="storage-stat-card card-server">
+                    <span class="stat-card-label">REMOTENODE FILES</span>
+                    <span class="stat-card-value text-brand" id="home-storage-server">0 B</span>
+                  </div>
+
+                  <div class="storage-stat-card card-system">
+                    <span class="stat-card-label">SYSTEM &amp; OTHER APPS</span>
+                    <span class="stat-card-value" id="home-storage-system">0 GB</span>
+                  </div>
+
+                  <div class="storage-stat-card card-free">
+                    <span class="stat-card-label">FREE SPACE</span>
+                    <span class="stat-card-value text-success" id="home-storage-free">0 GB</span>
+                  </div>
                 </div>
 
-                <div class="storage-bar-track" id="home-storage-bar-track" style="height: 10px; border-radius: var(--radius-full); overflow: hidden; background: var(--color-surface-secondary); display: flex; margin: var(--space-md) 0;">
-                  <div class="storage-bar-fill fill-photos" id="bar-photos" style="width: 0%;" title="Photos"></div>
-                  <div class="storage-bar-fill fill-videos" id="bar-videos" style="width: 0%;" title="Videos"></div>
-                  <div class="storage-bar-fill fill-docs" id="bar-docs" style="width: 0%;" title="Documents"></div>
-                  <div class="storage-bar-fill fill-audio" id="bar-audio" style="width: 0%;" title="Audio"></div>
-                  <div class="storage-bar-fill fill-archives" id="bar-archives" style="width: 0%;" title="Archives"></div>
-                  <div class="storage-bar-fill fill-other" id="bar-other" style="width: 0%;" title="Other"></div>
+                <!-- Device Storage Distribution Card -->
+                <div class="storage-distribution-card">
+                  <div class="distribution-header">
+                    <span class="distribution-title">Device Storage Distribution</span>
+                    <span class="distribution-subtitle" id="home-dist-subtext">0 GB used of 0 GB</span>
+                  </div>
+
+                  <div class="distribution-bar-track">
+                    <div class="distribution-bar-seg seg-server" id="home-dist-bar-server" style="width: 0%;" title="RemoteNode Files"></div>
+                    <div class="distribution-bar-seg seg-system" id="home-dist-bar-system" style="width: 0%;" title="System & Other Apps"></div>
+                    <div class="distribution-bar-seg seg-free" id="home-dist-bar-free" style="width: 0%;" title="Free Space"></div>
+                  </div>
+
+                  <div class="distribution-legend-row">
+                    <div class="distribution-legend-item">
+                      <span class="legend-dot dot-server"></span>
+                      <span>RemoteNode Files: <strong id="home-legend-server">0 B (0.0%)</strong></span>
+                    </div>
+                    <div class="distribution-legend-item">
+                      <span class="legend-dot dot-system"></span>
+                      <span>System &amp; Other Apps: <strong id="home-legend-system">0 GB (0.0%)</strong></span>
+                    </div>
+                    <div class="distribution-legend-item">
+                      <span class="legend-dot dot-free"></span>
+                      <span>Free Space: <strong id="home-legend-free">0 GB (0.0%)</strong></span>
+                    </div>
+                  </div>
                 </div>
+              </div>
 
                 <div class="category-cards-grid">
                   <div class="category-card" onclick="AppRouter.navigate('photos')">
@@ -475,38 +511,63 @@
             </button>
           </div>
 
-          <div class="grid-3-col" style="gap: var(--space-md); margin-bottom: var(--space-xl);">
-            <div class="card" style="padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-              <span class="text-sm text-secondary" style="display: block; margin-bottom: 4px;">Space Used</span>
-              <strong style="font-size: var(--font-size-2xl); color: var(--color-text-primary);" id="storage-page-used">0 GB</strong>
-              <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);" id="storage-page-total">of 64 GB</span>
+          <!-- Storage Overview Widget (Image Matched) -->
+          <div class="storage-overview-container">
+            <!-- 4-Card Overview Grid -->
+            <div class="storage-cards-grid">
+              <div class="storage-stat-card card-total">
+                <span class="stat-card-label">TOTAL CAPACITY</span>
+                <span class="stat-card-value" id="storage-storage-total">0 GB</span>
+              </div>
+
+              <div class="storage-stat-card card-server">
+                <span class="stat-card-label">REMOTENODE FILES</span>
+                <span class="stat-card-value text-brand" id="storage-storage-server">0 B</span>
+              </div>
+
+              <div class="storage-stat-card card-system">
+                <span class="stat-card-label">SYSTEM &amp; OTHER APPS</span>
+                <span class="stat-card-value" id="storage-storage-system">0 GB</span>
+              </div>
+
+              <div class="storage-stat-card card-free">
+                <span class="stat-card-label">FREE SPACE</span>
+                <span class="stat-card-value text-success" id="storage-storage-free">0 GB</span>
+              </div>
             </div>
 
-            <div class="card" style="padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-              <span class="text-sm text-secondary" style="display: block; margin-bottom: 4px;">Available Free</span>
-              <strong style="font-size: var(--font-size-2xl); color: var(--color-brand-primary);" id="storage-page-free">0 GB</strong>
-              <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);" id="storage-page-pct">0% used</span>
-            </div>
+            <!-- Device Storage Distribution Card -->
+            <div class="storage-distribution-card">
+              <div class="distribution-header">
+                <span class="distribution-title">Device Storage Distribution</span>
+                <span class="distribution-subtitle" id="storage-dist-subtext">0 GB used of 0 GB</span>
+              </div>
 
-            <div class="card" style="padding: var(--space-lg); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-              <span class="text-sm text-secondary" style="display: block; margin-bottom: 4px;">Total Files</span>
-              <strong style="font-size: var(--font-size-2xl); color: var(--color-text-primary);" id="storage-page-file-count">0</strong>
-              <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Indexed in server sandbox</span>
+              <div class="distribution-bar-track">
+                <div class="distribution-bar-seg seg-server" id="storage-dist-bar-server" style="width: 0%;" title="RemoteNode Files"></div>
+                <div class="distribution-bar-seg seg-system" id="storage-dist-bar-system" style="width: 0%;" title="System & Other Apps"></div>
+                <div class="distribution-bar-seg seg-free" id="storage-dist-bar-free" style="width: 0%;" title="Free Space"></div>
+              </div>
+
+              <div class="distribution-legend-row">
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-server"></span>
+                  <span>RemoteNode Files: <strong id="storage-legend-server">0 B (0.0%)</strong></span>
+                </div>
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-system"></span>
+                  <span>System &amp; Other Apps: <strong id="storage-legend-system">0 GB (0.0%)</strong></span>
+                </div>
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-free"></span>
+                  <span>Free Space: <strong id="storage-legend-free">0 GB (0.0%)</strong></span>
+                </div>
+              </div>
             </div>
           </div>
 
           <div class="card" style="padding: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); margin-bottom: var(--space-2xl);">
-            <h3 class="card-title" style="font-size: var(--font-size-md); margin-bottom: var(--space-md);">Storage Distribution</h3>
-            
-            <div class="storage-bar-track" style="height: 12px; border-radius: var(--radius-full); overflow: hidden; background: var(--color-surface-secondary); display: flex; margin-bottom: var(--space-lg);">
-              <div class="storage-bar-fill fill-photos" id="storage-page-bar-photos" style="width: 0%;"></div>
-              <div class="storage-bar-fill fill-videos" id="storage-page-bar-videos" style="width: 0%;"></div>
-              <div class="storage-bar-fill fill-docs" id="storage-page-bar-docs" style="width: 0%;"></div>
-              <div class="storage-bar-fill fill-audio" id="storage-page-bar-audio" style="width: 0%;"></div>
-              <div class="storage-bar-fill fill-archives" id="storage-page-bar-archives" style="width: 0%;"></div>
-              <div class="storage-bar-fill fill-other" id="storage-page-bar-other" style="width: 0%;"></div>
-            </div>
-
+            <h3 class="card-title" style="font-size: var(--font-size-md); margin-bottom: var(--space-md);">Storage Categories Breakdown</h3>
             <div class="category-legend-grid" id="storage-category-legend-grid">
               <!-- Rendered by StorageController -->
             </div>

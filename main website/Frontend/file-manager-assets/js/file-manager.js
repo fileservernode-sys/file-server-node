@@ -60,6 +60,56 @@ const StorageUtils = {
       }
     }
     return `<span class="file-icon-badge">${iconSvg}</span>`;
+  },
+
+  renderStorageOverview(prefix, data) {
+    if (!data) return;
+    const total = data.totalBytes || (64 * 1024 * 1024 * 1024);
+    const free = data.freeBytes || 0;
+    const used = data.usedBytes || (total - free);
+    const serverFiles = data.sandboxUsedBytes || (data.categories ? Object.values(data.categories).reduce((a, b) => a + b, 0) : 0);
+    const systemOther = Math.max(0, used - serverFiles);
+
+    const serverPct = total > 0 ? ((serverFiles / total) * 100).toFixed(1) : '0.0';
+    const systemPct = total > 0 ? ((systemOther / total) * 100).toFixed(1) : '0.0';
+    const freePct = total > 0 ? ((free / total) * 100).toFixed(1) : '0.0';
+
+    // 4 Stat Cards
+    const elTotal = document.getElementById(`${prefix}-storage-total`);
+    if (elTotal) elTotal.textContent = StorageUtils.formatBytes(total);
+
+    const elServer = document.getElementById(`${prefix}-storage-server`);
+    if (elServer) elServer.textContent = StorageUtils.formatBytes(serverFiles);
+
+    const elSystem = document.getElementById(`${prefix}-storage-system`);
+    if (elSystem) elSystem.textContent = StorageUtils.formatBytes(systemOther);
+
+    const elFree = document.getElementById(`${prefix}-storage-free`);
+    if (elFree) elFree.textContent = StorageUtils.formatBytes(free);
+
+    // Distribution Subtitle
+    const elSubtext = document.getElementById(`${prefix}-dist-subtext`);
+    if (elSubtext) elSubtext.textContent = `${StorageUtils.formatBytes(used)} used of ${StorageUtils.formatBytes(total)}`;
+
+    // Distribution Bar Segments
+    const barServer = document.getElementById(`${prefix}-dist-bar-server`);
+    if (barServer) barServer.style.width = `${serverPct}%`;
+
+    const barSystem = document.getElementById(`${prefix}-dist-bar-system`);
+    if (barSystem) barSystem.style.width = `${systemPct}%`;
+
+    const barFree = document.getElementById(`${prefix}-dist-bar-free`);
+    if (barFree) barFree.style.width = `${freePct}%`;
+
+    // Distribution Legend
+    const legServer = document.getElementById(`${prefix}-legend-server`);
+    if (legServer) legServer.textContent = `${StorageUtils.formatBytes(serverFiles)} (${serverPct}%)`;
+
+    const legSystem = document.getElementById(`${prefix}-legend-system`);
+    if (legSystem) legSystem.textContent = `${StorageUtils.formatBytes(systemOther)} (${systemPct}%)`;
+
+    const legFree = document.getElementById(`${prefix}-legend-free`);
+    if (legFree) legFree.textContent = `${StorageUtils.formatBytes(free)} (${freePct}%)`;
   }
 };
 
@@ -175,46 +225,56 @@ const HomeController = {
     const free = data.freeBytes || (total - used);
     const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
 
-    // Home numbers
-    document.getElementById('home-storage-used-gb').textContent = StorageUtils.formatBytes(used);
-    document.getElementById('home-storage-total-gb').textContent = `used of ${StorageUtils.formatBytes(total)}`;
-    document.getElementById('home-storage-free-badge').textContent = `${StorageUtils.formatBytes(free)} Free (${100 - pct}%)`;
+    // Render Home Storage Overview & Distribution (Image Matched)
+    StorageUtils.renderStorageOverview('home', data);
 
     // Sidebar mini widget
-    document.getElementById('sidebar-storage-pct').textContent = `${pct}%`;
-    document.getElementById('sidebar-storage-bar').style.width = `${pct}%`;
-    document.getElementById('sidebar-storage-used').textContent = StorageUtils.formatBytes(used);
-    document.getElementById('sidebar-storage-total').textContent = StorageUtils.formatBytes(total);
+    const elSidebarPct = document.getElementById('sidebar-storage-pct');
+    if (elSidebarPct) elSidebarPct.textContent = `${pct}%`;
 
-    // Multi-segment storage bar on home
-    const cats = data.categories || {};
-    const counts = data.counts || {};
+    const elSidebarBar = document.getElementById('sidebar-storage-bar') || document.getElementById('sidebar-storage-bar-fill');
+    if (elSidebarBar) elSidebarBar.style.width = `${pct}%`;
 
-    const calcBarWidth = (bytes) => (total > 0 ? `${Math.max(1, ((bytes || 0) / total) * 100)}%` : '0%');
-    if (cats.photos) document.getElementById('bar-photos').style.width = calcBarWidth(cats.photos);
-    if (cats.videos) document.getElementById('bar-videos').style.width = calcBarWidth(cats.videos);
-    if (cats.documents) document.getElementById('bar-docs').style.width = calcBarWidth(cats.documents);
-    if (cats.audio) document.getElementById('bar-audio').style.width = calcBarWidth(cats.audio);
-    if (cats.archives) document.getElementById('bar-archives').style.width = calcBarWidth(cats.archives);
-    if (cats.other) document.getElementById('bar-other').style.width = calcBarWidth(cats.other);
+    const elSidebarUsed = document.getElementById('sidebar-storage-used');
+    if (elSidebarUsed) elSidebarUsed.textContent = StorageUtils.formatBytes(used);
+
+    const elSidebarTotal = document.getElementById('sidebar-storage-total');
+    if (elSidebarTotal) elSidebarTotal.textContent = StorageUtils.formatBytes(total);
+
+    // Legacy / fallback badges if present
+    const elUsedGb = document.getElementById('home-storage-used-gb');
+    if (elUsedGb) elUsedGb.textContent = StorageUtils.formatBytes(used);
+
+    const elTotalGb = document.getElementById('home-storage-total-gb');
+    if (elTotalGb) elTotalGb.textContent = `used of ${StorageUtils.formatBytes(total)}`;
+
+    const elFreeBadge = document.getElementById('home-storage-free-badge');
+    if (elFreeBadge) elFreeBadge.textContent = `${StorageUtils.formatBytes(free)} Free (${100 - pct}%)`;
 
     // Category cards counts & sizes
-    document.getElementById('cat-count-photos').textContent = `${counts.photos || 0} files`;
-    document.getElementById('cat-size-photos').textContent = StorageUtils.formatBytes(cats.photos || 0);
+    const cats = data.categories || {};
+    const counts = data.counts || {};
+    const setText = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = txt;
+    };
 
-    document.getElementById('cat-count-videos').textContent = `${counts.videos || 0} files`;
-    document.getElementById('cat-size-videos').textContent = StorageUtils.formatBytes(cats.videos || 0);
+    setText('cat-count-photos', `${counts.photos || 0} files`);
+    setText('cat-size-photos', StorageUtils.formatBytes(cats.photos || 0));
 
-    document.getElementById('cat-count-docs').textContent = `${counts.documents || 0} files`;
-    document.getElementById('cat-size-docs').textContent = StorageUtils.formatBytes(cats.documents || 0);
+    setText('cat-count-videos', `${counts.videos || 0} files`);
+    setText('cat-size-videos', StorageUtils.formatBytes(cats.videos || 0));
 
-    document.getElementById('cat-count-audio').textContent = `${counts.audio || 0} files`;
-    document.getElementById('cat-size-audio').textContent = StorageUtils.formatBytes(cats.audio || 0);
+    setText('cat-count-docs', `${counts.documents || 0} files`);
+    setText('cat-size-docs', StorageUtils.formatBytes(cats.documents || 0));
 
-    document.getElementById('cat-count-archives').textContent = `${counts.archives || 0} files`;
-    document.getElementById('cat-size-archives').textContent = StorageUtils.formatBytes(cats.archives || 0);
+    setText('cat-count-audio', `${counts.audio || 0} files`);
+    setText('cat-size-audio', StorageUtils.formatBytes(cats.audio || 0));
 
-    document.getElementById('cat-count-total').textContent = `${counts.total || 0} items`;
+    setText('cat-count-archives', `${counts.archives || 0} files`);
+    setText('cat-size-archives', StorageUtils.formatBytes(cats.archives || 0));
+
+    setText('cat-count-total', `${counts.total || 0} items`);
   },
 
   async loadRecentFiles() {
@@ -634,50 +694,13 @@ const StorageController = {
     if (!res.success || !res.data) return;
 
     const data = res.data;
-    const total = data.totalBytes || (64 * 1024 * 1024 * 1024);
-    const used = data.usedBytes || 0;
-    const free = data.freeBytes || (total - used);
-    const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
 
-    const elUsed = document.getElementById('storage-page-used');
-    if (elUsed) elUsed.textContent = StorageUtils.formatBytes(used);
-
-    const elTotal = document.getElementById('storage-page-total');
-    if (elTotal) elTotal.textContent = `of ${StorageUtils.formatBytes(total)}`;
-
-    const elFree = document.getElementById('storage-page-free');
-    if (elFree) elFree.textContent = StorageUtils.formatBytes(free);
-
-    const elPct = document.getElementById('storage-page-pct');
-    if (elPct) elPct.textContent = `${pct}%`;
-
-    const elCount = document.getElementById('storage-page-file-count');
-    if (elCount) elCount.textContent = (data.counts?.total || 0).toLocaleString();
-
-    // Bar segments
-    const cats = data.categories || {};
-    const counts = data.counts || {};
-    const calcWidth = (b) => (total > 0 ? `${Math.max(1, ((b || 0) / total) * 100)}%` : '0%');
-
-    const barPhotos = document.getElementById('storage-page-bar-photos');
-    if (barPhotos) barPhotos.style.width = calcWidth(cats.photos);
-
-    const barVideos = document.getElementById('storage-page-bar-videos');
-    if (barVideos) barVideos.style.width = calcWidth(cats.videos);
-
-    const barDocs = document.getElementById('storage-page-bar-docs');
-    if (barDocs) barDocs.style.width = calcWidth(cats.documents);
-
-    const barAudio = document.getElementById('storage-page-bar-audio');
-    if (barAudio) barAudio.style.width = calcWidth(cats.audio);
-
-    const barArchives = document.getElementById('storage-page-bar-archives');
-    if (barArchives) barArchives.style.width = calcWidth(cats.archives);
-
-    const barOther = document.getElementById('storage-page-bar-other');
-    if (barOther) barOther.style.width = calcWidth(cats.other);
+    // Render Storage Overview & Distribution (Image Matched)
+    StorageUtils.renderStorageOverview('storage', data);
 
     // Legend Grid
+    const cats = data.categories || {};
+    const counts = data.counts || {};
     const legendGrid = document.getElementById('storage-category-legend-grid');
     if (legendGrid) {
       legendGrid.innerHTML = `
