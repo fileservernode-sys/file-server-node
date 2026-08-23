@@ -498,12 +498,25 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       }
 
       if (operation == 'DOWNLOAD') {
-        final path = msg['path'] as String? ?? '/';
+        var path = msg['path'] as String? ?? '/';
         try {
+          while (path.startsWith('/') || path.startsWith('\\')) {
+            path = path.substring(1);
+          }
           final req = await _httpClient.getUrl(
             Uri.parse('http://127.0.0.1:8080/api/download?path=${Uri.encodeComponent(path)}')
           );
-          final res = await req.close().timeout(const Duration(seconds: 30));
+          final res = await req.close().timeout(const Duration(seconds: 120));
+          if (res.statusCode != 200 && res.statusCode != 206) {
+            final errorBody = await res.transform(utf8.decoder).join();
+            await _transport.send({
+              'type': 'FILE_RESPONSE',
+              'requestId': requestId,
+              'success': false,
+              'error': {'code': 'DOWNLOAD_HTTP_ERROR', 'message': 'Local server returned HTTP ${res.statusCode}: $errorBody'}
+            });
+            return;
+          }
           final bytes = await res.fold<List<int>>(<int>[], (previous, element) => previous..addAll(element));
           final dataBase64 = base64Encode(bytes);
           final filename = path.split('/').lastWhere((element) => element.isNotEmpty, orElse: () => 'download');
@@ -512,7 +525,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           await _transport.send({
             'type': 'FILE_RESPONSE',
             'requestId': requestId,
-            'success': res.statusCode == 200,
+            'success': true,
             'filename': filename,
             'mimeType': mimeType,
             'dataBase64': dataBase64

@@ -38,14 +38,14 @@ export const gatewayConfigSchema = z
     GATEWAY_PUBLIC_WS_URL: z.string().default('wss://gateway.viewduration.com'),
 
     GATEWAY_MAX_CONNECTIONS: z.coerce.number().default(1000),
-    GATEWAY_AUTH_TIMEOUT_MS: z.coerce.number().default(10000),
-    GATEWAY_REQUEST_TIMEOUT_MS: z.coerce.number().default(15000),
-    GATEWAY_MAX_MESSAGE_SIZE_BYTES: z.coerce.number().default(10485760), // 10MB limit
+    GATEWAY_AUTH_TIMEOUT_MS: z.coerce.number().default(15000),
+    GATEWAY_REQUEST_TIMEOUT_MS: z.coerce.number().default(60000),
+    GATEWAY_MAX_MESSAGE_SIZE_BYTES: z.coerce.number().default(209715200), // 200MB limit for video and media transfers
     GATEWAY_HEARTBEAT_INTERVAL_MS: z.coerce.number().default(30000),
     GATEWAY_MAX_AUTH_FAILURES: z.coerce.number().default(3),
     GATEWAY_RATE_LIMIT_RPM: z.coerce.number().default(600), // 600 requests per minute
-    GATEWAY_TRANSFER_TIMEOUT_MS: z.coerce.number().default(60000), // 60s stream timeout
-    GATEWAY_TRANSFER_CHUNK_SIZE_BYTES: z.coerce.number().default(1048576), // 1MB chunk limit
+    GATEWAY_TRANSFER_TIMEOUT_MS: z.coerce.number().default(120000), // 120s stream timeout
+    GATEWAY_TRANSFER_CHUNK_SIZE_BYTES: z.coerce.number().default(4194304), // 4MB chunk limit
     GATEWAY_TLS_CERT_PATH: z.string().optional(),
     GATEWAY_TLS_KEY_PATH: z.string().optional(),
     NODE_ENV: z.enum(['development', 'production', 'test', 'staging']).default('development')

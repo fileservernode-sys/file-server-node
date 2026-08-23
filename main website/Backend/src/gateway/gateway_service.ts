@@ -1287,6 +1287,10 @@ export class GatewayService {
       dataBase64: params.dataBase64
     };
 
+    const timeoutMs = (operation === 'DOWNLOAD' || operation === 'UPLOAD')
+      ? Math.max(this.config.GATEWAY_REQUEST_TIMEOUT_MS, 120000)
+      : this.config.GATEWAY_REQUEST_TIMEOUT_MS;
+
     const responsePromise = new Promise<any>((resolve) => {
       const timer = setTimeout(() => {
         if (this.pendingRequests.has(requestId)) {
@@ -1298,7 +1302,7 @@ export class GatewayService {
             error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
           });
         }
-      }, this.config.GATEWAY_REQUEST_TIMEOUT_MS);
+      }, timeoutMs);
 
       this.pendingRequests.set(requestId, {
         requestId,
