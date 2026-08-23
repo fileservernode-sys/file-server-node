@@ -164,171 +164,112 @@
             </div>
           </div>
 
-          <div class="home-grid">
-            <!-- Left: Storage Metrics & Category Breakdown -->
-            <div>
-              <!-- Storage Overview Widget (Image Matched) -->
-              <div class="storage-overview-container">
-                <h2 class="storage-overview-header">Storage Overview</h2>
-
-                <!-- 4-Card Overview Grid -->
-                <div class="storage-cards-grid">
-                  <div class="storage-stat-card card-total">
-                    <span class="stat-card-label">TOTAL CAPACITY</span>
-                    <span class="stat-card-value" id="home-storage-total">0 GB</span>
-                  </div>
-
-                  <div class="storage-stat-card card-server">
-                    <span class="stat-card-label">REMOTENODE FILES</span>
-                    <span class="stat-card-value text-brand" id="home-storage-server">0 B</span>
-                  </div>
-
-                  <div class="storage-stat-card card-system">
-                    <span class="stat-card-label">SYSTEM &amp; OTHER APPS</span>
-                    <span class="stat-card-value" id="home-storage-system">0 GB</span>
-                  </div>
-
-                  <div class="storage-stat-card card-free">
-                    <span class="stat-card-label">FREE SPACE</span>
-                    <span class="stat-card-value text-success" id="home-storage-free">0 GB</span>
-                  </div>
-                </div>
-
-                <!-- Device Storage Distribution Card -->
-                <div class="storage-distribution-card">
-                  <div class="distribution-header">
-                    <span class="distribution-title">Device Storage Distribution</span>
-                    <span class="distribution-subtitle" id="home-dist-subtext">0 GB used of 0 GB</span>
-                  </div>
-
-                  <div class="distribution-bar-track">
-                    <div class="distribution-bar-seg seg-server" id="home-dist-bar-server" style="width: 0%;" title="RemoteNode Files"></div>
-                    <div class="distribution-bar-seg seg-system" id="home-dist-bar-system" style="width: 0%;" title="System & Other Apps"></div>
-                    <div class="distribution-bar-seg seg-free" id="home-dist-bar-free" style="width: 0%;" title="Free Space"></div>
-                  </div>
-
-                  <div class="distribution-legend-row">
-                    <div class="distribution-legend-item">
-                      <span class="legend-dot dot-server"></span>
-                      <span>RemoteNode Files: <strong id="home-legend-server">0 B (0.0%)</strong></span>
-                    </div>
-                    <div class="distribution-legend-item">
-                      <span class="legend-dot dot-system"></span>
-                      <span>System &amp; Other Apps: <strong id="home-legend-system">0 GB (0.0%)</strong></span>
-                    </div>
-                    <div class="distribution-legend-item">
-                      <span class="legend-dot dot-free"></span>
-                      <span>Free Space: <strong id="home-legend-free">0 GB (0.0%)</strong></span>
-                    </div>
-                  </div>
-                </div>
+          <!-- Storage Overview Widget (Image Matched) -->
+          <div class="storage-overview-container">
+            <!-- 4-Card Overview Grid -->
+            <div class="storage-cards-grid">
+              <div class="storage-stat-card card-total">
+                <span class="stat-card-label">TOTAL CAPACITY</span>
+                <span class="stat-card-value" id="home-storage-total">0 GB</span>
               </div>
 
-                <!-- Category Cards Grid -->
-                <div class="category-cards-grid">
-                  <div class="category-card" onclick="AppRouter.navigate('photos')">
-                    <div class="category-card-icon icon-photos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
-                    <span class="category-card-title">Photos</span>
-                    <span class="category-card-count" id="cat-count-photos">0 files</span>
-                    <span class="category-card-size" id="cat-size-photos">0 MB</span>
-                  </div>
-                  <div class="category-card" onclick="AppRouter.navigate('videos')">
-                    <div class="category-card-icon icon-videos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></div>
-                    <span class="category-card-title">Videos</span>
-                    <span class="category-card-count" id="cat-count-videos">0 files</span>
-                    <span class="category-card-size" id="cat-size-videos">0 MB</span>
-                  </div>
-                  <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-docs"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
-                    <span class="category-card-title">Documents</span>
-                    <span class="category-card-count" id="cat-count-docs">0 files</span>
-                    <span class="category-card-size" id="cat-size-docs">0 MB</span>
-                  </div>
-                  <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-audio"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
-                    <span class="category-card-title">Audio</span>
-                    <span class="category-card-count" id="cat-count-audio">0 files</span>
-                    <span class="category-card-size" id="cat-size-audio">0 MB</span>
-                  </div>
-                  <div class="category-card" onclick="AppRouter.navigate('files')">
-                    <div class="category-card-icon icon-archives"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg></div>
-                    <span class="category-card-title">Archives</span>
-                    <span class="category-card-count" id="cat-count-archives">0 files</span>
-                    <span class="category-card-size" id="cat-size-archives">0 MB</span>
-                  </div>
-                  <div class="category-card" onclick="AppRouter.navigate('storage')">
-                    <div class="category-card-icon icon-other"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></div>
-                    <span class="category-card-title">Analytics</span>
-                    <span class="category-card-count" id="cat-count-total">0 total</span>
-                    <span class="category-card-size">View Stats</span>
-                  </div>
-                </div>
+              <div class="storage-stat-card card-server">
+                <span class="stat-card-label">REMOTENODE FILES</span>
+                <span class="stat-card-value text-brand" id="home-storage-server">0 B</span>
               </div>
 
-              <!-- Recent Files Section -->
-              <div style="margin-top: var(--space-xl);">
-                <div class="card-header">
-                  <h2 class="card-title">Recent Files</h2>
-                  <a href="javascript:void(0)" onclick="AppRouter.navigate('files')" style="font-size: var(--font-size-xs); font-weight: 600;">View All</a>
-                </div>
-                <div id="home-recent-files-container">
-                  <!-- Rendered dynamically -->
-                </div>
+              <div class="storage-stat-card card-system">
+                <span class="stat-card-label">SYSTEM &amp; OTHER APPS</span>
+                <span class="stat-card-value" id="home-storage-system">0 GB</span>
+              </div>
+
+              <div class="storage-stat-card card-free">
+                <span class="stat-card-label">FREE SPACE</span>
+                <span class="stat-card-value text-success" id="home-storage-free">0 GB</span>
               </div>
             </div>
 
-            <!-- Right: Quick Actions & Server Status -->
-            <div style="display: flex; flex-direction: column; gap: var(--space-md);">
-              <div class="card quick-actions-card">
-                <h2 class="card-title">Quick Actions</h2>
-                <button type="button" class="quick-action-btn" id="btn-home-upload">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-                  <div style="text-align: left;">
-                    <div>Upload File</div>
-                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Save files to phone storage</div>
-                  </div>
-                </button>
-                <button type="button" class="quick-action-btn" id="btn-home-new-folder">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                  <div style="text-align: left;">
-                    <div>Create Folder</div>
-                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Organize your files</div>
-                  </div>
-                </button>
-                <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('photos')">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
-                  <div style="text-align: left;">
-                    <div>Browse Photos</div>
-                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">View photo gallery</div>
-                  </div>
-                </button>
-                <button type="button" class="quick-action-btn" onclick="AppRouter.navigate('storage')">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg>
-                  <div style="text-align: left;">
-                    <div>Storage Breakdown</div>
-                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">Inspect space usage</div>
-                  </div>
-                </button>
+            <!-- Device Storage Distribution Card -->
+            <div class="storage-distribution-card">
+              <div class="distribution-header">
+                <span class="distribution-title">Device Storage Distribution</span>
+                <span class="distribution-subtitle" id="home-dist-subtext">0 GB used of 0 GB</span>
               </div>
 
-              <!-- Storage Node Info Card -->
-              <div class="card">
-                <h2 class="card-title" style="margin-bottom: var(--space-xs);">Server Node Info</h2>
-                <div style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs);">
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--color-text-muted);">Storage Root</span>
-                    <strong>RemoteNodeFiles/</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--color-text-muted);">Local Endpoint</span>
-                    <strong id="info-local-endpoint">127.0.0.1:8080</strong>
-                  </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span style="color: var(--color-text-muted);">Security Protocol</span>
-                    <strong style="color: var(--color-status-online);">Sandboxed / TLS WSS</strong>
-                  </div>
+              <div class="distribution-bar-track">
+                <div class="distribution-bar-seg seg-server" id="home-dist-bar-server" style="width: 0%;" title="RemoteNode Files"></div>
+                <div class="distribution-bar-seg seg-system" id="home-dist-bar-system" style="width: 0%;" title="System & Other Apps"></div>
+                <div class="distribution-bar-seg seg-free" id="home-dist-bar-free" style="width: 0%;" title="Free Space"></div>
+              </div>
+
+              <div class="distribution-legend-row">
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-server"></span>
+                  <span>RemoteNode Files: <strong id="home-legend-server">0 B (0.0%)</strong></span>
+                </div>
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-system"></span>
+                  <span>System &amp; Other Apps: <strong id="home-legend-system">0 GB (0.0%)</strong></span>
+                </div>
+                <div class="distribution-legend-item">
+                  <span class="legend-dot dot-free"></span>
+                  <span>Free Space: <strong id="home-legend-free">0 GB (0.0%)</strong></span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Category Cards Grid -->
+          <div class="card" style="margin-bottom: var(--space-xl);">
+            <h2 class="card-title" style="margin-bottom: var(--space-md);">Storage Categories</h2>
+            <div class="category-cards-grid">
+              <div class="category-card" onclick="AppRouter.navigate('photos')">
+                <div class="category-card-icon icon-photos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></div>
+                <span class="category-card-title">Photos</span>
+                <span class="category-card-count" id="cat-count-photos">0 files</span>
+                <span class="category-card-size" id="cat-size-photos">0 MB</span>
+              </div>
+              <div class="category-card" onclick="AppRouter.navigate('videos')">
+                <div class="category-card-icon icon-videos"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></div>
+                <span class="category-card-title">Videos</span>
+                <span class="category-card-count" id="cat-count-videos">0 files</span>
+                <span class="category-card-size" id="cat-size-videos">0 MB</span>
+              </div>
+              <div class="category-card" onclick="AppRouter.navigate('files')">
+                <div class="category-card-icon icon-docs"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></div>
+                <span class="category-card-title">Documents</span>
+                <span class="category-card-count" id="cat-count-docs">0 files</span>
+                <span class="category-card-size" id="cat-size-docs">0 MB</span>
+              </div>
+              <div class="category-card" onclick="AppRouter.navigate('files')">
+                <div class="category-card-icon icon-audio"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg></div>
+                <span class="category-card-title">Audio</span>
+                <span class="category-card-count" id="cat-count-audio">0 files</span>
+                <span class="category-card-size" id="cat-size-audio">0 MB</span>
+              </div>
+              <div class="category-card" onclick="AppRouter.navigate('files')">
+                <div class="category-card-icon icon-archives"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg></div>
+                <span class="category-card-title">Archives</span>
+                <span class="category-card-count" id="cat-count-archives">0 files</span>
+                <span class="category-card-size" id="cat-size-archives">0 MB</span>
+              </div>
+              <div class="category-card" onclick="AppRouter.navigate('storage')">
+                <div class="category-card-icon icon-other"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></div>
+                <span class="category-card-title">Analytics</span>
+                <span class="category-card-count" id="cat-count-total">0 total</span>
+                <span class="category-card-size">View Stats</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Files Section -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Recent Files</h2>
+              <a href="javascript:void(0)" onclick="AppRouter.navigate('files')" style="font-size: var(--font-size-xs); font-weight: 600;">View All</a>
+            </div>
+            <div id="home-recent-files-container">
+              <!-- Rendered dynamically -->
             </div>
           </div>
         </section>
