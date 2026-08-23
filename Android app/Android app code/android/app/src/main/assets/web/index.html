@@ -79,23 +79,23 @@
         <div class="nav-section-title">Navigation</div>
 
         <nav class="nav-menu">
-          <a class="nav-link active" data-view="home" role="button" tabindex="0">
+          <a class="nav-link active" data-view="home" onclick="AppRouter.navigate('home')" role="button" tabindex="0">
             <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
             <span>Home</span>
           </a>
-          <a class="nav-link" data-view="files" role="button" tabindex="0">
+          <a class="nav-link" data-view="files" onclick="AppRouter.navigate('files')" role="button" tabindex="0">
             <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
             <span>My Files</span>
           </a>
-          <a class="nav-link" data-view="photos" role="button" tabindex="0">
+          <a class="nav-link" data-view="photos" onclick="AppRouter.navigate('photos')" role="button" tabindex="0">
             <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>
             <span>Photos</span>
           </a>
-          <a class="nav-link" data-view="videos" role="button" tabindex="0">
+          <a class="nav-link" data-view="videos" onclick="AppRouter.navigate('videos')" role="button" tabindex="0">
             <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></span>
             <span>Videos</span>
           </a>
-          <a class="nav-link" data-view="storage" role="button" tabindex="0">
+          <a class="nav-link" data-view="storage" onclick="AppRouter.navigate('storage')" role="button" tabindex="0">
             <span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></span>
             <span>Storage</span>
           </a>
@@ -123,24 +123,27 @@
       
       <!-- Top Application Header -->
       <header class="app-header">
-        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+        <div class="header-left">
           <div class="brand-logo-icon" style="width: 32px; height: 32px; font-size: 1rem; display: none;" id="mobile-logo">RN</div>
-          <span id="connection-status-badge" class="badge badge-online">
+          <span id="connection-status-badge" class="connection-status badge-online">
             <span class="status-dot"></span> <span id="connection-status-text">LOCAL SERVER ONLINE</span>
           </span>
         </div>
 
-        <div class="header-search-wrap">
-          <input type="text" id="global-search-input" class="form-input" placeholder="Search all files in storage..." aria-label="Search files">
-        </div>
+        <div class="header-right">
+          <div class="search-box">
+            <svg class="icon icon-sm search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--color-text-muted); pointer-events: none; width: 16px; height: 16px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="global-search-input" class="search-input" placeholder="Search all files in storage..." aria-label="Search files">
+          </div>
 
-        <div class="header-actions">
-          <button type="button" class="btn btn-primary btn-sm" id="btn-quick-upload">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> <span>Upload</span>
-          </button>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="FileServerAuth.logout()">
-            <span>Sign Out</span>
-          </button>
+          <div class="header-actions">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-quick-upload" onclick="document.getElementById('file-picker').click()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg> <span>Upload</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="FileServerAuth.logout()">
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -457,23 +460,23 @@
 
     <!-- Mobile Responsive Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav" aria-label="Mobile Navigation">
-      <div class="mobile-nav-item active" data-view="home" role="button" tabindex="0">
+      <div class="mobile-nav-item active" data-view="home" onclick="AppRouter.navigate('home')" role="button" tabindex="0">
         <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></span>
         <span>Home</span>
       </div>
-      <div class="mobile-nav-item" data-view="files" role="button" tabindex="0">
+      <div class="mobile-nav-item" data-view="files" onclick="AppRouter.navigate('files')" role="button" tabindex="0">
         <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
         <span>Files</span>
       </div>
-      <div class="mobile-nav-item" data-view="photos" role="button" tabindex="0">
+      <div class="mobile-nav-item" data-view="photos" onclick="AppRouter.navigate('photos')" role="button" tabindex="0">
         <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg></span>
         <span>Photos</span>
       </div>
-      <div class="mobile-nav-item" data-view="videos" role="button" tabindex="0">
+      <div class="mobile-nav-item" data-view="videos" onclick="AppRouter.navigate('videos')" role="button" tabindex="0">
         <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg></span>
         <span>Videos</span>
       </div>
-      <div class="mobile-nav-item" data-view="storage" role="button" tabindex="0">
+      <div class="mobile-nav-item" data-view="storage" onclick="AppRouter.navigate('storage')" role="button" tabindex="0">
         <span class="mobile-nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 6H5V5h14v4zm0 4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm0 6H5v-4h14v4z"/></svg></span>
         <span>Storage</span>
       </div>

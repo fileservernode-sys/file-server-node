@@ -76,17 +76,18 @@ const AppRouter = {
 
   bindNavigation() {
     document.querySelectorAll('[data-view]').forEach((el) => {
-      el.addEventListener('click', () => {
+      el.onclick = (e) => {
+        e.preventDefault();
         const view = el.getAttribute('data-view');
         if (view) this.navigate(view);
-      });
+      };
     });
   },
 
   navigate(viewName) {
     this.currentView = viewName;
 
-    // Toggle active classes on sidebar and mobile bottom nav
+    // 1. Highlight all matching navigation items (desktop sidebar + mobile bottom nav)
     document.querySelectorAll('[data-view]').forEach((el) => {
       if (el.getAttribute('data-view') === viewName) {
         el.classList.add('active');
@@ -95,34 +96,63 @@ const AppRouter = {
       }
     });
 
-    // Toggle active view sections and enforce display property
-    document.querySelectorAll('.view-section, .view-content').forEach((section) => {
-      if (section.id === `view-${viewName}`) {
-        section.classList.add('active');
-        section.style.display = 'block';
-      } else {
-        section.classList.remove('active');
-        section.style.display = 'none';
+    // 2. Explicitly toggle visibility on all known view containers
+    const knownViews = ['home', 'files', 'photos', 'videos', 'storage'];
+    knownViews.forEach((v) => {
+      const section = document.getElementById(`view-${v}`);
+      if (section) {
+        if (v === viewName) {
+          section.classList.add('active');
+          section.style.setProperty('display', 'block', 'important');
+        } else {
+          section.classList.remove('active');
+          section.style.setProperty('display', 'none', 'important');
+        }
       }
     });
 
-    // Load data for the targeted view
-    switch (viewName) {
-      case 'home':
-        HomeController.load();
-        break;
-      case 'files':
-        MyFilesController.load();
-        break;
-      case 'photos':
-        PhotosController.load();
-        break;
-      case 'videos':
-        VideosController.load();
-        break;
-      case 'storage':
-        StorageController.load();
-        break;
+    // Also fallback query any other view-section / view-content elements
+    document.querySelectorAll('.view-section, .view-content').forEach((section) => {
+      if (section.id === `view-${viewName}`) {
+        section.classList.add('active');
+        section.style.setProperty('display', 'block', 'important');
+      } else if (section.id.startsWith('view-')) {
+        section.classList.remove('active');
+        section.style.setProperty('display', 'none', 'important');
+      }
+    });
+
+    // 3. Trigger controller data loading safely
+    try {
+      switch (viewName) {
+        case 'home':
+          if (typeof HomeController !== 'undefined' && HomeController.load) {
+            HomeController.load();
+          }
+          break;
+        case 'files':
+          if (typeof MyFilesController !== 'undefined' && MyFilesController.load) {
+            MyFilesController.load();
+          }
+          break;
+        case 'photos':
+          if (typeof PhotosController !== 'undefined' && PhotosController.load) {
+            PhotosController.load();
+          }
+          break;
+        case 'videos':
+          if (typeof VideosController !== 'undefined' && VideosController.load) {
+            VideosController.load();
+          }
+          break;
+        case 'storage':
+          if (typeof StorageController !== 'undefined' && StorageController.load) {
+            StorageController.load();
+          }
+          break;
+      }
+    } catch (err) {
+      console.error('[AppRouter] Error loading controller for view:', viewName, err);
     }
   }
 };
@@ -609,23 +639,43 @@ const StorageController = {
     const free = data.freeBytes || (total - used);
     const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
 
-    document.getElementById('storage-page-used').textContent = StorageUtils.formatBytes(used);
-    document.getElementById('storage-page-total').textContent = `of ${StorageUtils.formatBytes(total)}`;
-    document.getElementById('storage-page-free').textContent = StorageUtils.formatBytes(free);
-    document.getElementById('storage-page-pct').textContent = `${pct}%`;
-    document.getElementById('storage-page-file-count').textContent = (data.counts?.total || 0).toLocaleString();
+    const elUsed = document.getElementById('storage-page-used');
+    if (elUsed) elUsed.textContent = StorageUtils.formatBytes(used);
+
+    const elTotal = document.getElementById('storage-page-total');
+    if (elTotal) elTotal.textContent = `of ${StorageUtils.formatBytes(total)}`;
+
+    const elFree = document.getElementById('storage-page-free');
+    if (elFree) elFree.textContent = StorageUtils.formatBytes(free);
+
+    const elPct = document.getElementById('storage-page-pct');
+    if (elPct) elPct.textContent = `${pct}%`;
+
+    const elCount = document.getElementById('storage-page-file-count');
+    if (elCount) elCount.textContent = (data.counts?.total || 0).toLocaleString();
 
     // Bar segments
     const cats = data.categories || {};
     const counts = data.counts || {};
     const calcWidth = (b) => (total > 0 ? `${Math.max(1, ((b || 0) / total) * 100)}%` : '0%');
 
-    if (cats.photos) document.getElementById('storage-page-bar-photos').style.width = calcWidth(cats.photos);
-    if (cats.videos) document.getElementById('storage-page-bar-videos').style.width = calcWidth(cats.videos);
-    if (cats.documents) document.getElementById('storage-page-bar-docs').style.width = calcWidth(cats.documents);
-    if (cats.audio) document.getElementById('storage-page-bar-audio').style.width = calcWidth(cats.audio);
-    if (cats.archives) document.getElementById('storage-page-bar-archives').style.width = calcWidth(cats.archives);
-    if (cats.other) document.getElementById('storage-page-bar-other').style.width = calcWidth(cats.other);
+    const barPhotos = document.getElementById('storage-page-bar-photos');
+    if (barPhotos) barPhotos.style.width = calcWidth(cats.photos);
+
+    const barVideos = document.getElementById('storage-page-bar-videos');
+    if (barVideos) barVideos.style.width = calcWidth(cats.videos);
+
+    const barDocs = document.getElementById('storage-page-bar-docs');
+    if (barDocs) barDocs.style.width = calcWidth(cats.documents);
+
+    const barAudio = document.getElementById('storage-page-bar-audio');
+    if (barAudio) barAudio.style.width = calcWidth(cats.audio);
+
+    const barArchives = document.getElementById('storage-page-bar-archives');
+    if (barArchives) barArchives.style.width = calcWidth(cats.archives);
+
+    const barOther = document.getElementById('storage-page-bar-other');
+    if (barOther) barOther.style.width = calcWidth(cats.other);
 
     // Legend Grid
     const legendGrid = document.getElementById('storage-category-legend-grid');

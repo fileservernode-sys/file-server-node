@@ -155,27 +155,27 @@
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item nav-link active" data-view="home" aria-label="Home Dashboard">
+        <button class="nav-item nav-link active" data-view="home" onclick="AppRouter.navigate('home')" aria-label="Home Dashboard">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
           <span>Home</span>
         </button>
 
-        <button class="nav-item nav-link" data-view="files" aria-label="My Files Directory">
+        <button class="nav-item nav-link" data-view="files" onclick="AppRouter.navigate('files')" aria-label="My Files Directory">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           <span>My Files</span>
         </button>
 
-        <button class="nav-item nav-link" data-view="photos" aria-label="Photos Gallery">
+        <button class="nav-item nav-link" data-view="photos" onclick="AppRouter.navigate('photos')" aria-label="Photos Gallery">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
           <span>Photos</span>
         </button>
 
-        <button class="nav-item nav-link" data-view="videos" aria-label="Videos Catalog">
+        <button class="nav-item nav-link" data-view="videos" onclick="AppRouter.navigate('videos')" aria-label="Videos Catalog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
           <span>Videos</span>
         </button>
 
-        <button class="nav-item nav-link" data-view="storage" aria-label="Storage Insights">
+        <button class="nav-item nav-link" data-view="storage" onclick="AppRouter.navigate('storage')" aria-label="Storage Insights">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
           <span>Storage</span>
         </button>
@@ -538,27 +538,27 @@
 
     <!-- MOBILE BOTTOM NAVIGATION TABS -->
     <nav class="mobile-bottom-nav" aria-label="Mobile View Switcher">
-      <button class="bottom-nav-item mobile-nav-item active" data-view="home">
+      <button class="bottom-nav-item mobile-nav-item active" data-view="home" onclick="AppRouter.navigate('home')">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
         <span>Home</span>
       </button>
 
-      <button class="bottom-nav-item mobile-nav-item" data-view="files">
+      <button class="bottom-nav-item mobile-nav-item" data-view="files" onclick="AppRouter.navigate('files')">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
         <span>Files</span>
       </button>
 
-      <button class="bottom-nav-item mobile-nav-item" data-view="photos">
+      <button class="bottom-nav-item mobile-nav-item" data-view="photos" onclick="AppRouter.navigate('photos')">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
         <span>Photos</span>
       </button>
 
-      <button class="bottom-nav-item mobile-nav-item" data-view="videos">
+      <button class="bottom-nav-item mobile-nav-item" data-view="videos" onclick="AppRouter.navigate('videos')">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
         <span>Videos</span>
       </button>
 
-      <button class="bottom-nav-item mobile-nav-item" data-view="storage">
+      <button class="bottom-nav-item mobile-nav-item" data-view="storage" onclick="AppRouter.navigate('storage')">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
         <span>Storage</span>
       </button>
@@ -778,8 +778,6 @@
   <script src="../js/config.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/file-manager-embedded.js"></script>
-
-  <script src="../file-manager-assets/js/api-service.js"></script>
   <script src="../file-manager-assets/js/ui.js"></script>
   <script src="../file-manager-assets/js/file-manager.js"></script>
 
