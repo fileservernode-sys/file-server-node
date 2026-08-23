@@ -122,12 +122,19 @@ const UIManager = {
 
     if (titleEl) titleEl.textContent = title;
     if (videoEl) {
+      videoEl.pause();
+      videoEl.removeAttribute('src');
+      videoEl.load();
       videoEl.src = videoUrl;
       videoEl.load();
-      videoEl.play().catch(() => {});
+      const playPromise = videoEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
     }
     if (downloadEl) {
-      downloadEl.href = downloadUrl;
+      const dlUrl = downloadUrl ? (downloadUrl.includes('?') ? `${downloadUrl}&download=true` : `${downloadUrl}?download=true`) : '#';
+      downloadEl.href = dlUrl;
       downloadEl.setAttribute('download', title);
     }
 
@@ -138,7 +145,8 @@ const UIManager = {
     const videoEl = document.getElementById('video-player-el');
     if (videoEl) {
       videoEl.pause();
-      videoEl.src = '';
+      videoEl.removeAttribute('src');
+      videoEl.load();
     }
     this.hideModal('modal-video-player');
   },
@@ -150,12 +158,19 @@ const UIManager = {
 
     if (titleEl) titleEl.textContent = title;
     if (audioEl) {
+      audioEl.pause();
+      audioEl.removeAttribute('src');
+      audioEl.load();
       audioEl.src = audioUrl;
       audioEl.load();
-      audioEl.play().catch(() => {});
+      const playPromise = audioEl.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {});
+      }
     }
     if (downloadEl) {
-      downloadEl.href = downloadUrl;
+      const dlUrl = downloadUrl ? (downloadUrl.includes('?') ? `${downloadUrl}&download=true` : `${downloadUrl}?download=true`) : '#';
+      downloadEl.href = dlUrl;
       downloadEl.setAttribute('download', title);
     }
 
@@ -166,7 +181,8 @@ const UIManager = {
     const audioEl = document.getElementById('audio-player-el');
     if (audioEl) {
       audioEl.pause();
-      audioEl.src = '';
+      audioEl.removeAttribute('src');
+      audioEl.load();
     }
     this.hideModal('modal-audio-player');
   },

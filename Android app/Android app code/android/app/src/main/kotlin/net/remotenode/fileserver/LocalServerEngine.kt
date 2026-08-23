@@ -464,7 +464,10 @@ class LocalServerEngine {
                 throw SecurityException("Path traversal or null-byte injection rejected.")
             }
 
-            val decodedPath = URLDecoder.decode(relPath, StandardCharsets.UTF_8.name())
+            var decodedPath = URLDecoder.decode(relPath, StandardCharsets.UTF_8.name())
+            while (decodedPath.startsWith("/") || decodedPath.startsWith("\\")) {
+                decodedPath = decodedPath.substring(1)
+            }
             val targetFile = File(rootDir, decodedPath).canonicalFile
             val canonicalRoot = rootDir.canonicalFile
 
@@ -891,7 +894,7 @@ class LocalServerEngine {
                 for (param in query.split("&")) {
                     val pair = param.split("=")
                     if (pair.size == 2 && pair[0] == "path") {
-                        reqPath = pair[1]
+                        reqPath = URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name())
                     }
                 }
 
@@ -901,14 +904,59 @@ class LocalServerEngine {
                     return
                 }
 
+                val fileLength = targetFile.length()
                 val mimeType = getMimeType(targetFile.name)
+                val rangeHeader = exchange.requestHeaders.getFirst("Range")
+
                 exchange.responseHeaders.set("Content-Type", mimeType)
                 exchange.responseHeaders.set("Content-Disposition", "inline; filename=\"${targetFile.name}\"")
+                exchange.responseHeaders.set("Accept-Ranges", "bytes")
                 exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-                exchange.sendResponseHeaders(200, targetFile.length())
-                val os: OutputStream = exchange.responseBody
-                targetFile.inputStream().use { input -> input.copyTo(os) }
-                os.close()
+                exchange.responseHeaders.set("Access-Control-Allow-Headers", "Range, Authorization, Content-Type")
+                exchange.responseHeaders.set("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges")
+
+                if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                    val rangeSpec = rangeHeader.substring(6).trim()
+                    val parts = rangeSpec.split("-")
+                    val start = parts[0].toLongOrNull() ?: 0L
+                    var end = if (parts.size > 1 && parts[1].isNotEmpty()) parts[1].toLongOrNull() ?: (fileLength - 1) else (fileLength - 1)
+
+                    if (start >= fileLength) {
+                        exchange.responseHeaders.set("Content-Range", "bytes */$fileLength")
+                        exchange.sendResponseHeaders(416, -1)
+                        exchange.responseBody.close()
+                        return
+                    }
+
+                    if (end >= fileLength) {
+                        end = fileLength - 1
+                    }
+                    val contentLength = end - start + 1
+
+                    exchange.responseHeaders.set("Content-Range", "bytes $start-$end/$fileLength")
+                    exchange.sendResponseHeaders(206, contentLength)
+
+                    val os = exchange.responseBody
+                    val raf = java.io.RandomAccessFile(targetFile, "r")
+                    raf.use { file ->
+                        file.seek(start)
+                        val buffer = ByteArray(64 * 1024)
+                        var remaining = contentLength
+                        while (remaining > 0) {
+                            val toRead = if (remaining < buffer.size) remaining.toInt() else buffer.size
+                            val read = file.read(buffer, 0, toRead)
+                            if (read <= 0) break
+                            os.write(buffer, 0, read)
+                            remaining -= read
+                        }
+                    }
+                    os.close()
+                } else {
+                    exchange.sendResponseHeaders(200, fileLength)
+                    val os: OutputStream = exchange.responseBody
+                    targetFile.inputStream().use { input -> input.copyTo(os) }
+                    os.close()
+                }
             } catch (e: SecurityException) {
                 sendJsonResponse(exchange, 403, """{"success":false,"error":{"code":"PATH_TRAVERSAL_REJECTED","message":"Path traversal attempt rejected."}}""")
             } catch (e: Exception) {

@@ -337,7 +337,10 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
   /**
    * GET /api/v1/file-manager/:serverId/download
    * Proxies a file download through the gateway.
-   * Accepts query param: ?path=<filePath>
+  /**
+   * GET /api/v1/file-manager/:serverId/download
+   * Proxies a file download / media stream through the gateway.
+   * Accepts query params: ?path=<filePath>&download=true|false
    */
   app.get('/file-manager/:serverId/download', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
@@ -361,11 +364,55 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
     if (result?.success && result?.dataBase64) {
       const buffer = Buffer.from(result.dataBase64, 'base64');
       const filename = result.filename || query.path.split('/').pop() || 'download';
-      const mimeType = result.mimeType || 'application/octet-stream';
+      let mimeType = result.mimeType;
+
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        const ext = filename.split('.').pop()?.toLowerCase();
+        if (ext === 'mp4') mimeType = 'video/mp4';
+        else if (ext === 'webm') mimeType = 'video/webm';
+        else if (ext === 'mov') mimeType = 'video/quicktime';
+        else if (ext === 'mkv') mimeType = 'video/x-matroska';
+        else if (ext === 'mp3') mimeType = 'audio/mpeg';
+        else if (ext === 'wav') mimeType = 'audio/wav';
+        else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+        else if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'webp') mimeType = 'image/webp';
+        else mimeType = 'application/octet-stream';
+      }
+
+      const isDownloadAttachment = query.download === 'true' || query.download === '1';
+      const dispositionType = isDownloadAttachment ? 'attachment' : 'inline';
+
+      reply
+        .header('Content-Type', mimeType)
+        .header('Content-Disposition', `${dispositionType}; filename="${encodeURIComponent(filename)}"`)
+        .header('Accept-Ranges', 'bytes')
+        .header('Access-Control-Allow-Origin', '*')
+        .header('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type')
+        .header('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+
+      const rangeHeader = request.headers.range;
+      if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+        const rangeSpec = rangeHeader.substring(6).trim();
+        const parts = rangeSpec.split('-');
+        const start = parseInt(parts[0], 10) || 0;
+        let end = parts[1] && parts[1].length > 0 ? parseInt(parts[1], 10) : buffer.length - 1;
+        if (start >= buffer.length) {
+          return reply
+            .status(416)
+            .header('Content-Range', `bytes */${buffer.length}`)
+            .send();
+        }
+        if (end >= buffer.length) end = buffer.length - 1;
+        const chunk = buffer.subarray(start, end + 1);
+        return reply
+          .status(206)
+          .header('Content-Range', `bytes ${start}-${end}/${buffer.length}`)
+          .header('Content-Length', chunk.length)
+          .send(chunk);
+      }
 
       return reply
-        .header('Content-Type', mimeType)
-        .header('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`)
         .header('Content-Length', buffer.length)
         .send(buffer);
     }
