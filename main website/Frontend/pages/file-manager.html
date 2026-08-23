@@ -526,14 +526,14 @@
   <input type="file" id="file-picker" style="display: none;" multiple>
 
   <!-- MODAL DIALOGS -->
-  <div class="modal" id="modal-new-folder" aria-hidden="true">
-    <div class="modal-content" style="max-width: 440px;">
+  <div class="modal modal-overlay" id="modal-new-folder" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
           <span>Create New Folder</span>
         </h3>
-        <button class="modal-close-btn" onclick="UIManager.hideModal('modal-new-folder')" aria-label="Close dialog">
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-new-folder')" aria-label="Close dialog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -552,14 +552,14 @@
     </div>
   </div>
 
-  <div class="modal" id="modal-rename" aria-hidden="true">
-    <div class="modal-content" style="max-width: 440px;">
+  <div class="modal modal-overlay" id="modal-rename" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           <span>Rename Item</span>
         </h3>
-        <button class="modal-close-btn" onclick="UIManager.hideModal('modal-rename')" aria-label="Close dialog">
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-rename')" aria-label="Close dialog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -579,14 +579,14 @@
     </div>
   </div>
 
-  <div class="modal" id="modal-delete" aria-hidden="true">
-    <div class="modal-content" style="max-width: 440px;">
+  <div class="modal modal-overlay" id="modal-delete" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
         <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: #DC2626;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           <span>Confirm Delete</span>
         </h3>
-        <button class="modal-close-btn" onclick="UIManager.hideModal('modal-delete')" aria-label="Close dialog">
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-delete')" aria-label="Close dialog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -606,11 +606,11 @@
     </div>
   </div>
 
-  <div class="modal" id="modal-lightbox" aria-hidden="true">
-    <div class="modal-content" style="max-width: 800px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); color: #FFF;">
+  <div class="modal modal-overlay" id="modal-lightbox" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card modal-card-lg" style="max-width: 800px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); color: #FFF;">
       <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
         <h3 class="modal-title" id="lightbox-title" style="color: #FFF; font-size: var(--font-size-md);">Photo Preview</h3>
-        <button class="modal-close-btn" onclick="UIManager.hideModal('modal-lightbox')" style="color: #FFF;" aria-label="Close preview">
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-lightbox')" style="color: #FFF;" aria-label="Close preview">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -627,11 +627,11 @@
     </div>
   </div>
 
-  <div class="modal" id="modal-video-player" aria-hidden="true">
-    <div class="modal-content" style="max-width: 840px; background: #0F172A; border: 1px solid rgba(255, 255, 255, 0.1); color: #FFF;">
+  <div class="modal modal-overlay" id="modal-video-player" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card modal-card-lg" style="max-width: 840px; background: #0F172A; border: 1px solid rgba(255, 255, 255, 0.1); color: #FFF;">
       <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
         <h3 class="modal-title" id="video-player-title" style="color: #FFF; font-size: var(--font-size-md);">Video Streaming</h3>
-        <button class="modal-close-btn" onclick="UIManager.hideModal('modal-video-player')" style="color: #FFF;" aria-label="Close video player">
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideVideoModal()" style="color: #FFF;" aria-label="Close video player">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -639,11 +639,66 @@
         <video id="video-player-el" controls style="width: 100%; max-height: 65vh; border-radius: 0; outline: none;"></video>
       </div>
       <div class="modal-footer" style="border-top: 1px solid rgba(255, 255, 255, 0.1);">
-        <button type="button" class="btn btn-ghost" onclick="UIManager.hideModal('modal-video-player')" style="color: #94A3B8;">Close</button>
+        <button type="button" class="btn btn-ghost" onclick="UIManager.hideVideoModal()" style="color: #94A3B8;">Close</button>
         <a id="video-download-link" href="" class="btn btn-primary" download style="display: inline-flex; align-items: center; gap: 6px;">
           <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span>Download Video</span>
         </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal modal-overlay" id="modal-audio-player" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="audio-player-title">Audio Playback</h3>
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideAudioModal()" aria-label="Close dialog">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 16px 0;">
+        <div style="width: 64px; height: 64px; border-radius: 50%; background-color: var(--color-brand-light, #EFF6FF); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--color-brand-primary);">
+          <svg class="icon icon-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+        <audio id="audio-player-el" controls style="width: 100%; margin-top: 8px;"></audio>
+      </div>
+      <div class="modal-footer">
+        <a id="audio-download-link" href="#" class="btn btn-secondary" download>Download Audio</a>
+        <button type="button" class="btn btn-primary" onclick="UIManager.hideAudioModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal modal-overlay" id="modal-file-info" style="display: none;" aria-hidden="true">
+    <div class="modal-content modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">File Details</h3>
+        <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-file-info')" aria-label="Close dialog">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border-subtle);">
+          <div id="file-info-icon-container" style="width: 48px; height: 48px; border-radius: 8px; background-color: var(--color-bg-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--color-brand-primary);"></div>
+          <div style="min-width: 0; flex: 1;">
+            <div id="file-info-name" style="font-weight: 700; font-size: 1rem; color: var(--color-text-primary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"></div>
+            <div id="file-info-category" style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px;"></div>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 12px; font-size: 0.875rem;">
+          <div style="font-weight: 600; color: var(--color-text-secondary);">Size</div>
+          <div id="file-info-size" style="color: var(--color-text-primary);"></div>
+
+          <div style="font-weight: 600; color: var(--color-text-secondary);">Modified</div>
+          <div id="file-info-modified" style="color: var(--color-text-primary);"></div>
+
+          <div style="font-weight: 600; color: var(--color-text-secondary);">Location</div>
+          <div id="file-info-path" style="color: var(--color-text-primary); font-family: monospace; font-size: 0.8rem; word-break: break-all;"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-file-info')">Close</button>
+        <a id="file-info-download-link" href="#" class="btn btn-primary" download>Download</a>
       </div>
     </div>
   </div>

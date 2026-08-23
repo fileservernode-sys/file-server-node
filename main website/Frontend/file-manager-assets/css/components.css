@@ -274,33 +274,52 @@
 }
 
 /* ==========================================================================
-   MODALS & DIALOGS
+   MODALS & DIALOG OVERLAYS
    ========================================================================== */
+.modal,
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(15, 23, 42, 0.6);
-  display: flex;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background-color: rgba(15, 23, 42, 0.60) !important;
+  display: none;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-overlay);
+  z-index: 1000 !important;
   padding: var(--space-md);
   box-sizing: border-box;
 }
 
-.modal-card {
-  background-color: var(--color-bg-surface);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+.modal.is-open,
+.modal.active,
+.modal-overlay.is-open,
+.modal-overlay.active,
+.modal[style*="display: flex"],
+.modal[style*="display:flex"],
+.modal-overlay[style*="display: flex"],
+.modal-overlay[style*="display:flex"] {
+  display: flex !important;
+}
+
+.modal-card,
+.modal-content {
+  background-color: var(--color-bg-surface, #ffffff);
+  border-radius: var(--radius-xl, 12px);
+  box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
   width: 100%;
   max-width: 480px;
-  padding: var(--space-lg);
-  border: 1px solid var(--color-border-subtle);
+  padding: var(--space-lg, 24px);
+  border: 1px solid var(--color-border-subtle, #e2e8f0);
   animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
+  margin: auto;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modal-card-lg {

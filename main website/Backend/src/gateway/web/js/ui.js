@@ -2,14 +2,88 @@
  * RemoteNode UI State & Modal Dialog Manager
  */
 const UIManager = {
+  activeModalId: null,
+
+  hideAllModals() {
+    const modalIds = [
+      'modal-new-folder',
+      'modal-rename',
+      'modal-delete',
+      'modal-upload',
+      'modal-lightbox',
+      'modal-video-player',
+      'modal-audio-player',
+      'modal-file-info'
+    ];
+    modalIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.style.display = 'none';
+        el.classList.remove('is-open', 'active');
+        el.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    const videoEl = document.getElementById('video-player-el');
+    if (videoEl && !videoEl.paused) {
+      videoEl.pause();
+      videoEl.src = '';
+    }
+    const audioEl = document.getElementById('audio-player-el');
+    if (audioEl && !audioEl.paused) {
+      audioEl.pause();
+      audioEl.src = '';
+    }
+
+    this.activeModalId = null;
+    document.body.style.overflow = '';
+  },
+
   showModal(modalId) {
+    this.hideAllModals();
     const el = document.getElementById(modalId);
-    if (el) el.style.display = 'flex';
+    if (el) {
+      el.style.display = 'flex';
+      el.classList.add('is-open', 'active');
+      el.setAttribute('aria-hidden', 'false');
+      this.activeModalId = modalId;
+      document.body.style.overflow = 'hidden';
+
+      const focusable = el.querySelector('input:not([type="hidden"]), button:not([disabled]), a[href]');
+      if (focusable) {
+        setTimeout(() => focusable.focus(), 50);
+      }
+    }
   },
 
   hideModal(modalId) {
     const el = document.getElementById(modalId);
-    if (el) el.style.display = 'none';
+    if (el) {
+      el.style.display = 'none';
+      el.classList.remove('is-open', 'active');
+      el.setAttribute('aria-hidden', 'true');
+    }
+    if (this.activeModalId === modalId) {
+      this.activeModalId = null;
+    }
+    const openModals = document.querySelectorAll('.modal.is-open, .modal-overlay.is-open, .modal[style*="display: flex"], .modal[style*="display:flex"], .modal-overlay[style*="display: flex"], .modal-overlay[style*="display:flex"]');
+    if (openModals.length === 0) {
+      document.body.style.overflow = '';
+    }
+  },
+
+  closeActiveModal() {
+    if (this.activeModalId) {
+      if (this.activeModalId === 'modal-video-player') {
+        this.hideVideoModal();
+      } else if (this.activeModalId === 'modal-audio-player') {
+        this.hideAudioModal();
+      } else {
+        this.hideModal(this.activeModalId);
+      }
+    } else {
+      this.hideAllModals();
+    }
   },
 
   showToast(message, type = 'online') {
@@ -154,3 +228,10 @@ const UIManager = {
     this.showModal('modal-delete');
   }
 };
+
+// Global ESC key event listener to close active modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    UIManager.closeActiveModal();
+  }
+});
