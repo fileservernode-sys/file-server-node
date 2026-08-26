@@ -69,7 +69,15 @@ async function findUserDevices() {
         lastSeen: d.lastSeenAt ? formatRelativeTime(d.lastSeenAt) : 'Not available yet',
         endpoint: publicUrl || 'Provisioning...',
         canAccess: isOnline && !!server?.id,
-        storageStats: `${d.platform || 'Android'} ${d.osVersion || ''} • App v${d.appVersion || '1.0.0'}`
+        storageStats: (() => {
+          const plat = (d.platform || 'Android').trim();
+          let ver = (d.osVersion || '').trim();
+          if (ver.toLowerCase().startsWith(plat.toLowerCase())) {
+            ver = ver.substring(plat.length).trim();
+          }
+          const display = ver ? `${plat} ${ver}` : plat;
+          return `${display} • App v${d.appVersion || '1.0.0'}`;
+        })()
       };
     });
 

@@ -16,6 +16,7 @@ abstract class ServerService {
   Future<bool> requestNotificationPermission();
   Future<bool> openNotificationSettings();
   Future<String> getDeviceModel();
+  Future<String> getOsVersion();
   Future<Map<String, dynamic>> getStorageReadiness();
   Future<Map<String, dynamic>> getPowerReadiness();
 }
@@ -180,6 +181,16 @@ class MethodChannelServerService implements ServerService {
   }
 
   @override
+  Future<String> getOsVersion() async {
+    try {
+      final res = await _channel.invokeMethod<String>('getOsVersion');
+      return res != null && res.isNotEmpty ? res : '14';
+    } catch (e) {
+      return const MockServerService().getOsVersion();
+    }
+  }
+
+  @override
   Future<Map<String, dynamic>> getStorageReadiness() async {
     try {
       final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('getStorageReadiness');
@@ -302,6 +313,11 @@ class MockServerService implements ServerService {
   @override
   Future<String> getDeviceModel() async {
     return 'Android Device';
+  }
+
+  @override
+  Future<String> getOsVersion() async {
+    return '14';
   }
 
   @override

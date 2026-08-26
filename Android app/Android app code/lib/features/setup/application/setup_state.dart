@@ -390,11 +390,13 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       // Stage 0: Register Device Node with Backend Control Plane
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 0);
+      final osVersion = await serverService.getOsVersion();
       final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
       final regResult = await deviceDataSource.registerDevice(
         deviceName: state.deviceName,
         installationId: installationId,
         sessionToken: sessionToken,
+        osVersion: osVersion,
         serverName: state.serverName,
         adminUsername: state.fileServerUsername,
         adminPassword: state.fileServerPassword,
@@ -413,7 +415,6 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       // Stage 1: Configure Credentials & Start Local HTTP File Server on Android (0.0.0.0:8080)
       // -----------------------------------------------------------------------
       state = state.copyWith(stageIndex: 1);
-      final serverService = _ref.read(serverServiceProvider);
       await serverService.setCredentials(
         username: state.fileServerUsername,
         password: state.fileServerPassword,

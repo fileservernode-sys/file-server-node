@@ -71,7 +71,7 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         'deviceName': deviceName,
         'installationId': installationId,
         'platform': platform,
-        'osVersion': osVersion ?? 'Android 14',
+        'osVersion': osVersion ?? '14',
         'appVersion': appVersion ?? '1.0.0',
         if (serverName != null) 'serverName': serverName,
         if (adminUsername != null) 'adminUsername': adminUsername,

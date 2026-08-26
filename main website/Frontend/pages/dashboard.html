@@ -506,7 +506,13 @@
             }
 
             const serverDisplayName = server?.serverName || device.deviceName || 'Personal File Server';
-            const platformInfo = `${escapeHtml(device.platform || 'Android')} ${escapeHtml(device.osVersion || '')} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
+            const platform = (device.platform || 'Android').trim();
+            let osVer = (device.osVersion || '').trim();
+            if (osVer.toLowerCase().startsWith(platform.toLowerCase())) {
+              osVer = osVer.substring(platform.length).trim();
+            }
+            const osDisplay = osVer ? `${platform} ${osVer}` : platform;
+            const platformInfo = `${escapeHtml(osDisplay)} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
             const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
 
             // File Manager Access Button (Preserves server.id in URL parameter)

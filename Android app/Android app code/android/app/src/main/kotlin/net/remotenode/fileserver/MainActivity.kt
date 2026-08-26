@@ -38,12 +38,31 @@ class MainActivity : FlutterActivity() {
                 }
                 "getDeviceModel" -> {
                     try {
-                        val manufacturer = Build.MANUFACTURER?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() } ?: "Android"
-                        val model = Build.MODEL ?: "Device"
-                        val name = if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
-                        result.success(name)
+                        var customName: String? = null
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                            customName = android.provider.Settings.Global.getString(context.contentResolver, android.provider.Settings.Global.DEVICE_NAME)
+                        }
+                        if (customName.isNullOrBlank()) {
+                            customName = android.provider.Settings.Secure.getString(context.contentResolver, "bluetooth_name")
+                        }
+                        if (!customName.isNullOrBlank()) {
+                            result.success(customName.trim())
+                        } else {
+                            val manufacturer = Build.MANUFACTURER?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() } ?: "Android"
+                            val model = Build.MODEL ?: "Device"
+                            val name = if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+                            result.success(name.trim())
+                        }
                     } catch (e: Exception) {
                         result.success("Android Device")
+                    }
+                }
+                "getOsVersion" -> {
+                    try {
+                        val release = Build.VERSION.RELEASE ?: "14"
+                        result.success(release)
+                    } catch (e: Exception) {
+                        result.success("14")
                     }
                 }
                 "getStorageReadiness" -> {
