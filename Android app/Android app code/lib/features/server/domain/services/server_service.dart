@@ -9,9 +9,12 @@ abstract class ServerService {
   Future<String> getLocalUrl();
   Future<bool> openUrl(String url);
   Future<bool> setCredentials({required String username, required String password});
+  Future<bool> isServiceRunning();
+  Future<bool> isBatteryOptimizationIgnored();
+  Future<bool> requestIgnoreBatteryOptimization();
 }
 
-/// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine
+/// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine & RemoteNodeServerService
 class MethodChannelServerService implements ServerService {
   static const MethodChannel _channel =
       MethodChannel('net.remotenode.fileserver/server_engine');
@@ -59,7 +62,8 @@ class MethodChannelServerService implements ServerService {
           : {
               'status': 'STOPPED',
               'port': 8080,
-              'localUrl': 'http://127.0.0.1:8080'
+              'localUrl': 'http://127.0.0.1:8080',
+              'serviceRunning': false,
             };
     } catch (e) {
       return const MockServerService().getServerStatus();
@@ -98,6 +102,36 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().setCredentials(username: username, password: password);
     }
   }
+
+  @override
+  Future<bool> isServiceRunning() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('isServiceRunning');
+      return res ?? false;
+    } catch (e) {
+      return const MockServerService().isServiceRunning();
+    }
+  }
+
+  @override
+  Future<bool> isBatteryOptimizationIgnored() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('isBatteryOptimizationIgnored');
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().isBatteryOptimizationIgnored();
+    }
+  }
+
+  @override
+  Future<bool> requestIgnoreBatteryOptimization() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('requestIgnoreBatteryOptimization');
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().requestIgnoreBatteryOptimization();
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -116,13 +150,14 @@ class MockServerService implements ServerService {
       'success': true,
       'port': port,
       'localUrl': 'http://127.0.0.1:$port',
+      'serviceRunning': true,
     };
   }
 
   @override
   Future<Map<String, dynamic>> stopServer() async {
     await Future.delayed(const Duration(milliseconds: 150));
-    return {'success': true};
+    return {'success': true, 'serviceRunning': false};
   }
 
   @override
@@ -137,6 +172,7 @@ class MockServerService implements ServerService {
       'status': _initiallyRunning ? 'ONLINE' : 'STOPPED',
       'port': _port,
       'localUrl': 'http://127.0.0.1:$_port',
+      'serviceRunning': _initiallyRunning,
     };
   }
 
@@ -154,6 +190,21 @@ class MockServerService implements ServerService {
   @override
   Future<bool> setCredentials({required String username, required String password}) async {
     await Future.delayed(const Duration(milliseconds: 50));
+    return true;
+  }
+
+  @override
+  Future<bool> isServiceRunning() async {
+    return _initiallyRunning;
+  }
+
+  @override
+  Future<bool> isBatteryOptimizationIgnored() async {
+    return true;
+  }
+
+  @override
+  Future<bool> requestIgnoreBatteryOptimization() async {
     return true;
   }
 }

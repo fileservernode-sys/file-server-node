@@ -3,6 +3,7 @@ package net.remotenode.fileserver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -10,7 +11,6 @@ import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
-    private val localServerEngine = LocalServerEngine()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -31,33 +31,99 @@ class MainActivity : FlutterActivity() {
                 }
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
-                    val storageDir = context.filesDir.resolve("RemoteNodeFiles")
-                    val res = localServerEngine.start(port, storageDir, context)
-                    result.success(res)
+                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                        action = RemoteNodeServerService.ACTION_START_SERVER
+                        putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                    }
+                    try {
+                        ContextCompat.startForegroundService(context, intent)
+                        val status = RemoteNodeServerService.engine.getStatus()
+                        val ip = RemoteNodeServerService.engine.getDeviceIpAddress()
+                        result.success(mapOf(
+                            "success" to true,
+                            "port" to port,
+                            "localUrl" to "http://$ip:$port",
+                            "status" to "ONLINE",
+                            "serviceRunning" to true
+                        ))
+                    } catch (e: Exception) {
+                        result.error("START_SERVICE_FAILED", e.message, null)
+                    }
                 }
                 "setCredentials" -> {
                     val username = call.argument<String>("username")
                     val password = call.argument<String>("password")
-                    localServerEngine.setCredentials(username, password)
+                    RemoteNodeServerService.engine.setCredentials(username, password)
+                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                        action = RemoteNodeServerService.ACTION_SET_CREDENTIALS
+                        putExtra(RemoteNodeServerService.EXTRA_USERNAME, username)
+                        putExtra(RemoteNodeServerService.EXTRA_PASSWORD, password)
+                    }
+                    try {
+                        context.startService(intent)
+                    } catch (_: Exception) {}
                     result.success(true)
                 }
                 "stopServer" -> {
-                    val res = localServerEngine.stop()
+                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                        action = RemoteNodeServerService.ACTION_STOP_SERVER
+                    }
+                    try {
+                        context.startService(intent)
+                    } catch (_: Exception) {}
+                    val res = RemoteNodeServerService.engine.stop()
                     result.success(res)
                 }
                 "restartServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
-                    val storageDir = context.filesDir.resolve("RemoteNodeFiles")
-                    val res = localServerEngine.restart(port, storageDir, context)
-                    result.success(res)
+                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                        action = RemoteNodeServerService.ACTION_RESTART_SERVER
+                        putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                    }
+                    try {
+                        ContextCompat.startForegroundService(context, intent)
+                        val ip = RemoteNodeServerService.engine.getDeviceIpAddress()
+                        result.success(mapOf(
+                            "success" to true,
+                            "port" to port,
+                            "localUrl" to "http://$ip:$port",
+                            "status" to "ONLINE",
+                            "serviceRunning" to true
+                        ))
+                    } catch (e: Exception) {
+                        result.error("RESTART_SERVICE_FAILED", e.message, null)
+                    }
                 }
                 "getServerStatus" -> {
-                    val res = localServerEngine.getStatus()
-                    result.success(res)
+                    val engineStatus = RemoteNodeServerService.engine.getStatus()
+                    val isRunning = RemoteNodeServerService.isServiceRunning || (engineStatus["status"] == "ONLINE")
+                    val mergedStatus = HashMap(engineStatus).apply {
+                        put("serviceRunning", isRunning)
+                        put("desiredEnabled", RemoteNodeServerService.getDesiredServerEnabled(context))
+                        put("serverState", RemoteNodeServerService.currentServerState)
+                    }
+                    result.success(mergedStatus)
                 }
                 "getLocalUrl" -> {
-                    val url = localServerEngine.getLocalUrl()
+                    val url = RemoteNodeServerService.engine.getLocalUrl()
                     result.success(url)
+                }
+                "isServiceRunning" -> {
+                    val isRunning = RemoteNodeServerService.isServiceRunning
+                    result.success(isRunning)
+                }
+                "isBatteryOptimizationIgnored" -> {
+                    val ignored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)
+                    result.success(ignored)
+                }
+                "requestIgnoreBatteryOptimization" -> {
+                    try {
+                        val optIntent = BatteryOptimizationHelper.createRequestIgnoreBatteryOptimizationIntent(context)
+                        context.startActivity(optIntent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("BATTERY_OPT_ERROR", e.message, null)
+                    }
                 }
                 "openUrl" -> {
                     val url = call.argument<String>("url")

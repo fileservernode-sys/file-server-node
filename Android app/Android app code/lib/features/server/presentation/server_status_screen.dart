@@ -26,6 +26,8 @@ class ServerStatusScreen extends ConsumerStatefulWidget {
 
 class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   bool _isLocalRunning = true;
+  bool _isServiceRunning = true;
+  bool _isBatteryIgnored = true;
   String _localUrl = 'http://127.0.0.1:8080';
   bool _isLoading = false;
 
@@ -42,9 +44,14 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
     final service = ref.read(serverServiceProvider);
     final status = await service.getServerStatus();
     final url = await service.getLocalUrl();
+    final serviceRunning = await service.isServiceRunning();
+    final batteryIgnored = await service.isBatteryOptimizationIgnored();
+
     if (mounted) {
       setState(() {
-        _isLocalRunning = status['status'] == 'ONLINE';
+        _isLocalRunning = status['status'] == 'ONLINE' || serviceRunning;
+        _isServiceRunning = serviceRunning;
+        _isBatteryIgnored = batteryIgnored;
         _localUrl = url;
       });
     }
@@ -59,7 +66,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('File server & gateway transport started.')),
+            content: Text('File server & background persistent service started.')),
       );
     }
   }
@@ -75,7 +82,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('File server & gateway transport restarted.')),
+            content: Text('File server & background service restarted.')),
       );
     }
   }
@@ -100,7 +107,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
           ],
         ),
         content: const Text(
-          'Stopping the server will temporarily disable local file hosting and remote access.\n\n'
+          'Stopping the server will temporarily disable local file hosting, background service, and remote access.\n\n'
           'Your files remain safe on this phone. You can restart the server engine at any time.',
           style: AppTypography.bodySmall,
         ),
@@ -135,7 +142,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File server & gateway transport stopped.')),
+        const SnackBar(content: Text('File server & background service stopped.')),
       );
     }
   }
@@ -182,31 +189,19 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
               ),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Permanently'),
+            child: const Text('Delete Server'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true && mounted) {
-      setState(() => _isLoading = true);
-      final success = await ref.read(setupStateProvider.notifier).deleteServer();
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Server deleted successfully.')),
-          );
-          Navigator.pushNamedAndRemoveUntil(context, '/home', (r) => false);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(ref.read(setupStateProvider).errorMessage ?? 'Failed to delete server.'),
-              backgroundColor: AppColors.statusError,
-            ),
-          );
-        }
-      }
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    await ref.read(setupStateProvider.notifier).deleteServer();
+    if (mounted) {
+      setState(() => _isLoading = false);
+      Navigator.of(context).pop();
     }
   }
 
@@ -216,16 +211,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppHeader(
+      appBar: const AppHeader(
         title: 'Server Node Details',
-        showBackButton: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined, size: 20),
-            onPressed: _refreshServerStatus,
-            tooltip: 'Refresh Status',
-          ),
-        ],
+        subtitle: 'Node Telemetry & Control',
+        showBrandMark: true,
       ),
       body: SafeArea(
         child: Center(
@@ -238,12 +227,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // -----------------------------------------------------------
-                  // 1. Central Web Access & Discovery Card
+                  // 1. Remote Access Gateway Card
                   // -----------------------------------------------------------
                   AppCard(
                     padding: const EdgeInsets.all(AppSpacing.xl),
-                    color: AppColors.primarySubtle.withValues(alpha: 0.5),
-                    borderColor: AppColors.primary.withValues(alpha: 0.3),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -292,7 +279,53 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                   const SizedBox(height: AppSpacing.lg),
 
                   // -----------------------------------------------------------
-                  // 2. Local Node & Engine Status Card
+                  // 2. Battery Optimization Guidance Banner (if not ignored)
+                  // -----------------------------------------------------------
+                  if (!_isBatteryIgnored) ...[
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      color: AppColors.surfaceSubtle,
+                      borderColor: AppColors.statusConnecting,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.battery_alert_rounded,
+                                  size: 22, color: AppColors.statusConnecting),
+                              SizedBox(width: AppSpacing.xs),
+                              Flexible(
+                                child: Text(
+                                  'Background Optimization Active',
+                                  style: AppTypography.cardTitle,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          const Text(
+                            'For a phone used as a personal file server, Android battery optimization may restrict background operation. Allow unrestricted battery use for uninterrupted hosting.',
+                            style: AppTypography.caption,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          SecondaryButton(
+                            label: 'Configure Battery Settings',
+                            icon: Icons.battery_saver_rounded,
+                            onPressed: () async {
+                              final serverService = ref.read(serverServiceProvider);
+                              await serverService.requestIgnoreBatteryOptimization();
+                              await _refreshServerStatus();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
+
+                  // -----------------------------------------------------------
+                  // 3. Local Node & Persistent Service Status Card
                   // -----------------------------------------------------------
                   AppCard(
                     padding: const EdgeInsets.all(AppSpacing.xl),
@@ -363,6 +396,11 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
+                          label: 'Persistent Foreground Service',
+                          value: _isServiceRunning ? 'ACTIVE' : 'INACTIVE',
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
                           label: 'Local Server URL',
                           value: _localUrl,
                         ),
@@ -384,7 +422,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                   const SizedBox(height: AppSpacing.xxl),
 
                   // -----------------------------------------------------------
-                  // 3. Node Management Actions
+                  // 4. Node Management Operations
                   // -----------------------------------------------------------
                   const Text('Node Operations',
                       style: AppTypography.sectionTitle),
