@@ -29,8 +29,10 @@ class _SetupConfigurationScreenState
   void initState() {
     super.initState();
     final currentSetup = ref.read(setupStateProvider);
+    // Server name starts empty unless previously entered by user
     _serverNameController =
         TextEditingController(text: currentSetup.serverName);
+    // Device display name defaults to the detected device model
     _deviceNameController =
         TextEditingController(text: currentSetup.deviceName);
     _descriptionController =
@@ -77,7 +79,7 @@ class _SetupConfigurationScreenState
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     const Text(
-                      'Give your personal file server node a friendly name for identification.',
+                      'Give your personal file server node a name for remote identification.',
                       style: AppTypography.bodySmall,
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -88,7 +90,13 @@ class _SetupConfigurationScreenState
                       prefixIcon: const Icon(Icons.dns_outlined),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
-                          return 'Please enter a server name';
+                          return 'Server name is required.';
+                        }
+                        if (val.trim().length < 2) {
+                          return 'Server name must be at least 2 characters';
+                        }
+                        if (val.trim().length > 50) {
+                          return 'Server name must not exceed 50 characters';
                         }
                         return null;
                       },
@@ -96,20 +104,25 @@ class _SetupConfigurationScreenState
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(
                       label: 'Device Display Name',
-                      hintText: 'e.g., Android Phone Host',
+                      hintText: 'e.g., Samsung Galaxy S24',
                       controller: _deviceNameController,
                       prefixIcon: const Icon(Icons.phone_android_outlined),
                       validator: (val) {
                         if (val == null || val.trim().isEmpty) {
-                          return 'Please enter a device display name';
+                          return 'Device display name is required.';
                         }
                         return null;
                       },
                     ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      'Automatically detected host phone hardware model. Editable for your preference.',
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
+                    ),
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(
                       label: 'Description (Optional)',
-                      hintText: 'e.g., Secondary storage phone in living room',
+                      hintText: 'e.g., Dedicated storage node in living room',
                       controller: _descriptionController,
                       prefixIcon: const Icon(Icons.notes_outlined),
                     ),
@@ -120,9 +133,9 @@ class _SetupConfigurationScreenState
                       onPressed: () {
                         if (_formKey.currentState?.validate() ?? false) {
                           ref.read(setupStateProvider.notifier).setConfiguration(
-                                serverName: _serverNameController.text,
-                                deviceName: _deviceNameController.text,
-                                description: _descriptionController.text,
+                                serverName: _serverNameController.text.trim(),
+                                deviceName: _deviceNameController.text.trim(),
+                                description: _descriptionController.text.trim(),
                               );
                           Navigator.pushNamed(
                               context, '/server/setup/review');

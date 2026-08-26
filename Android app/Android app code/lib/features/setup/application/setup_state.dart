@@ -30,8 +30,8 @@ class SetupState {
   final String? errorMessage;
 
   const SetupState({
-    this.deviceName = 'Android Phone Host',
-    this.serverName = 'My Personal Server',
+    this.deviceName = 'Android Device',
+    this.serverName = '',
     this.description = '',
     this.fileServerUsername = 'admin_user',
     this.fileServerPassword = '',
@@ -120,7 +120,19 @@ final setupStateProvider =
 class SetupStateNotifier extends StateNotifier<SetupState> {
   final Ref _ref;
 
-  SetupStateNotifier(this._ref) : super(const SetupState());
+  SetupStateNotifier(this._ref) : super(const SetupState()) {
+    initDeviceModel();
+  }
+
+  Future<void> initDeviceModel() async {
+    try {
+      final serverService = _ref.read(serverServiceProvider);
+      final model = await serverService.getDeviceModel();
+      if (state.deviceName == 'Android Device' || state.deviceName.isEmpty) {
+        state = state.copyWith(deviceName: model);
+      }
+    } catch (_) {}
+  }
 
   void setConfiguration({
     required String serverName,
@@ -333,6 +345,26 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
 
   /// Executes the actual 6-stage setup & subdomain provisioning sequence
   Future<bool> executeSetup() async {
+    if (state.serverName.trim().isEmpty) {
+      state = state.copyWith(
+        isProcessing: false,
+        endpointStatus: 'FAILED',
+        errorMessage: 'Server name is required before starting the server.',
+      );
+      return false;
+    }
+
+    final serverService = _ref.read(serverServiceProvider);
+    final storageInfo = await serverService.getStorageReadiness();
+    if (storageInfo['isSufficient'] == false) {
+      state = state.copyWith(
+        isProcessing: false,
+        endpointStatus: 'FAILED',
+        errorMessage: 'Insufficient device storage to safely operate the server (<100MB free).',
+      );
+      return false;
+    }
+
     state = state.copyWith(
       isProcessing: true,
       stageIndex: 0,

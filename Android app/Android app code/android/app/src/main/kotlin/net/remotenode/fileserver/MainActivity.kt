@@ -2,14 +2,18 @@ package net.remotenode.fileserver
 
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Build
+import android.os.StatFs
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.util.Locale
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
@@ -30,6 +34,65 @@ class MainActivity : FlutterActivity() {
                         result.success(installationId)
                     } catch (e: Exception) {
                         result.error("IDENTITY_ERROR", e.message, null)
+                    }
+                }
+                "getDeviceModel" -> {
+                    try {
+                        val manufacturer = Build.MANUFACTURER?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString() } ?: "Android"
+                        val model = Build.MODEL ?: "Device"
+                        val name = if (model.startsWith(manufacturer, ignoreCase = true)) model else "$manufacturer $model"
+                        result.success(name)
+                    } catch (e: Exception) {
+                        result.success("Android Device")
+                    }
+                }
+                "getStorageReadiness" -> {
+                    try {
+                        val stat = StatFs(context.filesDir.absolutePath)
+                        val availableBytes = stat.availableBytes
+                        val totalBytes = stat.totalBytes
+                        val minThreshold = 100L * 1024L * 1024L // 100MB minimum operational threshold
+                        val lowThreshold = 500L * 1024L * 1024L // 500MB warning threshold
+                        val isSufficient = availableBytes >= minThreshold
+                        val isLow = availableBytes < lowThreshold
+                        val availableGb = availableBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+                        val availableMb = (availableBytes / (1024L * 1024L)).toInt()
+                        result.success(mapOf(
+                            "availableBytes" to availableBytes,
+                            "totalBytes" to totalBytes,
+                            "isSufficient" to isSufficient,
+                            "isLow" to isLow,
+                            "availableMb" to availableMb,
+                            "formattedAvailable" to String.format(Locale.US, "%.1f GB", availableGb)
+                        ))
+                    } catch (e: Exception) {
+                        result.success(mapOf(
+                            "availableBytes" to 1024L * 1024L * 1024L,
+                            "totalBytes" to 10L * 1024L * 1024L * 1024L,
+                            "isSufficient" to true,
+                            "isLow" to false,
+                            "availableMb" to 1024,
+                            "formattedAvailable" to "1.0 GB"
+                        ))
+                    }
+                }
+                "getPowerReadiness" -> {
+                    try {
+                        val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                        val status = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+                        val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL
+                        val level = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                        val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+                        val batteryPct = if (level >= 0 && scale > 0) (level * 100 / scale) else 100
+                        result.success(mapOf(
+                            "isCharging" to isCharging,
+                            "batteryLevel" to batteryPct
+                        ))
+                    } catch (e: Exception) {
+                        result.success(mapOf(
+                            "isCharging" to true,
+                            "batteryLevel" to 100
+                        ))
                     }
                 }
                 "startServer" -> {
@@ -135,6 +198,24 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     } else {
                         result.success(true)
+                    }
+                }
+                "openNotificationSettings" -> {
+                    try {
+                        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                        } else {
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.parse("package:" + context.packageName)
+                            }
+                        }
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("NOTIFICATION_SETTINGS_ERROR", e.message, null)
                     }
                 }
                 "isBatteryOptimizationIgnored" -> {

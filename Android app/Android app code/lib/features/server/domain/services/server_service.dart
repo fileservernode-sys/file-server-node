@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 
-/// Abstract Service Contract for Local HTTP File-Server Engine
+/// Abstract Service Contract for Local HTTP File-Server Engine & Android System Readiness
 abstract class ServerService {
   Future<Map<String, dynamic>> startServer({int port = 8080});
   Future<Map<String, dynamic>> stopServer();
@@ -14,6 +14,10 @@ abstract class ServerService {
   Future<bool> requestIgnoreBatteryOptimization();
   Future<bool> isNotificationPermissionGranted();
   Future<bool> requestNotificationPermission();
+  Future<bool> openNotificationSettings();
+  Future<String> getDeviceModel();
+  Future<Map<String, dynamic>> getStorageReadiness();
+  Future<Map<String, dynamic>> getPowerReadiness();
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine & RemoteNodeServerService
@@ -154,6 +158,56 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().requestNotificationPermission();
     }
   }
+
+  @override
+  Future<bool> openNotificationSettings() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('openNotificationSettings');
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().openNotificationSettings();
+    }
+  }
+
+  @override
+  Future<String> getDeviceModel() async {
+    try {
+      final res = await _channel.invokeMethod<String>('getDeviceModel');
+      return res != null && res.isNotEmpty ? res : 'Android Device';
+    } catch (e) {
+      return const MockServerService().getDeviceModel();
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getStorageReadiness() async {
+    try {
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('getStorageReadiness');
+      return res != null ? Map<String, dynamic>.from(res) : {
+        'availableBytes': 1024 * 1024 * 1024,
+        'totalBytes': 10 * 1024 * 1024 * 1024,
+        'isSufficient': true,
+        'isLow': false,
+        'availableMb': 1024,
+        'formattedAvailable': '1.0 GB'
+      };
+    } catch (e) {
+      return const MockServerService().getStorageReadiness();
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPowerReadiness() async {
+    try {
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('getPowerReadiness');
+      return res != null ? Map<String, dynamic>.from(res) : {
+        'isCharging': true,
+        'batteryLevel': 100
+      };
+    } catch (e) {
+      return const MockServerService().getPowerReadiness();
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -238,5 +292,35 @@ class MockServerService implements ServerService {
   @override
   Future<bool> requestNotificationPermission() async {
     return true;
+  }
+
+  @override
+  Future<bool> openNotificationSettings() async {
+    return true;
+  }
+
+  @override
+  Future<String> getDeviceModel() async {
+    return 'Android Device';
+  }
+
+  @override
+  Future<Map<String, dynamic>> getStorageReadiness() async {
+    return {
+      'availableBytes': 5 * 1024 * 1024 * 1024,
+      'totalBytes': 64 * 1024 * 1024 * 1024,
+      'isSufficient': true,
+      'isLow': false,
+      'availableMb': 5120,
+      'formattedAvailable': '5.0 GB',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPowerReadiness() async {
+    return {
+      'isCharging': true,
+      'batteryLevel': 100,
+    };
   }
 }
