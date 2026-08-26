@@ -149,7 +149,9 @@
               </svg>
               <span>Notifications</span>
             </h3>
-            <div class="rn-notif-popover-actions">
+            <div class="rn-notif-popover-actions" style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" id="rn-notif-popover-mark-all" class="rn-notif-link-btn" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 12px; color: var(--color-primary, #2563eb);">Mark All Read</button>
+              <span style="color: var(--color-border, #e2e8f0); font-size: 11px;">•</span>
               <a href="${viewAllPath}" class="rn-notif-link-btn">View All</a>
             </div>
           </div>
@@ -173,6 +175,14 @@
         bellBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.togglePopover();
+        });
+      }
+
+      const markAllPopoverBtn = document.getElementById('rn-notif-popover-mark-all');
+      if (markAllPopoverBtn) {
+        markAllPopoverBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await this.markAllAsRead();
         });
       }
     }
@@ -369,6 +379,37 @@
       } catch {}
     }
 
+    async markAllAsRead() {
+      try {
+        const res = await fetch(`${getApiBase()}/notifications/read-all`, {
+          method: 'POST',
+          headers: getAuthHeader()
+        });
+        if (res.ok) {
+          this.updateBadge(0);
+          // Update popover items in-place
+          const popoverUnread = document.querySelectorAll('#rn-notif-popover-body .rn-notif-item.is-unread');
+          popoverUnread.forEach(el => el.classList.remove('is-unread'));
+          // Update history items in-place if present
+          const historyUnread = document.querySelectorAll('#rn-notif-history-list .rn-notif-card.is-unread');
+          historyUnread.forEach(card => {
+            card.classList.remove('is-unread');
+            const btnRead = card.querySelector('.btn-mark-read');
+            if (btnRead) {
+              const span = document.createElement('span');
+              span.style.fontSize = '12px';
+              span.style.color = 'var(--color-text-tertiary)';
+              span.textContent = 'Read';
+              btnRead.replaceWith(span);
+            }
+          });
+          await this.fetchUnreadCount();
+        }
+      } catch (err) {
+        console.error('[NotificationCenter] Failed to mark all as read', err);
+      }
+    }
+
     async markAsArchived(notificationId) {
       try {
         const res = await fetch(`${getApiBase()}/notifications/${notificationId}/archive`, {
@@ -404,13 +445,18 @@
 
     renderHistoryLayout(container) {
       container.innerHTML = `
-        <div class="rn-notif-filter-bar">
-          <button type="button" class="rn-filter-btn is-active" data-category="ALL">All</button>
-          <button type="button" class="rn-filter-btn" data-category="ACCOUNT_SECURITY">Security</button>
-          <button type="button" class="rn-filter-btn" data-category="DEVICE_SERVER">Devices & Servers</button>
-          <button type="button" class="rn-filter-btn" data-category="FILE_OPERATIONS">Files</button>
-          <button type="button" class="rn-filter-btn" data-category="STORAGE">Storage</button>
-          <button type="button" class="rn-filter-btn" data-category="SYSTEM">System</button>
+        <div class="rn-notif-filter-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+            <button type="button" class="rn-filter-btn is-active" data-category="ALL">All</button>
+            <button type="button" class="rn-filter-btn" data-category="ACCOUNT_SECURITY">Security</button>
+            <button type="button" class="rn-filter-btn" data-category="DEVICE_SERVER">Devices & Servers</button>
+            <button type="button" class="rn-filter-btn" data-category="FILE_OPERATIONS">Files</button>
+            <button type="button" class="rn-filter-btn" data-category="STORAGE">Storage</button>
+            <button type="button" class="rn-filter-btn" data-category="SYSTEM">System</button>
+          </div>
+          <button type="button" id="btn-history-mark-all-read" class="btn btn-secondary btn-sm" style="min-height: 36px; padding: 0 14px; font-size: 13px;">
+            Mark All as Read
+          </button>
         </div>
 
         <div id="rn-notif-history-list" class="rn-notif-card-list">
@@ -434,6 +480,14 @@
           await this.loadHistoryItems();
         });
       });
+
+      const btnHistoryMarkAll = container.querySelector('#btn-history-mark-all-read');
+      if (btnHistoryMarkAll) {
+        btnHistoryMarkAll.addEventListener('click', async () => {
+          await this.markAllAsRead();
+          await this.loadHistoryItems();
+        });
+      }
     }
 
     async loadHistoryItems() {

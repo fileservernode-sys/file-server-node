@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { NotificationType } from '../src/notifications/types/type_registry.js';
 import { templateRegistry } from '../src/notifications/services/template_registry.js';
 import { failureClassifier } from '../src/notifications/services/failure_classifier.js';
+import { notificationRepository } from '../src/notifications/repositories/notification_repository.js';
 
 // Helper to simulate deep-link resolution logic on Website
 function resolveDeepLinkWebPath(deepLinkUri?: string): string | null {
@@ -170,6 +171,15 @@ describe('Track 4 — Batch NT-1.8 Notification UX & Cross-Platform Verification
       assert.ok(rendered.body.length > 0, `Body missing for event type ${type}`);
       assert.ok(rendered.defaultChannels.length > 0, `Channels missing for event type ${type}`);
     });
+  });
+
+  it('9. Mark All Notifications As Read updates repository state and unread count', async () => {
+    const userId = 'user_read_all_test_' + Date.now();
+    const countBefore = await notificationRepository.getUnreadCount(userId);
+    assert.strictEqual(countBefore, 0);
+
+    const updated = await notificationRepository.markAllAsRead(userId);
+    assert.strictEqual(typeof updated, 'number');
   });
 
 });

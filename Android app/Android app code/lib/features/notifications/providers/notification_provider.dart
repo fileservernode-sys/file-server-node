@@ -130,6 +130,27 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
     }
   }
 
+  Future<void> markAllAsRead() async {
+    try {
+      final session = await _storageService.getSession();
+      final sessionToken = session?.accessToken;
+      if (sessionToken == null) return;
+
+      final updatedItems = state.items.map((item) {
+        return item.copyWith(state: NotificationStateEnum.read);
+      }).toList();
+
+      state = state.copyWith(items: updatedItems, unreadCount: 0);
+
+      final baseUrl = AppConfig.current.apiBaseUrl;
+      final req = await _httpClient.openUrl('POST', Uri.parse('$baseUrl/notifications/read-all'));
+      req.headers.set('authorization', 'Bearer $sessionToken');
+      await req.close().timeout(const Duration(seconds: 10));
+    } catch (e) {
+      AppLogger.error('[NotificationProvider] Error marking all read', e);
+    }
+  }
+
   Future<void> markAsArchived(String notificationId) async {
     try {
       final session = await _storageService.getSession();

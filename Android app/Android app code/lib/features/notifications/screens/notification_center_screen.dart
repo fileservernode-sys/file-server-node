@@ -39,6 +39,20 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
         title: 'Notification Center',
         subtitle: state.unreadCount > 0 ? '${state.unreadCount} unread' : 'All updates',
         showBackButton: true,
+        actions: [
+          if (state.unreadCount > 0)
+            TextButton(
+              onPressed: () => notifier.markAllAsRead(),
+              child: const Text(
+                'Read All',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+        ],
       ),
       body: SafeArea(
         child: Column(

@@ -184,6 +184,20 @@ export class NotificationRepository {
     });
   }
 
+  public async markAllAsRead(userId: string): Promise<number> {
+    const result = await prisma.notificationRecord.updateMany({
+      where: {
+        userId,
+        status: NotificationRecordStatus.UNREAD
+      },
+      data: {
+        status: NotificationRecordStatus.READ,
+        readAt: new Date()
+      }
+    });
+    return result.count;
+  }
+
   public async markAsArchived(notificationId: string, userId: string) {
     const existing = await prisma.notificationRecord.findFirst({
       where: { id: notificationId, userId }

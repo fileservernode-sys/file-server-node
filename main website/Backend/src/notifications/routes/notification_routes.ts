@@ -97,6 +97,32 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * POST /api/v1/notifications/read-all
+   * Marks all UNREAD notifications as read for authenticated user.
+   */
+  app.post('/notifications/read-all', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const count = await notificationRepository.markAllAsRead(user.id);
+    return reply.send(createSuccessResponse({
+      count,
+      message: 'All notifications marked as read'
+    }));
+  });
+
+  /**
+   * PATCH /api/v1/notifications/read-all
+   * Alias for POST /notifications/read-all.
+   */
+  app.patch('/notifications/read-all', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const count = await notificationRepository.markAllAsRead(user.id);
+    return reply.send(createSuccessResponse({
+      count,
+      message: 'All notifications marked as read'
+    }));
+  });
+
+  /**
    * PATCH /api/v1/notifications/:notificationId/read
    * Marks a notification as read (user ownership enforced).
    */
