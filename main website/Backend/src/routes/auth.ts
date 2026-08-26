@@ -5,6 +5,7 @@ import { hashPassword, verifyPassword, generateSessionToken } from '../utils/cry
 import { issueEmailOtp, verifyEmailOtp } from '../utils/otp.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../errors/app-error.js';
+import { accountEventProducer } from '../notifications/producers/account_producer.js';
 
 // Input Validation Schemas
 const registerSchema = z.object({
@@ -170,6 +171,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         eventType: 'EMAIL_VERIFIED'
       }
     });
+
+    // Non-blocking notification event emissions
+    if (regResult.valid) {
+      accountEventProducer.emitAccountCreated(updatedUser.id, updatedUser.email, updatedUser.fullName || undefined).catch(() => {});
+    }
+    accountEventProducer.emitSignIn(updatedUser.id, updatedUser.email, typeof request.ip === 'string' ? request.ip : undefined, request.headers['user-agent'] as string).catch(() => {});
 
     return reply.status(200).send(createSuccessResponse({
       user: {

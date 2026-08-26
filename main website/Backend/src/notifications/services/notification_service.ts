@@ -13,10 +13,10 @@ import { defaultChannelRouter, ChannelRouter, DeviceRoutingTarget } from './chan
 import { UserNotificationPreferences } from '../types/preference.js';
 import {
   NotificationProvider,
-  ProviderDeliveryResult,
-  FoundationMockEmailProvider
+  ProviderDeliveryResult
 } from '../providers/provider_interface.js';
 import { defaultFcmPushProvider, FcmPushProvider } from '../providers/fcm_provider.js';
+import { defaultEmailNotificationProvider, EmailNotificationProviderImpl } from '../providers/email_provider.js';
 import { notificationRepository, NotificationRepository } from '../repositories/notification_repository.js';
 import { prisma } from '../../config/database.js';
 
@@ -75,7 +75,7 @@ export class CentralNotificationService {
 
     // Register production & fallback providers
     this.registerProvider(defaultFcmPushProvider);
-    this.registerProvider(new FoundationMockEmailProvider());
+    this.registerProvider(defaultEmailNotificationProvider);
   }
 
   public registerProvider(provider: NotificationProvider): void {

@@ -4,6 +4,9 @@ import path from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { prisma } from '../config/database.js';
 import { GatewayConfig, loadGatewayConfig } from './gateway_config.js';
+import { deviceEventProducer } from '../notifications/producers/device_producer.js';
+import { gatewayEventProducer } from '../notifications/producers/gateway_producer.js';
+import { serverEventProducer } from '../notifications/producers/server_producer.js';
 
 export interface HandshakeMessage {
   type: string;
@@ -141,6 +144,11 @@ export class PrismaTokenValidator implements TokenValidator {
               metadata: { connectionId, remoteEndpoint: conn.remoteEndpoint }
             }
           });
+
+          // Non-blocking notification event emissions
+          deviceEventProducer.emitDeviceOnline(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
+          gatewayEventProducer.emitGatewayConnected(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
+          serverEventProducer.emitServerRecovered(conn.device.userId, conn.deviceId, `srv_${conn.deviceId}`, conn.device.deviceName, conn.device.deviceName).catch(() => {});
         }
       }
     } catch {
@@ -189,6 +197,11 @@ export class PrismaTokenValidator implements TokenValidator {
               metadata: { connectionId }
             }
           });
+
+          // Non-blocking notification event emissions
+          deviceEventProducer.emitDeviceOffline(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
+          gatewayEventProducer.emitGatewayDisconnected(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
+          serverEventProducer.emitServerUnavailable(conn.device.userId, conn.deviceId, `srv_${conn.deviceId}`, conn.device.deviceName, conn.device.deviceName).catch(() => {});
         }
       }
     } catch {

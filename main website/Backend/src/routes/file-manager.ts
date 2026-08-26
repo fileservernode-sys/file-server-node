@@ -4,6 +4,7 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
+import { fileEventProducer } from '../notifications/producers/file_producer.js';
 
 const serverIdParamSchema = z.object({
   serverId: z.string().min(1)

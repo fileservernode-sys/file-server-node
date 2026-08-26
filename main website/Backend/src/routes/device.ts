@@ -7,6 +7,8 @@ import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } fro
 import { hashPassword } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
+import { deviceEventProducer } from '../notifications/producers/device_producer.js';
+import { serverEventProducer } from '../notifications/producers/server_producer.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -187,6 +189,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
         return newDevice;
       }, { maxWait: 15000, timeout: 30000 });
+
+      // Non-blocking notification event emissions
+      deviceEventProducer.emitDeviceLinked(user.id, device.id, device.deviceName).catch(() => {});
+      serverEventProducer.emitServerCreated(user.id, device.id, `srv_${device.id}`, serverName || device.deviceName, device.deviceName).catch(() => {});
     }
 
     return reply.status(200).send(createSuccessResponse({

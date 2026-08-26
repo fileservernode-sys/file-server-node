@@ -82,7 +82,30 @@ export class NotificationRepository {
       });
     } catch (err: any) {
       if (err?.code === 'P2003') {
-        return null;
+        try {
+          return await prisma.notificationRecord.create({
+            data: {
+              id: input.id,
+              eventId: input.eventId,
+              userId: input.userId,
+              deviceId: null,
+              serverId: null,
+              eventType: input.eventType,
+              category: input.category,
+              severity: input.severity,
+              title: input.title,
+              body: input.body,
+              deepLinkUri: input.deepLinkUri || null,
+              webPath: input.webPath || null,
+              metadata: input.metadata ? (input.metadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+              status: NotificationRecordStatus.UNREAD,
+              idempotencyKey: input.idempotencyKey,
+              occurredAt: input.occurredAt || new Date()
+            }
+          });
+        } catch {
+          return null;
+        }
       }
       throw err;
     }

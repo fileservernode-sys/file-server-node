@@ -67,3 +67,25 @@ The notification module is located at `main website/Backend/src/notifications/`.
   - `GET /api/v1/notifications/unread-count` — Count unread notifications.
   - `PATCH /api/v1/notifications/:notificationId/read` — Mark notification read (user ownership enforced).
   - `PATCH /api/v1/notifications/:notificationId/archive` — Mark notification archived (user ownership enforced).
+
+### 7. End-to-End Notification Pipeline & Production Email Delivery (Batch NT-1.4)
+- **Production Email Provider (`EmailNotificationProvider`)**:
+  - Implements `EmailNotificationProvider` (`channel = NotificationChannel.EMAIL`).
+  - Translates `ProviderDeliveryRequest` into HTML and plain-text emails, leveraging existing `EmailService` (`src/services/email.ts`).
+  - Resolves target recipient emails securely via Prisma when not explicitly specified in the request.
+  - Classifies delivery errors into `PERMANENT_FAILURE` (e.g. invalid recipient address) vs `TEMPORARY_ERROR` (e.g. SMTP/HTTP connection timeouts).
+- **Canonical Event Producers (`src/notifications/producers/`)**:
+  - `AccountEventProducer`: `ACCOUNT_CREATED`, `SIGN_IN`, `SECURITY_EVENT`.
+  - `DeviceEventProducer`: `DEVICE_LINKED`, `DEVICE_ONLINE`, `DEVICE_OFFLINE`.
+  - `ServerEventProducer`: `SERVER_CREATED`, `SERVER_STARTED`, `SERVER_STOPPED`, `SERVER_UNAVAILABLE`, `SERVER_RECOVERED`.
+  - `GatewayEventProducer`: `GATEWAY_CONNECTED`, `GATEWAY_DISCONNECTED`.
+  - `FileEventProducer`: `FILE_UPLOAD_COMPLETED`, `FILE_UPLOAD_FAILED`, `FILE_OPERATION_COMPLETED`, `FILE_OPERATION_FAILED`.
+  - `StorageEventProducer`: `STORAGE_WARNING`, `STORAGE_CRITICAL`, `STORAGE_RECOVERED`.
+- **Non-Blocking Execution Guarantee**:
+  - Triggers inside feature routes (`auth.ts`, `device.ts`, `gateway_service.ts`, `file-manager.ts`) execute asynchronously with explicit `.catch()` handlers so notification pipeline failures never crash core application workflows.
+- **Sensitive Metadata Rejection**:
+  - `TemplateRegistry.render()` automatically redacts sensitive keys (`password`, `token`, `jwt`, `fcmtoken`, `privatekey`, `secret`, `authorization`, `otp`) before interpolating metadata into template output.
+- **Delivery Worker Processor (`DeliveryProcessor`)**:
+  - Worker process (`src/notifications/workers/delivery_processor.ts`) periodically claims `QUEUED` / `RETRYING` delivery records with `nextRetryAt <= now`.
+  - Dispatches payloads via registered channel providers with exponential backoff retry scheduling.
+

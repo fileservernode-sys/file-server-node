@@ -11,6 +11,7 @@ export interface EmailService {
   sendVerificationOtp(email: string, otpCode: string): Promise<boolean>;
   sendPasswordResetOtp(email: string, otpCode: string): Promise<boolean>;
   sendLoginOtp(email: string, otpCode: string): Promise<boolean>;
+  sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean>;
 }
 
 /**
@@ -135,6 +136,10 @@ export class BrevoEmailService implements EmailService {
     const template = getLoginOtpTemplate(otpCode, expiryMinutes);
     return this.sendMail(email, template.subject, template.html, template.text);
   }
+
+  async sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+    return this.sendMail(to, subject, html, text);
+  }
 }
 
 /**
@@ -147,6 +152,7 @@ export const SmtpEmailService = BrevoEmailService;
  */
 export class MockEmailService implements EmailService {
   public dispatchedOtps: Array<{ email: string; otpCode: string; type: string }> = [];
+  public dispatchedMails: Array<{ to: string; subject: string; html: string; text: string }> = [];
 
   async sendVerificationOtp(email: string, otpCode: string): Promise<boolean> {
     this.dispatchedOtps.push({ email, otpCode, type: 'VERIFICATION' });
@@ -160,6 +166,11 @@ export class MockEmailService implements EmailService {
 
   async sendLoginOtp(email: string, otpCode: string): Promise<boolean> {
     this.dispatchedOtps.push({ email, otpCode, type: 'LOGIN' });
+    return true;
+  }
+
+  async sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+    this.dispatchedMails.push({ to, subject, html, text });
     return true;
   }
 }

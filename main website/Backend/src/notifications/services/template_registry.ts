@@ -40,7 +40,8 @@ class TemplateRegistry {
     occurredAt: Date = new Date()
   ): RenderedTemplate {
     const template = this.getTemplate(type);
-    const ctx = buildTemplateContext(metadata, occurredAt);
+    const sanitizedMeta = this.sanitizeMetadata(metadata);
+    const ctx = buildTemplateContext(sanitizedMeta, occurredAt);
 
     return {
       title: template.titleTemplate(ctx),
@@ -52,6 +53,17 @@ class TemplateRegistry {
       defaultChannels: [...template.defaultChannels],
       priority: template.defaultSeverity
     };
+  }
+
+  private sanitizeMetadata(meta: SafeNotificationMetadata = {}): SafeNotificationMetadata {
+    const clean: SafeNotificationMetadata = { ...meta };
+    const forbidden = ['password', 'token', 'jwt', 'fcmtoken', 'privatekey', 'secret', 'authorization', 'otp'];
+    for (const key of Object.keys(clean)) {
+      if (forbidden.some((f) => key.toLowerCase().includes(f))) {
+        delete (clean as any)[key];
+      }
+    }
+    return clean;
   }
 
   private getFallbackTemplate(type: NotificationType): NotificationTemplate {
