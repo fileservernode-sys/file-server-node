@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_config.dart';
+import 'core/notifications/push_notification_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/logger.dart';
@@ -30,10 +31,13 @@ class RemoteNodeApp extends StatefulWidget {
 
 class _RemoteNodeAppState extends State<RemoteNodeApp>
     with WidgetsBindingObserver {
+  final _pushService = PushNotificationService();
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _pushService.initialize();
   }
 
   @override

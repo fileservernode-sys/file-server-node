@@ -75,6 +75,8 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
 
     return reply.send(createSuccessResponse({
       notifications: formattedItems,
+      items: formattedItems,
+      total: result.total,
       pagination: {
         page: result.page,
         limit: result.limit,

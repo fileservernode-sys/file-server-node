@@ -52,13 +52,13 @@ class NotificationItem {
       userId: json['userId'] as String? ?? '',
       deviceId: json['deviceId'] as String?,
       serverId: json['serverId'] as String?,
-      eventType: json['eventType'] as String? ?? 'GENERAL',
+      eventType: json['eventType'] as String? ?? json['type'] as String? ?? 'GENERAL',
       category: json['category'] as String? ?? 'SYSTEM',
       severity: json['severity'] as String? ?? 'INFO',
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
-      deepLinkUri: json['deepLinkUri'] as String?,
-      webPath: json['webPath'] as String?,
+      deepLinkUri: json['deepLinkUri'] as String? ?? (json['deepLink'] is Map ? json['deepLink']['uri'] as String? : null),
+      webPath: json['webPath'] as String? ?? (json['deepLink'] is Map ? json['deepLink']['webPath'] as String? : null),
       state: parseState(json['state'] as String? ?? json['status'] as String?),
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)

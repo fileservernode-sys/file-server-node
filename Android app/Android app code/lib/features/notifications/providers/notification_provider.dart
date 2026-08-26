@@ -76,7 +76,7 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
 
       if (res.statusCode == 200) {
         final json = jsonDecode(bodyStr);
-        final rawItems = json['data']?['items'] as List<dynamic>? ?? [];
+        final rawItems = (json['data']?['notifications'] ?? json['data']?['items']) as List<dynamic>? ?? [];
         final items = rawItems.map((e) => NotificationItem.fromJson(e as Map<String, dynamic>)).toList();
 
         final unreadReq = await _httpClient.getUrl(Uri.parse('$baseUrl/notifications/unread-count'));

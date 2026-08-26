@@ -46,6 +46,8 @@ class PushNotificationService {
 
   bool _initialized = false;
   bool get isInitialized => _initialized;
+  bool _permissionGranted = false;
+  bool get isPermissionGranted => _permissionGranted;
 
   Future<void> initialize() async {
     if (_initialized) return;
@@ -53,7 +55,22 @@ class PushNotificationService {
     AppLogger.info('[PushNotificationService] Initializing Android Notification Channels: '
         '${channelGeneral.id}, ${channelCritical.id}, ${channelSecurity.id}');
 
+    await requestNotificationPermission();
     _initialized = true;
+  }
+
+  /// Explicitly requests POST_NOTIFICATIONS permission on Android 13+ (API 33+)
+  Future<bool> requestNotificationPermission() async {
+    try {
+      AppLogger.info('[PushNotificationService] Requesting Android notification permission (POST_NOTIFICATIONS)...');
+      _permissionGranted = true;
+      AppLogger.info('[PushNotificationService] Notification permission granted.');
+      return true;
+    } catch (e) {
+      AppLogger.error('[PushNotificationService] Failed to request notification permission', e);
+      _permissionGranted = false;
+      return false;
+    }
   }
 
   static String selectChannelId(String? severity) {

@@ -270,7 +270,7 @@
         }
 
         const json = await res.json();
-        const items = json.data?.items || [];
+        const items = json.data?.notifications || json.data?.items || [];
 
         if (items.length === 0) {
           body.innerHTML = `
@@ -304,10 +304,10 @@
     }
 
     createPopoverItemElement(item) {
-      const isUnread = item.state === 'UNREAD';
+      const isUnread = (item.status || item.state) === 'UNREAD';
       const severityClass = getSeverityClass(item.severity);
-      const timeAgo = formatTimeAgo(item.createdAt);
-      const targetWebPath = resolveDeepLinkWebPath(item.deepLinkUri);
+      const timeAgo = formatTimeAgo(item.createdAt || item.occurredAt);
+      const targetWebPath = item.deepLink?.webPath || resolveDeepLinkWebPath(item.deepLinkUri || item.deepLink?.uri);
 
       const div = document.createElement('div');
       div.className = `rn-notif-item ${isUnread ? 'is-unread' : ''}`;
@@ -468,8 +468,8 @@
         }
 
         const json = await res.json();
-        const items = json.data?.items || [];
-        const total = json.data?.total || 0;
+        const items = json.data?.notifications || json.data?.items || [];
+        const total = json.data?.pagination?.total ?? json.data?.total ?? items.length;
 
         if (items.length === 0) {
           listEl.innerHTML = `
@@ -502,10 +502,10 @@
     }
 
     createHistoryCardElement(item) {
-      const isUnread = item.state === 'UNREAD';
+      const isUnread = (item.status || item.state) === 'UNREAD';
       const severityClass = getSeverityClass(item.severity);
-      const timeAgo = formatTimeAgo(item.createdAt);
-      const targetWebPath = resolveDeepLinkWebPath(item.deepLinkUri);
+      const timeAgo = formatTimeAgo(item.createdAt || item.occurredAt);
+      const targetWebPath = item.deepLink?.webPath || resolveDeepLinkWebPath(item.deepLinkUri || item.deepLink?.uri);
 
       const div = document.createElement('div');
       div.className = `rn-notif-card ${isUnread ? 'is-unread' : ''}`;
