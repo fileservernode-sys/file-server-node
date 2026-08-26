@@ -473,7 +473,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
             );
             req.headers.set('content-type', 'application/octet-stream');
             req.add(bytes);
-            final res = await req.close().timeout(const Duration(seconds: 30));
+            final res = await req.close().timeout(const Duration(seconds: 120));
             final body = await res.transform(utf8.decoder).join();
             final jsonRes = jsonDecode(body) as Map<String, dynamic>;
 

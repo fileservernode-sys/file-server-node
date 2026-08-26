@@ -292,8 +292,34 @@ const RemoteApiAdapter = {
     return await this.sendRequest('DELETE', { path: itemPath });
   },
 
-  async uploadFile(targetPath, fileObject) {
-    return await this.sendRequest('UPLOAD', { path: targetPath, name: fileObject.name });
+  async uploadFile(targetPath, fileObject, onProgress) {
+    try {
+      const dataBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result === 'string') {
+            const base64 = result.includes(',') ? result.split(',')[1] : result;
+            resolve(base64);
+          } else {
+            reject(new Error('Failed to read file buffer'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(fileObject);
+      });
+
+      if (typeof onProgress === 'function') onProgress(50);
+      const res = await this.sendRequest('UPLOAD', {
+        path: targetPath,
+        name: fileObject.name,
+        dataBase64: dataBase64
+      });
+      if (typeof onProgress === 'function') onProgress(100);
+      return res;
+    } catch (e) {
+      return { success: false, error: { message: e.message } };
+    }
   },
 
   async cancelTransfer(transferId, reason = 'Cancelled by user') {

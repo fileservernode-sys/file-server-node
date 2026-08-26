@@ -52,6 +52,7 @@ function getFrontendDir(): string {
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
+    bodyLimit: 104857600, // 100 MB body limit for file uploads
     logger: {
       level: config.LOG_LEVEL,
       redact: ['req.headers.authorization', 'req.headers.cookie', 'body.password', 'body.passwordHash']

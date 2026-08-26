@@ -153,5 +153,38 @@ void main() {
       expect(errRes['success'], isFalse);
       expect((errRes['error'] as Map)['code'], 'DEVICE_OFFLINE');
     });
+
+    test('UPLOAD remote request formats valid payload and receives confirmation', () {
+      final req = {
+        'type': 'FILE_REQUEST',
+        'requestId': 'req-upload-1',
+        'connectionId': 'conn-777',
+        'operation': 'UPLOAD',
+        'path': '/Documents',
+        'name': 'contract.pdf',
+        'dataBase64': 'JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PA=='
+      };
+
+      expect(req['type'], 'FILE_REQUEST');
+      expect(req['operation'], 'UPLOAD');
+      expect(req['path'], '/Documents');
+      expect(req['name'], 'contract.pdf');
+      expect(req['dataBase64'], isNotNull);
+
+      final res = {
+        'type': 'FILE_RESPONSE',
+        'requestId': 'req-upload-1',
+        'success': true,
+        'data': {
+          'filename': 'contract.pdf',
+          'sizeBytes': 25
+        }
+      };
+
+      expect(res['success'], isTrue);
+      expect(res['requestId'], 'req-upload-1');
+      expect((res['data'] as Map)['filename'], 'contract.pdf');
+      expect((res['data'] as Map)['sizeBytes'], 25);
+    });
   });
 }

@@ -866,6 +866,9 @@
 
           AppRouter.init();
           MyFilesController.init();
+          if (typeof FileManagerHelper !== 'undefined' && FileManagerHelper.init) {
+            FileManagerHelper.init();
+          }
           HomeController.load();
 
         } catch (err) {

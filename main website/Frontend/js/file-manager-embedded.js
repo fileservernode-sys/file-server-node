@@ -187,27 +187,66 @@ const ApiService = {
     }
   },
 
-  async uploadFile(targetPath, fileObject) {
+  async uploadFile(targetPath, fileObject, onProgress) {
     try {
-      const buffer = await fileObject.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      let binary = '';
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-      const dataBase64 = window.btoa(binary);
+      const dataBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          if (typeof result === 'string') {
+            const base64 = result.includes(',') ? result.split(',')[1] : result;
+            resolve(base64);
+          } else {
+            reject(new Error('Failed to read file buffer'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file from disk'));
+        reader.readAsDataURL(fileObject);
+      });
 
-      const res = await fetch(EmbeddedFileManager.url('upload'), {
-        method: 'POST',
-        headers: EmbeddedFileManager.getHeaders(),
-        body: JSON.stringify({
+      return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', EmbeddedFileManager.url('upload'), true);
+
+        const headers = EmbeddedFileManager.getHeaders();
+        for (const [k, v] of Object.entries(headers)) {
+          xhr.setRequestHeader(k, v);
+        }
+
+        if (xhr.upload && typeof onProgress === 'function') {
+          xhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable && evt.total > 0) {
+              const percent = Math.round((evt.loaded / evt.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+
+        xhr.onload = () => {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (err) {
+            resolve({ success: false, error: { message: 'Invalid response from server' } });
+          }
+        };
+
+        xhr.onerror = () => {
+          resolve({ success: false, error: { message: 'Network connection error during upload.' } });
+        };
+
+        xhr.ontimeout = () => {
+          resolve({ success: false, error: { message: 'Upload transfer timed out.' } });
+        };
+
+        xhr.timeout = 120000;
+
+        xhr.send(JSON.stringify({
           path: targetPath,
           name: fileObject.name,
           dataBase64: dataBase64
-        })
+        }));
       });
-      return await res.json();
     } catch (e) {
       return { success: false, error: { message: e.message } };
     }

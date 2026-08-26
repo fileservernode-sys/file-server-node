@@ -121,6 +121,9 @@ const AppRouter = {
 
   init() {
     this.bindNavigation();
+    if (typeof FileManagerHelper !== 'undefined' && FileManagerHelper.init) {
+      FileManagerHelper.init();
+    }
     this.navigate('home');
   },
 
@@ -841,6 +844,72 @@ const FileManagerHelper = {
     });
   },
 
+  init() {
+    const filePicker = document.getElementById('file-picker');
+    if (filePicker && !filePicker.dataset.bound) {
+      filePicker.dataset.bound = 'true';
+      filePicker.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          FileManagerHelper.handleUpload(e.target.files);
+          filePicker.value = '';
+        }
+      });
+    }
+
+    document.getElementById('btn-quick-upload')?.addEventListener('click', () => {
+      UIManager.showModal('modal-upload');
+    });
+    document.getElementById('btn-home-upload')?.addEventListener('click', () => {
+      UIManager.showModal('modal-upload');
+    });
+    document.getElementById('btn-files-upload')?.addEventListener('click', () => {
+      document.getElementById('file-picker')?.click();
+    });
+
+    const dropZone = document.getElementById('upload-drop-zone');
+    if (dropZone && !dropZone.dataset.bound) {
+      dropZone.dataset.bound = 'true';
+      dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+      });
+      dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+      dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          FileManagerHelper.handleUpload(e.dataTransfer.files);
+        }
+      });
+    }
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const modal = document.getElementById('modal-upload');
+        if (modal && modal.style.display !== 'none') {
+          e.preventDefault();
+          FileManagerHelper.handleUpload(e.dataTransfer.files);
+        }
+      }
+    });
+
+    const newFolderForm = document.getElementById('form-new-folder');
+    if (newFolderForm && !newFolderForm.dataset.bound) {
+      newFolderForm.dataset.bound = 'true';
+      newFolderForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('input-folder-name');
+        const folderName = input ? input.value.trim() : '';
+        if (folderName) {
+          FileManagerHelper.handleCreateFolder(folderName);
+          if (input) input.value = '';
+          UIManager.hideModal('modal-new-folder');
+        }
+      });
+    }
+  },
+
   async handleUpload(fileList) {
     if (!fileList || fileList.length === 0) return;
     const targetPath = MyFilesController.currentPath || '/';
@@ -873,12 +942,18 @@ const FileManagerHelper = {
       const statusEl = document.getElementById(`upload-status-${i}`);
       const progressEl = document.getElementById(`upload-progress-${i}`);
 
-      if (statusEl) statusEl.textContent = 'Uploading...';
-      if (progressEl) progressEl.style.width = '50%';
+      if (statusEl) statusEl.textContent = 'Uploading... 0%';
+      if (progressEl) {
+        progressEl.style.width = '0%';
+        progressEl.style.backgroundColor = 'var(--color-brand-primary, #0066cc)';
+      }
 
-      const res = await ApiService.uploadFile(targetPath, file);
+      const res = await ApiService.uploadFile(targetPath, file, (percent) => {
+        if (progressEl) progressEl.style.width = `${percent}%`;
+        if (statusEl) statusEl.textContent = `Uploading... ${percent}%`;
+      });
 
-      if (res.success) {
+      if (res && res.success) {
         successCount++;
         if (statusEl) {
           statusEl.textContent = 'Completed';
@@ -890,7 +965,7 @@ const FileManagerHelper = {
         }
       } else {
         if (statusEl) {
-          statusEl.textContent = res.error?.message || 'Failed';
+          statusEl.textContent = res?.error?.message || 'Failed';
           statusEl.style.color = 'var(--color-status-error)';
         }
         if (progressEl) {
@@ -907,7 +982,7 @@ const FileManagerHelper = {
     }
     setTimeout(() => {
       UIManager.hideModal('modal-upload');
-    }, 1200);
+    }, 1500);
   },
 
   async handleCreateFolder(name) {

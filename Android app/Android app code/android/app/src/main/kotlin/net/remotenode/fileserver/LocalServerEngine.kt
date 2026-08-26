@@ -982,7 +982,7 @@ class LocalServerEngine {
                     val pair = param.split("=")
                     if (pair.size == 2) {
                         when (pair[0]) {
-                            "path" -> reqPath = pair[1]
+                            "path" -> reqPath = URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name())
                             "filename" -> customFilename = URLDecoder.decode(pair[1], StandardCharsets.UTF_8.name())
                         }
                     }
@@ -991,13 +991,25 @@ class LocalServerEngine {
                 val targetDir = resolveSandboxPath(rootDir, reqPath)
                 if (!targetDir.exists()) targetDir.mkdirs()
 
-                val filename = customFilename ?: "upload_${System.currentTimeMillis()}.dat"
-                val newFile = File(targetDir, filename)
+                val rawName = customFilename ?: "upload_${System.currentTimeMillis()}.dat"
+                val sanitizedFilename = File(rawName).name
+                if (sanitizedFilename.isEmpty() || sanitizedFilename == "." || sanitizedFilename == ".." || sanitizedFilename.contains("\u0000")) {
+                    throw SecurityException("Invalid upload filename.")
+                }
+
+                val newFile = File(targetDir, sanitizedFilename)
                 resolveSandboxPath(rootDir, newFile.canonicalPath.substringAfter(rootDir.canonicalPath))
 
-                val os = newFile.outputStream()
-                exchange.requestBody.copyTo(os)
-                os.close()
+                var os: OutputStream? = null
+                try {
+                    os = newFile.outputStream()
+                    exchange.requestBody.copyTo(os)
+                } catch (e: Exception) {
+                    if (newFile.exists()) newFile.delete()
+                    throw e
+                } finally {
+                    os?.close()
+                }
 
                 sendJsonResponse(exchange, 200, """{"success":true,"data":{"filename":"${newFile.name}","sizeBytes":${newFile.length()}}}""")
             } catch (e: SecurityException) {

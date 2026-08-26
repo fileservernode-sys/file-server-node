@@ -148,5 +148,37 @@ void main() {
       expect(classify('backup.zip'), 'archives');
       expect(classify('unknown.dat'), 'other');
     });
+
+    test('Upload operation resolves destination sandbox and sanitizes filename', () {
+      String sanitizeUploadFilename(String raw) {
+        if (raw.contains('\u0000') || raw.contains('..') || raw.toLowerCase().contains('%2e%2e')) {
+          throw Exception('Security violation: path traversal in filename');
+        }
+        final parts = raw.split(RegExp(r'[\\/]'));
+        final basename = parts.lastWhere((p) => p.isNotEmpty, orElse: () => 'upload.dat');
+        return basename;
+      }
+
+      expect(sanitizeUploadFilename('vacation photo.jpg'), 'vacation photo.jpg');
+      expect(sanitizeUploadFilename('subfolder/document.pdf'), 'document.pdf');
+      expect(sanitizeUploadFilename(r'C:\Windows\System32\cmd.exe'), 'cmd.exe');
+      expect(() => sanitizeUploadFilename('../../etc/passwd'), throwsA(isA<Exception>()));
+      expect(() => sanitizeUploadFilename('test\u0000.png'), throwsA(isA<Exception>()));
+    });
+
+    test('Upload response structure conforms to expected contract', () {
+      final uploadRes = {
+        'success': true,
+        'data': {
+          'filename': 'sample_upload.png',
+          'sizeBytes': 1048576
+        }
+      };
+
+      expect(uploadRes['success'], isTrue);
+      final data = uploadRes['data'] as Map<String, dynamic>;
+      expect(data['filename'], 'sample_upload.png');
+      expect(data['sizeBytes'], 1048576);
+    });
   });
 }

@@ -327,8 +327,13 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('name is required for upload');
     }
 
+    const rawPath = body.path || '/';
+    if (rawPath.includes('..') || rawPath.includes('\0')) {
+      return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
+    }
+
     const result = await proxyToGateway(device.id, 'UPLOAD', {
-      path: body.path || '/',
+      path: rawPath,
       name: body.name,
       dataBase64: body.dataBase64
     });
