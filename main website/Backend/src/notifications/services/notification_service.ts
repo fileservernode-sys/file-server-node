@@ -551,3 +551,4 @@ export class CentralNotificationService {
 }
 
 export const notificationService = new CentralNotificationService();
+export const centralNotificationService = notificationService;

@@ -327,6 +327,19 @@ class TemplateRegistry {
       defaultSeverity: NotificationSeverity.INFO,
       defaultDeepLink: () => createDeepLink('system', 'remotenode://system')
     });
+
+    // 19. TEST_NOTIFICATION
+    this.registerTemplate({
+      type: NotificationType.TEST_NOTIFICATION,
+      titleTemplate: (ctx) => ctx.customTitle || 'RemoteNode Test Notification',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Test push notification delivered successfully to your Android phone.',
+      emailSubjectTemplate: () => 'RemoteNode Test Notification',
+      emailHtmlTemplate: (ctx) => `<h2>Test Notification</h2><p>${ctx.customSummary || 'Test push notification delivered successfully.'}</p>`,
+      emailTextTemplate: (ctx) => `Test Notification: ${ctx.customSummary || 'Test push notification delivered successfully.'}`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH],
+      defaultSeverity: NotificationSeverity.INFO,
+      defaultDeepLink: () => createDeepLink('system', 'remotenode://notifications', '/pages/notifications')
+    });
   }
 }
 

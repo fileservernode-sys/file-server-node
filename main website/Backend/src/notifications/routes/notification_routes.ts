@@ -14,6 +14,10 @@ import { notificationMetrics } from '../services/notification_metrics.js';
 import { defaultDeliveryWorker } from '../workers/delivery_worker.js';
 import { providerCircuitBreaker } from '../services/provider_circuit_breaker.js';
 import { NotificationChannel } from '../types/channel.js';
+import { centralNotificationService } from '../services/notification_service.js';
+import { NotificationType } from '../types/type_registry.js';
+import { NotificationCategory } from '../types/category.js';
+import { NotificationSeverity } from '../types/severity.js';
 
 const paginationQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
@@ -236,6 +240,41 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
         totalProcessedCount: workerStatus.totalProcessedCount,
         totalDeliveredCount: workerStatus.totalDeliveredCount
       }
+    }));
+  });
+
+  /**
+   * POST /api/v1/notifications/test-push
+   * Dispatches an authenticated real-time test notification to all active devices belonging to the user.
+   * Returns complete diagnostics (devices targeted, FCM delivery status, delivery record IDs).
+   */
+  app.post('/notifications/test-push', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    
+    // Resolve active push tokens for this user
+    const activeTokens = await notificationRepository.getActivePushTokensForUser(user.id);
+    
+    // Dispatch test notification event
+    const result = await centralNotificationService.dispatchEvent({
+      userId: user.id,
+      eventType: NotificationType.TEST_NOTIFICATION,
+      category: NotificationCategory.SYSTEM,
+      severity: NotificationSeverity.INFO,
+      metadata: {
+        customTitle: 'RemoteNode Test Notification',
+        customSummary: `Test push notification delivered successfully to your device at ${new Date().toLocaleTimeString()}.`,
+        userEmail: user.email,
+        testTriggeredAt: new Date().toISOString()
+      }
+    });
+
+    return reply.send(createSuccessResponse({
+      message: 'Test notification dispatched successfully',
+      eventId: result.eventId,
+      activeDevicesCount: activeTokens.length,
+      allowedChannels: result.allowedChannels,
+      deliveryResults: result.deliveryResults,
+      timestamp: new Date().toISOString()
     }));
   });
 }

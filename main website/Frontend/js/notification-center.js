@@ -731,6 +731,16 @@
             <button type="submit" id="btn-save-prefs" class="btn btn-primary" style="min-height: 44px; padding: 0 20px;">Save Notification Preferences</button>
           </div>
         </form>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+          <h4 style="font-size: 14px; font-weight: 600; color: var(--color-text-primary); margin: 0 0 6px 0;">Device Push Diagnostic</h4>
+          <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0 0 12px 0;">Trigger an authenticated real-time test notification to verify push delivery to your Android device.</p>
+          <button type="button" id="btn-send-test-push" class="btn btn-secondary btn-sm" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span>Send Test Push Notification</span>
+          </button>
+          <div id="rn-test-push-feedback" style="display: none; margin-top: 8px; font-size: 12px; padding: 8px 12px; border-radius: var(--radius-md);"></div>
+        </div>
       `;
 
       const form = document.getElementById('form-notif-prefs');
@@ -784,6 +794,58 @@
             }
           } finally {
             if (btn) btn.disabled = false;
+          }
+        });
+      }
+
+      const btnTestPush = document.getElementById('btn-send-test-push');
+      if (btnTestPush) {
+        btnTestPush.addEventListener('click', async () => {
+          const feedback = document.getElementById('rn-test-push-feedback');
+          btnTestPush.disabled = true;
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = 'var(--color-surface-secondary)';
+            feedback.style.color = 'var(--color-text-primary)';
+            feedback.style.border = '1px solid var(--color-border)';
+            feedback.textContent = 'Dispatching test push notification...';
+          }
+
+          try {
+            const res = await fetch(`${getApiBase()}/notifications/test-push`, {
+              method: 'POST',
+              headers: getAuthHeader()
+            });
+
+            if (res.ok) {
+              const json = await res.json();
+              const count = json.data?.activeDevicesCount || 0;
+              if (feedback) {
+                feedback.style.background = '#D1FAE5';
+                feedback.style.color = '#065F46';
+                feedback.style.border = '1px solid #A7F3D0';
+                feedback.textContent = count > 0
+                  ? `Test push dispatched to ${count} active registered device(s).`
+                  : 'Test notification created (no active device push tokens registered yet).';
+              }
+              this.fetchNotifications();
+            } else {
+              if (feedback) {
+                feedback.style.background = '#FEE2E2';
+                feedback.style.color = '#991B1B';
+                feedback.style.border = '1px solid #FCA5A5';
+                feedback.textContent = 'Failed to dispatch test notification.';
+              }
+            }
+          } catch {
+            if (feedback) {
+              feedback.style.background = '#FEE2E2';
+              feedback.style.color = '#991B1B';
+              feedback.style.border = '1px solid #FCA5A5';
+              feedback.textContent = 'Network error during test push dispatch.';
+            }
+          } finally {
+            btnTestPush.disabled = false;
           }
         });
       }

@@ -40,7 +40,8 @@ export enum NotificationType {
   SERVICE_MAINTENANCE = 'SERVICE_MAINTENANCE',
   SERVICE_OUTAGE = 'SERVICE_OUTAGE',
   SERVICE_RECOVERED = 'SERVICE_RECOVERED',
-  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT'
+  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT',
+  TEST_NOTIFICATION = 'TEST_NOTIFICATION'
 }
 
 export interface NotificationTypeMeta {
@@ -206,6 +207,12 @@ export const NOTIFICATION_TYPE_CATALOG: Record<NotificationType, NotificationTyp
   },
   [NotificationType.SYSTEM_ANNOUNCEMENT]: {
     type: NotificationType.SYSTEM_ANNOUNCEMENT,
+    category: NotificationCategory.SYSTEM,
+    defaultSeverity: NotificationSeverity.INFO,
+    isSecurityCritical: false
+  },
+  [NotificationType.TEST_NOTIFICATION]: {
+    type: NotificationType.TEST_NOTIFICATION,
     category: NotificationCategory.SYSTEM,
     defaultSeverity: NotificationSeverity.INFO,
     isSecurityCritical: false

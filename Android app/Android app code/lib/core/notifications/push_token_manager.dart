@@ -1,9 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../storage/secure_storage_service.dart';
 import '../utils/logger.dart';
+import '../../features/auth/application/auth_state.dart';
+
+final pushTokenManagerProvider = Provider<PushTokenManager>((ref) {
+  final storage = ref.watch(secureStorageProvider);
+  return PushTokenManager(
+    storageService: storage,
+  );
+});
 
 abstract class FcmTokenAdapter {
   Future<String?> getToken();

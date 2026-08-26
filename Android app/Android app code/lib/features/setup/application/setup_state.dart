@@ -7,6 +7,7 @@ import '../../device/domain/services/device_identity_service.dart';
 import '../../remote/domain/services/remote_connection_service.dart';
 import '../../server/domain/services/server_service.dart';
 import '../../../core/utils/logger.dart';
+import '../../../core/notifications/push_token_manager.dart';
 
 /// Immutable Setup Configuration, Real Subdomain, and Live State Representation
 class SetupState {
@@ -296,6 +297,13 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
 
       if (devId != null && devId.isNotEmpty) {
         try {
+          final pushTokenManager = _ref.read(pushTokenManagerProvider);
+          await pushTokenManager.registerPushToken(deviceId: devId);
+        } catch (e) {
+          AppLogger.warning('[ServerLifecycle] Push token registration warning: $e');
+        }
+
+        try {
           final remoteService = _ref.read(remoteConnectionServiceProvider);
           final connInfo = await remoteService.connect(
             deviceId: devId,
@@ -410,6 +418,14 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       final dev = regResult['data']['device'];
       final registeredDeviceId = dev['id'] as String;
       state = state.copyWith(deviceId: registeredDeviceId);
+
+      // Register device FCM push token with backend control plane
+      try {
+        final pushTokenManager = _ref.read(pushTokenManagerProvider);
+        await pushTokenManager.registerPushToken(deviceId: registeredDeviceId);
+      } catch (e) {
+        AppLogger.warning('[SetupState] Non-blocking push token registration warning: $e');
+      }
 
       // -----------------------------------------------------------------------
       // Stage 1: Configure Credentials & Start Local HTTP File Server on Android (0.0.0.0:8080)
