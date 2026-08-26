@@ -101,14 +101,14 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Delivery Channels', style: AppTypography.cardTitle),
+              const Text('Delivery Channels', style: AppTypography.cardTitle),
               const SizedBox(height: AppSpacing.sm),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Android Push Notifications'),
                 subtitle: const Text('Deliver push alerts directly to this phone'),
                 value: prefs.globalPushEnabled,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: (val) {
                   notifier.updatePreferences(globalPushEnabled: val);
                 },
@@ -119,7 +119,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
                 title: const Text('Email Notifications'),
                 subtitle: const Text('Receive summary email notifications'),
                 value: prefs.globalEmailEnabled,
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 onChanged: (val) {
                   notifier.updatePreferences(globalEmailEnabled: val);
                 },

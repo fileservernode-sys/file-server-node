@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/notifications/notification_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -119,7 +118,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
       return const EmptyStateView(
         title: 'No Notifications Found',
         description: 'You have no active notifications for this filter.',
-        iconData: Icons.notifications_none_rounded,
+        icon: Icons.notifications_none_rounded,
       );
     }
 
@@ -152,7 +151,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   item.category,
-                  style: AppTypography.caption.copyWith(color: AppColors.textTertiary),
+                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                 ),
                 const Spacer(),
                 if (isUnread)
@@ -200,7 +199,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
                     onPressed: () => notifier.markAsRead(item.id),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.archive_outlined, size: 18, color: AppColors.textTertiary),
+                  icon: const Icon(Icons.archive_outlined, size: 18, color: AppColors.textSecondary),
                   tooltip: 'Archive',
                   onPressed: () => notifier.markAsArchived(item.id),
                 ),
