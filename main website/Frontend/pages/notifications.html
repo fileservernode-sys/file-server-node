@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Center | RemoteNode — Personal File Server</title>
+  <meta name="description" content="View your RemoteNode notifications, security alerts, device events, and manage notification preferences.">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+</head>
+<body>
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="RemoteNode Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">RemoteNode</span>
+      </a>
+
+      <!-- Authenticated Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="notifications.html" class="nav-link active" aria-current="page">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help & FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of RemoteNode Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-text">RemoteNode</span>
+      </a>
+      <button class="drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="dashboard.html" class="drawer-nav-link">Dashboard</a>
+      <a href="notifications.html" class="drawer-nav-link active">Notifications</a>
+      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="faq.html" class="drawer-nav-link">Help & FAQ</a>
+    </nav>
+  </aside>
+
+  <!-- MAIN NOTIFICATION CENTER CONTENT -->
+  <main class="rn-notif-history-page">
+    <div class="container">
+      
+      <!-- Page Header -->
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 24px; font-weight: 700; color: var(--color-text-primary); margin: 0 0 8px 0;">Notification Center</h1>
+        <p style="font-size: 14px; color: var(--color-text-secondary); margin: 0;">Review your account security alerts, Android device notifications, server activity, and manage push preferences.</p>
+      </div>
+
+      <div class="grid grid-2" style="grid-template-columns: 2fr 1fr; gap: 32px;">
+        
+        <!-- Left: Notification History List -->
+        <div>
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 16px;">Notification History</h2>
+          <div id="rn-notif-history-container">
+            <div class="rn-notif-state-box">Loading notifications...</div>
+          </div>
+        </div>
+
+        <!-- Right: Notification Preferences Panel -->
+        <div>
+          <h2 style="font-size: 18px; font-weight: 700; color: var(--color-text-primary); margin-bottom: 16px;">Preferences & Policy</h2>
+          <div id="rn-notif-preferences-container">
+            <div class="rn-notif-state-box">Loading preferences...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- SCRIPTS -->
+  <script src="../js/main.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/notification-center.js"></script>
+
+</body>
+</html>
