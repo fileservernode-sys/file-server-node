@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js dist/tests/dns_provider.test.js dist/tests/notification_architecture.test.js"
+    "test": "node --test dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js dist/tests/dns_provider.test.js dist/tests/notification_architecture.test.js dist/tests/notification_persistence_fcm.test.js"
   },
   "keywords": [
     "remote-file-server",

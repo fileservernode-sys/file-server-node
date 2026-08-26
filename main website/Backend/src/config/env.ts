@@ -70,6 +70,11 @@ const envSchema = z.object({
   PASSWORD_RESET_OTP_EXPIRY_SECONDS: z.coerce.number().default(600),
   OTP_MAX_ATTEMPTS: z.coerce.number().default(5),
   OTP_RESEND_COOLDOWN_SECONDS: z.coerce.number().default(60),
+
+  // Firebase Cloud Messaging (FCM) Android Push Configuration
+  FCM_PROJECT_ID: z.string().default(''),
+  FCM_CLIENT_EMAIL: z.string().default(''),
+  FCM_PRIVATE_KEY: z.string().default('')
 });
 
 function loadConfig() {

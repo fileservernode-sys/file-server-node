@@ -39,26 +39,31 @@ The notification module is located at `main website/Backend/src/notifications/`.
 - `SECURITY`: Login from new IP, password change, verification. High push priority, immediate email. Security Policy Bypass.
 
 ### 3. Notification vs. Delivery Distinction
-- **Notification Record (`NotificationRecord`)**: User-facing message stored in the database / notification center. States: `UNREAD`, `READ`, `ARCHIVED`.
+- **Notification Record (`NotificationRecord`)**: User-facing message stored in MySQL database / notification center. States: `UNREAD`, `READ`, `ARCHIVED`.
 - **Channel Delivery (`ChannelDeliveryRecord`)**: Transport layer attempt for a specific channel (`IN_APP`, `PUSH`, `EMAIL`). States: `QUEUED`, `PROCESSING`, `DELIVERED`, `FAILED`, `RETRYING`, `PERMANENTLY_FAILED`.
 
-### 4. Security Notification Policy
-Security-critical events (`EMAIL_VERIFICATION`, `SIGN_IN`, `SECURITY_EVENT`, `DEVICE_LINKED`) enforce mandatory delivery across Email, Push, and In-App channels. They bypass user preference opt-outs to maintain account safety.
+### 4. Database Persistence Entities (Track 4 Batch NT-1.2)
+- `NotificationRecord`: Persisted in MySQL with unique `idempotencyKey`, relation to `User` and `Device`.
+- `ChannelDeliveryRecord`: Persisted delivery attempts linked to `NotificationRecord`.
+- `UserNotificationPreferences`: Persisted global and category preferences linked to `User`.
+- `DevicePushToken`: Active FCM tokens linked to `User` and `Device`.
 
-### 5. Multi-Device Routing Engine
-RemoteNode supports multiple Android devices per account.
-Routing targets:
-- `Account`: Broadcast to all registered devices.
-- `Device`: Targeted to a specific `deviceId`.
-- `Server`: Targeted to the device hosting the specific `serverId`.
+### 5. Production FCM Push Provider (`FcmPushProvider`)
+- Implements `PushNotificationProvider`.
+- Environment credentials: `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY`.
+- FCM Priority Mapping: `INFO`/`SUCCESS`/`WARNING` $\rightarrow$ `normal`, `CRITICAL`/`SECURITY` $\rightarrow$ `high`.
+- Failure Handling: Invalid/unregistered tokens trigger token revocation + `PERMANENTLY_FAILED` status; network timeouts trigger `RETRYING` state.
 
-### 6. Idempotency & Storm Protection
-- **Idempotency Key**: Generated from `eventType:userId:deviceId:serverId:timestamp`. Prevents duplicate processing during backend worker restarts or API retries.
-- **Storm Protection**: Debounces rapid repeated notifications (e.g. server rapid online/offline toggling) within a configurable cooldown window.
-
-### 7. Retry Architecture & Error Classification
-- **Temporary Failure**: Network timeouts, provider rate-limiting. Retried with exponential backoff.
-- **Permanent Failure**: Invalid email, unregistered push token. Instantly marked `PERMANENTLY_FAILED` without retries.
-
-### 8. Template Engine & Deep-Linking
-Templates are defined centrally in `TemplateRegistry`. Context parameters (`userName`, `deviceName`, `serverName`, `fileCount`, etc.) are interpolated safely. Standard deep links follow safe logical schemes (e.g. `remotenode://server/{id}`, `remotenode://filemanager`).
+### 6. Authenticated REST APIs
+- **Push Tokens**:
+  - `POST /api/v1/devices/:deviceId/push-token` — Register FCM token (enforces `user.id === device.userId`).
+  - `PATCH /api/v1/devices/:deviceId/push-token` — Update token.
+  - `DELETE /api/v1/devices/:deviceId/push-token` — Revoke token.
+- **Preferences**:
+  - `GET /api/v1/notifications/preferences` — Get preferences.
+  - `PATCH /api/v1/notifications/preferences` — Update preferences.
+- **Notification History**:
+  - `GET /api/v1/notifications` — List notifications (paginated `page`, `limit`).
+  - `GET /api/v1/notifications/unread-count` — Count unread notifications.
+  - `PATCH /api/v1/notifications/:notificationId/read` — Mark notification read (user ownership enforced).
+  - `PATCH /api/v1/notifications/:notificationId/archive` — Mark notification archived (user ownership enforced).

@@ -1,6 +1,6 @@
 /**
- * RemoteNode Central Notification Service Engine
- * Track 4 — Batch NT-1.1 Architecture
+ * RemoteNode Central Notification Service Engine with Database Persistence
+ * Track 4 — Batch NT-1.2 Architecture
  */
 
 import { NotificationEvent, NotificationEventInput, createNotificationEvent } from '../types/event.js';
@@ -14,12 +14,13 @@ import { UserNotificationPreferences } from '../types/preference.js';
 import {
   NotificationProvider,
   ProviderDeliveryResult,
-  FoundationMockPushProvider,
   FoundationMockEmailProvider
 } from '../providers/provider_interface.js';
+import { defaultFcmPushProvider, FcmPushProvider } from '../providers/fcm_provider.js';
+import { notificationRepository, NotificationRepository } from '../repositories/notification_repository.js';
 import { prisma } from '../../config/database.js';
 
-export interface NotificationRecord {
+export interface NotificationRecordDTO {
   id: string;
   eventId: string;
   userId: string;
@@ -55,23 +56,25 @@ export class CentralNotificationService {
   private idempotencyManager: IdempotencyManager;
   private stormProtection: NotificationStormProtection;
   private channelRouter: ChannelRouter;
+  private repository: NotificationRepository;
   private providers: Map<NotificationChannel, NotificationProvider> = new Map();
 
-  // In-memory store for NT-1.1 foundation
-  private notificationRecords: Map<string, NotificationRecord> = new Map();
-  private deliveryRecords: Map<string, ChannelDeliveryRecord> = new Map();
+  // In-memory fallback cache for fast lookups
+  private notificationRecordsCache: Map<string, NotificationRecordDTO> = new Map();
 
   constructor(
     idempotencyManager: IdempotencyManager = defaultIdempotencyManager,
     stormProtection: NotificationStormProtection = defaultStormProtection,
-    channelRouter: ChannelRouter = defaultChannelRouter
+    channelRouter: ChannelRouter = defaultChannelRouter,
+    repository: NotificationRepository = notificationRepository
   ) {
     this.idempotencyManager = idempotencyManager;
     this.stormProtection = stormProtection;
     this.channelRouter = channelRouter;
+    this.repository = repository;
 
-    // Register default foundation providers
-    this.registerProvider(new FoundationMockPushProvider());
+    // Register production & fallback providers
+    this.registerProvider(defaultFcmPushProvider);
     this.registerProvider(new FoundationMockEmailProvider());
   }
 
@@ -84,7 +87,7 @@ export class CentralNotificationService {
   }
 
   /**
-   * Primary Entry Point: Create and Dispatch a Canonical Notification Event
+   * Primary Entry Point: Create, Persist, and Dispatch a Canonical Notification Event
    */
   public async dispatchEvent(
     input: NotificationEventInput,
@@ -93,9 +96,9 @@ export class CentralNotificationService {
   ): Promise<NotificationProcessingResult> {
     const event: NotificationEvent = createNotificationEvent(input);
 
-    // 1. IDEMPOTENCY CHECK (Step 14)
-    const isDuplicate = await this.idempotencyManager.isProcessed(event.idempotencyKey);
-    if (isDuplicate) {
+    // 1. IDEMPOTENCY CHECK (Memory + Database)
+    const isMemoryDuplicate = await this.idempotencyManager.isProcessed(event.idempotencyKey);
+    if (isMemoryDuplicate) {
       return {
         eventId: event.eventId,
         idempotencyKey: event.idempotencyKey,
@@ -107,10 +110,28 @@ export class CentralNotificationService {
       };
     }
 
-    // Record idempotency processing key
+    try {
+      const dbExisting = await this.repository.getNotificationByIdempotencyKey(event.idempotencyKey);
+      if (dbExisting) {
+        await this.idempotencyManager.recordProcessing(event.idempotencyKey, event.eventId);
+        return {
+          eventId: event.eventId,
+          idempotencyKey: event.idempotencyKey,
+          processed: false,
+          duplicateSuppressed: true,
+          stormSuppressed: false,
+          allowedChannels: [],
+          deliveryResults: []
+        };
+      }
+    } catch {
+      // Non-blocking database check fallback
+    }
+
+    // Record memory idempotency key
     await this.idempotencyManager.recordProcessing(event.idempotencyKey, event.eventId);
 
-    // 2. STORM PROTECTION CHECK (Step 16)
+    // 2. STORM PROTECTION CHECK
     if (this.stormProtection.shouldSuppress(event)) {
       return {
         eventId: event.eventId,
@@ -123,15 +144,31 @@ export class CentralNotificationService {
       };
     }
 
-    // 3. TEMPLATE RENDERING (Step 17)
+    // 3. RESOLVE USER PREFERENCES & ACTIVE PUSH TOKENS
+    const effectivePreferences = userPreferences || (await this.repository.getUserPreferences(event.userId));
+
+    let effectiveDevices = userDevices;
+    if (effectiveDevices.length === 0) {
+      try {
+        const activeTokens = await this.repository.getActivePushTokensForUser(event.userId);
+        effectiveDevices = activeTokens.map(t => ({
+          deviceId: t.deviceId,
+          pushToken: t.token
+        }));
+      } catch {
+        effectiveDevices = [];
+      }
+    }
+
+    // 4. TEMPLATE RENDERING
     const rendered = templateRegistry.render(event.eventType, event.metadata, event.occurredAt);
 
-    // 4. PREFERENCE & MULTI-DEVICE ROUTING (Step 10, Step 11, Step 12)
-    const routingDecision = this.channelRouter.evaluateRouting(event, userPreferences, userDevices);
+    // 5. PREFERENCE & MULTI-DEVICE ROUTING EVALUATION
+    const routingDecision = this.channelRouter.evaluateRouting(event, effectivePreferences, effectiveDevices);
 
-    // 5. CREATE CANONICAL NOTIFICATION RECORD (Step 8, Step 9)
+    // 6. CREATE PERSISTENT NOTIFICATION RECORD
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const notificationRecord: NotificationRecord = {
+    const notificationDTO: NotificationRecordDTO = {
       id: notificationId,
       eventId: event.eventId,
       userId: event.userId,
@@ -150,71 +187,154 @@ export class CentralNotificationService {
       updatedAt: new Date()
     };
 
-    this.notificationRecords.set(notificationId, notificationRecord);
+    this.notificationRecordsCache.set(notificationId, notificationDTO);
 
-    // 6. CHANNEL DELIVERY DISPATCH (Step 6)
+    try {
+      await this.repository.createNotificationRecord({
+        id: notificationId,
+        eventId: event.eventId,
+        userId: event.userId,
+        deviceId: event.deviceId,
+        serverId: event.serverId,
+        eventType: event.eventType,
+        category: event.category,
+        severity: event.severity,
+        title: rendered.title,
+        body: rendered.body,
+        deepLinkUri: rendered.deepLink?.uri,
+        webPath: rendered.deepLink?.webPath,
+        metadata: event.metadata,
+        idempotencyKey: event.idempotencyKey,
+        occurredAt: event.occurredAt
+      });
+    } catch (dbErr: any) {
+      // If unique constraint on idempotencyKey violated during race condition
+      if (dbErr?.code === 'P2002') {
+        return {
+          eventId: event.eventId,
+          idempotencyKey: event.idempotencyKey,
+          processed: false,
+          duplicateSuppressed: true,
+          stormSuppressed: false,
+          allowedChannels: [],
+          deliveryResults: []
+        };
+      }
+    }
+
+    // 7. CHANNEL DELIVERY DISPATCH & PERSISTENCE
     const deliveryResults: ProviderDeliveryResult[] = [];
 
     for (const channel of routingDecision.allowedChannels) {
       if (channel === NotificationChannel.IN_APP) {
-        // In-App channel delivery is satisfied by saving the NotificationRecord
         deliveryResults.push({
           success: true,
           channel: NotificationChannel.IN_APP,
           providerName: 'InternalInAppStore',
           deliveredAt: new Date()
         });
+
+        try {
+          await this.repository.createChannelDeliveryRecord({
+            notificationId,
+            channel: NotificationChannel.IN_APP,
+            status: 'DELIVERED' as any,
+            deliveredAt: new Date()
+          });
+        } catch {}
         continue;
       }
 
       const provider = this.providers.get(channel);
       if (provider) {
-        try {
+        // Resolve target address for Push / Email
+        let targetAddresses: string[] = [];
+        if (channel === NotificationChannel.PUSH) {
+          const targetDevices = routingDecision.targetDevices.length > 0
+            ? routingDecision.targetDevices
+            : effectiveDevices;
+          targetAddresses = targetDevices.map(d => d.pushToken || '').filter(t => t.length > 0);
+          if (targetAddresses.length === 0 && event.metadata.pushToken) {
+            targetAddresses.push(String(event.metadata.pushToken));
+          }
+        } else if (channel === NotificationChannel.EMAIL) {
+          if (event.metadata.userEmail) {
+            targetAddresses.push(String(event.metadata.userEmail));
+          }
+        }
+
+        // If no addresses registered, record queued delivery attempt
+        if (targetAddresses.length === 0) {
+          try {
+            await this.repository.createChannelDeliveryRecord({
+              notificationId,
+              channel,
+              status: 'QUEUED' as any,
+              failureReason: 'No registered push tokens or email address'
+            });
+          } catch {}
+          continue;
+        }
+
+        for (const address of targetAddresses) {
           const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-          const result = await provider.send({
-            deliveryId,
-            notificationId,
-            userId: event.userId,
-            targetAddress: metadataAddressForChannel(event, channel),
-            event,
-            rendered
-          });
+          try {
+            const result = await provider.send({
+              deliveryId,
+              notificationId,
+              userId: event.userId,
+              targetAddress: address,
+              event,
+              rendered
+            });
 
-          deliveryResults.push(result);
+            deliveryResults.push(result);
 
-          // Track channel delivery record
-          this.deliveryRecords.set(deliveryId, {
-            id: deliveryId,
-            notificationId,
-            channel,
-            status: result.success ? DeliveryStatus.DELIVERED : DeliveryStatus.FAILED,
-            attemptCount: 1,
-            maxAttempts: 5,
-            lastAttemptAt: new Date(),
-            deliveredAt: result.deliveredAt,
-            errorMessage: result.errorMessage,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-        } catch (err: any) {
-          deliveryResults.push({
-            success: false,
-            channel,
-            providerName: provider.providerName,
-            errorMessage: err?.message || 'Provider execution exception'
-          });
+            // Handle FCM Invalid Token Revocation
+            if (!result.success && result.errorMessage?.includes('INVALID_TOKEN')) {
+              try {
+                await prisma.devicePushToken.updateMany({
+                  where: { token: address, isActive: true },
+                  data: { isActive: false, revokedAt: new Date() }
+                });
+              } catch {}
+            }
+
+            try {
+              await this.repository.createChannelDeliveryRecord({
+                notificationId,
+                channel,
+                targetAddress: address,
+                status: result.success
+                  ? ('DELIVERED' as any)
+                  : result.errorMessage?.includes('INVALID_TOKEN')
+                  ? ('PERMANENTLY_FAILED' as any)
+                  : ('FAILED' as any),
+                providerMessageId: result.externalMessageId,
+                failureReason: result.errorMessage,
+                deliveredAt: result.deliveredAt
+              });
+            } catch {}
+          } catch (err: any) {
+            deliveryResults.push({
+              success: false,
+              channel,
+              providerName: provider.providerName,
+              errorMessage: err?.message || 'Provider execution exception'
+            });
+          }
         }
       }
     }
 
-    // 7. OPTIONAL AUDIT INTEGRATION (Step 19)
+    // 8. OPTIONAL AUDIT EVENT INTEGRATION
     try {
       if (prisma && prisma.auditEvent) {
         await prisma.auditEvent.create({
           data: {
             userId: event.userId,
             deviceId: event.deviceId || null,
-            eventType: 'OTP_SENT', // Use safe fallback AuditEventType or standard audit record
+            eventType: 'NOTIFICATION_CREATED',
             metadata: {
               notificationId,
               notificationType: event.eventType,
@@ -224,9 +344,7 @@ export class CentralNotificationService {
           }
         }).catch(() => {});
       }
-    } catch {
-      // Non-blocking audit integration
-    }
+    } catch {}
 
     return {
       notificationId,
@@ -242,32 +360,83 @@ export class CentralNotificationService {
     };
   }
 
-  public getNotification(notificationId: string): NotificationRecord | undefined {
-    return this.notificationRecords.get(notificationId);
+  public async getNotification(notificationId: string): Promise<NotificationRecordDTO | undefined> {
+    const cached = this.notificationRecordsCache.get(notificationId);
+    if (cached) return cached;
+
+    try {
+      const record = await this.repository.getNotificationById(notificationId);
+      if (record) {
+        return {
+          id: record.id,
+          eventId: record.eventId,
+          userId: record.userId,
+          deviceId: record.deviceId || undefined,
+          serverId: record.serverId || undefined,
+          eventType: record.eventType,
+          category: record.category,
+          severity: record.severity,
+          title: record.title,
+          body: record.body,
+          deepLinkUri: record.deepLinkUri || undefined,
+          webPath: record.webPath || undefined,
+          metadata: (record.metadata as any) || {},
+          state: record.status as any,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt
+        };
+      }
+    } catch {}
+
+    return undefined;
   }
 
-  public getUserNotifications(userId: string): NotificationRecord[] {
-    return Array.from(this.notificationRecords.values())
-      .filter(n => n.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  public markAsRead(notificationId: string): boolean {
-    const notif = this.notificationRecords.get(notificationId);
-    if (notif) {
-      notif.state = NotificationState.READ;
-      notif.updatedAt = new Date();
-      return true;
+  public async getUserNotifications(userId: string, limit = 20, page = 1) {
+    try {
+      return await this.repository.getUserNotifications(userId, { limit, page });
+    } catch {
+      const cached = Array.from(this.notificationRecordsCache.values())
+        .filter(n => n.userId === userId)
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return {
+        items: cached,
+        total: cached.length,
+        page: 1,
+        limit: 20,
+        totalPages: 1
+      };
     }
-    return false;
   }
-}
 
-function metadataAddressForChannel(event: NotificationEvent, channel: NotificationChannel): string | undefined {
-  if (channel === NotificationChannel.EMAIL) {
-    return event.metadata.userEmail ? String(event.metadata.userEmail) : undefined;
+  public async markAsRead(notificationId: string, userId: string): Promise<boolean> {
+    const cached = this.notificationRecordsCache.get(notificationId);
+    if (cached && cached.userId === userId) {
+      cached.state = NotificationState.READ;
+      cached.updatedAt = new Date();
+    }
+
+    try {
+      const result = await this.repository.markAsRead(notificationId, userId);
+      return !!result;
+    } catch {
+      return !!cached;
+    }
   }
-  return undefined;
+
+  public async markAsArchived(notificationId: string, userId: string): Promise<boolean> {
+    const cached = this.notificationRecordsCache.get(notificationId);
+    if (cached && cached.userId === userId) {
+      cached.state = NotificationState.ARCHIVED;
+      cached.updatedAt = new Date();
+    }
+
+    try {
+      const result = await this.repository.markAsArchived(notificationId, userId);
+      return !!result;
+    } catch {
+      return !!cached;
+    }
+  }
 }
 
 export const notificationService = new CentralNotificationService();

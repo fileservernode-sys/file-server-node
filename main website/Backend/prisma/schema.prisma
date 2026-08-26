@@ -58,6 +58,27 @@ enum GatewayStatus {
   MAINTENANCE
 }
 
+enum NotificationRecordStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+enum ChannelDeliveryStatus {
+  QUEUED
+  PROCESSING
+  DELIVERED
+  FAILED
+  RETRYING
+  PERMANENTLY_FAILED
+}
+
+enum PushPlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 enum AuditEventType {
   ACCOUNT_CREATED
   EMAIL_VERIFIED
@@ -81,6 +102,11 @@ enum AuditEventType {
   SERVER_ENDPOINT_ALLOCATED
   FILE_MANAGER_LOGIN_SUCCESS
   FILE_MANAGER_LOGIN_FAILED
+  PUSH_TOKEN_REGISTERED
+  PUSH_TOKEN_UPDATED
+  PUSH_TOKEN_REVOKED
+  NOTIFICATION_CREATED
+  NOTIFICATION_DELIVERY_FAILED
 }
 
 // -----------------------------------------------------------------------------
@@ -98,10 +124,13 @@ model User {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  otps          EmailOtp[]
-  sessions      UserSession[]
-  devices       Device[]
-  auditEvents   AuditEvent[]
+  otps                    EmailOtp[]
+  sessions                UserSession[]
+  devices                 Device[]
+  auditEvents             AuditEvent[]
+  notifications           NotificationRecord[]
+  notificationPreferences UserNotificationPreferences?
+  pushTokens              DevicePushToken[]
 
   @@index([email])
 }
@@ -152,10 +181,12 @@ model Device {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servers     ServerInstance[]
-  connections DeviceConnection[]
-  auditEvents AuditEvent[]
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servers       ServerInstance[]
+  connections   DeviceConnection[]
+  auditEvents   AuditEvent[]
+  notifications NotificationRecord[]
+  pushTokens    DevicePushToken[]
 
   @@unique([userId, installationId])
   @@index([userId])
@@ -251,4 +282,105 @@ model AuditEvent {
   @@index([userId])
   @@index([deviceId])
   @@index([eventType])
+}
+
+// -----------------------------------------------------------------------------
+// NOTIFICATION SYSTEM PERSISTENCE ENTITIES (Track 4 - Batch NT-1.2)
+// -----------------------------------------------------------------------------
+
+/// Persistent User-Facing Notification Record
+model NotificationRecord {
+  id             String                   @id @default(cuid())
+  eventId        String
+  userId         String
+  deviceId       String?
+  serverId       String?
+  eventType      String
+  category       String
+  severity       String
+  title          String
+  body           String                   @db.Text
+  deepLinkUri    String?
+  webPath        String?
+  metadata       Json?
+  status         NotificationRecordStatus @default(UNREAD)
+  readAt         DateTime?
+  archivedAt     DateTime?
+  occurredAt     DateTime                 @default(now())
+  idempotencyKey String                   @unique
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+
+  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device     Device?                 @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  deliveries ChannelDeliveryRecord[]
+
+  @@index([userId, createdAt])
+  @@index([userId, status])
+  @@index([eventId])
+  @@index([idempotencyKey])
+}
+
+/// Persistent Transport Channel Delivery State Record
+model ChannelDeliveryRecord {
+  id                  String                @id @default(cuid())
+  notificationId      String
+  channel             String
+  targetAddress       String?
+  targetDeviceId      String?
+  status              ChannelDeliveryStatus @default(QUEUED)
+  attemptCount        Int                   @default(0)
+  maxAttempts         Int                   @default(5)
+  lastAttemptAt       DateTime?
+  nextRetryAt         DateTime?
+  deliveredAt         DateTime?
+  failedAt            DateTime?
+  providerMessageId   String?
+  providerResponseCode String?
+  failureReason       String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  notification NotificationRecord @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([channel, status])
+  @@index([status, nextRetryAt])
+}
+
+/// Persistent User Notification Preferences Record
+model UserNotificationPreferences {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  globalPushEnabled   Boolean  @default(true)
+  globalEmailEnabled  Boolean  @default(true)
+  categoryPreferences Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Persistent FCM Device Push Token Entity
+model DevicePushToken {
+  id         String       @id @default(cuid())
+  userId     String
+  deviceId   String
+  token      String       @unique
+  platform   PushPlatform @default(ANDROID)
+  appVersion String?
+  isActive   Boolean      @default(true)
+  lastSeenAt DateTime     @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([userId, deviceId])
+  @@index([isActive])
+  @@index([lastSeenAt])
 }

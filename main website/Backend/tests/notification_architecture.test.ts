@@ -200,14 +200,15 @@ test('8. Central Notification Service Ingestion & Delivery Separation', async ()
   assert.ok(result.renderedBody?.includes('My Android File Server'));
 
   // Verify in-app record status starts as UNREAD
-  const record = service.getNotification(result.notificationId!);
+  const record = await service.getNotification(result.notificationId!);
   assert.ok(record);
   assert.equal(record?.state, NotificationState.UNREAD);
 
   // Mark as read
-  const marked = service.markAsRead(result.notificationId!);
+  const marked = await service.markAsRead(result.notificationId!, 'usr_500');
   assert.equal(marked, true);
-  assert.equal(service.getNotification(result.notificationId!)?.state, NotificationState.READ);
+  const updatedRecord = await service.getNotification(result.notificationId!);
+  assert.equal(updatedRecord?.state, NotificationState.READ);
 });
 
 test('9. Retry Policy & Failure Classification', () => {

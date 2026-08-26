@@ -1,6 +1,6 @@
 /**
  * RemoteNode Notification Architecture System
- * Track 4 — Batch NT-1.1 Authoritative Entry Point
+ * Track 4 — Batch NT-1.2 Authoritative Entry Point
  */
 
 export * from './types/category.js';
@@ -17,5 +17,11 @@ export * from './services/idempotency.js';
 export * from './services/storm_protection.js';
 export * from './services/retry_policy.js';
 export * from './providers/provider_interface.js';
+export * from './providers/fcm_provider.js';
+export * from './repositories/notification_repository.js';
 export * from './services/channel_router.js';
 export * from './services/notification_service.js';
+export * from './routes/push_token_routes.js';
+export * from './routes/preference_routes.js';
+export * from './routes/notification_routes.js';
+export { NotificationRecordStatus, ChannelDeliveryStatus, PushPlatform } from '@prisma/client';
