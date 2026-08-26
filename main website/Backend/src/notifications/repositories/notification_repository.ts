@@ -59,26 +59,33 @@ export class NotificationRepository {
   // ---------------------------------------------------------------------------
 
   public async createNotificationRecord(input: CreateNotificationRecordInput) {
-    return prisma.notificationRecord.create({
-      data: {
-        id: input.id,
-        eventId: input.eventId,
-        userId: input.userId,
-        deviceId: input.deviceId || null,
-        serverId: input.serverId || null,
-        eventType: input.eventType,
-        category: input.category,
-        severity: input.severity,
-        title: input.title,
-        body: input.body,
-        deepLinkUri: input.deepLinkUri || null,
-        webPath: input.webPath || null,
-        metadata: input.metadata ? (input.metadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
-        status: NotificationRecordStatus.UNREAD,
-        idempotencyKey: input.idempotencyKey,
-        occurredAt: input.occurredAt || new Date()
+    try {
+      return await prisma.notificationRecord.create({
+        data: {
+          id: input.id,
+          eventId: input.eventId,
+          userId: input.userId,
+          deviceId: input.deviceId || null,
+          serverId: input.serverId || null,
+          eventType: input.eventType,
+          category: input.category,
+          severity: input.severity,
+          title: input.title,
+          body: input.body,
+          deepLinkUri: input.deepLinkUri || null,
+          webPath: input.webPath || null,
+          metadata: input.metadata ? (input.metadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+          status: NotificationRecordStatus.UNREAD,
+          idempotencyKey: input.idempotencyKey,
+          occurredAt: input.occurredAt || new Date()
+        }
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2003') {
+        return null;
       }
-    });
+      throw err;
+    }
   }
 
   public async getNotificationById(id: string) {
@@ -170,21 +177,28 @@ export class NotificationRepository {
   // ---------------------------------------------------------------------------
 
   public async createChannelDeliveryRecord(input: CreateChannelDeliveryRecordInput) {
-    return prisma.channelDeliveryRecord.create({
-      data: {
-        notificationId: input.notificationId,
-        channel: input.channel,
-        targetAddress: input.targetAddress || null,
-        targetDeviceId: input.targetDeviceId || null,
-        status: input.status || ChannelDeliveryStatus.QUEUED,
-        attemptCount: 1,
-        maxAttempts: 5,
-        lastAttemptAt: new Date(),
-        deliveredAt: input.deliveredAt || null,
-        providerMessageId: input.providerMessageId || null,
-        failureReason: input.failureReason || null
+    try {
+      return await prisma.channelDeliveryRecord.create({
+        data: {
+          notificationId: input.notificationId,
+          channel: input.channel,
+          targetAddress: input.targetAddress || null,
+          targetDeviceId: input.targetDeviceId || null,
+          status: input.status || ChannelDeliveryStatus.QUEUED,
+          attemptCount: 1,
+          maxAttempts: 5,
+          lastAttemptAt: new Date(),
+          deliveredAt: input.deliveredAt || null,
+          providerMessageId: input.providerMessageId || null,
+          failureReason: input.failureReason || null
+        }
+      });
+    } catch (err: any) {
+      if (err?.code === 'P2003') {
+        return null;
       }
-    });
+      throw err;
+    }
   }
 
   public async updateChannelDeliveryRecord(

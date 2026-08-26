@@ -123,21 +123,23 @@ test('1. Prisma Model Persistence — NotificationRecord & ChannelDeliveryRecord
     idempotencyKey: `idemp_${Date.now()}_1`
   });
 
-  assert.ok(notif.id);
-  assert.equal(notif.userId, testUser1.id);
-  assert.equal(notif.status, NotificationRecordStatus.UNREAD);
+  assert.ok(notif);
+  assert.ok(notif!.id);
+  assert.equal(notif!.userId, testUser1.id);
+  assert.equal(notif!.status, NotificationRecordStatus.UNREAD);
 
   const delivery = await notificationRepository.createChannelDeliveryRecord({
-    notificationId: notif.id,
+    notificationId: notif!.id,
     channel: NotificationChannel.PUSH,
     targetDeviceId: testDevice1.id,
     status: ChannelDeliveryStatus.DELIVERED,
     providerMessageId: 'msg_fcm_100'
   });
 
-  assert.ok(delivery.id);
-  assert.equal(delivery.notificationId, notif.id);
-  assert.equal(delivery.providerMessageId, 'msg_fcm_100');
+  assert.ok(delivery);
+  assert.ok(delivery!.id);
+  assert.equal(delivery!.notificationId, notif!.id);
+  assert.equal(delivery!.providerMessageId, 'msg_fcm_100');
 });
 
 test('2. User Notification Preferences Persistence & Defaults', async () => {
