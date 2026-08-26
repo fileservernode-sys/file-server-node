@@ -59,6 +59,58 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
   Future<void> _handleStart() async {
     AppLogger.info('[ServerControl] START SERVER triggered');
+    final service = ref.read(serverServiceProvider);
+    final hasNotificationPerm = await service.isNotificationPermissionGranted();
+
+    if (!hasNotificationPerm && mounted) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.notifications_active_outlined, color: AppColors.primary, size: 24),
+              SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text('Enable Notification',
+                    style: AppTypography.cardTitle,
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          content: const Text(
+            'RemoteNode uses a persistent notification to show that your personal file server is running and ensure continuous background hosting.',
+            style: AppTypography.bodySmall,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not Now', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+
+      if (proceed == true) {
+        await service.requestNotificationPermission();
+      }
+    }
+
     setState(() => _isLoading = true);
     await ref.read(setupStateProvider.notifier).startServerNode();
     await _refreshServerStatus();

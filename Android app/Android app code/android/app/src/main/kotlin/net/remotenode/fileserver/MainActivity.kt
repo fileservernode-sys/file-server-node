@@ -2,7 +2,10 @@ package net.remotenode.fileserver
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -37,7 +40,6 @@ class MainActivity : FlutterActivity() {
                     }
                     try {
                         ContextCompat.startForegroundService(context, intent)
-                        val status = RemoteNodeServerService.engine.getStatus()
                         val ip = RemoteNodeServerService.engine.getDeviceIpAddress()
                         result.success(mapOf(
                             "success" to true,
@@ -111,6 +113,29 @@ class MainActivity : FlutterActivity() {
                 "isServiceRunning" -> {
                     val isRunning = RemoteNodeServerService.isServiceRunning
                     result.success(isRunning)
+                }
+                "isNotificationPermissionGranted" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val granted = ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                        result.success(granted)
+                    } else {
+                        result.success(true)
+                    }
+                }
+                "requestNotificationPermission" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        ActivityCompat.requestPermissions(
+                            this@MainActivity,
+                            arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                            101
+                        )
+                        result.success(true)
+                    } else {
+                        result.success(true)
+                    }
                 }
                 "isBatteryOptimizationIgnored" -> {
                     val ignored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(context)

@@ -12,6 +12,8 @@ abstract class ServerService {
   Future<bool> isServiceRunning();
   Future<bool> isBatteryOptimizationIgnored();
   Future<bool> requestIgnoreBatteryOptimization();
+  Future<bool> isNotificationPermissionGranted();
+  Future<bool> requestNotificationPermission();
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine & RemoteNodeServerService
@@ -132,6 +134,26 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().requestIgnoreBatteryOptimization();
     }
   }
+
+  @override
+  Future<bool> isNotificationPermissionGranted() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('isNotificationPermissionGranted');
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().isNotificationPermissionGranted();
+    }
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('requestNotificationPermission');
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().requestNotificationPermission();
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -205,6 +227,16 @@ class MockServerService implements ServerService {
 
   @override
   Future<bool> requestIgnoreBatteryOptimization() async {
+    return true;
+  }
+
+  @override
+  Future<bool> isNotificationPermissionGranted() async {
+    return true;
+  }
+
+  @override
+  Future<bool> requestNotificationPermission() async {
     return true;
   }
 }

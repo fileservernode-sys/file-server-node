@@ -55,7 +55,6 @@ class PushNotificationService {
     AppLogger.info('[PushNotificationService] Initializing Android Notification Channels: '
         '${channelGeneral.id}, ${channelCritical.id}, ${channelSecurity.id}');
 
-    await requestNotificationPermission();
     _initialized = true;
   }
 

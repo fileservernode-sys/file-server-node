@@ -13,11 +13,10 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import java.io.File
 
 /**
  * RemoteNode Native Android Persistent Foreground Service
- * Phase APP-R1: Owns the long-running local file server lifecycle independently of UI/Activity.
+ * Phase APP-R1.11 Hardened: Authoritative server lifecycle owner.
  */
 class RemoteNodeServerService : Service() {
 
@@ -67,12 +66,14 @@ class RemoteNodeServerService : Service() {
 
         fun getPersistedPort(context: Context): Int {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return prefs.getInt(KEY_PORT, 8080)
+            val port = prefs.getInt(KEY_PORT, 8080)
+            return if (port in 1024..65535) port else 8080
         }
 
         fun persistPort(context: Context, port: Int) {
+            val validPort = if (port in 1024..65535) port else 8080
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            prefs.edit().putInt(KEY_PORT, port).apply()
+            prefs.edit().putInt(KEY_PORT, validPort).apply()
         }
     }
 
@@ -87,13 +88,26 @@ class RemoteNodeServerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val action = intent?.action ?: ACTION_START_SERVER
+        // Handle OS process recreation where intent is null
+        if (intent == null) {
+            val desired = getDesiredServerEnabled(this)
+            if (desired) {
+                val port = getPersistedPort(this)
+                handleStartServer(port)
+                return START_STICKY
+            } else {
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        }
+
+        val action = intent.action ?: ACTION_START_SERVER
 
         when (action) {
             ACTION_START_SERVER -> {
-                val port = intent?.getIntExtra(EXTRA_PORT, getPersistedPort(this)) ?: getPersistedPort(this)
-                val user = intent?.getStringExtra(EXTRA_USERNAME)
-                val pass = intent?.getStringExtra(EXTRA_PASSWORD)
+                val port = intent.getIntExtra(EXTRA_PORT, getPersistedPort(this))
+                val user = intent.getStringExtra(EXTRA_USERNAME)
+                val pass = intent.getStringExtra(EXTRA_PASSWORD)
                 if (user != null && pass != null) {
                     engine.setCredentials(user, pass)
                 }
@@ -103,17 +117,16 @@ class RemoteNodeServerService : Service() {
                 handleStopServer()
             }
             ACTION_RESTART_SERVER -> {
-                val port = intent?.getIntExtra(EXTRA_PORT, activePort) ?: activePort
+                val port = intent.getIntExtra(EXTRA_PORT, activePort)
                 handleRestartServer(port)
             }
             ACTION_SET_CREDENTIALS -> {
-                val user = intent?.getStringExtra(EXTRA_USERNAME)
-                val pass = intent?.getStringExtra(EXTRA_PASSWORD)
+                val user = intent.getStringExtra(EXTRA_USERNAME)
+                val pass = intent.getStringExtra(EXTRA_PASSWORD)
                 engine.setCredentials(user, pass)
             }
         }
 
-        // Return START_STICKY to ensure OS recreation if killed under memory pressure
         return START_STICKY
     }
 
@@ -121,8 +134,9 @@ class RemoteNodeServerService : Service() {
         synchronized(lifecycleLock) {
             try {
                 currentServerState = "STARTING"
-                activePort = port
-                persistPort(this, port)
+                val validatedPort = if (port in 1024..65535) port else 8080
+                activePort = validatedPort
+                persistPort(this, validatedPort)
                 setDesiredServerEnabled(this, true)
 
                 // Start Foreground immediately with starting notification
@@ -132,22 +146,26 @@ class RemoteNodeServerService : Service() {
                 acquireWakeLock()
 
                 val storageDir = filesDir.resolve("RemoteNodeFiles")
-                val startResult = engine.start(port, storageDir, applicationContext)
+                val startResult = engine.start(validatedPort, storageDir, applicationContext)
 
                 if (startResult["success"] == true) {
                     isServiceRunning = true
                     currentServerState = "RUNNING"
-                    val runningNotif = buildNotification("Personal file server is running on port $port")
+                    val runningNotif = buildNotification("Personal file server is running on port $validatedPort")
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     notificationManager.notify(NOTIFICATION_ID, runningNotif)
                 } else {
+                    isServiceRunning = false
                     currentServerState = "START_FAILED"
-                    val errNotif = buildNotification("Failed to start file server on port $port")
+                    releaseWakeLock()
+                    val errNotif = buildNotification("Failed to start file server on port $validatedPort")
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     notificationManager.notify(NOTIFICATION_ID, errNotif)
                 }
             } catch (e: Exception) {
+                isServiceRunning = false
                 currentServerState = "ERROR"
+                releaseWakeLock()
             }
         }
     }
