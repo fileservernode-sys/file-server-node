@@ -1,6 +1,6 @@
 /**
  * RemoteNode Operational Observability & Notification Metrics
- * Track 4 — Batch NT-1.5 Architecture
+ * Track 4 — Batch NT-1.6 Architecture
  */
 
 import { NotificationChannel } from '../types/channel.js';
@@ -33,6 +33,10 @@ export interface NotificationMetricsSnapshot {
     permanentlyFailedCount: number;
     stormSuppressedCount: number;
     duplicateSuppressedCount: number;
+    coalescedEventsCount: number;
+    rateLimitThrottledCount: number;
+    circuitBreakerBlockedCount: number;
+    circuitBreakerTripsCount: number;
     jobsClaimedCount: number;
     staleClaimsRecoveredCount: number;
     pollingCyclesCount: number;
@@ -53,6 +57,10 @@ export class NotificationMetricsService {
   private permanentlyFailedCount = 0;
   private stormSuppressedCount = 0;
   private duplicateSuppressedCount = 0;
+  private coalescedEventsCount = 0;
+  private rateLimitThrottledCount = 0;
+  private circuitBreakerBlockedCount = 0;
+  private circuitBreakerTripsCount = 0;
   private jobsClaimedCount = 0;
   private staleClaimsRecoveredCount = 0;
   private pollingCyclesCount = 0;
@@ -93,6 +101,22 @@ export class NotificationMetricsService {
 
   public recordDuplicateSuppression() {
     this.duplicateSuppressedCount++;
+  }
+
+  public recordEventCoalesced() {
+    this.coalescedEventsCount++;
+  }
+
+  public recordRateLimitThrottled() {
+    this.rateLimitThrottledCount++;
+  }
+
+  public recordCircuitBreakerBlocked() {
+    this.circuitBreakerBlockedCount++;
+  }
+
+  public recordCircuitBreakerTrip() {
+    this.circuitBreakerTripsCount++;
   }
 
   public recordJobClaim(count: number = 1) {
@@ -189,6 +213,10 @@ export class NotificationMetricsService {
         permanentlyFailedCount: this.permanentlyFailedCount,
         stormSuppressedCount: this.stormSuppressedCount,
         duplicateSuppressedCount: this.duplicateSuppressedCount,
+        coalescedEventsCount: this.coalescedEventsCount,
+        rateLimitThrottledCount: this.rateLimitThrottledCount,
+        circuitBreakerBlockedCount: this.circuitBreakerBlockedCount,
+        circuitBreakerTripsCount: this.circuitBreakerTripsCount,
         jobsClaimedCount: this.jobsClaimedCount,
         staleClaimsRecoveredCount: this.staleClaimsRecoveredCount,
         pollingCyclesCount: this.pollingCyclesCount
@@ -210,6 +238,10 @@ export class NotificationMetricsService {
     this.permanentlyFailedCount = 0;
     this.stormSuppressedCount = 0;
     this.duplicateSuppressedCount = 0;
+    this.coalescedEventsCount = 0;
+    this.rateLimitThrottledCount = 0;
+    this.circuitBreakerBlockedCount = 0;
+    this.circuitBreakerTripsCount = 0;
     this.jobsClaimedCount = 0;
     this.staleClaimsRecoveredCount = 0;
     this.pollingCyclesCount = 0;

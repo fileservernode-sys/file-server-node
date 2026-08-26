@@ -1,6 +1,6 @@
 /**
  * RemoteNode Persistent Notification Delivery Processor & Retry Worker
- * Track 4 — Batch NT-1.5 Architecture
+ * Track 4 — Batch NT-1.6 Architecture
  */
 
 import { prisma } from '../../config/database.js';
@@ -12,6 +12,8 @@ import { NotificationType } from '../types/type_registry.js';
 import { ProviderDeliveryRequest } from '../providers/provider_interface.js';
 import { notificationRepository } from '../repositories/notification_repository.js';
 import { notificationMetrics } from '../services/notification_metrics.js';
+import { providerCircuitBreaker } from '../services/provider_circuit_breaker.js';
+import { failureClassifier } from '../services/failure_classifier.js';
 
 export interface DeliveryProcessorResult {
   processedCount: number;
@@ -22,9 +24,11 @@ export interface DeliveryProcessorResult {
 
 export class DeliveryProcessor {
   private service: CentralNotificationService;
+  private providerTimeoutMs: number;
 
-  constructor(service: CentralNotificationService = notificationService) {
+  constructor(service: CentralNotificationService = notificationService, providerTimeoutMs: number = 10000) {
     this.service = service;
+    this.providerTimeoutMs = providerTimeoutMs;
   }
 
   /**
@@ -170,6 +174,25 @@ export class DeliveryProcessor {
     }
 
     const channel = delivery.channel as NotificationChannel;
+
+    // Circuit Breaker Guard Check
+    if (!providerCircuitBreaker.canExecute(channel)) {
+      notificationMetrics.recordCircuitBreakerBlocked();
+      const reason = `Provider circuit breaker OPEN for channel ${channel}`;
+      await prisma.channelDeliveryRecord.update({
+        where: { id: delivery.id },
+        data: {
+          status: 'RETRYING',
+          nextRetryAt: new Date(Date.now() + 60000), // Retry after 1 min cooldown
+          failureReason: reason,
+          processingStartedAt: null,
+          processingWorkerId: workerId
+        }
+      });
+      notificationMetrics.recordDeliveryFailure(channel, false, reason);
+      return 'RETRYING';
+    }
+
     const provider = this.service.getProvider(channel);
 
     if (!provider) {
@@ -194,6 +217,11 @@ export class DeliveryProcessor {
       notifRecord.occurredAt
     );
 
+    const correlationId =
+      delivery.correlationId ||
+      notifRecord.correlationId ||
+      `notif_corr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
     const request: ProviderDeliveryRequest = {
       deliveryId: delivery.id,
       notificationId: notifRecord.id,
@@ -217,9 +245,19 @@ export class DeliveryProcessor {
     };
 
     try {
-      const providerResult = await provider.send(request);
+      // 10-Second Timeout Race Wrapper
+      let timeoutHandle: NodeJS.Timeout | null = null;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => reject(new Error('Provider request timed out after 10000ms')), this.providerTimeoutMs);
+      });
+
+      const providerResult = await Promise.race([provider.send(request), timeoutPromise]).finally(() => {
+        if (timeoutHandle) clearTimeout(timeoutHandle);
+      });
 
       if (providerResult.success) {
+        providerCircuitBreaker.recordSuccess(channel);
+
         const deliveredTime = providerResult.deliveredAt || new Date();
         await prisma.channelDeliveryRecord.update({
           where: { id: delivery.id },
@@ -227,6 +265,7 @@ export class DeliveryProcessor {
             status: 'DELIVERED',
             deliveredAt: deliveredTime,
             providerMessageId: providerResult.externalMessageId || null,
+            correlationId,
             processingStartedAt: null,
             processingWorkerId: workerId
           }
@@ -245,69 +284,98 @@ export class DeliveryProcessor {
 
         return 'DELIVERED';
       } else {
-        const currentAttemptNumber = (delivery.attemptCount || 0) + 1;
-        const errMsg = providerResult.errorMessage || 'Unknown delivery failure';
-        const isPermanent =
-          /PERMANENT_FAILURE/i.test(errMsg) ||
-          /INVALID_TOKEN/i.test(errMsg) ||
-          /INVALID_ADDRESS/i.test(errMsg) ||
-          currentAttemptNumber >= delivery.maxAttempts;
+        const rawMsg = providerResult.errorMessage || 'Unknown delivery failure';
+        const classification = failureClassifier.classify(rawMsg, providerResult.externalMessageId);
 
-        if (isPermanent) {
+        if (!classification.retryable) {
+          providerCircuitBreaker.recordFailure(channel);
+
           await prisma.channelDeliveryRecord.update({
             where: { id: delivery.id },
             data: {
               status: 'PERMANENTLY_FAILED',
               failedAt: now,
-              failureReason: errMsg,
+              failureReason: classification.safePublicReason,
+              providerResponseCode: classification.providerResponseCode,
+              correlationId,
               processingStartedAt: null,
               processingWorkerId: workerId
             }
           });
 
-          if (/INVALID_TOKEN/i.test(errMsg) && delivery.targetAddress && notifRecord.deviceId) {
+          if (classification.category === 'INVALID_TOKEN' && delivery.targetAddress && notifRecord.deviceId) {
             await notificationRepository.revokePushToken(notifRecord.userId, notifRecord.deviceId, delivery.targetAddress);
           }
 
-          notificationMetrics.recordDeliveryFailure(channel, true, errMsg);
+          notificationMetrics.recordDeliveryFailure(channel, true, classification.safePublicReason);
           return 'PERMANENTLY_FAILED';
         } else {
-          const nextAttempt = delivery.attemptCount + 1;
-          const retryDecision = calculateRetryDecision(nextAttempt, errMsg);
+          providerCircuitBreaker.recordFailure(channel);
 
-          await prisma.channelDeliveryRecord.update({
-            where: { id: delivery.id },
-            data: {
-              status: 'RETRYING',
-              nextRetryAt: retryDecision.nextAttemptAt || new Date(Date.now() + 60000),
-              failureReason: errMsg,
-              processingStartedAt: null,
-              processingWorkerId: workerId
-            }
-          });
+          const currentAttemptNumber = (delivery.attemptCount || 0) + 1;
+          const isExhausted = currentAttemptNumber >= delivery.maxAttempts;
 
-          notificationMetrics.recordDeliveryFailure(channel, false, errMsg);
-          return 'RETRYING';
+          if (isExhausted) {
+            await prisma.channelDeliveryRecord.update({
+              where: { id: delivery.id },
+              data: {
+                status: 'PERMANENTLY_FAILED',
+                failedAt: now,
+                failureReason: `Retry attempts exhausted (${currentAttemptNumber}/${delivery.maxAttempts}): ${classification.safePublicReason}`,
+                providerResponseCode: classification.providerResponseCode,
+                correlationId,
+                processingStartedAt: null,
+                processingWorkerId: workerId
+              }
+            });
+
+            notificationMetrics.recordDeliveryFailure(channel, true, classification.safePublicReason);
+            return 'PERMANENTLY_FAILED';
+          } else {
+            const retryDecision = calculateRetryDecision(currentAttemptNumber, rawMsg);
+
+            await prisma.channelDeliveryRecord.update({
+              where: { id: delivery.id },
+              data: {
+                status: 'RETRYING',
+                nextRetryAt: retryDecision.nextAttemptAt || new Date(Date.now() + classification.recommendedDelayMs),
+                failureReason: classification.safePublicReason,
+                providerResponseCode: classification.providerResponseCode,
+                correlationId,
+                processingStartedAt: null,
+                processingWorkerId: workerId
+              }
+            });
+
+            notificationMetrics.recordDeliveryFailure(channel, false, classification.safePublicReason);
+            return 'RETRYING';
+          }
         }
       }
     } catch (err: any) {
-      const errMsg = `Unexpected error: ${err?.message || err}`;
-      const isPermanent = delivery.attemptCount >= delivery.maxAttempts;
+      providerCircuitBreaker.recordFailure(channel);
+
+      const rawMsg = err?.message || String(err);
+      const classification = failureClassifier.classify(rawMsg);
+      const currentAttemptNumber = (delivery.attemptCount || 0) + 1;
+      const isExhausted = !classification.retryable || currentAttemptNumber >= delivery.maxAttempts;
 
       await prisma.channelDeliveryRecord.update({
         where: { id: delivery.id },
         data: {
-          status: isPermanent ? 'PERMANENTLY_FAILED' : 'RETRYING',
-          failedAt: isPermanent ? now : null,
-          nextRetryAt: isPermanent ? null : new Date(Date.now() + 60000),
-          failureReason: errMsg,
+          status: isExhausted ? 'PERMANENTLY_FAILED' : 'RETRYING',
+          failedAt: isExhausted ? now : null,
+          nextRetryAt: isExhausted ? null : new Date(Date.now() + classification.recommendedDelayMs),
+          failureReason: classification.safePublicReason,
+          providerResponseCode: classification.providerResponseCode,
+          correlationId,
           processingStartedAt: null,
           processingWorkerId: workerId
         }
       });
 
-      notificationMetrics.recordDeliveryFailure(channel, isPermanent, errMsg);
-      return isPermanent ? 'PERMANENTLY_FAILED' : 'RETRYING';
+      notificationMetrics.recordDeliveryFailure(channel, isExhausted, classification.safePublicReason);
+      return isExhausted ? 'PERMANENTLY_FAILED' : 'RETRYING';
     }
   }
 }

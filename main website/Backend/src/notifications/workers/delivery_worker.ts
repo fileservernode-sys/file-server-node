@@ -25,6 +25,7 @@ export interface WorkerHealthStatus {
   status: WorkerStatus;
   enabled: boolean;
   startedAt: Date | null;
+  lastHeartbeatAt: Date | null;
   lastPollAt: Date | null;
   lastSuccessfulPollAt: Date | null;
   lastErrorAt: Date | null;
@@ -46,6 +47,7 @@ export class DeliveryWorker {
 
   private status: WorkerStatus = 'STOPPED';
   private startedAt: Date | null = null;
+  private lastHeartbeatAt: Date | null = null;
   private lastPollAt: Date | null = null;
   private lastSuccessfulPollAt: Date | null = null;
   private lastErrorAt: Date | null = null;
@@ -80,6 +82,7 @@ export class DeliveryWorker {
       status: this.status,
       enabled: this.enabled,
       startedAt: this.startedAt,
+      lastHeartbeatAt: this.lastHeartbeatAt,
       lastPollAt: this.lastPollAt,
       lastSuccessfulPollAt: this.lastSuccessfulPollAt,
       lastErrorAt: this.lastErrorAt,
@@ -123,7 +126,9 @@ export class DeliveryWorker {
     }
 
     this.isTickRunning = true;
-    this.lastPollAt = new Date();
+    const now = new Date();
+    this.lastPollAt = now;
+    this.lastHeartbeatAt = now;
     notificationMetrics.recordPollingCycle();
 
     try {

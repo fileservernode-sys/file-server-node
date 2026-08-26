@@ -1,10 +1,10 @@
 /**
- * RemoteNode Central Notification Service Engine with Database Persistence
- * Track 4 — Batch NT-1.2 Architecture
+ * RemoteNode Central Notification Service Engine with Persistence & Reliability Controls
+ * Track 4 — Batch NT-1.6 Architecture
  */
 
 import { NotificationEvent, NotificationEventInput, createNotificationEvent } from '../types/event.js';
-import { NotificationState, ChannelDeliveryRecord, DeliveryStatus } from '../types/lifecycle.js';
+import { NotificationState } from '../types/lifecycle.js';
 import { NotificationChannel } from '../types/channel.js';
 import { templateRegistry } from './template_registry.js';
 import { defaultIdempotencyManager, IdempotencyManager } from './idempotency.js';
@@ -15,9 +15,12 @@ import {
   NotificationProvider,
   ProviderDeliveryResult
 } from '../providers/provider_interface.js';
-import { defaultFcmPushProvider, FcmPushProvider } from '../providers/fcm_provider.js';
-import { defaultEmailNotificationProvider, EmailNotificationProviderImpl } from '../providers/email_provider.js';
+import { defaultFcmPushProvider } from '../providers/fcm_provider.js';
+import { defaultEmailNotificationProvider } from '../providers/email_provider.js';
 import { notificationRepository, NotificationRepository } from '../repositories/notification_repository.js';
+import { notificationMetrics } from './notification_metrics.js';
+import { notificationRateLimiter, NotificationRateLimiter } from './rate_limiter.js';
+import { providerCircuitBreaker } from './provider_circuit_breaker.js';
 import { prisma } from '../../config/database.js';
 
 export interface NotificationRecordDTO {
@@ -35,6 +38,7 @@ export interface NotificationRecordDTO {
   webPath?: string;
   metadata: Record<string, any>;
   state: NotificationState;
+  correlationId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,9 +47,12 @@ export interface NotificationProcessingResult {
   notificationId?: string;
   eventId: string;
   idempotencyKey: string;
+  correlationId?: string;
   processed: boolean;
   duplicateSuppressed: boolean;
   stormSuppressed: boolean;
+  coalesced: boolean;
+  throttled: boolean;
   renderedTitle?: string;
   renderedBody?: string;
   allowedChannels: NotificationChannel[];
@@ -57,6 +64,7 @@ export class CentralNotificationService {
   private stormProtection: NotificationStormProtection;
   private channelRouter: ChannelRouter;
   private repository: NotificationRepository;
+  private rateLimiter: NotificationRateLimiter;
   private providers: Map<NotificationChannel, NotificationProvider> = new Map();
 
   // In-memory fallback cache for fast lookups
@@ -66,12 +74,14 @@ export class CentralNotificationService {
     idempotencyManager: IdempotencyManager = defaultIdempotencyManager,
     stormProtection: NotificationStormProtection = defaultStormProtection,
     channelRouter: ChannelRouter = defaultChannelRouter,
-    repository: NotificationRepository = notificationRepository
+    repository: NotificationRepository = notificationRepository,
+    rateLimiter: NotificationRateLimiter = notificationRateLimiter
   ) {
     this.idempotencyManager = idempotencyManager;
     this.stormProtection = stormProtection;
     this.channelRouter = channelRouter;
     this.repository = repository;
+    this.rateLimiter = rateLimiter;
 
     // Register production & fallback providers
     this.registerProvider(defaultFcmPushProvider);
@@ -95,16 +105,23 @@ export class CentralNotificationService {
     userDevices: DeviceRoutingTarget[] = []
   ): Promise<NotificationProcessingResult> {
     const event: NotificationEvent = createNotificationEvent(input);
+    const correlationId = `notif_corr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+    notificationMetrics.recordDispatchedEvent();
 
     // 1. IDEMPOTENCY CHECK (Memory + Database)
     const isMemoryDuplicate = await this.idempotencyManager.isProcessed(event.idempotencyKey);
     if (isMemoryDuplicate) {
+      notificationMetrics.recordDuplicateSuppression();
       return {
         eventId: event.eventId,
         idempotencyKey: event.idempotencyKey,
+        correlationId,
         processed: false,
         duplicateSuppressed: true,
         stormSuppressed: false,
+        coalesced: false,
+        throttled: false,
         allowedChannels: [],
         deliveryResults: []
       };
@@ -114,12 +131,16 @@ export class CentralNotificationService {
       const dbExisting = await this.repository.getNotificationByIdempotencyKey(event.idempotencyKey);
       if (dbExisting) {
         await this.idempotencyManager.recordProcessing(event.idempotencyKey, event.eventId);
+        notificationMetrics.recordDuplicateSuppression();
         return {
           eventId: event.eventId,
           idempotencyKey: event.idempotencyKey,
+          correlationId: dbExisting.correlationId || correlationId,
           processed: false,
           duplicateSuppressed: true,
           stormSuppressed: false,
+          coalesced: false,
+          throttled: false,
           allowedChannels: [],
           deliveryResults: []
         };
@@ -131,20 +152,76 @@ export class CentralNotificationService {
     // Record memory idempotency key
     await this.idempotencyManager.recordProcessing(event.idempotencyKey, event.eventId);
 
-    // 2. STORM PROTECTION CHECK
-    if (this.stormProtection.shouldSuppress(event)) {
+    // 2. RATE LIMIT CHECK
+    const rateLimitResult = this.rateLimiter.checkRateLimit({
+      userId: event.userId,
+      deviceId: event.deviceId,
+      eventType: event.eventType,
+      category: event.category,
+      severity: event.severity
+    });
+
+    if (!rateLimitResult.allowed) {
+      notificationMetrics.recordRateLimitThrottled();
+      console.warn(`[NotificationService] Event ${event.eventType} throttled at tier ${rateLimitResult.tier} for user ${event.userId}`);
       return {
         eventId: event.eventId,
         idempotencyKey: event.idempotencyKey,
+        correlationId,
         processed: false,
         duplicateSuppressed: false,
-        stormSuppressed: true,
+        stormSuppressed: false,
+        coalesced: false,
+        throttled: true,
         allowedChannels: [],
         deliveryResults: []
       };
     }
 
-    // 3. RESOLVE USER PREFERENCES & ACTIVE PUSH TOKENS
+    // 3. EVENT COALESCING CHECK (Flapping State Protection)
+    if (this.stormProtection.shouldCoalesceStateFlip(event)) {
+      notificationMetrics.recordEventCoalesced();
+      console.log(`[NotificationService] State flip event ${event.eventType} coalesced for target ${event.userId}:${event.deviceId}`);
+      return {
+        eventId: event.eventId,
+        idempotencyKey: event.idempotencyKey,
+        correlationId,
+        processed: false,
+        duplicateSuppressed: false,
+        stormSuppressed: false,
+        coalesced: true,
+        throttled: false,
+        allowedChannels: [],
+        deliveryResults: []
+      };
+    }
+
+    // 4. STORM PROTECTION CHECK
+    if (this.stormProtection.shouldSuppress(event)) {
+      notificationMetrics.recordStormSuppression();
+      return {
+        eventId: event.eventId,
+        idempotencyKey: event.idempotencyKey,
+        correlationId,
+        processed: false,
+        duplicateSuppressed: false,
+        stormSuppressed: true,
+        coalesced: false,
+        throttled: false,
+        allowedChannels: [],
+        deliveryResults: []
+      };
+    }
+
+    this.rateLimiter.recordEvent({
+      userId: event.userId,
+      deviceId: event.deviceId,
+      eventType: event.eventType,
+      category: event.category,
+      severity: event.severity
+    });
+
+    // 5. RESOLVE USER PREFERENCES & ACTIVE PUSH TOKENS
     const effectivePreferences = userPreferences || (await this.repository.getUserPreferences(event.userId));
 
     let effectiveDevices = userDevices;
@@ -160,13 +237,13 @@ export class CentralNotificationService {
       }
     }
 
-    // 4. TEMPLATE RENDERING
+    // 6. TEMPLATE RENDERING
     const rendered = templateRegistry.render(event.eventType, event.metadata, event.occurredAt);
 
-    // 5. PREFERENCE & MULTI-DEVICE ROUTING EVALUATION
+    // 7. PREFERENCE & MULTI-DEVICE ROUTING EVALUATION
     const routingDecision = this.channelRouter.evaluateRouting(event, effectivePreferences, effectiveDevices);
 
-    // 6. CREATE PERSISTENT NOTIFICATION RECORD
+    // 8. CREATE PERSISTENT NOTIFICATION RECORD
     const notificationId = `notif_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
     const notificationDTO: NotificationRecordDTO = {
       id: notificationId,
@@ -183,6 +260,7 @@ export class CentralNotificationService {
       webPath: rendered.deepLink?.webPath,
       metadata: event.metadata,
       state: NotificationState.UNREAD,
+      correlationId,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -205,24 +283,29 @@ export class CentralNotificationService {
         webPath: rendered.deepLink?.webPath,
         metadata: event.metadata,
         idempotencyKey: event.idempotencyKey,
+        correlationId,
         occurredAt: event.occurredAt
       });
     } catch (dbErr: any) {
       // If unique constraint on idempotencyKey violated during race condition
       if (dbErr?.code === 'P2002') {
+        notificationMetrics.recordDuplicateSuppression();
         return {
           eventId: event.eventId,
           idempotencyKey: event.idempotencyKey,
+          correlationId,
           processed: false,
           duplicateSuppressed: true,
           stormSuppressed: false,
+          coalesced: false,
+          throttled: false,
           allowedChannels: [],
           deliveryResults: []
         };
       }
     }
 
-    // 7. CHANNEL DELIVERY DISPATCH & PERSISTENCE
+    // 9. CHANNEL DELIVERY DISPATCH & PERSISTENCE
     const deliveryResults: ProviderDeliveryResult[] = [];
 
     for (const channel of routingDecision.allowedChannels) {
@@ -239,7 +322,23 @@ export class CentralNotificationService {
             notificationId,
             channel: NotificationChannel.IN_APP,
             status: 'DELIVERED' as any,
+            correlationId,
             deliveredAt: new Date()
+          });
+        } catch {}
+        continue;
+      }
+
+      // Check Circuit Breaker prior to dispatch attempt
+      if (!providerCircuitBreaker.canExecute(channel)) {
+        notificationMetrics.recordCircuitBreakerBlocked();
+        try {
+          await this.repository.createChannelDeliveryRecord({
+            notificationId,
+            channel,
+            status: 'QUEUED' as any,
+            failureReason: `Provider circuit breaker OPEN for channel ${channel}`,
+            correlationId
           });
         } catch {}
         continue;
@@ -247,7 +346,6 @@ export class CentralNotificationService {
 
       const provider = this.providers.get(channel);
       if (provider) {
-        // Resolve target address for Push / Email
         let targetAddresses: string[] = [];
         if (channel === NotificationChannel.PUSH) {
           const targetDevices = routingDecision.targetDevices.length > 0
@@ -263,14 +361,14 @@ export class CentralNotificationService {
           }
         }
 
-        // If no addresses registered, record queued delivery attempt
         if (targetAddresses.length === 0) {
           try {
             await this.repository.createChannelDeliveryRecord({
               notificationId,
               channel,
               status: 'QUEUED' as any,
-              failureReason: 'No registered push tokens or email address'
+              failureReason: 'No registered push tokens or email address',
+              correlationId
             });
           } catch {}
           continue;
@@ -289,6 +387,12 @@ export class CentralNotificationService {
             });
 
             deliveryResults.push(result);
+
+            if (result.success) {
+              providerCircuitBreaker.recordSuccess(channel);
+            } else {
+              providerCircuitBreaker.recordFailure(channel);
+            }
 
             // Handle FCM Invalid Token Revocation
             if (!result.success && result.errorMessage?.includes('INVALID_TOKEN')) {
@@ -312,10 +416,12 @@ export class CentralNotificationService {
                   : ('FAILED' as any),
                 providerMessageId: result.externalMessageId,
                 failureReason: result.errorMessage,
+                correlationId,
                 deliveredAt: result.deliveredAt
               });
             } catch {}
           } catch (err: any) {
+            providerCircuitBreaker.recordFailure(channel);
             deliveryResults.push({
               success: false,
               channel,
@@ -327,7 +433,7 @@ export class CentralNotificationService {
       }
     }
 
-    // 8. OPTIONAL AUDIT EVENT INTEGRATION
+    // 10. OPTIONAL AUDIT EVENT INTEGRATION
     try {
       if (prisma && prisma.auditEvent) {
         await prisma.auditEvent.create({
@@ -339,7 +445,8 @@ export class CentralNotificationService {
               notificationId,
               notificationType: event.eventType,
               category: event.category,
-              severity: event.severity
+              severity: event.severity,
+              correlationId
             }
           }
         }).catch(() => {});
@@ -350,9 +457,12 @@ export class CentralNotificationService {
       notificationId,
       eventId: event.eventId,
       idempotencyKey: event.idempotencyKey,
+      correlationId,
       processed: true,
       duplicateSuppressed: false,
       stormSuppressed: false,
+      coalesced: false,
+      throttled: false,
       renderedTitle: rendered.title,
       renderedBody: rendered.body,
       allowedChannels: routingDecision.allowedChannels,
@@ -382,6 +492,7 @@ export class CentralNotificationService {
           webPath: record.webPath || undefined,
           metadata: (record.metadata as any) || {},
           state: record.status as any,
+          correlationId: record.correlationId || undefined,
           createdAt: record.createdAt,
           updatedAt: record.updatedAt
         };

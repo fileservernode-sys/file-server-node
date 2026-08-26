@@ -31,6 +31,7 @@ export interface CreateNotificationRecordInput {
   webPath?: string;
   metadata?: SafeNotificationMetadata;
   idempotencyKey: string;
+  correlationId?: string;
   occurredAt?: Date;
 }
 
@@ -42,6 +43,7 @@ export interface CreateChannelDeliveryRecordInput {
   status?: ChannelDeliveryStatus;
   providerMessageId?: string;
   failureReason?: string;
+  correlationId?: string;
   deliveredAt?: Date;
 }
 
@@ -77,6 +79,7 @@ export class NotificationRepository {
           metadata: input.metadata ? (input.metadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
           status: NotificationRecordStatus.UNREAD,
           idempotencyKey: input.idempotencyKey,
+          correlationId: input.correlationId || null,
           occurredAt: input.occurredAt || new Date()
         }
       });
@@ -100,6 +103,7 @@ export class NotificationRepository {
               metadata: input.metadata ? (input.metadata as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
               status: NotificationRecordStatus.UNREAD,
               idempotencyKey: input.idempotencyKey,
+              correlationId: input.correlationId || null,
               occurredAt: input.occurredAt || new Date()
             }
           });
@@ -213,7 +217,8 @@ export class NotificationRepository {
           lastAttemptAt: new Date(),
           deliveredAt: input.deliveredAt || null,
           providerMessageId: input.providerMessageId || null,
-          failureReason: input.failureReason || null
+          failureReason: input.failureReason || null,
+          correlationId: input.correlationId || null
         }
       });
     } catch (err: any) {

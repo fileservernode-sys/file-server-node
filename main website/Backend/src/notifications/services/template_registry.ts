@@ -55,12 +55,25 @@ class TemplateRegistry {
     };
   }
 
+  private escapeHtml(str: any): string {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   private sanitizeMetadata(meta: SafeNotificationMetadata = {}): SafeNotificationMetadata {
     const clean: SafeNotificationMetadata = { ...meta };
     const forbidden = ['password', 'token', 'jwt', 'fcmtoken', 'privatekey', 'secret', 'authorization', 'otp'];
     for (const key of Object.keys(clean)) {
       if (forbidden.some((f) => key.toLowerCase().includes(f))) {
         delete (clean as any)[key];
+      } else if (typeof clean[key] === 'string') {
+        // Apply HTML entity escaping to string values
+        clean[key] = this.escapeHtml(clean[key]) as any;
       }
     }
     return clean;

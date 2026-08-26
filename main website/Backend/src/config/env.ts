@@ -89,7 +89,18 @@ const envSchema = z.object({
   NOTIFICATION_DELIVERY_RETENTION_DAYS: z.coerce.number().default(30),
   NOTIFICATION_CLEANUP_INTERVAL_MS: z.coerce.number().default(86400000),
   NOTIFICATION_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
-  NOTIFICATION_RATE_LIMIT_MAX_EVENTS: z.coerce.number().default(10)
+  NOTIFICATION_RATE_LIMIT_MAX_EVENTS: z.coerce.number().default(10),
+
+  // Notification Delivery Hardening & Reliability Controls (Track 4 - Batch NT-1.6)
+  NOTIFICATION_PROVIDER_FAILURE_THRESHOLD: z.coerce.number().default(5),
+  NOTIFICATION_PROVIDER_COOLDOWN_MS: z.coerce.number().default(60000),
+  NOTIFICATION_PROVIDER_HALF_OPEN_MAX_PROBES: z.coerce.number().default(1),
+
+  NOTIFICATION_RATE_LIMIT_USER_PER_MINUTE: z.coerce.number().default(30),
+  NOTIFICATION_RATE_LIMIT_DEVICE_PER_MINUTE: z.coerce.number().default(20),
+  NOTIFICATION_RATE_LIMIT_TYPE_PER_MINUTE: z.coerce.number().default(15),
+  NOTIFICATION_RATE_LIMIT_PROVIDER_PER_MINUTE: z.coerce.number().default(60),
+  NOTIFICATION_RATE_LIMIT_GLOBAL_PER_MINUTE: z.coerce.number().default(300)
 });
 
 function loadConfig() {

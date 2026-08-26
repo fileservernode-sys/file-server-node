@@ -107,3 +107,26 @@ The notification module is located at `main website/Backend/src/notifications/`.
 - **Graceful Shutdown**:
   - Attaches `SIGTERM` and `SIGINT` shutdown hooks in `server.ts` to stop worker polling, drain active tick executions cleanly within `shutdownTimeoutMs`, and release resources.
 
+### 9. Delivery Hardening, Circuit Breakers, User Safety & Observability (Batch NT-1.6)
+- **Provider Circuit Breaker (`ProviderCircuitBreaker`)**:
+  - Independent per-channel state machine (`FCM` and `EMAIL`) protecting backend from cascading failures during provider outages.
+  - States: `CLOSED` (normal operation), `OPEN` (calls blocked after 5 consecutive failures), `HALF_OPEN` (allows 1 probe call after 60-second cooldown). Successful probe resets state to `CLOSED`; failed probe re-opens circuit.
+- **Centralized Provider Failure Classifier (`ProviderFailureClassifier`)**:
+  - Categorizes raw provider errors into 10 structured failure categories (`PERMANENT_FAILURE`, `TEMPORARY_FAILURE`, `RATE_LIMITED`, `AUTHENTICATION_FAILURE`, `PROVIDER_UNAVAILABLE`, `INVALID_RECIPIENT`, `INVALID_TOKEN`, `NETWORK_TIMEOUT`, `DATABASE_FAILURE`, `UNKNOWN_FAILURE`).
+  - Ensures 0 credential/secret exposure by sanitizing error messages (redacting JWTs, Bearer tokens, passwords, secret keys, FCM tokens, API keys).
+- **Multi-Tier Notification Rate Limiter (`NotificationRateLimiter`)**:
+  - Enforces sliding window rate limits across 5 distinct tiers: User (60/min), Device (60/min), Event Type (60/min), Provider (600/min), and Global (3000/min).
+  - Automatically bypasses rate limits for `SECURITY` and `CRITICAL` severity events to guarantee user safety and critical alerting.
+- **Controlled Event Coalescing (`NotificationStormProtection`)**:
+  - Coalesces rapid state-flip pairs (`DEVICE_ONLINE`/`OFFLINE`, `GATEWAY_CONNECTED`/`DISCONNECTED`, `SERVER_STARTED`/`STOPPED`, `STORAGE_WARNING`/`CRITICAL`/`RECOVERED`) within a 10-second stability window.
+  - Guarantees non-coalescing and non-suppression for `SECURITY` events.
+- **Correlation Tracing (`correlationId`)**:
+  - Generates unique correlation IDs (`notif_corr_<timestamp>_<rand>`) for every notification event, persisted across `NotificationRecord` and `ChannelDeliveryRecord` for end-to-end tracing.
+- **Worker Heartbeat Tracking**:
+  - `DeliveryWorker.getStatus()` exposes live heartbeat timestamps (`lastHeartbeatAt`) and worker IDs for background monitor health checks.
+- **Template Security & Escaping**:
+  - `TemplateRegistry.render()` applies HTML entity escaping (`<` $\rightarrow$ `&lt;`, `>` $\rightarrow$ `&gt;`, `&` $\rightarrow$ `&amp;`, `"` $\rightarrow$ `&quot;`) to all interpolated user metadata values before HTML email generation.
+- **Authenticated Health & Metrics REST API**:
+  - `GET /api/v1/notifications/health` — Authenticated health check reporting provider circuit breaker states, worker status, DB connectivity, and provider health.
+  - `GET /api/v1/notifications/metrics` — Authenticated metrics endpoint exposing operational counters, queue latencies, rate limit throttles, and circuit breaker trip counts with zero secret exposure.
+

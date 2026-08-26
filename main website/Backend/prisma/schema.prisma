@@ -308,6 +308,7 @@ model NotificationRecord {
   archivedAt     DateTime?
   occurredAt     DateTime                 @default(now())
   idempotencyKey String                   @unique
+  correlationId  String?
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
 
@@ -319,6 +320,7 @@ model NotificationRecord {
   @@index([userId, status])
   @@index([eventId])
   @@index([idempotencyKey])
+  @@index([correlationId])
 }
 
 /// Persistent Transport Channel Delivery State Record
@@ -340,6 +342,7 @@ model ChannelDeliveryRecord {
   providerMessageId   String?
   providerResponseCode String?
   failureReason       String?
+  correlationId       String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
@@ -349,6 +352,7 @@ model ChannelDeliveryRecord {
   @@index([channel, status])
   @@index([status, nextRetryAt])
   @@index([status, processingStartedAt])
+  @@index([correlationId])
 }
 
 /// Persistent User Notification Preferences Record
