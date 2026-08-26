@@ -29,4 +29,8 @@ npm-debug.log*
 # OS & IDE
 .DS_Store
 .vscode/
-.idea/
+.idea/*
+!.idea/runConfigurations/
+Android app/Android app code/.idea/*
+!Android app/Android app code/.idea/runConfigurations/
+Android app/.idea/
