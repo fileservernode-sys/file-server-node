@@ -1,6 +1,6 @@
 /**
  * REMOTENODE NOTIFICATION CENTER CLIENT (VANILLA JS)
- * Phase MW-1 — Track 4 Batch NT-1.3: Main Website Notification Center
+ * Phase MW-1 — Track 4 Batch NT-1.8: Final Notification UX & Cross-Platform Polish
  */
 
 (function () {
@@ -24,6 +24,7 @@
   function formatTimeAgo(isoString) {
     if (!isoString) return '';
     const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
     const now = new Date();
     const seconds = Math.floor((now - date) / 1000);
     if (seconds < 60) return 'Just now';
@@ -33,7 +34,7 @@
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }
 
   function getSeverityClass(severity) {
@@ -48,21 +49,25 @@
   }
 
   function resolveDeepLinkWebPath(deepLinkUri) {
-    if (!deepLinkUri) return null;
+    if (!deepLinkUri || typeof deepLinkUri !== 'string') return null;
+    const trimmed = deepLinkUri.trim();
+    if (!trimmed.startsWith('remotenode://')) return null;
+
     const isInnerPage = window.location.pathname.includes('/pages/');
     const prefix = isInnerPage ? '' : 'pages/';
 
-    if (deepLinkUri.startsWith('remotenode://filemanager')) {
+    if (trimmed.startsWith('remotenode://filemanager')) {
       return `${prefix}file-manager.html`;
     }
-    if (deepLinkUri.startsWith('remotenode://server/')) {
-      const serverId = deepLinkUri.split('remotenode://server/')[1];
+    if (trimmed.startsWith('remotenode://server/')) {
+      const rawId = trimmed.split('remotenode://server/')[1] || '';
+      const serverId = encodeURIComponent(rawId.trim());
       return `${prefix}dashboard.html#server-${serverId}`;
     }
-    if (deepLinkUri.startsWith('remotenode://security')) {
+    if (trimmed.startsWith('remotenode://security')) {
       return `${prefix}dashboard.html#security`;
     }
-    if (deepLinkUri.startsWith('remotenode://device/')) {
+    if (trimmed.startsWith('remotenode://device/')) {
       return `${prefix}dashboard.html`;
     }
     return `${prefix}dashboard.html`;
@@ -88,10 +93,10 @@
       window.addEventListener('focus', () => this.fetchUnreadCount());
       this.pollTimer = setInterval(() => this.fetchUnreadCount(), 30000);
 
-      // Close popover on click outside or ESC
+      // Close popover on click outside or ESC key press
       document.addEventListener('click', (e) => {
         const bellWrapper = document.getElementById('rn-notif-bell-wrapper');
-        if (bellWrapper && !bellWrapper.contains(e.target)) {
+        if (bellWrapper && !bellWrapper.contains(e.target) && this.popoverOpen) {
           this.closePopover();
         }
       });
@@ -99,6 +104,8 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.popoverOpen) {
           this.closePopover();
+          const bellBtn = document.getElementById('rn-notif-bell-btn');
+          if (bellBtn) bellBtn.focus();
         }
       });
 
@@ -130,7 +137,7 @@
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
-          <span id="rn-notif-badge" class="rn-notif-badge" style="display: none;">0</span>
+          <span id="rn-notif-badge" class="rn-notif-badge" style="display: none;" aria-hidden="true">0</span>
         </button>
 
         <div id="rn-notif-popover" class="rn-notif-popover" role="region" aria-label="Notifications Dropdown">
@@ -147,10 +154,14 @@
             </div>
           </div>
           <div id="rn-notif-popover-body" class="rn-notif-popover-body">
-            <div class="rn-notif-state-box">Loading notifications...</div>
+            <div class="rn-notif-skeleton-list">
+              <div class="rn-notif-skeleton-row"></div>
+              <div class="rn-notif-skeleton-row"></div>
+              <div class="rn-notif-skeleton-row"></div>
+            </div>
           </div>
           <div class="rn-notif-popover-footer">
-            <a href="${viewAllPath}" class="rn-notif-link-btn" style="width: 100%; display: inline-block;">Open Notification History Center</a>
+            <a href="${viewAllPath}" class="rn-notif-link-btn" style="width: 100%; display: inline-block; text-align: center;">Open Notification History Center</a>
           </div>
         </div>
       `;
@@ -182,14 +193,20 @@
     updateBadge(count) {
       this.unreadCount = count;
       const badge = document.getElementById('rn-notif-badge');
-      if (!badge) return;
+      const bellBtn = document.getElementById('rn-notif-bell-btn');
 
       if (count <= 0) {
-        badge.style.display = 'none';
-        badge.textContent = '0';
+        if (badge) {
+          badge.style.display = 'none';
+          badge.textContent = '0';
+        }
+        if (bellBtn) bellBtn.setAttribute('aria-label', 'Notifications');
       } else {
-        badge.style.display = 'inline-block';
-        badge.textContent = count > 99 ? '99+' : String(count);
+        if (badge) {
+          badge.style.display = 'inline-flex';
+          badge.textContent = count > 99 ? '99+' : String(count);
+        }
+        if (bellBtn) bellBtn.setAttribute('aria-label', `Notifications (${count} unread)`);
       }
     }
 
@@ -227,7 +244,13 @@
       const body = document.getElementById('rn-notif-popover-body');
       if (!body) return;
 
-      body.innerHTML = '<div class="rn-notif-state-box">Loading notifications...</div>';
+      body.innerHTML = `
+        <div class="rn-notif-skeleton-list">
+          <div class="rn-notif-skeleton-row"></div>
+          <div class="rn-notif-skeleton-row"></div>
+          <div class="rn-notif-skeleton-row"></div>
+        </div>
+      `;
 
       try {
         const res = await fetch(`${getApiBase()}/notifications?page=1&limit=5`, {
@@ -235,7 +258,12 @@
         });
 
         if (!res.ok) {
-          body.innerHTML = '<div class="rn-notif-state-box">Failed to load notifications. <button type="button" id="btn-retry-popover" class="rn-notif-link-btn">Retry</button></div>';
+          body.innerHTML = `
+            <div class="rn-notif-state-box">
+              <p style="margin: 0 0 8px 0; font-weight: 600;">Unable to load notifications</p>
+              <button type="button" id="btn-retry-popover" class="rn-notif-link-btn">Retry</button>
+            </div>
+          `;
           const btnRetry = document.getElementById('btn-retry-popover');
           if (btnRetry) btnRetry.onclick = () => this.loadPopoverItems();
           return;
@@ -245,7 +273,16 @@
         const items = json.data?.items || [];
 
         if (items.length === 0) {
-          body.innerHTML = '<div class="rn-notif-state-box">No notifications found</div>';
+          body.innerHTML = `
+            <div class="rn-notif-state-box">
+              <svg class="rn-notif-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <h4 style="font-size: 14px; font-weight: 700; color: var(--color-text-primary); margin: 0 0 4px 0;">You're all caught up</h4>
+              <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">You have no unread or recent notifications.</p>
+            </div>
+          `;
           return;
         }
 
@@ -255,7 +292,14 @@
           body.appendChild(el);
         });
       } catch (err) {
-        body.innerHTML = '<div class="rn-notif-state-box">Error connecting to server.</div>';
+        body.innerHTML = `
+          <div class="rn-notif-state-box">
+            <p style="margin: 0 0 8px 0; font-weight: 600;">Unable to load notifications</p>
+            <button type="button" id="btn-retry-popover-err" class="rn-notif-link-btn">Retry</button>
+          </div>
+        `;
+        const btnRetry = document.getElementById('btn-retry-popover-err');
+        if (btnRetry) btnRetry.onclick = () => this.loadPopoverItems();
       }
     }
 
@@ -268,6 +312,8 @@
       const div = document.createElement('div');
       div.className = `rn-notif-item ${isUnread ? 'is-unread' : ''}`;
       div.setAttribute('tabindex', '0');
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-label', `${item.title}. ${item.body}`);
 
       div.innerHTML = `
         <div class="rn-notif-icon-col">
@@ -290,13 +336,21 @@
         </div>
       `;
 
-      div.addEventListener('click', async () => {
+      const handleTrigger = async () => {
         if (isUnread) {
           await this.markAsRead(item.id);
         }
         this.closePopover();
         if (targetWebPath) {
           window.location.href = targetWebPath;
+        }
+      };
+
+      div.addEventListener('click', handleTrigger);
+      div.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleTrigger();
         }
       });
 
@@ -328,7 +382,7 @@
     }
 
     escapeHtml(str) {
-      if (!str) return '';
+      if (str === null || str === undefined) return '';
       return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -360,10 +414,14 @@
         </div>
 
         <div id="rn-notif-history-list" class="rn-notif-card-list">
-          <div class="rn-notif-state-box">Loading notification history...</div>
+          <div class="rn-notif-skeleton-list">
+            <div class="rn-notif-skeleton-row"></div>
+            <div class="rn-notif-skeleton-row"></div>
+            <div class="rn-notif-skeleton-row"></div>
+          </div>
         </div>
 
-        <div id="rn-notif-pagination" class="pagination-container" style="display: flex; justify-content: center; gap: 12px; margin-top: 24px;"></div>
+        <div id="rn-notif-pagination" class="pagination-container" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 24px;"></div>
       `;
 
       const filterBtns = container.querySelectorAll('.rn-filter-btn');
@@ -382,7 +440,13 @@
       const listEl = document.getElementById('rn-notif-history-list');
       if (!listEl) return;
 
-      listEl.innerHTML = '<div class="rn-notif-state-box">Loading notifications...</div>';
+      listEl.innerHTML = `
+        <div class="rn-notif-skeleton-list">
+          <div class="rn-notif-skeleton-row"></div>
+          <div class="rn-notif-skeleton-row"></div>
+          <div class="rn-notif-skeleton-row"></div>
+        </div>
+      `;
 
       try {
         let url = `${getApiBase()}/notifications?page=${this.currentPage}&limit=10`;
@@ -392,7 +456,14 @@
 
         const res = await fetch(url, { headers: getAuthHeader() });
         if (!res.ok) {
-          listEl.innerHTML = '<div class="rn-notif-state-box">Failed to load notification history.</div>';
+          listEl.innerHTML = `
+            <div class="rn-notif-state-box">
+              <p style="margin: 0 0 12px 0; font-weight: 600;">Unable to load notification history</p>
+              <button type="button" id="btn-retry-history" class="btn btn-secondary btn-sm">Retry</button>
+            </div>
+          `;
+          const btnRetry = document.getElementById('btn-retry-history');
+          if (btnRetry) btnRetry.onclick = () => this.loadHistoryItems();
           return;
         }
 
@@ -401,8 +472,13 @@
         const total = json.data?.total || 0;
 
         if (items.length === 0) {
-          listEl.innerHTML = '<div class="rn-notif-state-box">No notifications found for this filter.</div>';
-          this.renderPagination(0, 1);
+          listEl.innerHTML = `
+            <div class="rn-notif-state-box">
+              <h4 style="font-size: 14px; font-weight: 700; color: var(--color-text-primary); margin: 0 0 4px 0;">No Notifications Found</h4>
+              <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">You have no active notifications for this filter category.</p>
+            </div>
+          `;
+          this.renderPagination(0, 10);
           return;
         }
 
@@ -414,7 +490,14 @@
 
         this.renderPagination(total, 10);
       } catch {
-        listEl.innerHTML = '<div class="rn-notif-state-box">Error loading notification history.</div>';
+        listEl.innerHTML = `
+          <div class="rn-notif-state-box">
+            <p style="margin: 0 0 12px 0; font-weight: 600;">Unable to load notification history</p>
+            <button type="button" id="btn-retry-history-err" class="btn btn-secondary btn-sm">Retry</button>
+          </div>
+        `;
+        const btnRetry = document.getElementById('btn-retry-history-err');
+        if (btnRetry) btnRetry.onclick = () => this.loadHistoryItems();
       }
     }
 
@@ -439,9 +522,9 @@
           <h3 style="font-size: 15px; font-weight: 700; color: var(--color-text-primary); margin: 0 0 6px 0;">${this.escapeHtml(item.title)}</h3>
           <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 12px 0; line-height: 1.5;">${this.escapeHtml(item.body)}</p>
           <div class="rn-notif-card-actions">
-            ${targetWebPath ? `<a href="${targetWebPath}" class="btn btn-secondary btn-sm">Open Target</a>` : ''}
-            ${isUnread ? `<button type="button" class="btn btn-ghost btn-sm btn-mark-read" data-id="${item.id}">Mark as Read</button>` : '<span style="font-size: 12px; color: var(--color-text-tertiary);">Read</span>'}
-            <button type="button" class="btn btn-ghost btn-sm btn-archive" data-id="${item.id}" style="color: var(--color-text-tertiary);">Archive</button>
+            ${targetWebPath ? `<a href="${targetWebPath}" class="btn btn-secondary btn-sm" style="min-height: 36px;">Open Target</a>` : ''}
+            ${isUnread ? `<button type="button" class="btn btn-ghost btn-sm btn-mark-read" data-id="${item.id}" style="min-height: 36px;">Mark as Read</button>` : '<span style="font-size: 12px; color: var(--color-text-tertiary);">Read</span>'}
+            <button type="button" class="btn btn-ghost btn-sm btn-archive" data-id="${item.id}" style="color: var(--color-text-tertiary); min-height: 36px;">Archive</button>
           </div>
         </div>
       `;
@@ -476,9 +559,9 @@
       }
 
       pagContainer.innerHTML = `
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-prev-page" ${this.currentPage <= 1 ? 'disabled' : ''}>Previous</button>
-        <span style="font-size: 13px; display: inline-flex; align-items: center;">Page ${this.currentPage} of ${totalPages}</span>
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-next-page" ${this.currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-prev-page" style="min-height: 38px; padding: 0 14px;" ${this.currentPage <= 1 ? 'disabled' : ''}>Previous</button>
+        <span style="font-size: 13px; display: inline-flex; align-items: center; font-weight: 500;">Page ${this.currentPage} of ${totalPages}</span>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-next-page" style="min-height: 38px; padding: 0 14px;" ${this.currentPage >= totalPages ? 'disabled' : ''}>Next</button>
       `;
 
       const btnPrev = document.getElementById('btn-prev-page');
@@ -509,7 +592,12 @@
       const container = document.getElementById('rn-notif-preferences-container');
       if (!container) return;
 
-      container.innerHTML = '<div class="rn-notif-state-box">Loading notification preferences...</div>';
+      container.innerHTML = `
+        <div class="rn-notif-skeleton-list">
+          <div class="rn-notif-skeleton-row"></div>
+          <div class="rn-notif-skeleton-row"></div>
+        </div>
+      `;
 
       try {
         const res = await fetch(`${getApiBase()}/notifications/preferences`, {
@@ -517,16 +605,30 @@
         });
 
         if (!res.ok) {
-          container.innerHTML = '<div class="rn-notif-state-box">Failed to load preferences.</div>';
+          container.innerHTML = `
+            <div class="rn-notif-state-box">
+              <p style="margin: 0 0 12px 0; font-weight: 600;">Unable to load notification preferences</p>
+              <button type="button" id="btn-retry-prefs" class="btn btn-secondary btn-sm">Retry</button>
+            </div>
+          `;
+          const btnRetry = document.getElementById('btn-retry-prefs');
+          if (btnRetry) btnRetry.onclick = () => this.initPreferencesView();
           return;
         }
 
         const json = await res.json();
-        const prefs = json.data;
+        const prefs = json.data || {};
 
         this.renderPreferencesForm(container, prefs);
       } catch {
-        container.innerHTML = '<div class="rn-notif-state-box">Error loading preferences.</div>';
+        container.innerHTML = `
+          <div class="rn-notif-state-box">
+            <p style="margin: 0 0 12px 0; font-weight: 600;">Unable to load notification preferences</p>
+            <button type="button" id="btn-retry-prefs-err" class="btn btn-secondary btn-sm">Retry</button>
+          </div>
+        `;
+        const btnRetry = document.getElementById('btn-retry-prefs-err');
+        if (btnRetry) btnRetry.onclick = () => this.initPreferencesView();
       }
     }
 
@@ -542,17 +644,19 @@
           </div>
         </div>
 
+        <div id="rn-notif-pref-feedback" style="display: none; margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;"></div>
+
         <form id="form-notif-prefs" style="display: flex; flex-direction: column; gap: 20px;">
           <div class="card" style="padding: 20px;">
-            <h3 style="font-size: 16px; font-weight: 700; margin-0 0 16px 0;">Global Delivery Channels</h3>
+            <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 16px 0;">Global Delivery Channels</h3>
             
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--color-border);">
               <div>
                 <strong style="display: block; font-size: 14px;">Android Push Notifications</strong>
                 <span style="font-size: 12px; color: var(--color-text-secondary);">Deliver alerts directly to your paired Android phone</span>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="pref-global-push" ${prefs.globalPushEnabled ? 'checked' : ''}>
+              <label class="toggle-switch" style="min-width: 44px; min-height: 24px;">
+                <input type="checkbox" id="pref-global-push" ${prefs.globalPushEnabled !== false ? 'checked' : ''}>
                 <span class="slider"></span>
               </label>
             </div>
@@ -562,15 +666,15 @@
                 <strong style="display: block; font-size: 14px;">Email Delivery</strong>
                 <span style="font-size: 12px; color: var(--color-text-secondary);">Send email notifications for non-critical alerts</span>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" id="pref-global-email" ${prefs.globalEmailEnabled ? 'checked' : ''}>
+              <label class="toggle-switch" style="min-width: 44px; min-height: 24px;">
+                <input type="checkbox" id="pref-global-email" ${prefs.globalEmailEnabled !== false ? 'checked' : ''}>
                 <span class="slider"></span>
               </label>
             </div>
           </div>
 
           <div style="display: flex; justify-content: flex-end;">
-            <button type="submit" id="btn-save-prefs" class="btn btn-primary">Save Notification Preferences</button>
+            <button type="submit" id="btn-save-prefs" class="btn btn-primary" style="min-height: 44px; padding: 0 20px;">Save Notification Preferences</button>
           </div>
         </form>
       `;
@@ -580,6 +684,7 @@
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           const btn = document.getElementById('btn-save-prefs');
+          const feedback = document.getElementById('rn-notif-pref-feedback');
           if (btn) btn.disabled = true;
 
           const updatedGlobalPush = document.getElementById('pref-global-push').checked;
@@ -599,12 +704,30 @@
             });
 
             if (patchRes.ok) {
-              alert('Notification preferences updated successfully.');
+              if (feedback) {
+                feedback.style.display = 'block';
+                feedback.style.background = '#D1FAE5';
+                feedback.style.color = '#065F46';
+                feedback.style.border = '1px solid #A7F3D0';
+                feedback.textContent = 'Notification preferences updated successfully.';
+              }
             } else {
-              alert('Failed to update preferences.');
+              if (feedback) {
+                feedback.style.display = 'block';
+                feedback.style.background = '#FEE2E2';
+                feedback.style.color = '#991B1B';
+                feedback.style.border = '1px solid #FCA5A5';
+                feedback.textContent = 'Failed to update notification preferences.';
+              }
             }
           } catch {
-            alert('Error updating preferences.');
+            if (feedback) {
+              feedback.style.display = 'block';
+              feedback.style.background = '#FEE2E2';
+              feedback.style.color = '#991B1B';
+              feedback.style.border = '1px solid #FCA5A5';
+              feedback.textContent = 'Network error while saving notification preferences.';
+            }
           } finally {
             if (btn) btn.disabled = false;
           }
