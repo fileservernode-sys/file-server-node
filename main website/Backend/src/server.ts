@@ -37,6 +37,14 @@ async function startServer() {
     // Attach Gateway WebSocket Transport Server to main HTTP server
     defaultGatewayService.attachToHttpServer(app.server);
 
+    // Start background notification delivery worker and retention worker
+    const { defaultDeliveryWorker, defaultRetentionWorker } = await import('./notifications/index.js');
+    if (config.NOTIFICATION_WORKER_ENABLED) {
+      defaultDeliveryWorker.start();
+      defaultRetentionWorker.start();
+      app.log.info(`🔔 Background Notification Delivery Worker (${defaultDeliveryWorker.getWorkerId()}) & Retention Worker initialized.`);
+    }
+
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probe available at ${address}/api/v1/health`);
 
@@ -45,6 +53,12 @@ async function startServer() {
       app.log.info(`Received ${signal}. Starting graceful shutdown...`);
 
       try {
+        if (config.NOTIFICATION_WORKER_ENABLED) {
+          await defaultDeliveryWorker.stop();
+          defaultRetentionWorker.stop();
+          app.log.info('Notification background workers stopped.');
+        }
+
         await app.close();
         app.log.info('HTTP server closed.');
 

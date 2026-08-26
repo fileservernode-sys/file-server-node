@@ -74,7 +74,22 @@ const envSchema = z.object({
   // Firebase Cloud Messaging (FCM) Android Push Configuration
   FCM_PROJECT_ID: z.string().default(''),
   FCM_CLIENT_EMAIL: z.string().default(''),
-  FCM_PRIVATE_KEY: z.string().default('')
+  FCM_PRIVATE_KEY: z.string().default(''),
+
+  // Notification Background Worker & Retention System Configuration
+  NOTIFICATION_WORKER_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean()
+  ).default(true),
+  NOTIFICATION_WORKER_POLL_INTERVAL_MS: z.coerce.number().default(5000),
+  NOTIFICATION_WORKER_BATCH_SIZE: z.coerce.number().default(20),
+  NOTIFICATION_WORKER_LEASE_MS: z.coerce.number().default(300000),
+  NOTIFICATION_WORKER_SHUTDOWN_TIMEOUT_MS: z.coerce.number().default(10000),
+  NOTIFICATION_RETENTION_DAYS: z.coerce.number().default(90),
+  NOTIFICATION_DELIVERY_RETENTION_DAYS: z.coerce.number().default(30),
+  NOTIFICATION_CLEANUP_INTERVAL_MS: z.coerce.number().default(86400000),
+  NOTIFICATION_RATE_LIMIT_WINDOW_MS: z.coerce.number().default(60000),
+  NOTIFICATION_RATE_LIMIT_MAX_EVENTS: z.coerce.number().default(10)
 });
 
 function loadConfig() {

@@ -335,6 +335,8 @@ model ChannelDeliveryRecord {
   nextRetryAt         DateTime?
   deliveredAt         DateTime?
   failedAt            DateTime?
+  processingStartedAt DateTime?
+  processingWorkerId  String?
   providerMessageId   String?
   providerResponseCode String?
   failureReason       String?
@@ -346,6 +348,7 @@ model ChannelDeliveryRecord {
   @@index([notificationId])
   @@index([channel, status])
   @@index([status, nextRetryAt])
+  @@index([status, processingStartedAt])
 }
 
 /// Persistent User Notification Preferences Record

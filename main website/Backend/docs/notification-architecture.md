@@ -89,3 +89,21 @@ The notification module is located at `main website/Backend/src/notifications/`.
   - Worker process (`src/notifications/workers/delivery_processor.ts`) periodically claims `QUEUED` / `RETRYING` delivery records with `nextRetryAt <= now`.
   - Dispatches payloads via registered channel providers with exponential backoff retry scheduling.
 
+### 8. Notification Reliability, Background Workers & Observability (Batch NT-1.5)
+- **Background Delivery Worker (`DeliveryWorker`)**:
+  - Dedicated background service (`src/notifications/workers/delivery_worker.ts`) executing periodic polling ticks independently from user-facing HTTP request threads.
+  - Configured via environment variables (`NOTIFICATION_WORKER_ENABLED`, `NOTIFICATION_WORKER_POLL_INTERVAL_MS`, `NOTIFICATION_WORKER_BATCH_SIZE`, `NOTIFICATION_WORKER_LEASE_MS`, `NOTIFICATION_WORKER_SHUTDOWN_TIMEOUT_MS`).
+- **Atomic Job Claiming & Multi-Worker Concurrency Protection**:
+  - `DeliveryProcessor.claimDeliveryJob()` uses atomic database state transitions (`QUEUED`/`RETRYING` $\rightarrow$ `PROCESSING`) recording `processingStartedAt` and `processingWorkerId`.
+  - Prevents race conditions and duplicate delivery execution when multiple backend nodes run delivery workers simultaneously.
+- **Claim Lease & Crash Recovery**:
+  - `DeliveryProcessor.recoverStaleProcessingClaims()` identifies stuck `PROCESSING` records whose processing lease has expired (default: 5 minutes) and resets them to `RETRYING` for clean re-delivery.
+- **Policy-Driven Retention Cleanup (`RetentionWorker`)**:
+  - Maintenance worker (`src/notifications/workers/retention_worker.ts`) cleans up old `NotificationRecord`s (`status` = `READ` or `ARCHIVED`, excluding `SECURITY` category and `UNREAD` items) and `ChannelDeliveryRecord`s (`DELIVERED`, `PERMANENTLY_FAILED`, `FAILED`) in bounded batches (100 rows/batch).
+  - Protects active `QUEUED`, `PROCESSING`, and `RETRYING` delivery records.
+  - Cleans expired in-memory idempotency TTL keys (`defaultIdempotencyManager.clearExpired()`).
+- **Process-Local Observability & Health Metrics (`NotificationMetricsService`)**:
+  - Tracks delivery counters (dispatched, delivered, retried, permanently failed, storm suppressed), queue/delivery latency metrics, and provider health states (`FCM` and `EMAIL`: `HEALTHY`, `DEGRADED`, `UNHEALTHY`).
+- **Graceful Shutdown**:
+  - Attaches `SIGTERM` and `SIGINT` shutdown hooks in `server.ts` to stop worker polling, drain active tick executions cleanly within `shutdownTimeoutMs`, and release resources.
+

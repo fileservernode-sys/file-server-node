@@ -23,13 +23,15 @@ export interface RetryPolicyOptions {
   initialDelayMs: number;
   backoffFactor: number;
   maxDelayMs: number;
+  maxJitterMs?: number;
 }
 
 export const DEFAULT_RETRY_OPTIONS: RetryPolicyOptions = Object.freeze({
   maxAttempts: 5,
   initialDelayMs: 60000, // 1 minute
   backoffFactor: 2,
-  maxDelayMs: 3600000 // 1 hour
+  maxDelayMs: 3600000, // 1 hour
+  maxJitterMs: 1000 // 1 second bounded jitter
 });
 
 const PERMANENT_ERROR_PATTERNS = [
@@ -80,11 +82,14 @@ export function calculateRetryDecision(
     };
   }
 
-  // Calculate exponential backoff delay
-  const delayMs = Math.min(
+  // Calculate exponential backoff delay with bounded jitter
+  const rawDelayMs = Math.min(
     opts.initialDelayMs * Math.pow(opts.backoffFactor, currentAttempt - 1),
     opts.maxDelayMs
   );
+  const maxJitter = opts.maxJitterMs ?? 1000;
+  const jitterMs = maxJitter > 0 ? Math.floor(Math.random() * maxJitter) : 0;
+  const delayMs = rawDelayMs + jitterMs;
   const nextAttemptAt = new Date(Date.now() + delayMs);
 
   return {
