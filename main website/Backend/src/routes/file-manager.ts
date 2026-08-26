@@ -367,7 +367,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const result = await proxyToGateway(device.id, 'DOWNLOAD', { path: query.path });
 
-    if (result?.success && result?.dataBase64) {
+    if (result?.success && typeof result?.dataBase64 === 'string') {
       const buffer = Buffer.from(result.dataBase64, 'base64');
       const filename = result.filename || query.path.split('/').pop() || 'download';
       let mimeType = result.mimeType;

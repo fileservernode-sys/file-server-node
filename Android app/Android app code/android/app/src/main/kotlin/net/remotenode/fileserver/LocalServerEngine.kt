@@ -135,7 +135,7 @@ class HttpServer private constructor(private val address: InetSocketAddress) {
                 return
             }
 
-            val contentLength = reqHeaders.getFirst("content-length")?.toLongOrNull() ?: 0L
+            val contentLength = reqHeaders.getFirst("content-length")?.toLongOrNull() ?: -1L
             val bodyStream = BoundedInputStream(bufferedInput, contentLength)
 
             val respHeaders = HttpHeaders()
@@ -235,14 +235,14 @@ class BoundedInputStream(private val wrapped: InputStream, private val limit: Lo
     private var count = 0L
 
     override fun read(): Int {
-        if (limit in 0..count) return -1
+        if (limit >= 0 && count >= limit) return -1
         val b = wrapped.read()
         if (b != -1) count++
         return b
     }
 
     override fun read(b: ByteArray, off: Int, len: Int): Int {
-        if (limit in 0..count) return -1
+        if (limit >= 0 && count >= limit) return -1
         val toRead = if (limit >= 0) Math.min(len.toLong(), limit - count).toInt() else len
         val bytesRead = wrapped.read(b, off, toRead)
         if (bytesRead > 0) count += bytesRead

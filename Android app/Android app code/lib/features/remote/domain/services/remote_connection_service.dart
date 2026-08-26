@@ -472,6 +472,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
               Uri.parse('http://127.0.0.1:8080/api/upload?path=${Uri.encodeComponent(path)}&filename=${Uri.encodeComponent(name)}')
             );
             req.headers.set('content-type', 'application/octet-stream');
+            req.contentLength = bytes.length;
             req.add(bytes);
             final res = await req.close().timeout(const Duration(seconds: 120));
             final body = await res.transform(utf8.decoder).join();
