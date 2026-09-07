@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 80" fill="none">
+  <defs>
+    <linearGradient id="emailZcGrad" x1="8" y1="12" x2="48" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(20, 16)">
+    <rect x="0" y="0" width="48" height="48" rx="14" fill="url(#emailZcGrad)" />
+    <path d="M12 18C12 17.1716 12.6716 16.5 13.5 16.5H34.5C35.3284 16.5 36 17.1716 36 18C36 18.8284 35.3284 19.5 34.5 19.5H13.5C12.6716 19.5 12 18.8284 12 18Z" fill="#FFFFFF" />
+    <path d="M34.5 18L13.5 34" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" />
+    <path d="M13.5 32.5C12.6716 32.5 12 33.1716 12 34C12 34.8284 12.6716 35.5 13.5 35.5H34.5C35.3284 35.5 36 34.8284 36 34C36 33.1716 35.3284 32.5 34.5 32.5H13.5Z" fill="#FFFFFF" />
+    <circle cx="24" cy="24" r="3.5" fill="#60A5FA" stroke="#FFFFFF" stroke-width="2" />
+  </g>
+  <text x="80" y="47" font-family="'Plus Jakarta Sans', -apple-system, sans-serif" font-size="24" font-weight="700" fill="#0F172A">
+    Zdex<tspan fill="#2563EB">Cloud</tspan>
+  </text>
+  <text x="580" y="46" text-anchor="end" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="500" fill="#64748B">
+    Personal Cloud Security
+  </text>
+  <line x1="20" y1="79" x2="580" y2="79" stroke="#E2E8F0" stroke-width="1" />
+</svg>

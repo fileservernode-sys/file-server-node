@@ -1,0 +1,103 @@
+/* ==========================================================================
+   ZDEXCLOUD DESIGN SYSTEM TOKENS
+   Phase ZC-1 — Batch ZC-1.1: Master Brand System & Production Foundation
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
+
+:root {
+  /* ------------------------------------------------------------------------
+     1. BRAND CORE TOKENS
+     ------------------------------------------------------------------------ */
+  --zdex-brand-name: 'ZdexCloud';
+  --zdex-brand-primary: #2563EB;          /* Zdex Royal Blue 600 */
+  --zdex-brand-primary-hover: #1D4ED8;    /* Zdex Royal Blue 700 */
+  --zdex-brand-primary-active: #1E40AF;   /* Zdex Royal Blue 800 */
+  --zdex-brand-primary-soft: #EFF6FF;     /* 10% Royal Tint 50 */
+  --zdex-brand-navy: #0F172A;             /* Deep Slate Navy 900 */
+  --zdex-brand-navy-light: #1E293B;       /* Deep Slate Navy 800 */
+
+  /* ------------------------------------------------------------------------
+     2. BACKGROUNDS & SURFACES
+     ------------------------------------------------------------------------ */
+  --zdex-bg-canvas: #FAFAFC;              /* Premium Off-White App Background */
+  --zdex-bg-surface: #FFFFFF;             /* Pure White Surface / Card */
+  --zdex-bg-subtle: #F1F5F9;              /* Neutral Slate Fill */
+  --zdex-bg-elevated: #FFFFFF;            /* Floating Card / Modal Canvas */
+  --zdex-bg-backdrop: rgba(15, 23, 42, 0.45); /* Modal Dimmer */
+
+  /* ------------------------------------------------------------------------
+     3. TEXT & TYPOGRAPHY TOKENS
+     ------------------------------------------------------------------------ */
+  --zdex-font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --zdex-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Text Colors */
+  --zdex-text-primary: #0F172A;           /* 14.5:1 contrast against #FAFAFC (WCAG AAA) */
+  --zdex-text-secondary: #334155;         /* 7.5:1 contrast against #FAFAFC (WCAG AAA) */
+  --zdex-text-muted: #64748B;             /* 4.8:1 contrast against #FAFAFC (WCAG AA) */
+  --zdex-text-subtle: #94A3B8;            /* Placeholder text / inactive hints */
+  --zdex-text-inverse: #FFFFFF;           /* On primary buttons & dark banners */
+  --zdex-text-accent: #2563EB;            /* Interactive links & emphasized tokens */
+
+  /* Scale */
+  --zdex-text-display: clamp(2.75rem, 5vw, 4rem);
+  --zdex-text-h1: clamp(2.25rem, 4vw, 3.25rem);
+  --zdex-text-h2: clamp(1.75rem, 3vw, 2.375rem);
+  --zdex-text-h3: clamp(1.375rem, 2vw, 1.75rem);
+  --zdex-text-body-lg: 1.125rem;
+  --zdex-text-body: 1rem;
+  --zdex-text-body-sm: 0.875rem;
+  --zdex-text-caption: 0.75rem;
+  --zdex-text-code: 0.875rem;
+
+  /* ------------------------------------------------------------------------
+     4. BORDERS & FOCUS
+     ------------------------------------------------------------------------ */
+  --zdex-border-subtle: #E2E8F0;          /* Standard card outline */
+  --zdex-border-hover: #CBD5E1;           /* Interactive hover outline */
+  --zdex-border-strong: #94A3B8;          /* High contrast divider */
+  --zdex-border-focus: #2563EB;           /* Accessible focus ring */
+  --zdex-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.25);
+
+  /* ------------------------------------------------------------------------
+     5. SEMANTIC STATUS PALETTE
+     ------------------------------------------------------------------------ */
+  --zdex-status-online: #059669;          /* Emerald Green 600 */
+  --zdex-status-online-bg: #ECFDF5;       /* Emerald Tint 50 */
+  --zdex-status-connecting: #D97706;      /* Amber 600 */
+  --zdex-status-connecting-bg: #FFFBEB;   /* Amber Tint 50 */
+  --zdex-status-offline: #64748B;         /* Slate 500 */
+  --zdex-status-offline-bg: #F1F5F9;      /* Slate Tint 100 */
+  --zdex-status-error: #DC2626;           /* Crimson Red 600 */
+  --zdex-status-error-bg: #FEF2F2;        /* Crimson Tint 50 */
+
+  /* ------------------------------------------------------------------------
+     6. SPACING & GRID (8-Point Philosophies)
+     ------------------------------------------------------------------------ */
+  --zdex-space-4: 4px;
+  --zdex-space-8: 8px;
+  --zdex-space-12: 12px;
+  --zdex-space-16: 16px;
+  --zdex-space-24: 24px;
+  --zdex-space-32: 32px;
+  --zdex-space-48: 48px;
+  --zdex-space-64: 64px;
+
+  /* ------------------------------------------------------------------------
+     7. BORDER RADIUS SYSTEM
+     ------------------------------------------------------------------------ */
+  --zdex-radius-sm: 8px;                  /* Input fields, small badges */
+  --zdex-radius-md: 12px;                 /* Standard cards, buttons */
+  --zdex-radius-lg: 16px;                 /* Large dashboard containers */
+  --zdex-radius-xl: 24px;                 /* Hero cards & dialogs */
+  --zdex-radius-full: 9999px;             /* Pills & avatar masks */
+
+  /* ------------------------------------------------------------------------
+     8. ELEVATION & SHADOWS
+     ------------------------------------------------------------------------ */
+  --zdex-shadow-none: none;
+  --zdex-shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
+  --zdex-shadow-medium: 0 4px 8px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --zdex-shadow-strong: 0 12px 20px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+}

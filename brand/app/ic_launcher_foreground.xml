@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="22" android:translateY="22" android:scaleX="1.0" android:scaleY="1.0">
+        <!-- Shield Background -->
+        <path
+            android:fillColor="#2563EB"
+            android:pathData="M4,20 C4,11.163 11.163,4 20,4 L44,4 C52.837,4 60,11.163 60,20 L60,44 C60,52.837 52.837,60 44,60 L20,60 C11.163,60 4,52.837 4,44 Z" />
+        <!-- Top Z Bar -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M20,20 L44,20 C45.105,20 46,20.895 46,22 C46,23.105 45.105,24 44,24 L20,24 C18.895,24 18,23.105 18,22 C18,20.895 18.895,20 20,20 Z" />
+        <!-- Diagonal Tunnel Bridge -->
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="4.5"
+            android:strokeLineCap="round"
+            android:pathData="M44.5,21.5 L20.5,42.5" />
+        <!-- Bottom Z Bar -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M20,42 L44,42 C45.105,42 46,42.895 46,44 C46,45.105 45.105,46 44,46 L20,46 C18.895,46 18,45.105 18,44 C18,42.895 18.895,42 20,42 Z" />
+        <!-- Central Phone Storage Core -->
+        <path
+            android:fillColor="#60A5FA"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="2.5"
+            android:pathData="M32,27.5 A4.5,4.5 0 1,0 32,36.5 A4.5,4.5 0 1,0 32,27.5 Z" />
+    </group>
+</vector>
