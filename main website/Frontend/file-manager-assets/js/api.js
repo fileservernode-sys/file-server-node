@@ -1,5 +1,5 @@
 /**
- * RemoteNode File Manager API Client — Dual LOCAL & REMOTE Mode Adapter Architecture
+ * ZdexCloud File Manager API Client — Dual LOCAL & REMOTE Mode Adapter Architecture
  * 
  * LOCAL Mode: Communicates directly via HTTP fetch to http://127.0.0.1:8080/api/*
  * REMOTE Mode: Communicates via Gateway WebSocket transport proxy using correlated FILE_REQUEST / FILE_RESPONSE messages.

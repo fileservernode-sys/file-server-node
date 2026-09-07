@@ -1,12 +1,12 @@
 /**
- * ViewDuration Embedded File Manager API Adapter
+ * ZdexCloud Embedded File Manager API Adapter
  *
  * This replaces the original api.js for the embedded file manager context.
  * Instead of calling local 127.0.0.1:8080 or raw gateway WebSocket,
- * all requests go through the authenticated ViewDuration backend:
+ * all requests go through the authenticated ZdexCloud backend:
  *   /api/v1/file-manager/<serverId>/<operation>
  *
- * The ViewDuration Bearer token is automatically included.
+ * The ZdexCloud Bearer token is automatically included.
  * The serverId is read from the URL query param ?server=<serverId>.
  */
 
@@ -15,44 +15,55 @@
 // ---------------------------------------------------------------------------
 const EmbeddedFileManager = {
   serverId: null,
-  viewDurationToken: null,
+  zdexCloudToken: null,
   fileServerToken: null,
   serverName: null,
   adminUsername: null,
   online: false,
 
-  // Resolve the API base URL: same-origin in production, localhost in dev
+  // Resolve the API base URL: canonical production endpoint or local dev
   getApiBase() {
     if (typeof window !== 'undefined' && window.API_BASE_URL) {
       return window.API_BASE_URL;
+    }
+    if (typeof window !== 'undefined' && window.CONFIG && window.CONFIG.API_BASE_URL) {
+      return window.CONFIG.API_BASE_URL;
     }
     const host = typeof window !== 'undefined' ? window.location.hostname : '';
     const protocol = typeof window !== 'undefined' ? window.location.protocol : '';
     if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
       return 'http://localhost:4000/api/v1';
     }
-    if (host === 'gateway.viewduration.com') {
+    if (host === 'gateway.zdexcloud.com' || host === 'api.zdexcloud.com') {
       return '/api/v1';
     }
-    return 'https://gateway.viewduration.com/api/v1';
+    return 'https://api.zdexcloud.com/api/v1';
   },
 
   init() {
-    // Read serverId from URL
+    // Read serverId from URL (support ?server=, ?id=, ?serverId=)
     const params = new URLSearchParams(window.location.search);
-    this.serverId = params.get('server');
+    this.serverId = params.get('server') || params.get('id') || params.get('serverId');
 
-    // Read ViewDuration auth token from localStorage (same key as auth.js)
-    this.viewDurationToken = localStorage.getItem('rn_auth_token');
+    // Read ZdexCloud auth token from localStorage / AuthService
+    this.zdexCloudToken = localStorage.getItem('zdexcloud_token') || 
+                          localStorage.getItem('rn_auth_token') || 
+                          (typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null) || 
+                          localStorage.getItem('token');
 
-    return !!this.serverId && !!this.viewDurationToken;
+    return !!this.serverId && !!this.zdexCloudToken;
   },
 
-  // Build request headers with ViewDuration Bearer token
+  // Build request headers with ZdexCloud Bearer token
   getHeaders(extra = {}) {
     const headers = { 'Content-Type': 'application/json', ...extra };
-    if (this.viewDurationToken) {
-      headers['Authorization'] = `Bearer ${this.viewDurationToken}`;
+    const token = this.zdexCloudToken || 
+                  (typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null) || 
+                  localStorage.getItem('zdexcloud_token') || 
+                  localStorage.getItem('rn_auth_token') || 
+                  localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
     return headers;
   },
@@ -74,7 +85,7 @@ const ApiService = {
   },
 
   onStatusChange(callback) {
-    // No-op in embedded mode (status shown via ViewDuration UI)
+    // No-op in embedded mode (status shown via ZdexCloud UI)
   },
 
   async checkHealth() {
@@ -206,7 +217,9 @@ const ApiService = {
 
       return new Promise((resolve) => {
         const xhr = new XMLHttpRequest();
-        xhr.open('POST', EmbeddedFileManager.url('upload'), true);
+        const uploadUrl = EmbeddedFileManager.url('upload');
+        xhr.open('POST', uploadUrl, true);
+        xhr.withCredentials = true;
 
         const headers = EmbeddedFileManager.getHeaders();
         for (const [k, v] of Object.entries(headers)) {
@@ -225,9 +238,26 @@ const ApiService = {
         xhr.onload = () => {
           try {
             const data = JSON.parse(xhr.responseText);
-            resolve(data);
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(data);
+            } else {
+              resolve({
+                success: false,
+                error: {
+                  code: data?.error?.code || `HTTP_${xhr.status}`,
+                  message: data?.error?.message || `Server responded with status ${xhr.status}`
+                }
+              });
+            }
           } catch (err) {
-            resolve({ success: false, error: { message: 'Invalid response from server' } });
+            resolve({
+              success: false,
+              error: {
+                message: xhr.status === 404
+                  ? 'Upload endpoint not found (404).'
+                  : `Server communication error (${xhr.status || 'invalid response'}).`
+              }
+            });
           }
         };
 
@@ -239,10 +269,11 @@ const ApiService = {
           resolve({ success: false, error: { message: 'Upload transfer timed out.' } });
         };
 
-        xhr.timeout = 120000;
+        xhr.timeout = 180000;
 
+        const normalizedPath = (!targetPath || targetPath === '') ? '/' : targetPath;
         xhr.send(JSON.stringify({
-          path: targetPath,
+          path: normalizedPath,
           name: fileObject.name,
           dataBase64: dataBase64
         }));
@@ -257,8 +288,8 @@ const ApiService = {
   },
 
   getDownloadUrl(filePath) {
-    // Build the authenticated download URL via the ViewDuration backend proxy
-    const token = EmbeddedFileManager.viewDurationToken || '';
+    // Build the authenticated download URL via the ZdexCloud backend proxy
+    const token = EmbeddedFileManager.zdexCloudToken || '';
     const base = EmbeddedFileManager.getApiBase();
     const sid = EmbeddedFileManager.serverId;
     return `${base}/file-manager/${sid}/download?path=${encodeURIComponent(filePath)}&token=${encodeURIComponent(token)}`;
@@ -266,19 +297,19 @@ const ApiService = {
 };
 
 // ---------------------------------------------------------------------------
-// File Server Auth — integrated with ViewDuration account authentication
-// Single Sign-On: The authenticated ViewDuration account is used directly.
+// File Server Auth — integrated with ZdexCloud account authentication
+// Single Sign-On: The authenticated ZdexCloud account is used directly.
 // No secondary username/password prompt is presented to the user.
 // ---------------------------------------------------------------------------
 const FileServerAuth = {
   TOKEN_KEY: 'rn_auth_token',
 
   getToken() {
-    return localStorage.getItem(this.TOKEN_KEY) || EmbeddedFileManager.viewDurationToken;
+    return localStorage.getItem(this.TOKEN_KEY) || EmbeddedFileManager.zdexCloudToken;
   },
 
   setToken(token) {
-    // Session managed via ViewDuration auth
+    // Session managed via ZdexCloud auth
   },
 
   logout() {
@@ -342,3 +373,11 @@ async function handleFileServerLogin() {
     }
   }
 }
+
+// Expose globally on window for embedded consumers
+if (typeof window !== 'undefined') {
+  window.EmbeddedFileManager = EmbeddedFileManager;
+  window.ApiService = ApiService;
+  window.FileServerAuth = FileServerAuth;
+}
+

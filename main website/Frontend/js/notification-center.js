@@ -1,5 +1,5 @@
 /**
- * REMOTENODE NOTIFICATION CENTER CLIENT (VANILLA JS)
+ * ZDEXCLOUD NOTIFICATION CENTER CLIENT (VANILLA JS)
  * Phase MW-1 — Track 4 Batch NT-1.8: Final Notification UX & Cross-Platform Polish
  */
 
@@ -51,23 +51,27 @@
   function resolveDeepLinkWebPath(deepLinkUri) {
     if (!deepLinkUri || typeof deepLinkUri !== 'string') return null;
     const trimmed = deepLinkUri.trim();
-    if (!trimmed.startsWith('remotenode://')) return null;
+    if (!trimmed.startsWith('remotenode://') && !trimmed.startsWith('zdexcloud://') && !trimmed.includes('zdexcloud.com')) return null;
 
     const isInnerPage = window.location.pathname.includes('/pages/');
     const prefix = isInnerPage ? '' : 'pages/';
 
-    if (trimmed.startsWith('remotenode://filemanager')) {
+    if (trimmed.startsWith('remotenode://filemanager') || trimmed.startsWith('zdexcloud://filemanager') || trimmed.includes('file-manager')) {
       return `${prefix}file-manager.html`;
     }
-    if (trimmed.startsWith('remotenode://server/')) {
-      const rawId = trimmed.split('remotenode://server/')[1] || '';
+    if (trimmed.startsWith('remotenode://server/') || trimmed.startsWith('zdexcloud://server/')) {
+      const rawId = trimmed.split(/server\//)[1] || '';
       const serverId = encodeURIComponent(rawId.trim());
       return `${prefix}dashboard.html#server-${serverId}`;
     }
-    if (trimmed.startsWith('remotenode://security')) {
+    if (trimmed.includes('#server-')) {
+      const rawId = trimmed.split('#server-')[1] || '';
+      return `${prefix}dashboard.html#server-${encodeURIComponent(rawId.trim())}`;
+    }
+    if (trimmed.startsWith('remotenode://security') || trimmed.startsWith('zdexcloud://security') || trimmed.includes('#security')) {
       return `${prefix}dashboard.html#security`;
     }
-    if (trimmed.startsWith('remotenode://device/')) {
+    if (trimmed.startsWith('remotenode://device/') || trimmed.startsWith('zdexcloud://device/')) {
       return `${prefix}dashboard.html`;
     }
     return `${prefix}dashboard.html`;
@@ -694,7 +698,7 @@
           </svg>
           <div>
             <h4>Security & Mandatory Notification Policy</h4>
-            <p>RemoteNode enforces mandatory delivery for critical security events (login alerts, verification codes, device linking). Security notifications cannot be disabled to ensure your phone's personal storage remains protected.</p>
+            <p>ZdexCloud enforces mandatory delivery for critical security events (login alerts, verification codes, device linking). Security notifications cannot be disabled to ensure your phone's personal storage remains protected.</p>
           </div>
         </div>
 
@@ -860,6 +864,6 @@
     client.init();
   }
 
-  window.RemoteNodeNotificationClient = client;
+  window.ZdexCloudNotificationClient = client;
 
 })();

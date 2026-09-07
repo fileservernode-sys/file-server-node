@@ -55,7 +55,7 @@ async function findUserDevices() {
       }
 
       if (!endpointHost && server?.id) {
-        endpointHost = `${server.id}.remotenode.net`;
+        endpointHost = `${server.id}.zdexcloud.com`;
       }
 
       const publicUrl = endpointHost ? `https://${endpointHost}` : null;

@@ -1,5 +1,5 @@
 /**
- * RemoteNode UI State & Modal Dialog Manager
+ * ZdexCloud UI State & Modal Dialog Manager
  */
 const UIManager = {
   activeModalId: null,

@@ -1,5 +1,5 @@
 /**
- * RemoteNode File Manager — Multi-View Storage Product Controller
+ * ZdexCloud File Manager — Multi-View Storage Product Controller
  */
 
 const AppIcons = {

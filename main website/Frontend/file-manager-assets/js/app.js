@@ -1,5 +1,5 @@
 /**
- * RemoteNode File Manager Application Initialization
+ * ZdexCloud File Manager Application Initialization
  */
 document.addEventListener('DOMContentLoaded', () => {
   // 1. Check File Server Authentication

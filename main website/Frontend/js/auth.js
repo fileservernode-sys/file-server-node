@@ -1,5 +1,5 @@
 /**
- * Frontend Authentication State & API Client — RemoteNode Control Plane
+ * Frontend Authentication State & API Client — ZdexCloud Control Plane
  * STRICT RULE: OTP Only. No verification links. No reset links.
  */
 
@@ -11,10 +11,10 @@ function getCalculatedApiBase() {
   if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
     return 'http://localhost:4000/api/v1';
   }
-  if (host === 'gateway.viewduration.com') {
+  if (host === 'gateway.zdexcloud.com' || host === 'api.zdexcloud.com') {
     return '/api/v1';
   }
-  return 'https://gateway.viewduration.com/api/v1';
+  return 'https://api.zdexcloud.com/api/v1';
 }
 
 const API_BASE_URL = getCalculatedApiBase();
@@ -24,11 +24,12 @@ if (typeof window !== 'undefined') {
 }
 
 const AUTH_STORAGE_KEY = 'rn_auth_token';
+const TOKEN_PRIMARY_KEY = 'zdexcloud_token';
 const USER_STORAGE_KEY = 'rn_user_data';
 
 // Helper: Get Saved Auth Token
 function getAuthToken() {
-  return localStorage.getItem(AUTH_STORAGE_KEY);
+  return localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
 }
 
 // Helper: Get Saved User Object
@@ -43,12 +44,16 @@ function getSavedUser() {
 
 // Helper: Save Session
 function saveSession(token, user) {
+  localStorage.setItem(TOKEN_PRIMARY_KEY, token);
   localStorage.setItem(AUTH_STORAGE_KEY, token);
-  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  if (user) {
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  }
 }
 
 // Helper: Clear Session
 function clearSession() {
+  localStorage.removeItem(TOKEN_PRIMARY_KEY);
   localStorage.removeItem(AUTH_STORAGE_KEY);
   localStorage.removeItem(USER_STORAGE_KEY);
 }
@@ -70,7 +75,7 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
   const candidates = [
     window.API_BASE_URL,
     getCalculatedApiBase(),
-    'https://gateway.viewduration.com/api/v1',
+    'https://api.zdexcloud.com/api/v1',
     '/api/v1',
     'http://localhost:4000/api/v1'
   ].filter((url, index, self) => url && self.indexOf(url) === index);
