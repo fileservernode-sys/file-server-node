@@ -12,24 +12,27 @@ void main() {
   // Initialize Testing/Staging Environment Configuration (Connects to live https://api.zdexcloud.com/api/v1)
   AppConfig.setEnvironment(AppConfig.testing());
   AppLogger.info(
-      'Initializing RemoteNode Android App Foundation (${AppConfig.current.environment} -> ${AppConfig.current.apiBaseUrl})');
+      'Initializing ZdexCloud Android App Foundation (${AppConfig.current.environment} -> ${AppConfig.current.apiBaseUrl})');
 
   runApp(
     const ProviderScope(
-      child: RemoteNodeApp(),
+      child: ZdexCloudApp(),
     ),
   );
 }
 
+/// Backward compatibility alias for legacy tests and references
+typedef RemoteNodeApp = ZdexCloudApp;
+
 /// Root Application Widget with Lifecycle Monitoring
-class RemoteNodeApp extends StatefulWidget {
-  const RemoteNodeApp({super.key});
+class ZdexCloudApp extends StatefulWidget {
+  const ZdexCloudApp({super.key});
 
   @override
-  State<RemoteNodeApp> createState() => _RemoteNodeAppState();
+  State<ZdexCloudApp> createState() => _ZdexCloudAppState();
 }
 
-class _RemoteNodeAppState extends State<RemoteNodeApp>
+class _ZdexCloudAppState extends State<ZdexCloudApp>
     with WidgetsBindingObserver {
   final _pushService = PushNotificationService();
 

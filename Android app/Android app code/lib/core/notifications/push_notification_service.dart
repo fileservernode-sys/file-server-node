@@ -1,7 +1,12 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../utils/logger.dart';
 import 'notification_router.dart';
+
+final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+  return PushNotificationService();
+});
 
 class AndroidNotificationChannelInfo {
   final String id;
@@ -92,6 +97,16 @@ class PushNotificationService {
     } catch (e) {
       _permissionGranted = false;
       return false;
+    }
+  }
+
+  /// Retrieves current FCM token from the underlying platform channel
+  Future<String?> getFcmToken() async {
+    try {
+      return await _channel.invokeMethod<String>('getFcmToken');
+    } catch (e) {
+      AppLogger.warning('[PushNotificationService] Failed to fetch FCM token: $e');
+      return null;
     }
   }
 

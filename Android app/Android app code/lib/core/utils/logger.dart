@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Development-Safe Logging Abstraction (Prevents Secret Leaks in Release Builds)
 class AppLogger {
-  static const String _tag = '[RemoteNode]';
+  static const String _tag = '[ZdexCloud]';
 
   static void info(String message) {
     if (!kReleaseMode) {

@@ -1,0 +1,8 @@
+# ZdexCloud Android Release Signing Configuration Template
+# Copy this file to key.properties in the android/ directory and fill in your actual production keystore details.
+# DO NOT commit key.properties or .jks/.keystore files to version control.
+
+storePassword=your-keystore-password
+keyPassword=your-key-password
+keyAlias=zdexcloud-release-key
+storeFile=../zdexcloud-release.jks

@@ -8,6 +8,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/error_message.dart';
+import '../../../core/notifications/push_notification_service.dart';
 import '../application/auth_state.dart';
 
 /// OTP Verification Screen — Step 2 of Email + Password + OTP Auth Flow
@@ -64,7 +65,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           );
 
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // Request notification permission post-authentication if not already granted
+        try {
+          final pushService = ref.read(pushNotificationServiceProvider);
+          await pushService.requestNotificationPermission();
+        } catch (_) {}
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       }
     }
   }

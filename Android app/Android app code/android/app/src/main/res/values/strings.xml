@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZdexCloud</string>
+    <string name="notification_channel_name">ZdexCloud File Server Service</string>
+    <string name="notification_channel_description">Persistent foreground notification for local file server and remote tunnel host</string>
+</resources>

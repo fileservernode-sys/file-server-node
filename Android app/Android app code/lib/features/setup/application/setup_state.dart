@@ -239,6 +239,15 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
               activeConnId = connInfo.connectionId ?? connId;
             }
           } catch (_) {}
+
+          // Ensure device FCM push token is registered & listening for refresh
+          try {
+            final pushTokenManager = _ref.read(pushTokenManagerProvider);
+            await pushTokenManager.registerPushToken(deviceId: devId);
+            pushTokenManager.listenToTokenRefresh(deviceId: devId);
+          } catch (e) {
+            AppLogger.warning('[SetupState] Non-blocking push token registration warning in sync: $e');
+          }
         }
 
         state = state.copyWith(
@@ -423,6 +432,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       try {
         final pushTokenManager = _ref.read(pushTokenManagerProvider);
         await pushTokenManager.registerPushToken(deviceId: registeredDeviceId);
+        pushTokenManager.listenToTokenRefresh(deviceId: registeredDeviceId);
       } catch (e) {
         AppLogger.warning('[SetupState] Non-blocking push token registration warning: $e');
       }

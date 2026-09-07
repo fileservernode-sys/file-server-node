@@ -23,7 +23,7 @@ class SettingsScreen extends ConsumerWidget {
         ? authState.session!.user.email
         : (authState.pendingEmail ?? 'user@example.com');
 
-    final deviceId = setupState.deviceId ?? 'RN-8080-NODE';
+    final deviceId = setupState.deviceId ?? 'ZC-8080-NODE';
     final serverName = setupState.serverName.isNotEmpty
         ? setupState.serverName
         : 'Personal File Server';

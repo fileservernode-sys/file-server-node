@@ -17,8 +17,8 @@ void main() {
       );
 
       // Verify Brand Name Text
-      expect(find.text('Remote'), findsOneWidget);
-      expect(find.text('Node'), findsOneWidget);
+      expect(find.text('Zdex'), findsOneWidget);
+      expect(find.text('Cloud'), findsOneWidget);
       expect(find.text('Personal Storage & Local Server Host'), findsOneWidget);
 
       // Verify Loading Indicator

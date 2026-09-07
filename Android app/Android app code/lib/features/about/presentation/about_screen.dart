@@ -38,7 +38,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Text(
-                    'Remote Android Personal File Server',
+                    'ZdexCloud Personal File Server',
                     style: AppTypography.pageTitle,
                     textAlign: TextAlign.center,
                   ),

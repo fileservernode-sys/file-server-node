@@ -3,6 +3,18 @@ import 'app_colors.dart';
 
 /// Centralized Typographic Scale — Legible Across 320px to 480px Displays
 class AppTypography {
+  static const String fontFamily = 'Plus Jakarta Sans';
+  static const String monoFontFamily = 'JetBrains Mono';
+
+  // Technical Monospace Style
+  static const TextStyle mono = TextStyle(
+    fontFamily: monoFontFamily,
+    fontSize: 13.0,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textPrimary,
+    height: 1.4,
+  );
+
   // Display & Hero Titles
   static const TextStyle display = TextStyle(
     fontSize: 28.0,

@@ -117,7 +117,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Remote',
+                      'Zdex',
                       style: AppTypography.heading1.copyWith(
                         color: Colors.white,
                         letterSpacing: -0.5,
@@ -125,7 +125,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       ),
                     ),
                     Text(
-                      'Node',
+                      'Cloud',
                       style: AppTypography.heading1.copyWith(
                         color: const Color(0xFF60A5FA),
                         letterSpacing: -0.5,

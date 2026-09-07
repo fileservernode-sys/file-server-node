@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="zcBrandGrad" x1="8" y1="12" x2="56" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+    <linearGradient id="zcCloudGrad" x1="12" y1="8" x2="52" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+    <filter id="zcDrop" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0F172A" flood-opacity="0.08" />
+    </filter>
+  </defs>
+
+  <!-- Base Cloud & Node Shield -->
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="url(#zcCloudGrad)" />
+
+  <!-- Inner Dynamic Z-Nexus Geometry: Connecting Phone Node to Cloud -->
+  <!-- Top Horizontal Bar of 'Z' with Node Indicator -->
+  <path d="M18 22C18 20.8954 18.8954 20 20 20H44C45.1046 20 46 20.8954 46 22C46 23.1046 45.1046 24 44 24H20C18.8954 24 18 23.1046 18 22Z" fill="#FFFFFF" />
+  
+  <!-- Diagonal Dynamic Flow Channel representing remote tunnel bridge -->
+  <path d="M44.5 21.5L20.5 42.5" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" />
+
+  <!-- Bottom Horizontal Bar of 'Z' anchored at personal device base -->
+  <path d="M20 42C18.8954 42 18 42.8954 18 44C18 45.1046 18.8954 46 20 46H44C45.1046 46 46 45.1046 46 44C46 42.8954 45.1046 42 44 42H20Z" fill="#FFFFFF" />
+
+  <!-- Central Micro Node (Device Server Core) -->
+  <circle cx="32" cy="32" r="4.5" fill="#60A5FA" stroke="#FFFFFF" stroke-width="2.5" />
+</svg>

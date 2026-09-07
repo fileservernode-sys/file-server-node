@@ -210,9 +210,22 @@ class PushTokenManager {
     }
   }
 
+  StreamSubscription<String>? _refreshSubscription;
+
+  /// Retrieves current FCM token from adapter
+  Future<String?> getFcmToken() async {
+    return await _fcmAdapter.getToken();
+  }
+
   void listenToTokenRefresh({required String deviceId}) {
-    _fcmAdapter.onTokenRefresh.listen((newToken) {
+    _refreshSubscription?.cancel();
+    _refreshSubscription = _fcmAdapter.onTokenRefresh.listen((newToken) {
       rotatePushToken(deviceId: deviceId, newToken: newToken);
     });
+  }
+
+  void dispose() {
+    _refreshSubscription?.cancel();
+    _refreshSubscription = null;
   }
 }

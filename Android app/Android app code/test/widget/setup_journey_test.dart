@@ -248,7 +248,7 @@ void main() {
       );
 
       expect(find.text('About Platform'), findsOneWidget);
-      expect(find.text('Remote Android Personal File Server'), findsOneWidget);
+      expect(find.text('ZdexCloud Personal File Server'), findsOneWidget);
     });
   });
 
