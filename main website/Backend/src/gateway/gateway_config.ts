@@ -13,7 +13,7 @@ export const gatewayConfigSchema = z
     // Testing / Staging / Production Dynamic Base Domain
     REMOTENODE_BASE_DOMAIN: z
       .string()
-      .default('viewduration.com')
+      .default('zdexcloud.com')
       .refine(
         (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
         {
@@ -22,10 +22,10 @@ export const gatewayConfigSchema = z
         }
       ),
 
-    // Configurable Gateway Domain for Remote Node Subdomains (*.gateway.viewduration.com)
+    // Configurable Gateway Domain for Remote Node Subdomains (*.gateway.zdexcloud.com)
     REMOTENODE_GATEWAY_DOMAIN: z
       .string()
-      .default('gateway.viewduration.com')
+      .default('gateway.zdexcloud.com')
       .refine(
         (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
         {
@@ -34,8 +34,8 @@ export const gatewayConfigSchema = z
         }
       ),
 
-    GATEWAY_PUBLIC_BASE_URL: z.string().default('https://gateway.viewduration.com'),
-    GATEWAY_PUBLIC_WS_URL: z.string().default('wss://gateway.viewduration.com'),
+    GATEWAY_PUBLIC_BASE_URL: z.string().default('https://gateway.zdexcloud.com'),
+    GATEWAY_PUBLIC_WS_URL: z.string().default('wss://gateway.zdexcloud.com'),
 
     GATEWAY_MAX_CONNECTIONS: z.coerce.number().default(1000),
     GATEWAY_AUTH_TIMEOUT_MS: z.coerce.number().default(15000),

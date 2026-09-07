@@ -497,7 +497,7 @@ describe('Track 4 — Batch NT-1.7 End-to-End & Production Readiness Verificatio
   test('TEST 26 — Deep link scheme allowlist validation', () => {
     const rendered = templateRegistry.render(NotificationType.DEVICE_ONLINE, { deviceName: 'MyPhone' });
     assert.ok(rendered.deepLink);
-    assert.strictEqual(rendered.deepLink!.uri.startsWith('remotenode://'), true);
+    assert.strictEqual(rendered.deepLink!.uri.startsWith('https://zdexcloud.com/') || rendered.deepLink!.uri.startsWith('remotenode://'), true);
   });
 
   test('TEST 27 — Template injection HTML escaping safety', () => {

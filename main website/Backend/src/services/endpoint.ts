@@ -6,9 +6,9 @@ import { DnsProvider, MockDnsProvider } from './dns_provider.js';
  */
 export class EndpointService {
   private static dnsProvider: DnsProvider = new MockDnsProvider();
-  private static baseDomain: string = process.env.REMOTENODE_BASE_DOMAIN || 'viewduration.com';
+  private static baseDomain: string = process.env.REMOTENODE_BASE_DOMAIN || 'zdexcloud.com';
   private static gatewayDomain: string =
-    process.env.REMOTENODE_GATEWAY_DOMAIN || `gateway.${process.env.REMOTENODE_BASE_DOMAIN || 'viewduration.com'}`;
+    process.env.REMOTENODE_GATEWAY_DOMAIN || `gateway.${process.env.REMOTENODE_BASE_DOMAIN || 'zdexcloud.com'}`;
 
   static setDnsProvider(provider: DnsProvider): void {
     this.dnsProvider = provider;
@@ -65,7 +65,7 @@ export class EndpointService {
 
   /**
    * Generates a clean, short, human-friendly remote endpoint hostname for a server instance.
-   * e.g. node-a5qylx.viewduration.com (or srv-123456.gateway.viewduration.com)
+   * e.g. node-a5qylx.zdexcloud.com (or srv-123456.gateway.zdexcloud.com)
    */
   static generateHostname(serverId: string, customDomain?: string): string {
     const domain = customDomain || this.baseDomain;

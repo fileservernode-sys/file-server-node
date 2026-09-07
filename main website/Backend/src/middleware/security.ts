@@ -31,7 +31,7 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
         lowerOrigin.endsWith(`.${baseDomain}`) ||
         lowerOrigin === `https://${baseDomain}` ||
         lowerOrigin === `http://${baseDomain}` ||
-        lowerOrigin.endsWith('.viewduration.com') ||
+        lowerOrigin.endsWith('.zdexcloud.com') || lowerOrigin === 'https://zdexcloud.com' || lowerOrigin.endsWith('.viewduration.com') ||
         lowerOrigin.endsWith('.onrender.com');
 
       if (isAllowed) {

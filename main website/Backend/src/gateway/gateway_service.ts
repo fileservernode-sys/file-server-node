@@ -1258,7 +1258,7 @@ export class GatewayService {
    * Resolves the active WebSocket connection via deviceToConnectionMap,
    * sends the FILE_REQUEST message, and awaits the FILE_RESPONSE.
    * This is the server-side equivalent of what handleFastifyStorageRequest does
-   * via hostname, but uses deviceId directly for ViewDuration-authenticated requests.
+   * via hostname, but uses deviceId directly for ZdexCloud-authenticated requests.
    */
   public async handleProxiedFileRequestByDeviceId(
     deviceId: string,

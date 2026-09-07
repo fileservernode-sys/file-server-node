@@ -95,6 +95,9 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     // Exact hostnames that serve the main marketing landing website & dashboard
     const mainWebsiteHosts = new Set([
+      'zdexcloud.com',
+      'www.zdexcloud.com',
+      'app.zdexcloud.com',
       'viewduration.com',
       'www.viewduration.com',
       'remotenode.net',

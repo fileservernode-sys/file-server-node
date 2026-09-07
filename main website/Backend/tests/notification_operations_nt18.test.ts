@@ -377,7 +377,7 @@ describe('Track 4 — Batch NT-1.8 Production Operations & Final Release Certifi
       category: 'ACCOUNT_SECURITY',
       severity: 'INFO',
       title: 'Welcome',
-      body: 'Welcome to RemoteNode'
+      body: 'Welcome to ZdexCloud'
     }), true);
   });
 

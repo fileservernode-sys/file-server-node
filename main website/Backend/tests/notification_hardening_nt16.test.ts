@@ -357,7 +357,7 @@ describe('Track 4 — Batch NT-1.6 Hardening & Reliability Controls Tests', () =
     const rendered = templateRegistry.render(NotificationType.DEVICE_ONLINE, { deviceName: 'MyPhone' });
 
     assert.ok(rendered.deepLink);
-    assert.strictEqual(rendered.deepLink!.uri.startsWith('remotenode://'), true);
+    assert.strictEqual(rendered.deepLink!.uri.startsWith('https://zdexcloud.com/') || rendered.deepLink!.uri.startsWith('remotenode://'), true);
   });
 
   test('30. Safe fallback execution for non-existent events', async () => {

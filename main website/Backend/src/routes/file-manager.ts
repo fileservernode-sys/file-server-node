@@ -11,7 +11,7 @@ const serverIdParamSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Helper: Resolve authenticated ViewDuration user from Bearer token
+// Helper: Resolve authenticated ZdexCloud user from Bearer token
 // ---------------------------------------------------------------------------
 async function getAuthUser(request: FastifyRequest) {
   let token: string | null = null;
@@ -128,7 +128,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/v1/file-manager/:serverId/access
-   * Authenticates the ViewDuration session, verifies server ownership,
+   * Authenticates the ZdexCloud session, verifies server ownership,
    * checks real-time connectivity, and returns safe server metadata.
    * NEVER returns adminPasswordHash or any credential secret.
    */
@@ -432,7 +432,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Accepts JSON body: { username: string, password: string }
    * Used when the Android file server requires its own login.
    * NEVER stores the password — only proxies it to Android for verification.
-   * Returns a file-server session token (not the ViewDuration token).
+   * Returns a file-server session token (not the ZdexCloud token).
    */
   app.post('/file-manager/:serverId/auth/login', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);

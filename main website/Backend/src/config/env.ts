@@ -28,14 +28,14 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL environment variable is required'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080,https://viewduration.com,https://www.viewduration.com,https://gateway.viewduration.com'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080,https://zdexcloud.com,https://www.zdexcloud.com,https://app.zdexcloud.com,https://api.zdexcloud.com,https://gateway.zdexcloud.com,https://viewduration.com,https://gateway.viewduration.com'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
 
-  // Configurable Base Domain (Default: viewduration.com for testing/staging; replaceable in production)
+  // Configurable Base Domain (Default: zdexcloud.com)
   REMOTENODE_BASE_DOMAIN: z
     .string()
-    .default('viewduration.com')
+    .default('zdexcloud.com')
     .refine(
       (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
       {
@@ -44,10 +44,10 @@ const envSchema = z.object({
       }
     ),
 
-  // Configurable Gateway Domain for Remote Node Subdomains (*.gateway.viewduration.com)
+  // Configurable Gateway Domain for Remote Node Subdomains (*.gateway.zdexcloud.com)
   REMOTENODE_GATEWAY_DOMAIN: z
     .string()
-    .default('gateway.viewduration.com')
+    .default('gateway.zdexcloud.com')
     .refine(
       (val) => !val.includes('://') && !val.includes('/') && !val.includes(' ') && domainRegex.test(val),
       {
@@ -62,8 +62,8 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USERNAME: z.string().default(''),
   SMTP_PASSWORD: z.string().default(''),
-  SMTP_FROM_EMAIL: z.string().default('noreply@viewduration.com'),
-  SMTP_FROM_NAME: z.string().default('RemoteNode File Server'),
+  SMTP_FROM_EMAIL: z.string().default('noreply@zdexcloud.com'),
+  SMTP_FROM_NAME: z.string().default('ZdexCloud Personal Cloud'),
 
   // OTP Expiry and Brute-force Limit Parameters
   EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS: z.coerce.number().default(600),

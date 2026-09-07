@@ -36,14 +36,14 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     assert.strictEqual(regTemplate.subject.includes('123456'), true);
     assert.strictEqual(regTemplate.html.includes('123456'), true);
     assert.strictEqual(regTemplate.html.includes('href="http://'), false);
-    assert.strictEqual(regTemplate.html.includes('href="https://viewduration.com/verify'), false);
+    assert.strictEqual(regTemplate.html.includes('href="https://zdexcloud.com/verify'), false);
     assert.strictEqual(regTemplate.text.includes('http://'), false);
 
     const resetTemplate = getPasswordResetTemplate('654321', 10);
     assert.strictEqual(resetTemplate.subject.includes('654321'), true);
     assert.strictEqual(resetTemplate.html.includes('654321'), true);
     assert.strictEqual(resetTemplate.html.includes('href="http://'), false);
-    assert.strictEqual(resetTemplate.html.includes('href="https://viewduration.com/reset'), false);
+    assert.strictEqual(resetTemplate.html.includes('href="https://zdexcloud.com/reset'), false);
     assert.strictEqual(resetTemplate.text.includes('http://'), false);
 
     const loginTemplate = getLoginOtpTemplate('999888', 10);

@@ -1,5 +1,5 @@
 /**
- * Responsive HTML & Plain-Text Email Templates for RemoteNode Platform
+ * Responsive HTML & Plain-Text Email Templates for ZdexCloud Platform
  * STRICT RULE: No verification links. No password reset links. OTP only.
  */
 
@@ -13,10 +13,10 @@ export interface EmailTemplatePayload {
  * Generates the Registration Email Verification OTP template
  */
 export function getEmailVerificationTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[RemoteNode] Your Verification Code: ${otpCode}`;
+  const subject = `[ZdexCloud] Your Verification Code: ${otpCode}`;
 
   const text = `
-RemoteNode Personal File Server
+ZdexCloud Personal File Server
 ===============================
 
 Your 6-digit email verification code is:
@@ -25,14 +25,14 @@ ${otpCode}
 
 This code will expire in ${expiryMinutes} minutes.
 
-Enter this code on the RemoteNode verification screen to complete your registration.
+Enter this code on the ZdexCloud verification screen to complete your registration.
 
 Security Notice:
-If you did not create an account with RemoteNode, please disregard this message. Do not share this code with anyone.
+If you did not create an account with ZdexCloud, please disregard this message. Do not share this code with anyone.
 
 --
-RemoteNode Personal File Server Team
-https://viewduration.com
+ZdexCloud Personal File Server Team
+https://zdexcloud.com
 `.trim();
 
   const html = `
@@ -41,7 +41,7 @@ https://viewduration.com
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verify Your Email — RemoteNode</title>
+  <title>Verify Your Email — ZdexCloud</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 16px; color: #0f172a;">
   <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);">
@@ -49,7 +49,7 @@ https://viewduration.com
     <tr>
       <td style="padding: 32px 32px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
         <div style="display: inline-block; background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 18px; line-height: 36px; width: 36px; height: 36px; border-radius: 8px; text-align: center; margin-bottom: 8px;">RN</div>
-        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">RemoteNode</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">ZdexCloud</div>
         <div style="font-size: 13px; color: #64748b; margin-top: 2px;">Personal File Server Platform</div>
       </td>
     </tr>
@@ -58,7 +58,7 @@ https://viewduration.com
       <td style="padding: 32px;">
         <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px; text-align: center;">Verify Your Email Address</h1>
         <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px; text-align: center;">
-          Thank you for registering with RemoteNode. Please enter the 6-digit verification code below on your setup screen to activate your account:
+          Thank you for registering with ZdexCloud. Please enter the 6-digit verification code below on your setup screen to activate your account:
         </p>
         
         <!-- OTP Code Box -->
@@ -68,7 +68,7 @@ https://viewduration.com
         </div>
 
         <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0 0 12px;">
-          <strong>Security Note:</strong> RemoteNode will never ask for your verification code via phone, chat, or external message. Do not share this code.
+          <strong>Security Note:</strong> ZdexCloud will never ask for your verification code via phone, chat, or external message. Do not share this code.
         </p>
         <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
           If you did not request this registration, you can safely ignore this email.
@@ -78,7 +78,7 @@ https://viewduration.com
     <!-- Footer -->
     <tr>
       <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
-        &copy; 2026 RemoteNode Platform &bull; Testing & Staging Environment
+        &copy; 2026 ZdexCloud Platform &bull; Testing & Staging Environment
       </td>
     </tr>
   </table>
@@ -93,13 +93,13 @@ https://viewduration.com
  * Generates the Password Reset OTP template
  */
 export function getPasswordResetTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[RemoteNode] Password Reset Code: ${otpCode}`;
+  const subject = `[ZdexCloud] Password Reset Code: ${otpCode}`;
 
   const text = `
-RemoteNode Personal File Server
+ZdexCloud Personal File Server
 ===============================
 
-A password reset was requested for your RemoteNode account.
+A password reset was requested for your ZdexCloud account.
 
 Your 6-digit password reset code is:
 
@@ -113,8 +113,8 @@ Security Warning:
 If you did not request a password reset, someone may be attempting to access your account. Please ensure your email is secure. Do not share this code with anyone.
 
 --
-RemoteNode Personal File Server Team
-https://viewduration.com
+ZdexCloud Personal File Server Team
+https://zdexcloud.com
 `.trim();
 
   const html = `
@@ -123,7 +123,7 @@ https://viewduration.com
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Your Password — RemoteNode</title>
+  <title>Reset Your Password — ZdexCloud</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 16px; color: #0f172a;">
   <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);">
@@ -131,7 +131,7 @@ https://viewduration.com
     <tr>
       <td style="padding: 32px 32px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
         <div style="display: inline-block; background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 18px; line-height: 36px; width: 36px; height: 36px; border-radius: 8px; text-align: center; margin-bottom: 8px;">RN</div>
-        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">RemoteNode</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">ZdexCloud</div>
         <div style="font-size: 13px; color: #64748b; margin-top: 2px;">Personal File Server Platform</div>
       </td>
     </tr>
@@ -140,7 +140,7 @@ https://viewduration.com
       <td style="padding: 32px;">
         <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 12px; text-align: center;">Reset Your Account Password</h1>
         <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px; text-align: center;">
-          We received a request to reset the password for your RemoteNode account. Use the 6-digit code below to set a new password:
+          We received a request to reset the password for your ZdexCloud account. Use the 6-digit code below to set a new password:
         </p>
         
         <!-- OTP Code Box -->
@@ -156,14 +156,14 @@ https://viewduration.com
         </div>
 
         <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
-          RemoteNode will never ask for this code. Do not share it with anyone.
+          ZdexCloud will never ask for this code. Do not share it with anyone.
         </p>
       </td>
     </tr>
     <!-- Footer -->
     <tr>
       <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
-        &copy; 2026 RemoteNode Platform &bull; Testing & Staging Environment
+        &copy; 2026 ZdexCloud Platform &bull; Testing & Staging Environment
       </td>
     </tr>
   </table>
@@ -178,10 +178,10 @@ https://viewduration.com
  * Generates the Login 2FA OTP template
  */
 export function getLoginOtpTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[RemoteNode] Your Login Security Code: ${otpCode}`;
+  const subject = `[ZdexCloud] Your Login Security Code: ${otpCode}`;
 
   const text = `
-RemoteNode Personal File Server
+ZdexCloud Personal File Server
 ===============================
 
 Your 6-digit login verification code is:
@@ -190,14 +190,14 @@ ${otpCode}
 
 This code will expire in ${expiryMinutes} minutes.
 
-Enter this code on the RemoteNode login screen to access your account.
+Enter this code on the ZdexCloud login screen to access your account.
 
 Security Notice:
-If you did not attempt to sign in to RemoteNode, please change your password immediately.
+If you did not attempt to sign in to ZdexCloud, please change your password immediately.
 
 --
-RemoteNode Personal File Server Team
-https://viewduration.com
+ZdexCloud Personal File Server Team
+https://zdexcloud.com
 `.trim();
 
   const html = `
@@ -206,7 +206,7 @@ https://viewduration.com
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Security Code — RemoteNode</title>
+  <title>Login Security Code — ZdexCloud</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 16px; color: #0f172a;">
   <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);">
@@ -214,7 +214,7 @@ https://viewduration.com
     <tr>
       <td style="padding: 32px 32px 20px; text-align: center; border-bottom: 1px solid #f1f5f9;">
         <div style="display: inline-block; background-color: #0284c7; color: #ffffff; font-weight: 800; font-size: 18px; line-height: 36px; width: 36px; height: 36px; border-radius: 8px; text-align: center; margin-bottom: 8px;">RN</div>
-        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">RemoteNode</div>
+        <div style="font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">ZdexCloud</div>
         <div style="font-size: 13px; color: #64748b; margin-top: 2px;">Personal File Server Platform</div>
       </td>
     </tr>
@@ -240,7 +240,7 @@ https://viewduration.com
     <!-- Footer -->
     <tr>
       <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center; font-size: 12px; color: #94a3b8;">
-        &copy; 2026 RemoteNode Platform &bull; Testing & Staging Environment
+        &copy; 2026 ZdexCloud Platform &bull; Testing & Staging Environment
       </td>
     </tr>
   </table>
