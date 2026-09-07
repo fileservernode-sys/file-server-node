@@ -1,4 +1,4 @@
-/// Centralized Environment Configuration for RemoteNode Android App
+/// Centralized Environment Configuration for ZdexCloud Android App
 class AppConfig {
   final String environment;
   final String baseDomain;
@@ -31,21 +31,21 @@ class AppConfig {
     );
   }
 
-  /// Testing & Staging Environment Configuration (Temporary testing domain: viewduration.com)
+  /// Testing & Staging Environment Configuration (Primary domain: zdexcloud.com)
   factory AppConfig.testing() {
     return const AppConfig(
       environment: 'testing',
-      baseDomain: 'viewduration.com',
-      websiteUrl: 'https://viewduration.com/?from=app',
-      apiBaseUrl: 'https://gateway.viewduration.com/api/v1',
-      gatewayWsUrl: 'wss://gateway.viewduration.com',
-      webRegistrationUrl: 'https://viewduration.com/pages/get-started.html',
+      baseDomain: 'zdexcloud.com',
+      websiteUrl: 'https://zdexcloud.com/?from=app',
+      apiBaseUrl: 'https://api.zdexcloud.com/api/v1',
+      gatewayWsUrl: 'wss://gateway.zdexcloud.com',
+      webRegistrationUrl: 'https://zdexcloud.com/pages/get-started.html',
       enableVerboseLogging: true,
     );
   }
 
   /// Production Environment Configuration (Configurable production domain)
-  factory AppConfig.production({String baseDomain = 'remotenode.net'}) {
+  factory AppConfig.production({String baseDomain = 'zdexcloud.com'}) {
     return AppConfig(
       environment: 'production',
       baseDomain: baseDomain,

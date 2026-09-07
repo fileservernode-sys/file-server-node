@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import '../utils/logger.dart';
 import 'notification_router.dart';
 
@@ -38,8 +39,12 @@ class PushNotificationService {
     importance: 4,
   );
 
+  final MethodChannel _channel;
   final _foregroundMessageController = StreamController<Map<String, dynamic>>.broadcast();
   final _notificationTapController = StreamController<NotificationTarget>.broadcast();
+
+  PushNotificationService({MethodChannel? channel})
+      : _channel = channel ?? const MethodChannel('net.remotenode.fileserver/server_engine');
 
   Stream<Map<String, dynamic>> get onForegroundMessage => _foregroundMessageController.stream;
   Stream<NotificationTarget> get onNotificationTap => _notificationTapController.stream;
@@ -62,11 +67,29 @@ class PushNotificationService {
   Future<bool> requestNotificationPermission() async {
     try {
       AppLogger.info('[PushNotificationService] Requesting Android notification permission (POST_NOTIFICATIONS)...');
+      final granted = await _channel.invokeMethod<bool>('requestNotificationPermission');
+      _permissionGranted = granted ?? false;
+      AppLogger.info('[PushNotificationService] Notification permission result: $_permissionGranted');
+      return _permissionGranted;
+    } on MissingPluginException {
       _permissionGranted = true;
-      AppLogger.info('[PushNotificationService] Notification permission granted.');
       return true;
     } catch (e) {
       AppLogger.error('[PushNotificationService] Failed to request notification permission', e);
+      _permissionGranted = false;
+      return false;
+    }
+  }
+
+  /// Checks the current status of notification permission
+  Future<bool> checkNotificationPermission() async {
+    try {
+      final granted = await _channel.invokeMethod<bool>('isNotificationPermissionGranted');
+      _permissionGranted = granted ?? false;
+      return _permissionGranted;
+    } on MissingPluginException {
+      return _permissionGranted;
+    } catch (e) {
       _permissionGranted = false;
       return false;
     }

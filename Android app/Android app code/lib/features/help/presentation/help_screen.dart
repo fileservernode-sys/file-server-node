@@ -48,7 +48,7 @@ class HelpScreen extends StatelessWidget {
       {
         'icon': Icons.menu_book_outlined,
         'title': 'Documentation',
-        'subtitle': 'Read complete docs at remotenode.net'
+        'subtitle': 'Read complete docs at zdexcloud.com'
       },
     ];
 
@@ -155,7 +155,7 @@ class HelpScreen extends StatelessWidget {
                         _TroubleItem(
                           title: 'File Access Issues',
                           detail:
-                              'Confirm storage permissions are granted to RemoteNode on this Android host phone.',
+                              'Confirm storage permissions are granted to ZdexCloud on this Android host phone.',
                         ),
                       ],
                     ),

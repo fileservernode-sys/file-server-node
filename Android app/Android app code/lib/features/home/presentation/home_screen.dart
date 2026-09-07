@@ -48,7 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppHeader(
-        title: 'RemoteNode',
+        title: 'ZdexCloud',
         subtitle: userEmail,
         showBrandMark: true,
         actions: [

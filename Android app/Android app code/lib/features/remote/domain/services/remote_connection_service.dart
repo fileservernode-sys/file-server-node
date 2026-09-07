@@ -725,10 +725,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
     await Future.delayed(const Duration(milliseconds: 100));
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
-      gatewayHostname: 'gateway.viewduration.com',
-      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
-      hostname: 'srv_mock999.gateway.viewduration.com',
-      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
+      gatewayHostname: 'gateway.zdexcloud.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
+      hostname: 'srv_mock999.gateway.zdexcloud.com',
+      publicUrl: 'https://srv_mock999.gateway.zdexcloud.com',
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
@@ -749,10 +749,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
     await Future.delayed(const Duration(milliseconds: 50));
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
-      gatewayHostname: 'gateway.viewduration.com',
-      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
-      hostname: 'srv_mock999.gateway.viewduration.com',
-      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
+      gatewayHostname: 'gateway.zdexcloud.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
+      hostname: 'srv_mock999.gateway.zdexcloud.com',
+      publicUrl: 'https://srv_mock999.gateway.zdexcloud.com',
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
@@ -767,10 +767,10 @@ class MockRemoteConnectionService implements RemoteConnectionService {
   Future<RemoteConnectionInfo> getConnectionInfo() async {
     return RemoteConnectionInfo(
       connectionId: 'mock-conn-info',
-      gatewayHostname: 'gateway.viewduration.com',
-      remoteEndpoint: 'https://srv_mock999.gateway.viewduration.com',
-      hostname: 'srv_mock999.gateway.viewduration.com',
-      publicUrl: 'https://srv_mock999.gateway.viewduration.com',
+      gatewayHostname: 'gateway.zdexcloud.com',
+      remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
+      hostname: 'srv_mock999.gateway.zdexcloud.com',
+      publicUrl: 'https://srv_mock999.gateway.zdexcloud.com',
       status: _initialState,
       lastHeartbeatAt: DateTime.now(),
     );

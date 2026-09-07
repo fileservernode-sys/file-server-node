@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_config.dart';
 import '../storage/secure_storage_service.dart';
@@ -18,6 +19,37 @@ abstract class FcmTokenAdapter {
   Future<String?> getToken();
   Stream<String> get onTokenRefresh;
   Future<void> deleteToken();
+}
+
+class PlatformFcmTokenAdapter implements FcmTokenAdapter {
+  final MethodChannel _channel;
+  final StreamController<String> _refreshController = StreamController<String>.broadcast();
+
+  PlatformFcmTokenAdapter({MethodChannel? channel})
+      : _channel = channel ?? const MethodChannel('net.remotenode.fileserver/server_engine');
+
+  @override
+  Future<String?> getToken() async {
+    try {
+      final token = await _channel.invokeMethod<String>('getFcmToken');
+      return token;
+    } catch (e) {
+      AppLogger.warning('[PlatformFcmTokenAdapter] Failed to fetch FCM token from platform: $e');
+      return null;
+    }
+  }
+
+  @override
+  Stream<String> get onTokenRefresh => _refreshController.stream;
+
+  @override
+  Future<void> deleteToken() async {
+    try {
+      await _channel.invokeMethod<void>('deleteFcmToken');
+    } catch (e) {
+      AppLogger.warning('[PlatformFcmTokenAdapter] Failed to delete FCM token from platform: $e');
+    }
+  }
 }
 
 class MockFcmTokenAdapter implements FcmTokenAdapter {
@@ -53,7 +85,7 @@ class PushTokenManager {
     FcmTokenAdapter? fcmAdapter,
     SecureStorageService? storageService,
     HttpClient? httpClient,
-  })  : _fcmAdapter = fcmAdapter ?? MockFcmTokenAdapter(),
+  })  : _fcmAdapter = fcmAdapter ?? PlatformFcmTokenAdapter(),
         _storageService = storageService ?? InMemorySecureStorageService(),
         _httpClient = httpClient ??
             (HttpClient()

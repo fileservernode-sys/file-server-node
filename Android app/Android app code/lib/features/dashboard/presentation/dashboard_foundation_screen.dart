@@ -16,7 +16,7 @@ class DashboardFoundationScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
-        title: 'RemoteNode',
+        title: 'ZdexCloud',
         subtitle: 'Personal File Server',
         showBrandMark: true,
       ),

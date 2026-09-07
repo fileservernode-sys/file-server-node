@@ -83,9 +83,8 @@ class WebSocketRemoteTransport implements RemoteTransport {
   Future<void> connect(String url) async {
     await disconnect();
     final urlsToTry = <String>[
-      'wss://file-server-node-1.onrender.com',
       url,
-      'wss://gateway.viewduration.com',
+      'wss://gateway.zdexcloud.com',
     ];
 
     Object? lastError;

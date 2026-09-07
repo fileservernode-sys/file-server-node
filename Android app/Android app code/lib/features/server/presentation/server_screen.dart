@@ -179,7 +179,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                               Expanded(
                                 child: Text(
                                   setup.assignedSubdomain != null
-                                      ? '${setup.assignedSubdomain}.remotenode.net'
+                                      ? '${setup.assignedSubdomain}.zdexcloud.com'
                                       : 'Remote Gateway Routing Active',
                                   style: AppTypography.caption.copyWith(
                                     fontWeight: FontWeight.w600,

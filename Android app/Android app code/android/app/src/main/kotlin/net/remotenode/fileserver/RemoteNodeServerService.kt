@@ -140,7 +140,7 @@ class RemoteNodeServerService : Service() {
                 setDesiredServerEnabled(this, true)
 
                 // Start Foreground immediately with starting notification
-                val startingNotif = buildNotification("Starting RemoteNode file server...")
+                val startingNotif = buildNotification("Starting ZdexCloud file server...")
                 promoteToForeground(startingNotif)
 
                 acquireWakeLock()
@@ -238,10 +238,10 @@ class RemoteNodeServerService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "RemoteNode File Server Service",
+                "ZdexCloud File Server Service",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Shows ongoing status and controls for your local RemoteNode personal file server"
+                description = "Shows ongoing status and controls for your local ZdexCloud personal file server"
                 setShowBadge(false)
             }
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -271,7 +271,7 @@ class RemoteNodeServerService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("RemoteNode")
+            .setContentTitle("ZdexCloud")
             .setContentText(statusText)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setOngoing(true)

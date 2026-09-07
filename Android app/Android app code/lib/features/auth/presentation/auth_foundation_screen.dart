@@ -45,7 +45,7 @@ class AuthFoundationScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.md),
 
                   // Product Title & Subtitle
-                  const Text('RemoteNode', style: AppTypography.heading1),
+                  const Text('ZdexCloud', style: AppTypography.heading1),
                   const SizedBox(height: AppSpacing.xxs),
                   const Text(
                     'Personal File Server',

@@ -253,15 +253,15 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
               'status': 'RUNNING',
               'endpoint': {
                 'id': 'mock-ep-01',
-                'hostname': 'srv_alpha.gateway.viewduration.com',
-                'publicUrl': 'https://srv_alpha.gateway.viewduration.com',
+                'hostname': 'srv_alpha.gateway.zdexcloud.com',
+                'publicUrl': 'https://srv_alpha.gateway.zdexcloud.com',
                 'status': 'ACTIVE',
               }
             },
             'connection': {
               'id': 'mock-conn-01',
               'status': 'CONNECTED',
-              'remoteEndpoint': 'https://srv_alpha.gateway.viewduration.com',
+              'remoteEndpoint': 'https://srv_alpha.gateway.zdexcloud.com',
             }
           }
         ]
@@ -288,15 +288,15 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
             'status': 'RUNNING',
             'endpoint': {
               'id': 'mock-ep-01',
-              'hostname': 'srv_alpha.gateway.viewduration.com',
-              'publicUrl': 'https://srv_alpha.gateway.viewduration.com',
+              'hostname': 'srv_alpha.gateway.zdexcloud.com',
+              'publicUrl': 'https://srv_alpha.gateway.zdexcloud.com',
               'status': 'ACTIVE',
             }
           },
           'connection': {
             'id': 'mock-conn-01',
             'status': 'CONNECTED',
-            'remoteEndpoint': 'https://srv_alpha.gateway.viewduration.com',
+            'remoteEndpoint': 'https://srv_alpha.gateway.zdexcloud.com',
           }
         }
       }

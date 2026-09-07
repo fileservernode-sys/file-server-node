@@ -104,7 +104,7 @@ class SettingsScreen extends ConsumerWidget {
                         const Divider(),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          'Managed via RemoteNode Control Plane. Passwords & 6-Digit OTP security active.',
+                          'Managed via ZdexCloud Control Plane. Passwords & 6-Digit OTP security active.',
                           style: AppTypography.caption
                               .copyWith(color: AppColors.textMuted),
                         ),
@@ -210,7 +210,7 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          'RemoteNode provides secure remote access to the physical storage host. Your personal files are not migrated into generic cloud storage.',
+                          'ZdexCloud provides secure remote access to the physical storage host. Your personal files are not migrated into generic cloud storage.',
                           style: AppTypography.bodySmall
                               .copyWith(color: AppColors.textPrimary),
                         ),

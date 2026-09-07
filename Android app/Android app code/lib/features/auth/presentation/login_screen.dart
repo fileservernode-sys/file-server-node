@@ -154,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                      'Opening https://remotenode.net/pages/get-started.html...'),
+                                      'Opening https://zdexcloud.com/pages/get-started.html...'),
                                 ),
                               );
                             },

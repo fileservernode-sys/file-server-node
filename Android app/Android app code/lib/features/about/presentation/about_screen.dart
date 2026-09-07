@@ -73,7 +73,7 @@ class AboutScreen extends StatelessWidget {
                         Divider(height: AppSpacing.lg),
                         _ArchStep(
                           stepNum: '3',
-                          title: 'RemoteNode Outbound Gateway',
+                          title: 'ZdexCloud Outbound Gateway',
                           subtitle: 'Encrypted WebSocket tunnel without port forwarding',
                         ),
                         Divider(height: AppSpacing.lg),
@@ -116,7 +116,7 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xxl),
 
                   TertiaryButton(
-                    label: 'Visit Main Website (remotenode.net)',
+                    label: 'Visit Main Website (zdexcloud.com)',
                     icon: Icons.open_in_new_rounded,
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(

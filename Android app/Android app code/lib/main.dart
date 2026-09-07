@@ -9,7 +9,7 @@ import 'core/utils/logger.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Testing/Staging Environment Configuration (Connects to live https://gateway.viewduration.com/api/v1)
+  // Initialize Testing/Staging Environment Configuration (Connects to live https://api.zdexcloud.com/api/v1)
   AppConfig.setEnvironment(AppConfig.testing());
   AppLogger.info(
       'Initializing RemoteNode Android App Foundation (${AppConfig.current.environment} -> ${AppConfig.current.apiBaseUrl})');
@@ -54,7 +54,7 @@ class _RemoteNodeAppState extends State<RemoteNodeApp>
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RemoteNode Personal File Server',
+      title: 'ZdexCloud Personal File Server',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       initialRoute: AppRouter.initialRoute,

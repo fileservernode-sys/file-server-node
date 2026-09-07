@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remote_node_app/core/notifications/push_token_manager.dart';
 import 'package:remote_node_app/core/notifications/notification_router.dart';
@@ -164,6 +165,91 @@ void main() {
     test('15. Malformed payload falls back gracefully to dashboard target', () {
       final target = NotificationRouter.parsePayload({'corrupted': 12345});
       expect(target.type, equals(NotificationTargetType.dashboard));
+    });
+
+    test('16. PlatformFcmTokenAdapter communicates with platform channel', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel = MethodChannel('net.remotenode.fileserver/server_engine');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (MethodCall call) async {
+          if (call.method == 'getFcmToken') {
+            return 'real_platform_fcm_token_xyz_999';
+          }
+          if (call.method == 'deleteFcmToken') {
+            return true;
+          }
+          return null;
+        },
+      );
+
+      final platformAdapter = PlatformFcmTokenAdapter(channel: channel);
+      final token = await platformAdapter.getToken();
+      expect(token, equals('real_platform_fcm_token_xyz_999'));
+
+      await platformAdapter.deleteToken();
+      // Reset handler
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    });
+
+    test('17. PushNotificationService invokes native POST_NOTIFICATIONS permission channel', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel = MethodChannel('net.remotenode.fileserver/server_engine');
+      bool permissionRequested = false;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (MethodCall call) async {
+          if (call.method == 'requestNotificationPermission') {
+            permissionRequested = true;
+            return true;
+          }
+          if (call.method == 'isNotificationPermissionGranted') {
+            return true;
+          }
+          return null;
+        },
+      );
+
+      final service = PushNotificationService(channel: channel);
+      final granted = await service.requestNotificationPermission();
+
+      expect(permissionRequested, isTrue);
+      expect(granted, isTrue);
+      expect(service.isPermissionGranted, isTrue);
+
+      final checked = await service.checkNotificationPermission();
+      expect(checked, isTrue);
+
+      // Reset handler
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    });
+
+    test('18. PushNotificationService handles permission denial safely', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel = MethodChannel('net.remotenode.fileserver/server_engine');
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        (MethodCall call) async {
+          if (call.method == 'requestNotificationPermission') {
+            return false;
+          }
+          if (call.method == 'isNotificationPermissionGranted') {
+            return false;
+          }
+          return null;
+        },
+      );
+
+      final service = PushNotificationService(channel: channel);
+      final granted = await service.requestNotificationPermission();
+
+      expect(granted, isFalse);
+      expect(service.isPermissionGranted, isFalse);
+
+      // Reset handler
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
     });
   });
 }

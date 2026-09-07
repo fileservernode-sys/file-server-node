@@ -23,7 +23,7 @@ class SetupFoundationScreen extends StatelessWidget {
               Text('Configure Storage Host', style: AppTypography.heading1),
               SizedBox(height: AppSpacing.sm),
               Text(
-                'Configure storage host settings and connect to your ViewDuration account.',
+                'Configure storage host settings and connect to your ZdexCloud account.',
                 style: AppTypography.bodySmall,
               ),
             ],

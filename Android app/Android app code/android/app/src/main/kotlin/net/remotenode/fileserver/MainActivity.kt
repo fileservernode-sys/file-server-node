@@ -18,6 +18,22 @@ import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
+    private val REQUEST_POST_NOTIFICATIONS = 101
+    private var pendingNotificationPermissionResult: MethodChannel.Result? = null
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_POST_NOTIFICATIONS) {
+            val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+            pendingNotificationPermissionResult?.success(granted)
+            pendingNotificationPermissionResult = null
+            return
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -34,6 +50,28 @@ class MainActivity : FlutterActivity() {
                         result.success(installationId)
                     } catch (e: Exception) {
                         result.error("IDENTITY_ERROR", e.message, null)
+                    }
+                }
+                "getFcmToken" -> {
+                    try {
+                        val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)
+                        var fcmToken = prefs.getString("fcm_token", null)
+                        if (fcmToken.isNullOrEmpty()) {
+                            fcmToken = "fcm_token_" + UUID.randomUUID().toString().replace("-", "")
+                            prefs.edit().putString("fcm_token", fcmToken).apply()
+                        }
+                        result.success(fcmToken)
+                    } catch (e: Exception) {
+                        result.error("FCM_ERROR", e.message, null)
+                    }
+                }
+                "deleteFcmToken" -> {
+                    try {
+                        val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)
+                        prefs.edit().remove("fcm_token").apply()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.error("FCM_DELETE_ERROR", e.message, null)
                     }
                 }
                 "getDeviceModel" -> {
@@ -209,12 +247,20 @@ class MainActivity : FlutterActivity() {
                 }
                 "requestNotificationPermission" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        ActivityCompat.requestPermissions(
+                        val isGranted = ContextCompat.checkSelfPermission(
                             this@MainActivity,
-                            arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                            101
-                        )
-                        result.success(true)
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (isGranted) {
+                            result.success(true)
+                        } else {
+                            pendingNotificationPermissionResult = result
+                            ActivityCompat.requestPermissions(
+                                this@MainActivity,
+                                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                                REQUEST_POST_NOTIFICATIONS
+                            )
+                        }
                     } else {
                         result.success(true)
                     }

@@ -82,7 +82,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
             ],
           ),
           content: const Text(
-            'RemoteNode uses a persistent notification to show that your personal file server is running and ensure continuous background hosting.',
+            'ZdexCloud uses a persistent notification to show that your personal file server is running and ensure continuous background hosting.',
             style: AppTypography.bodySmall,
           ),
           actions: [
@@ -313,12 +313,12 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         const Text(
-                          'Your server is running and active. Visit the RemoteNode website to access your file manager and manage storage.',
+                          'Your server is running and active. Visit the ZdexCloud website to access your file manager and manage storage.',
                           style: AppTypography.bodySmall,
                         ),
                         const SizedBox(height: AppSpacing.md),
                         PrimaryButton(
-                          label: 'Open RemoteNode',
+                          label: 'Open ZdexCloud',
                           icon: Icons.open_in_browser_rounded,
                           onPressed: () async {
                             final serverService = ref.read(serverServiceProvider);

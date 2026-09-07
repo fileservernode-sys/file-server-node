@@ -280,7 +280,7 @@ class LocalServerEngine {
     }
 
     fun isSessionValid(token: String?): Boolean {
-        // In ViewDuration architecture, authentication is governed at the ViewDuration control plane.
+        // In ZdexCloud architecture, authentication is governed at the ZdexCloud control plane.
         // Internal engine requests on local loopback are allowed unconditionally.
         return true
     }

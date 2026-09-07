@@ -126,7 +126,7 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
             ],
           ),
           content: const Text(
-            'RemoteNode keeps your personal file server running in the background. Android requires RemoteNode to maintain a visible server notification while the server is active.',
+            'ZdexCloud keeps your personal file server running in the background. Android requires ZdexCloud to maintain a visible server notification while the server is active.',
             style: AppTypography.bodySmall,
           ),
           actions: [
@@ -269,7 +269,7 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                         ),
                         const SizedBox(height: AppSpacing.xxs),
                         const Text(
-                          'Your files remain stored physically on this phone. RemoteNode provides secure remote access without moving files to cloud storage.',
+                          'Your files remain stored physically on this phone. ZdexCloud provides secure remote access without moving files to cloud storage.',
                           style: AppTypography.caption,
                         ),
                       ],
@@ -355,7 +355,7 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                           status: batteryStatus,
                           title: 'Background operation',
                           subtitle: _isBatteryOptimizationIgnored
-                              ? 'Battery optimization configured for RemoteNode'
+                              ? 'Battery optimization configured for ZdexCloud'
                               : 'Battery optimization active • Unrestricted recommended',
                           actionLabel: !_isBatteryOptimizationIgnored ? 'Configure' : null,
                           onAction: !_isBatteryOptimizationIgnored

@@ -385,7 +385,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       state = state.copyWith(
         isProcessing: false,
         endpointStatus: 'FAILED',
-        errorMessage: 'You must be signed in with your RemoteNode platform account to create a server.',
+        errorMessage: 'You must be signed in with your ZdexCloud platform account to create a server.',
       );
       return false;
     }
@@ -477,7 +477,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           (connInfo.remoteEndpoint != null
               ? Uri.tryParse(connInfo.remoteEndpoint!)?.host
               : null) ??
-          'srv-${registeredDeviceId.hashCode.abs()}.gateway.viewduration.com';
+          'srv-${registeredDeviceId.hashCode.abs()}.gateway.zdexcloud.com';
 
       final publicUrl = connInfo.publicUrl ?? 'https://$hostname';
 

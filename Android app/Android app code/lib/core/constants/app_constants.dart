@@ -1,7 +1,7 @@
 /// Global App Constants
 class AppConstants {
-  static const String appName = 'RemoteNode';
-  static const String appTagline = 'Personal File Server';
+  static const String appName = 'ZdexCloud';
+  static const String appTagline = 'Personal Cloud Server';
   static const String appPackageId = 'net.remotenode.fileserver';
 
   // Timeout Constants

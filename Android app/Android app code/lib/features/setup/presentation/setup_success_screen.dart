@@ -65,7 +65,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     const Text(
-                      'This device is now active as a personal storage server node. Visit RemoteNode to access your file manager.',
+                      'This device is now active as a personal storage server node. Visit ZdexCloud to access your file manager.',
                       style: AppTypography.bodySmall,
                       textAlign: TextAlign.center,
                     ),
@@ -108,12 +108,12 @@ class SetupSuccessScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.sm),
                           const Text(
-                            'Your server is running and connected. Sign in to your account on the RemoteNode website to access your server and file manager.',
+                            'Your server is running and connected. Sign in to your account on the ZdexCloud website to access your server and file manager.',
                             style: AppTypography.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           PrimaryButton(
-                            label: 'Open RemoteNode',
+                            label: 'Open ZdexCloud',
                             icon: Icons.open_in_browser_rounded,
                             onPressed: () async {
                               final serverService = ref.read(serverServiceProvider);

@@ -1,4 +1,4 @@
-# RemoteNode — Personal Android File Server Platform
+# ZdexCloud — Personal Android File Server Platform
 
 A personal, self-hosted file server platform that converts unused Android smartphones into remotely accessible storage nodes without router port forwarding, public IPs, or third-party cloud data hosting.
 
@@ -22,7 +22,7 @@ The platform architecture is structured into three logical planes:
 
 3. **Data Plane (Android Device & Local Engine)**:
    - The actual Android phone host running native embedded `LocalServerEngine` bound strictly to loopback `127.0.0.1:8080`.
-   - Stores user files physically inside an isolated application sandbox (`RemoteNodeFiles/`).
+   - Stores user files physically inside an isolated application sandbox (`ZdexCloudFiles/`).
    - Processes local & remote file operations (`LIST`, `CREATE_FOLDER`, `RENAME`, `DELETE`, `DOWNLOAD`, `UPLOAD`, `STORAGE`, `RECENT`, `HEALTH`).
    - Handles network state transitions (Wi-Fi/mobile network changes, gateway reconnects) without interrupting the local loopback engine.
 
@@ -38,24 +38,24 @@ The platform architecture is structured into three logical planes:
 
 ---
 
-## 3. Staging Deployment & DNS Architecture (`viewduration.com`)
+## 3. Staging Deployment & DNS Architecture (`zdexcloud.com`)
 
 > [!NOTE]
-> `viewduration.com` is used strictly as an exclusive, temporary development and staging domain for live testing. Production deployment replaces `REMOTENODE_BASE_DOMAIN` without requiring source code modifications.
+> `zdexcloud.com` is used strictly as an exclusive, temporary development and staging domain for live testing. Production deployment replaces `REMOTENODE_BASE_DOMAIN` without requiring source code modifications.
 
 ### Required DNS Record Layout for Staging:
 | Host / Name | Type | Target / Value | Purpose |
 |-------------|------|----------------|---------|
-| `viewduration.com` | `A` or `CNAME` | `<Frontend Server IP / Ingress>` | Main Informational & Auth Website |
-| `api.viewduration.com` | `A` or `CNAME` | `<Backend Server IP / Ingress>` | Control Plane REST APIs |
-| `gateway.viewduration.com` | `A` or `CNAME` | `<Gateway Server IP / Ingress>` | WSS Gateway Ingress |
-| `*.viewduration.com` | `CNAME` | `gateway.viewduration.com` | Dynamic Server Subdomain Routing |
+| `zdexcloud.com` | `A` or `CNAME` | `<Frontend Server IP / Ingress>` | Main Informational & Auth Website |
+| `api.zdexcloud.com` | `A` or `CNAME` | `<Backend Server IP / Ingress>` | Control Plane REST APIs |
+| `gateway.zdexcloud.com` | `A` or `CNAME` | `<Gateway Server IP / Ingress>` | WSS Gateway Ingress |
+| `*.zdexcloud.com` | `CNAME` | `gateway.zdexcloud.com` | Dynamic Server Subdomain Routing |
 
 ---
 
 ## 4. NAT & Carrier-Grade NAT (CGNAT) Resilience
 
-- **Outbound-Only Connection**: The Android phone initiates and maintains persistent outbound WebSocket connections toward the RemoteNode Gateway.
+- **Outbound-Only Connection**: The Android phone initiates and maintains persistent outbound WebSocket connections toward the ZdexCloud Gateway.
 - **Zero Inbound Port Requirements**: No router configuration, no UPnP, no public IP, and no firewall hole-punching are required on the Android phone.
 - **Network Change Detection**: Automatic reconnection with bounded exponential backoff on Wi-Fi/cellular transitions or gateway restarts.
 
@@ -73,15 +73,15 @@ The platform architecture is structured into three logical planes:
 
 To verify full end-to-end functionality on the live staging deployment:
 
-- [ ] **A.** Open `https://viewduration.com`.
+- [ ] **A.** Open `https://zdexcloud.com`.
 - [ ] **B.** Register a new account.
 - [ ] **C.** Verify 6-digit Email OTP delivered via Serverbyt SMTP.
 - [ ] **D.** Log in to Main Website Dashboard.
 - [ ] **E.** Log in to Android application with platform credentials.
 - [ ] **F.** Start local embedded file server engine (`127.0.0.1:8080`).
-- [ ] **G.** Connect Android app outbound to `wss://gateway.viewduration.com`.
+- [ ] **G.** Connect Android app outbound to `wss://gateway.zdexcloud.com`.
 - [ ] **H.** Verify Gateway logs show authenticated Android connection session.
-- [ ] **I.** Open dynamic server endpoint: `https://<server-id>.viewduration.com`.
+- [ ] **I.** Open dynamic server endpoint: `https://<server-id>.zdexcloud.com`.
 - [ ] **J.** Verify Home dashboard loads.
 - [ ] **K.** Verify real disk storage capacity and categorized usage meters.
 - [ ] **L.** Navigate to My Files view.
@@ -110,7 +110,7 @@ To verify full end-to-end functionality on the live staging deployment:
 
 ## 7. Production Domain Migration Procedure
 
-When moving from the testing domain (`viewduration.com`) to the permanent production domain:
+When moving from the testing domain (`zdexcloud.com`) to the permanent production domain:
 1. Update `.env` with `REMOTENODE_BASE_DOMAIN=<production-domain>`.
 2. Provision DNS records for `<production-domain>`, `api.<production-domain>`, `gateway.<production-domain>`, and `*.<production-domain>`.
 3. Provision TLS wildcard certificates for `*.<production-domain>`.
@@ -123,4 +123,4 @@ When moving from the testing domain (`viewduration.com`) to the permanent produc
 
 - **Google Authentication**: NOT USED.
 - **Brevo Email Service**: NOT USED.
-- **Cloud File Storage**: User files are hosted physically on the Android device (`RemoteNodeFiles/`) and never permanently cached on the Gateway or cloud.
+- **Cloud File Storage**: User files are hosted physically on the Android device (`ZdexCloudFiles/`) and never permanently cached on the Gateway or cloud.

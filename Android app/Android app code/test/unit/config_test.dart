@@ -18,8 +18,8 @@ void main() {
         () {
       final config = AppConfig.production();
       expect(config.environment, 'production');
-      expect(config.apiBaseUrl, 'https://api.remotenode.net/api/v1');
-      expect(config.gatewayWsUrl, 'wss://gateway.remotenode.net');
+      expect(config.apiBaseUrl, 'https://api.zdexcloud.com/api/v1');
+      expect(config.gatewayWsUrl, 'wss://gateway.zdexcloud.com');
       expect(config.enableVerboseLogging, isFalse);
     });
   });

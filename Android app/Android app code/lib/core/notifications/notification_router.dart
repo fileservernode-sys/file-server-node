@@ -24,10 +24,16 @@ class NotificationTarget {
 }
 
 class NotificationRouter {
+  // Canonical web URLs and dual-scheme deep links
   static const String schemeServer = 'remotenode://server/';
   static const String schemeFileManager = 'remotenode://filemanager';
   static const String schemeSecurity = 'remotenode://security';
   static const String schemeDevice = 'remotenode://device/';
+
+  static const String zSchemeServer = 'zdexcloud://server/';
+  static const String zSchemeFileManager = 'zdexcloud://filemanager';
+  static const String zSchemeSecurity = 'zdexcloud://security';
+  static const String zSchemeDevice = 'zdexcloud://device/';
 
   static NotificationTarget parsePayload(Map<String, dynamic> payload) {
     try {
@@ -45,15 +51,29 @@ class NotificationRouter {
         return const NotificationTarget(type: NotificationTargetType.dashboard);
       }
 
-      if (deepLink.startsWith(schemeFileManager)) {
+      // File Manager
+      if (deepLink.startsWith(schemeFileManager) ||
+          deepLink.startsWith(zSchemeFileManager) ||
+          deepLink.contains('/file-manager') ||
+          deepLink.contains('file-manager.html')) {
         return NotificationTarget(
           type: NotificationTargetType.fileManager,
           rawDeepLink: deepLink,
         );
       }
 
-      if (deepLink.startsWith(schemeServer)) {
-        final parsedServerId = deepLink.substring(schemeServer.length).trim();
+      // Server Detail
+      if (deepLink.startsWith(schemeServer) || deepLink.startsWith(zSchemeServer)) {
+        final prefix = deepLink.startsWith(schemeServer) ? schemeServer : zSchemeServer;
+        final parsedServerId = deepLink.substring(prefix.length).trim();
+        return NotificationTarget(
+          type: NotificationTargetType.serverDetail,
+          serverId: parsedServerId.isNotEmpty ? parsedServerId : serverId,
+          rawDeepLink: deepLink,
+        );
+      }
+      if (deepLink.contains('#server-')) {
+        final parsedServerId = deepLink.split('#server-')[1].trim();
         return NotificationTarget(
           type: NotificationTargetType.serverDetail,
           serverId: parsedServerId.isNotEmpty ? parsedServerId : serverId,
@@ -61,20 +81,32 @@ class NotificationRouter {
         );
       }
 
-      if (deepLink.startsWith(schemeSecurity)) {
+      // Security Settings
+      if (deepLink.startsWith(schemeSecurity) ||
+          deepLink.startsWith(zSchemeSecurity) ||
+          deepLink.contains('#security')) {
         return NotificationTarget(
           type: NotificationTargetType.securitySettings,
           rawDeepLink: deepLink,
         );
       }
 
-      if (deepLink.startsWith(schemeDevice)) {
-        final parsedDeviceName = deepLink.substring(schemeDevice.length).trim();
+      // Device Detail
+      if (deepLink.startsWith(schemeDevice) || deepLink.startsWith(zSchemeDevice)) {
+        final prefix = deepLink.startsWith(schemeDevice) ? schemeDevice : zSchemeDevice;
+        final parsedDeviceName = deepLink.substring(prefix.length).trim();
         return NotificationTarget(
           type: NotificationTargetType.deviceDetail,
           deviceName: parsedDeviceName.isNotEmpty ? parsedDeviceName : deviceName,
           rawDeepLink: deepLink,
         );
+      }
+
+      // Dashboard / General canonical URLs
+      if (deepLink.contains('/dashboard') ||
+          deepLink.contains('/login') ||
+          deepLink.contains('zdexcloud.com')) {
+        return const NotificationTarget(type: NotificationTargetType.dashboard);
       }
 
       AppLogger.warning('[NotificationRouter] Deep-link not in allowlist: $deepLink. Falling back to dashboard.');
