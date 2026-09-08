@@ -1,17 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Turn an unused Android phone into your personal remotely accessible file server. Private, self-hosted storage without port forwarding or complex NAT configuration.">
+  
   <meta name="keywords" content="Android file server, personal cloud storage, self-hosted file server, old phone reuse, remote file manager">
+
   <title>ZdexCloud — Personal Self-Hosted Cloud Storage</title>
+  <meta name="description" content="Turn an unused Android phone into your personal remotely accessible file server. Private, self-hosted storage without port forwarding or complex NAT configuration.">
 
-  <!-- Open Graph / Social SEO -->
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="ZdexCloud — Turn Any Android Phone Into Your Personal File Server">
-  <meta property="og:description" content="Keep your files on hardware you own. Access them securely from anywhere without port forwarding.">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/">
+  <meta property="og:title" content="ZdexCloud — Personal Self-Hosted Cloud Storage">
+  <meta property="og:description" content="Turn an unused Android phone into your personal remotely accessible file server. Private, self-hosted storage without port forwarding or complex NAT configuration.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
 
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="ZdexCloud — Personal Self-Hosted Cloud Storage">
+  <meta name="twitter:description" content="Turn an unused Android phone into your personal remotely accessible file server. Private, self-hosted storage without port forwarding or complex NAT configuration.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  
   <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
@@ -109,7 +138,7 @@
     </div>
   </aside>
 
-  <main>
+  <main class="page-entrance">
     <!-- =========================================================================
          SECTION 1 — HERO
          ========================================================================= -->
@@ -151,7 +180,7 @@
           </div>
         </div>
 
-        <!-- Hero Visual Diagram -->
+        <!-- Hero Visual Architecture Diagram -->
         <div class="hero-visual">
           <div class="hero-visual-header">
             <div class="window-dots">
@@ -159,7 +188,7 @@
               <span class="window-dot"></span>
               <span class="window-dot"></span>
             </div>
-            <span class="badge badge-subtle">Live Architecture Node Status</span>
+            <span class="badge badge-subtle">Architecture Overview</span>
           </div>
 
           <div class="visual-flow-card">
@@ -171,14 +200,21 @@
                 </svg>
               </div>
               <div>
-                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Android Storage Host Node</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Primary Physical Storage Host</span>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">01. Android Storage Host</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Dedicated smartphone storage & host engine</span>
               </div>
             </div>
             <span class="status-indicator status-online">
               <span class="status-dot"></span>
-              Online
+              Host Active
             </span>
+          </div>
+
+          <div class="visual-flow-connector" aria-hidden="true">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
           </div>
 
           <div class="visual-flow-card">
@@ -189,14 +225,21 @@
                 </svg>
               </div>
               <div>
-                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Outbound Gateway Relay</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">TLS Encrypted Relay Tunnel</span>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">02. Outbound Secure Gateway</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">TLS 1.3 encrypted tunnel (No port forwarding)</span>
               </div>
             </div>
             <span class="status-indicator status-connecting">
               <span class="status-dot"></span>
               Secured
             </span>
+          </div>
+
+          <div class="visual-flow-connector" aria-hidden="true">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
           </div>
 
           <div class="visual-flow-card">
@@ -209,16 +252,51 @@
                 </svg>
               </div>
               <div>
-                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">Remote Web File Manager</strong>
-                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Accessible Anywhere via Browser</span>
+                <strong style="display: block; font-size: var(--font-size-sm); color: var(--color-text-primary);">03. Remote Web File Manager</strong>
+                <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Direct streaming to your desktop or mobile browser</span>
               </div>
             </div>
             <span class="badge badge-accent">HTTPS</span>
+          </div>
+
+          <!-- Architecture Protocol Specifications Strip -->
+          <div class="architecture-spec-strip">
+            <span class="architecture-spec-item"><span class="architecture-spec-label">TUNNEL:</span> Outbound TLS 1.3</span>
+            <span class="architecture-spec-item"><span class="architecture-spec-label">ISOLATION:</span> Zero Router Open Ports</span>
+            <span class="architecture-spec-item"><span class="architecture-spec-label">STORAGE:</span> 100% Local Phone Media</span>
           </div>
         </div>
 
       </div>
     </section>
+
+    <!-- TECHNICAL METRIC STRIP -->
+    <div class="metric-strip-wrapper motion-reveal">
+      <div class="container">
+        <div class="metric-strip-grid">
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">0</span>
+            <span class="metric-strip-label">Port Forwarding</span>
+            <span class="metric-strip-desc">Outbound WebSocket tunnels eliminate exposed home router ports.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">100%</span>
+            <span class="metric-strip-label">On-Device Storage</span>
+            <span class="metric-strip-desc">Files remain strictly on your Android phone's flash media.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">2W – 5W</span>
+            <span class="metric-strip-label">Micro-Power Usage</span>
+            <span class="metric-strip-desc">Eco-friendly silent operation compared to 60W+ commercial NAS rigs.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">5 Nodes</span>
+            <span class="metric-strip-label">Multi-Device Pairing</span>
+            <span class="metric-strip-desc">Pair and manage up to 5 independent personal phone servers.</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- =========================================================================
          SECTION 2 — PRODUCT CONCEPT
@@ -236,33 +314,57 @@
           </p>
         </div>
 
-        <div class="concept-flow-wrapper">
+        <div class="concept-flow-wrapper motion-reveal">
           <div class="concept-node">
             <span class="component-pill-header">STAGE 01</span>
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Android Phone</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Unused / Old Device</span>
+            <div style="margin: var(--space-xs) 0; color: var(--color-brand-primary); display: flex; justify-content: center;">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Old Android Phone</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Solid-state flash storage you already own</span>
           </div>
-          <div class="concept-arrow">
-            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+
+          <div class="concept-arrow" aria-hidden="true">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </div>
+
           <div class="concept-node">
             <span class="component-pill-header">STAGE 02</span>
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Install App</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Flutter Server App</span>
+            <div style="margin: var(--space-xs) 0; color: var(--color-brand-primary); display: flex; justify-content: center;">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Install ZdexCloud App</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Lightweight background host engine</span>
           </div>
-          <div class="concept-arrow">
-            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+
+          <div class="concept-arrow" aria-hidden="true">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </div>
+
           <div class="concept-node">
             <span class="component-pill-header">STAGE 03</span>
-            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Outbound Link</strong>
-            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Secure Gateway Tunnel</span>
+            <div style="margin: var(--space-xs) 0; color: var(--color-brand-primary); display: flex; justify-content: center;">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <strong style="display: block; margin-bottom: 4px; color: var(--color-text-primary);">Outbound Secure Tunnel</strong>
+            <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">TLS 1.3 relay without port forwarding</span>
           </div>
         </div>
 
@@ -286,34 +388,34 @@
         </div>
 
         <div class="process-grid">
-          <div class="card process-card">
+          <div class="card process-card card-hover">
             <span class="process-step-number">STEP 01</span>
             <h3 class="card-title">Create Account</h3>
-            <p class="card-description">Register your platform account on our website and verify your primary email address.</p>
+            <p class="card-description">Register your account on our website and verify your email address via secure 6-digit OTP code.</p>
           </div>
 
-          <div class="card process-card">
+          <div class="card process-card card-hover">
             <span class="process-step-number">STEP 02</span>
             <h3 class="card-title">Install Application</h3>
-            <p class="card-description">Download and install the Android application on your dedicated storage phone.</p>
+            <p class="card-description">Download and install the Android application on your dedicated smartphone storage host.</p>
           </div>
 
-          <div class="card process-card">
+          <div class="card process-card card-hover">
             <span class="process-step-number">STEP 03</span>
-            <h3 class="card-title">Connect Phone</h3>
-            <p class="card-description">Sign into the Android application and link the phone to your registered platform account.</p>
+            <h3 class="card-title">Link Phone Host</h3>
+            <p class="card-description">Sign in from the Android app to register your phone as one of your 5 allowed personal server hosts.</p>
           </div>
 
-          <div class="card process-card">
+          <div class="card process-card card-hover">
             <span class="process-step-number">STEP 04</span>
-            <h3 class="card-title">Configure Credentials</h3>
-            <p class="card-description">Create dedicated file-server credentials for authenticating web access to your phone.</p>
+            <h3 class="card-title">Set Credentials</h3>
+            <p class="card-description">Create dedicated file-server login credentials, strictly isolated from your primary account password.</p>
           </div>
 
-          <div class="card process-card">
+          <div class="card process-card card-hover">
             <span class="process-step-number">STEP 05</span>
             <h3 class="card-title">Start & Access</h3>
-            <p class="card-description">Enable Server Mode on the phone and open your assigned remote URL from any browser.</p>
+            <p class="card-description">Enable Server Mode on the phone and access your file manager remotely from any web browser.</p>
           </div>
         </div>
 
@@ -334,6 +436,56 @@
           <p class="section-subtitle">
             Why buy expensive commercial cloud subscriptions or complex NAS hardware when your old phone has gigabytes of reliable flash storage?
           </p>
+        </div>
+
+        <!-- ARCHITECTURAL COMPARISON SPLIT ROW -->
+        <div class="feature-split-row motion-reveal" style="margin-bottom: var(--space-3xl);">
+          <div class="feature-split-content">
+            <span class="badge badge-subtle feature-split-badge">Zero-Trust Network Isolation</span>
+            <h3 class="feature-split-title">Direct remote access without opening a single router port.</h3>
+            <p class="feature-split-desc">
+              Traditional home servers and NAS drives require manual router port forwarding, opening inbound holes in your private Wi-Fi firewall. ZdexCloud reverses the flow: your Android phone initiates an outbound encrypted WebSocket relay tunnel directly to our gateway.
+            </p>
+            <div class="feature-split-list">
+              <div class="feature-split-list-item">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>No Port Forwarding:</strong> Works behind symmetric NAT, carrier CGNAT, and mobile 4G/5G.</span>
+              </div>
+              <div class="feature-split-list-item">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Zero Router Vulnerability:</strong> Your home network has zero listening ports exposed to the Internet.</span>
+              </div>
+              <div class="feature-split-list-item">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span><strong>Local Hardware Privacy:</strong> File bytes stream directly from phone storage to your browser.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-split-visual">
+            <div style="font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--color-border-subtle); display: flex; justify-content: space-between;">
+              <span>NETWORK ARCHITECTURE COMPARISON</span>
+              <span class="badge badge-accent" style="font-size: 10px;">TLS 1.3</span>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: var(--space-md);">
+              <div style="background: rgba(220, 38, 38, 0.05); border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-md); padding: var(--space-md);">
+                <strong style="color: #991B1B; font-size: var(--font-size-sm); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Traditional Home NAS & Cloud Storage
+                </strong>
+                <span class="text-xs text-muted">Requires open router ports (80/443/5000), dynamic DNS configuration, high standby power (35W–90W), and recurring subscriptions.</span>
+              </div>
+
+              <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); padding: var(--space-md);">
+                <strong style="color: #065F46; font-size: var(--font-size-sm); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  ZdexCloud Android Phone Server
+                </strong>
+                <span class="text-xs text-muted">Zero router ports opened. Phone initiates outbound TLS 1.3 WebSocket tunnel. 100% on-device storage with 2W–5W micro-power efficiency.</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="grid-3-col">
@@ -484,7 +636,7 @@
     <section class="section-wrapper" id="security">
       <div class="container">
         
-        <div class="security-banner">
+        <div class="security-banner motion-reveal">
           <div class="section-header" style="margin-bottom: var(--space-xl);">
             <div class="section-eyebrow">
               <span class="badge badge-subtle">Privacy & Security Principles</span>
@@ -543,7 +695,7 @@
     <section class="section-wrapper" id="reuse-phone">
       <div class="container">
         
-        <div class="reuse-hero-box">
+        <div class="reuse-hero-box motion-reveal">
           <div>
             <h2 class="reuse-title">Give your old Android phone a new job.</h2>
             <p class="reuse-text">
@@ -656,7 +808,7 @@
     <section class="section-wrapper section-wrapper-alt" id="pricing">
       <div class="container">
         
-        <div class="pricing-preview-card">
+        <div class="pricing-preview-card motion-reveal">
           <span class="badge badge-accent" style="margin-bottom: var(--space-md);">Free Community Tier</span>
           <h2 class="section-title">Zero Monthly Storage Fees</h2>
           <p class="section-subtitle" style="margin-bottom: var(--space-xl);">
@@ -736,7 +888,7 @@
     <section class="section-wrapper" id="get-started">
       <div class="container">
         
-        <div class="final-cta-banner">
+        <div class="final-cta-banner motion-reveal">
           <h2 class="final-cta-title">Your old phone is already capable of doing more.</h2>
           <p class="final-cta-description">
             Start transforming your spare Android smartphone into a secure, self-hosted, remotely accessible personal cloud file server today.
@@ -817,6 +969,8 @@
     </div>
   </footer>
 
+  <!-- Centralized Motion Controller -->
+  <script src="js/motion.js"></script>
   <!-- Main JavaScript File -->
   <script src="js/main.js"></script>
 </body>

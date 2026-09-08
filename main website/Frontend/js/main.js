@@ -13,7 +13,22 @@ document.addEventListener('DOMContentLoaded', () => {
   initSmoothScroll();
   initAccordion();
   initFrontendFormHandlers();
+  initPageMotion();
 });
+
+/**
+ * Orchestrates Page Entrance and Scroll Reveal via ZdexMotion
+ */
+function initPageMotion() {
+  if (window.ZdexMotion) {
+    if (typeof window.ZdexMotion.initPageEntrance === 'function') {
+      window.ZdexMotion.initPageEntrance('main');
+    }
+    if (typeof window.ZdexMotion.initScrollReveal === 'function') {
+      window.ZdexMotion.initScrollReveal('.motion-reveal');
+    }
+  }
+}
 
 /**
  * 0. App Access Guidance Banner (Zero Emojis, Pure Lucide SVG Icons)
@@ -93,21 +108,35 @@ function initAppRedirectNotice() {
 }
 
 /**
- * 1. Sticky Header Scroll Effect
+ * 1. Sticky Header Scroll Effect (Smooth rAF Throttle & ZdexMotion Integration)
  */
 function initStickyHeader() {
+  if (window.ZdexMotion && typeof window.ZdexMotion.initHeaderScroll === 'function') {
+    window.ZdexMotion.initHeaderScroll('.site-header', 20);
+    return;
+  }
+
   const header = document.querySelector('.site-header');
   if (!header) return;
 
+  let ticking = false;
   const handleScroll = () => {
     if (window.scrollY > 20) {
       header.classList.add('is-scrolled');
     } else {
       header.classList.remove('is-scrolled');
     }
+    ticking = false;
   };
 
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(handleScroll);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  handleScroll();
 }
 
 /**

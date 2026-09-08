@@ -1,0 +1,24 @@
+{
+  "name": "ZdexCloud — Personal File Server",
+  "short_name": "ZdexCloud",
+  "description": "Turn your Android phone into a private personal cloud file server. Access files securely without port forwarding.",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#2563EB",
+  "background_color": "#FAFAFC",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}

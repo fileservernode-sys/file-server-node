@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" fill="none">
+  <defs>
+    <linearGradient id="ogBg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="50%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <linearGradient id="ogCard" x1="100" y1="80" x2="600" y2="550" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#1E40AF" stop-opacity="0.05" />
+    </linearGradient>
+    <linearGradient id="ogMarkGrad" x1="30" y1="20" x2="130" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1D4ED8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#ogBg)" />
+
+  <!-- Subtle Ambient Glow -->
+  <circle cx="950" cy="180" r="350" fill="#2563EB" fill-opacity="0.18" filter="blur(80px)" />
+  <circle cx="200" cy="450" r="280" fill="#3B82F6" fill-opacity="0.12" filter="blur(70px)" />
+
+  <!-- Grid overlay -->
+  <g stroke="#334155" stroke-opacity="0.3" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="630" />
+    <line x1="300" y1="0" x2="300" y2="630" />
+    <line x1="500" y1="0" x2="500" y2="630" />
+    <line x1="700" y1="0" x2="700" y2="630" />
+    <line x1="900" y1="0" x2="900" y2="630" />
+    <line x1="1100" y1="0" x2="1100" y2="630" />
+    <line x1="0" y1="150" x2="1200" y2="150" />
+    <line x1="0" y1="315" x2="1200" y2="315" />
+    <line x1="0" y1="480" x2="1200" y2="480" />
+  </g>
+
+  <!-- Brand Mark (Scale 2.2x) -->
+  <g transform="translate(100, 110)">
+    <rect x="0" y="0" width="108" height="108" rx="28" fill="url(#ogMarkGrad)" />
+    <path d="M28 36C28 34.3431 29.3431 33 31 33H77C78.6569 33 80 34.3431 80 36C80 37.6569 78.6569 39 77 39H31C29.3431 39 28 37.6569 28 36Z" fill="#FFFFFF" />
+    <path d="M78 35L30 73" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+    <path d="M31 69C29.3431 69 28 70.3431 28 72C28 73.6569 29.3431 75 31 75H77C78.6569 75 80 73.6569 80 72C80 70.3431 78.6569 69 77 69H31Z" fill="#FFFFFF" />
+    <circle cx="54" cy="54" r="8" fill="#93C5FD" stroke="#FFFFFF" stroke-width="4" />
+  </g>
+
+  <!-- Brand Title -->
+  <text x="230" y="180" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" font-size="52" font-weight="700" letter-spacing="-0.03em" fill="#FFFFFF">
+    Zdex<tspan fill="#60A5FA">Cloud</tspan>
+  </text>
+
+  <!-- Value Proposition Headline -->
+  <text x="100" y="320" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" font-size="44" font-weight="700" letter-spacing="-0.025em" fill="#F8FAFC">
+    Turn Any Android Phone Into Your
+  </text>
+  <text x="100" y="380" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" font-size="44" font-weight="700" letter-spacing="-0.025em" fill="#60A5FA">
+    Personal Self-Hosted Cloud Server
+  </text>
+
+  <!-- Supporting Subtitle -->
+  <text x="100" y="450" font-family="'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif" font-size="22" font-weight="400" fill="#94A3B8">
+    Private storage on hardware you own. Zero subscription lock-in. Remote access anywhere.
+  </text>
+
+  <!-- Tag Pills -->
+  <g transform="translate(100, 500)">
+    <rect x="0" y="0" width="170" height="42" rx="21" fill="#1E293B" stroke="#334155" />
+    <text x="85" y="26" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="600" fill="#E2E8F0">100% Private Cloud</text>
+
+    <rect x="185" y="0" width="180" height="42" rx="21" fill="#1E293B" stroke="#334155" />
+    <text x="275" y="26" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="600" fill="#E2E8F0">Encrypted Tunneling</text>
+
+    <rect x="380" y="0" width="160" height="42" rx="21" fill="#1E293B" stroke="#334155" />
+    <text x="460" y="26" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="14" font-weight="600" fill="#E2E8F0">Zero Subscription</text>
+  </g>
+
+  <!-- Canonical URL Badge -->
+  <text x="1100" y="580" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="500" fill="#64748B">
+    https://zdexcloud.com
+  </text>
+</svg>

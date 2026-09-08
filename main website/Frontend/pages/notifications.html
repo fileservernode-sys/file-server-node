@@ -1,10 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Notification Center | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="View your ZdexCloud notifications, security alerts, device events, and manage notification preferences.">
+  <meta name="description" content="View your ZdexCloud notifications, security alerts, device events, and manage notification delivery preferences.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/notifications.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/notifications.html">
+  <meta property="og:title" content="Notification Center | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="View your ZdexCloud notifications, security alerts, device events, and manage notification delivery preferences.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Notification Center | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="View your ZdexCloud notifications, security alerts, device events, and manage notification delivery preferences.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -90,7 +124,7 @@
   </aside>
 
   <!-- MAIN NOTIFICATION CENTER CONTENT -->
-  <main class="rn-notif-history-page">
+  <main class="rn-notif-history-page page-entrance">
     <div class="container">
       
       <!-- Page Header -->
@@ -123,6 +157,7 @@
   </main>
 
   <!-- SCRIPTS -->
+  <script src="../js/motion.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
   <script src="../js/notification-center.js"></script>

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Centralized 8-pt Grid System & Spacing Tokens
+/// Centralized 8-pt Grid System & Spacing Tokens (ZD-UX-1)
 class AppSpacing {
   static const double xxs = 4.0;
   static const double xs = 8.0;
@@ -11,10 +11,17 @@ class AppSpacing {
   static const double xxl = 32.0;
   static const double xxxl = 40.0;
   static const double huge = 48.0;
+  static const double massive = 64.0;
+  static const double gigantic = 96.0;
 
   // Responsive Content Max Width Constraints
   static const double maxFormWidth = 420.0;
   static const double maxContentWidth = 640.0;
+
+  // Responsive Breakpoints for Flutter Adaptive Layouts
+  static const double breakpointCompact = 360.0;
+  static const double breakpointMedium = 600.0;
+  static const double breakpointExpanded = 840.0;
 
   // Padding EdgeInset Helpers
   static const EdgeInsets paddingXs = EdgeInsets.all(xs);

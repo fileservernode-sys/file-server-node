@@ -1,16 +1,16 @@
 /* ==========================================================================
-   REMOTE NODE DESIGN SYSTEM TOKENS
-   Phase MW-1 — Batch MW-1.2: Premium Design System Foundation
+   ZDEXCLOUD CANONICAL DESIGN SYSTEM TOKENS
+   Batch ZD-UX-1: Design System, Responsive Architecture & Motion System
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    0. GOOGLE FONTS IMPORT (Plus Jakarta Sans & JetBrains Mono)
    -------------------------------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap');
 
 :root {
   /* ------------------------------------------------------------------------
-     1. TYPOGRAPHY SYSTEM
+     1. TYPOGRAPHY SYSTEM (Plus Jakarta Sans & JetBrains Mono)
      ------------------------------------------------------------------------ */
   --font-family-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -21,17 +21,17 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* Semantic Typography Scale */
-  --font-size-display: clamp(2.75rem, 5vw, 4rem);      /* 44px - 64px Hero Display */
-  --font-size-h1: clamp(2.25rem, 4vw, 3.25rem);       /* 36px - 52px Page H1 */
-  --font-size-h2: clamp(1.75rem, 3vw, 2.375rem);      /* 28px - 38px Section H2 */
-  --font-size-h3: clamp(1.375rem, 2vw, 1.75rem);      /* 22px - 28px Section H3 */
-  --font-size-h4: 1.25rem;                           /* 20px Card Title / H4 */
-  --font-size-body-lg: 1.125rem;                     /* 18px Body Large / Subtitles */
-  --font-size-body: 1rem;                            /* 16px Base Body Text */
-  --font-size-body-sm: 0.875rem;                     /* 14px Helper Text / Controls */
-  --font-size-caption: 0.75rem;                      /* 12px Micro Badges / Captions */
-  --font-size-technical: 0.875rem;                    /* 14px Monospace Values */
+  /* Semantic Fluid Typography Scale (Smoothly scaling from 320px up to 1920px+) */
+  --font-size-display: clamp(2.25rem, 5vw + 1rem, 3.75rem);   /* 36px - 60px Hero Display */
+  --font-size-h1: clamp(1.875rem, 3.5vw + 0.75rem, 2.75rem); /* 30px - 44px Page H1 */
+  --font-size-h2: clamp(1.5rem, 2.5vw + 0.5rem, 2.125rem);   /* 24px - 34px Section H2 */
+  --font-size-h3: clamp(1.25rem, 1.5vw + 0.5rem, 1.625rem);  /* 20px - 26px Section H3 */
+  --font-size-h4: clamp(1.125rem, 1vw + 0.5rem, 1.25rem);    /* 18px - 20px Card Title / H4 */
+  --font-size-body-lg: 1.125rem;                              /* 18px Body Large / Subtitles */
+  --font-size-body: 1rem;                                     /* 16px Base Body Text */
+  --font-size-body-sm: 0.875rem;                              /* 14px Helper Text / Controls */
+  --font-size-caption: 0.75rem;                               /* 12px Micro Badges / Captions */
+  --font-size-technical: 0.875rem;                             /* 14px Monospace Values */
 
   /* Legacy Scale Backward Compatibility Aliases */
   --font-size-xs: 0.75rem;
@@ -58,55 +58,81 @@
   --letter-spacing-mono: -0.01em;
 
   /* ------------------------------------------------------------------------
-     2. COLOR PALETTE & SEMANTIC TOKENS
+     2. COLOR PALETTE & SEMANTIC TOKENS (Canonical ZdexCloud Foundation)
      ------------------------------------------------------------------------ */
   /* Brand Core Tokens */
-  --color-brand-primary: #0F172A;        /* Slate Navy 900 */
-  --color-brand-primary-hover: #1E293B;  /* Slate Navy 800 */
-  --color-brand-accent: #2563EB;         /* Royal Indigo 600 */
-  --color-brand-accent-hover: #1D4ED8;   /* Royal Indigo 700 */
-  --color-brand-accent-subtle: #EFF6FF;  /* Royal Indigo Tint 50 */
+  --color-brand-primary: #2563EB;        /* Canonical Royal Blue 600 */
+  --color-brand-primary-hover: #1D4ED8;  /* Royal Blue 700 */
+  --color-brand-primary-active: #1E40AF; /* Royal Blue 800 */
+  --color-brand-soft: #EFF6FF;           /* Soft Blue 50 */
+  --color-brand-subtle: #EFF6FF;
+
+  /* Legacy Brand Accent Aliases */
+  --color-brand-accent: #2563EB;
+  --color-brand-accent-hover: #1D4ED8;
+  --color-brand-accent-subtle: #EFF6FF;
+
+  /* Neutral Slate Palette */
+  --color-slate-900: #0F172A;            /* Deep Slate Navy */
+  --color-slate-800: #1E293B;            /* Dark Slate */
+  --color-slate-700: #334155;            /* Secondary Slate Text */
+  --color-slate-600: #475569;            /* Intermediate Slate */
+  --color-slate-500: #64748B;            /* Muted Slate */
+  --color-slate-400: #94A3B8;            /* Subtle Slate */
+  --color-slate-300: #CBD5E1;            /* Border Hover */
+  --color-slate-200: #E2E8F0;            /* Default Border */
+  --color-slate-100: #F1F5F9;            /* Subtle Fill */
+  --color-slate-50: #F8FAFC;             /* Secondary Background */
 
   /* Backgrounds & Surfaces */
-  --color-bg-page: #F8FAFC;            /* Soft Off-White Canvas */
-  --color-bg-surface: #FFFFFF;         /* Crisp White Surface */
-  --color-bg-subtle: #F1F5F9;          /* Neutral Container Fill */
-  --color-bg-tertiary: #E2E8F0;        /* Subtle Border/Grid Fill */
-  --color-bg-elevated: #FFFFFF;        /* Elevated Floating Surface */
+  --color-bg-page: #FAFAFC;              /* Canonical Canvas (Soft Off-White) */
+  --color-bg-surface: #FFFFFF;           /* Crisp White Surface */
+  --color-bg-subtle: #F1F5F9;            /* Neutral Container Fill */
+  --color-bg-tertiary: #E2E8F0;          /* Subtle Border/Grid Fill */
+  --color-bg-elevated: #FFFFFF;          /* Elevated Floating Surface */
 
   /* Text & Content Hierarchy */
-  --color-text-primary: #0F172A;      /* Primary Headings & High Contrast Text */
-  --color-text-secondary: #334155;    /* High-legibility Body Text */
-  --color-text-muted: #64748B;        /* Subtitles, Captions & Labels */
-  --color-text-subtle: #94A3B8;       /* Placeholders & De-emphasized Text */
-  --color-text-on-dark: #FFFFFF;      /* Inverted High-Contrast Text */
+  --color-text-primary: #0F172A;        /* Deep Slate: Primary Headings & High-Contrast Text */
+  --color-text-secondary: #334155;      /* Secondary: High-legibility Body Text */
+  --color-text-muted: #64748B;          /* Muted: Subtitles, Captions & Labels */
+  --color-text-subtle: #94A3B8;         /* Subtle: Placeholders & De-emphasized Text */
+  --color-text-on-dark: #FFFFFF;        /* Inverted High-Contrast Text */
+  --color-text-on-primary: #FFFFFF;     /* Text on Primary Royal Blue Buttons */
 
   /* Borders & Dividers */
-  --color-border: #E2E8F0;            /* Default Container Border */
-  --color-border-subtle: #F1F5F9;     /* Light Inner Divider */
-  --color-border-hover: #CBD5E1;      /* Hover State Border */
-  --color-border-focus: #2563EB;      /* Accessible Focus Border */
+  --color-border: #E2E8F0;              /* Canonical Border */
+  --color-border-subtle: #F1F5F9;       /* Light Inner Divider */
+  --color-border-hover: #CBD5E1;        /* Interactive Hover Border */
+  --color-border-focus: #2563EB;        /* Accessible Focus Ring */
 
   /* Semantic Status & Alert Tokens */
-  --color-status-online: #059669;        /* Emerald Green 600 */
-  --color-status-online-bg: #ECFDF5;     /* Emerald Green Tint 50 */
-  --color-status-offline: #64748B;       /* Slate 500 */
-  --color-status-offline-bg: #F1F5F9;    /* Slate Tint 100 */
-  --color-status-connecting: #D97706;    /* Amber 600 */
-  --color-status-connecting-bg: #FFFBEB; /* Amber Tint 50 */
-  --color-status-error: #DC2626;         /* Crimson Red 600 */
-  --color-status-error-bg: #FEF2F2;      /* Crimson Red Tint 50 */
-  --color-status-success: #059669;       /* Emerald Green 600 */
+  --color-status-online: #059669;          /* Emerald Green 600 */
+  --color-status-online-bg: #ECFDF5;       /* Emerald Green Tint 50 */
+  --color-status-online-border: rgba(5, 150, 105, 0.2);
+
+  --color-status-connecting: #D97706;      /* Amber 600 */
+  --color-status-connecting-bg: #FFFBEB;   /* Amber Tint 50 */
+  --color-status-connecting-border: rgba(217, 119, 6, 0.2);
+
+  --color-status-offline: #64748B;         /* Slate 500 */
+  --color-status-offline-bg: #F1F5F9;      /* Slate Tint 100 */
+  --color-status-offline-border: #E2E8F0;
+
+  --color-status-error: #DC2626;           /* Crimson Red 600 */
+  --color-status-error-bg: #FEF2F2;        /* Crimson Red Tint 50 */
+  --color-status-error-border: rgba(220, 38, 38, 0.2);
+
+  --color-status-success: #059669;
   --color-status-success-bg: #ECFDF5;
-  --color-status-warning: #D97706;       /* Amber 600 */
+  --color-status-warning: #D97706;
   --color-status-warning-bg: #FFFBEB;
-  --color-status-info: #2563EB;          /* Royal Blue 600 */
+  --color-status-info: #2563EB;
   --color-status-info-bg: #EFF6FF;
 
-  /* Backward Compatibility Aliases */
+  /* Backward Compatibility Color Aliases */
   --color-primary: var(--color-brand-primary);
   --color-primary-hover: var(--color-brand-primary-hover);
-  --color-primary-light: #F8FAFC;
+  --color-primary-light: var(--color-brand-soft);
   --color-accent: var(--color-brand-accent);
   --color-accent-hover: var(--color-brand-accent-hover);
   --color-accent-subtle: var(--color-brand-accent-subtle);
@@ -138,41 +164,44 @@
   --space-xs: 0.5rem;    /* 8px */
   --space-sm: 0.75rem;   /* 12px */
   --space-md: 1rem;      /* 16px */
-  --space-lg: 1.5rem;    /* 24px */
-  --space-xl: 2rem;      /* 32px */
-  --space-2xl: 3rem;     /* 48px */
-  --space-3xl: 4rem;     /* 64px */
-  --space-4xl: 6rem;     /* 96px */
+  --space-lg: 1.25rem;   /* 20px */
+  --space-xl: 1.5rem;    /* 24px */
+  --space-2xl: 2rem;     /* 32px */
+  --space-3xl: 2.5rem;   /* 40px */
+  --space-4xl: 3rem;     /* 48px */
+  --space-5xl: 4rem;     /* 64px */
+  --space-6xl: 6rem;     /* 96px */
 
   /* ------------------------------------------------------------------------
      4. BORDER RADIUS SYSTEM
      ------------------------------------------------------------------------ */
-  --radius-xs: 4px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
-  --radius-full: 9999px;
+  --radius-xs: 4px;      /* Micro tags, inner elements */
+  --radius-sm: 8px;      /* Standard badges, controls, small buttons */
+  --radius-md: 12px;     /* Form inputs, default buttons, cards */
+  --radius-lg: 16px;     /* Elevated cards, panels, bottom sheets */
+  --radius-xl: 24px;     /* Feature banners, large modals */
+  --radius-full: 9999px; /* Status pills, avatars, circular buttons */
 
   /* ------------------------------------------------------------------------
-     5. ELEVATION & SHADOW SYSTEM (Refined Slate Ambient Shadows)
+     5. ELEVATION & SHADOW SYSTEM (Restrained Slate Ambient Shadows)
      ------------------------------------------------------------------------ */
-  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 8px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 20px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
-  --shadow-xl: 0 24px 32px -8px rgba(15, 23, 42, 0.1), 0 8px 12px -4px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 24px -4px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.02);
+  --shadow-xl: 0 24px 36px -8px rgba(15, 23, 42, 0.1), 0 8px 12px -4px rgba(15, 23, 42, 0.03);
 
   /* ------------------------------------------------------------------------
      6. BORDER TOKENS
      ------------------------------------------------------------------------ */
   --border-width-thin: 1px;
+  --border-width-focus: 2px;
   --border-style-default: solid;
 
   /* ------------------------------------------------------------------------
      7. ICON SYSTEM TOKENS (Lucide SVG Specification)
      ------------------------------------------------------------------------ */
+  --icon-size-xs: 14px;
   --icon-size-sm: 16px;
   --icon-size-md: 20px;
   --icon-size-lg: 24px;
@@ -180,23 +209,92 @@
   --icon-stroke-width: 2px;
 
   /* ------------------------------------------------------------------------
-     8. TRANSITIONS, MOTION & Z-INDEX
+     8. MOTION SYSTEM TOKENS (Standardized 6-Tier Timing, Easing & Distances)
      ------------------------------------------------------------------------ */
-  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Durations */
+  --motion-duration-instant: 100ms;  /* Micro-interactions, button active, icon state */
+  --motion-duration-fast: 150ms;     /* Toggles, checkboxes, tooltips, dropdown items */
+  --motion-duration-normal: 220ms;   /* Modals, bottom sheets, cards, tabs, route transitions */
+  --motion-duration-moderate: 320ms; /* Accordions, drawers, staged reveals */
+  --motion-duration-slow: 450ms;     /* Complex layout reordering, full-page transitions */
+  --motion-duration-emphasis: 600ms; /* Celebratory animations, status alerts */
 
-  --z-header: 100;
-  --z-overlay: 200;
-  --z-drawer: 300;
-  --z-modal: 400;
-  --z-toast: 500;
+  /* Easing Curves */
+  --motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);       /* Smooth natural deceleration */
+  --motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1.2);   /* Controlled micro-overshoot */
+  --motion-easing-enter: cubic-bezier(0, 0, 0.2, 1);         /* Decelerated entrance */
+  --motion-easing-exit: cubic-bezier(0.4, 0, 1, 1);          /* Accelerated departure */
+  --motion-easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* Tactile spring feedback */
+
+  /* Spatial Distances */
+  --motion-distance-sm: 4px;   /* Micro-lifts, button depressions */
+  --motion-distance-md: 12px;  /* Dropdowns, tooltips, tab slides */
+  --motion-distance-lg: 24px;  /* Section scroll reveals, drawer/modal offsets */
+
+  /* Shorthand Motion Token Aliases (ZD-UX-1) */
+  --duration-instant: var(--motion-duration-instant);
+  --duration-fast: var(--motion-duration-fast);
+  --duration-base: var(--motion-duration-normal);
+  --duration-normal: var(--motion-duration-normal);
+  --duration-moderate: var(--motion-duration-moderate);
+  --duration-slow: var(--motion-duration-slow);
+  --duration-deliberate: var(--motion-duration-slow);
+  --duration-complex: var(--motion-duration-emphasis);
+
+  --ease-standard: var(--motion-easing-standard);
+  --ease-emphasized: var(--motion-easing-emphasized);
+  --ease-enter: var(--motion-easing-enter);
+  --ease-exit: var(--motion-easing-exit);
+  --ease-spring: var(--motion-easing-spring);
+
+  --motion-distance-xs: var(--motion-distance-sm);
+  --motion-distance-sm: var(--motion-distance-md);
+  --motion-distance-md: var(--motion-distance-lg);
+
+  /* Backward Compatibility Transition Aliases */
+  --transition-fast: var(--motion-duration-fast) var(--motion-easing-standard);
+  --transition-normal: var(--motion-duration-normal) var(--motion-easing-standard);
+  --transition-slow: var(--motion-duration-slow) var(--motion-easing-standard);
 
   /* ------------------------------------------------------------------------
-     9. CONTAINER WIDTHS
+     9. Z-INDEX SYSTEM HIERARCHY
+     ------------------------------------------------------------------------ */
+  --z-base: 0;
+  --z-card: 1;
+  --z-sticky: 100;
+  --z-header: 200;
+  --z-dropdown: 300;
+  --z-popover: 400;
+  --z-overlay: 500;
+  --z-modal-backdrop: 500;
+  --z-drawer: 600;
+  --z-modal: 700;
+  --z-toast: 800;
+
+  /* ------------------------------------------------------------------------
+     10. RESPONSIVE BREAKPOINT SYSTEM
+     ------------------------------------------------------------------------ */
+  --breakpoint-xs: 480px;   /* Mobile Landscape & Large Phones */
+  --breakpoint-sm: 640px;   /* Phablets & Mini Tablets */
+  --breakpoint-md: 768px;   /* Tablets Portrait */
+  --breakpoint-lg: 1024px;  /* Tablets Landscape & Laptops */
+  --breakpoint-xl: 1280px;  /* Standard Desktop Monitors */
+  --breakpoint-2xl: 1536px; /* Ultrawide & High-Resolution Displays */
+
+  /* ------------------------------------------------------------------------
+     11. RESPONSIVE CONTAINER WIDTHS & PADDING
      ------------------------------------------------------------------------ */
   --container-max-width: 1200px;
-  --container-wide-max-width: 1400px;
+  --container-wide-max-width: 1440px;
   --container-narrow-max-width: 800px;
+  --container-reading-max-width: 680px;
+  --container-form-max-width: 440px;
+  --container-dashboard-max-width: 1280px;
+  --container-padding-mobile: var(--space-md);   /* 16px */
+  --container-padding-desktop: var(--space-xl);  /* 24px */
+
+  /* Minimum Accessible Touch Target */
+  --min-touch-target: 44px;
 }
+
 

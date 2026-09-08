@@ -1,22 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Explore the ZdexCloud personal Android file server platform components, architecture, local-first storage capabilities, hardware requirements, and cloud vs self-hosted comparison.">
+  
   <meta name="keywords" content="Android file server architecture, personal cloud product, phone server host, self-hosted NAS alternative, ZdexCloud product overview">
+
   <title>Product Overview & Technical Architecture | ZdexCloud — Personal File Server</title>
+  <meta name="description" content="Explore the ZdexCloud personal Android file server platform components, architecture, local-first storage capabilities, hardware requirements, and cloud vs self-hosted comparison.">
 
-  <!-- Canonical URL & Open Graph SEO -->
-  <link rel="canonical" href="https://zdexcloud.com/product">
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/product.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Product Overview & Technical Architecture | ZdexCloud">
-  <meta property="og:description" content="Explore the 3 core pillars of ZdexCloud personal phone file servers, hardware specifications, and self-hosted privacy model.">
-  <meta property="og:url" content="https://zdexcloud.com/product">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Product Overview & Technical Architecture | ZdexCloud">
-  <meta name="twitter:description" content="Learn how ZdexCloud converts Android smartphones into private, remotely accessible personal cloud nodes.">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/product.html">
+  <meta property="og:title" content="Product Overview & Technical Architecture | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Explore the ZdexCloud personal Android file server platform components, architecture, local-first storage capabilities, hardware requirements, and cloud vs self-hosted comparison.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
 
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Product Overview & Technical Architecture | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Explore the ZdexCloud personal Android file server platform components, architecture, local-first storage capabilities, hardware requirements, and cloud vs self-hosted comparison.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
   {
@@ -146,22 +170,50 @@
     </div>
   </section>
 
-  <main>
-    <!-- THREE COMPONENTS SECTION -->
+    <main class="page-entrance">
+    <!-- TECHNICAL METRIC STRIP -->
+    <div class="metric-strip-wrapper motion-reveal">
+      <div class="container">
+        <div class="metric-strip-grid">
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">0</span>
+            <span class="metric-strip-label">Port Forwarding</span>
+            <span class="metric-strip-desc">Outbound WebSocket tunnels eliminate exposed home router ports.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">100%</span>
+            <span class="metric-strip-label">On-Device Storage</span>
+            <span class="metric-strip-desc">Files remain strictly on your Android phone's flash media.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">2W – 5W</span>
+            <span class="metric-strip-label">Micro-Power Usage</span>
+            <span class="metric-strip-desc">Eco-friendly silent operation compared to 60W+ commercial NAS rigs.</span>
+          </div>
+          <div class="metric-strip-item">
+            <span class="metric-strip-value">5 Nodes</span>
+            <span class="metric-strip-label">Multi-Device Pairing</span>
+            <span class="metric-strip-desc">Pair and manage up to 5 independent personal phone servers.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THREE PILLARS SYSTEM ARCHITECTURE -->
     <section class="section-wrapper" id="components">
       <div class="container">
-        <div class="section-header">
+        <div class="section-header motion-reveal">
           <div class="section-eyebrow"><span class="badge badge-subtle">System Architecture</span></div>
           <h2 class="section-title">Three unified software pillars</h2>
-          <p class="section-subtitle">A strict separation of concerns ensures privacy, high-throughput file transfers, and Zero-Trust isolation.</p>
+          <p class="section-subtitle">A strict separation of concerns ensures data privacy, high-throughput file transfers, and Zero-Trust isolation.</p>
         </div>
 
-        <div class="components-card-grid">
+        <div class="components-card-grid motion-reveal">
           <div class="card card-hover">
             <span class="component-pill-header">PILLAR 01</span>
             <h3 class="card-title">Main Control Website & Registry</h3>
             <p class="card-description">
-              Handles user authentication, device ownership verification, 5-server registration limits, live status telemetry, and secure endpoint discovery. Never stores or inspects your personal files.
+              Handles user authentication, device ownership verification, 5-server registration limits, device status monitoring, and secure endpoint discovery. Never stores or inspects your personal files.
             </p>
           </div>
           <div class="card card-hover">
@@ -182,17 +234,74 @@
       </div>
     </section>
 
-    <!-- DETAILED COMPARISON SECTION -->
-    <section class="section-wrapper section-wrapper-alt">
+    <!-- CORE PRODUCT CAPABILITIES SECTION -->
+    <section class="section-wrapper section-wrapper-alt" id="capabilities">
       <div class="container">
-        <div class="section-header section-header-center">
+        <div class="section-header motion-reveal">
+          <div class="section-eyebrow"><span class="badge badge-accent">Core Capabilities</span></div>
+          <h2 class="section-title">Everything needed for personal remote storage</h2>
+          <p class="section-subtitle">A balanced suite of file management tools designed for high performance on phone hardware.</p>
+        </div>
+
+        <div class="grid-4-col motion-reveal">
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h3 class="card-title" style="font-size: var(--font-size-md);">Full File Operations</h3>
+            <p class="card-description">Browse, upload, download, move, rename, delete, and organize files into nested directories.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <h3 class="card-title" style="font-size: var(--font-size-md);">Media Streaming</h3>
+            <p class="card-description">Stream videos and browse high-resolution photo galleries directly in your browser without downloading first.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3 class="card-title" style="font-size: var(--font-size-md);">Dual-Auth Security</h3>
+            <p class="card-description">Separated credentials: account credentials manage device pairing; isolated server credentials protect file access.</p>
+          </div>
+
+          <div class="card feature-card card-hover">
+            <div class="feature-icon-wrapper">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <h3 class="card-title" style="font-size: var(--font-size-md);">Unique Subdomain Routing</h3>
+            <p class="card-description">Each registered server node resolves via its designated unique subdomain endpoint over TLS 1.3.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DETAILED ARCHITECTURAL COMPARISON SECTION -->
+    <section class="section-wrapper" id="comparison">
+      <div class="container">
+        <div class="section-header section-header-center motion-reveal">
           <div class="section-eyebrow"><span class="badge badge-accent">Architectural Comparison</span></div>
           <h2 class="section-title">Why ZdexCloud vs Cloud & NAS</h2>
           <p class="section-subtitle">Compare self-hosted Android node infrastructure against subscription cloud storage and traditional home NAS units.</p>
         </div>
 
-        <div style="overflow-x: auto; margin-bottom: var(--space-xl);">
-          <table class="pricing-comparison-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-md);">
+        <div class="pricing-table-wrapper motion-reveal" style="margin-bottom: var(--space-xl);">
+          <table class="pricing-table">
             <thead>
               <tr style="border-bottom: 2px solid var(--color-border-subtle); text-align: left;">
                 <th style="padding: var(--space-md);">Feature / Architecture</th>
@@ -247,7 +356,7 @@
           <p class="section-subtitle">How a file request travels securely from your browser to your phone host.</p>
         </div>
 
-        <div class="concept-flow-wrapper">
+        <div class="concept-flow-wrapper motion-reveal">
           <div class="concept-node">
             <strong style="display: block; color: var(--color-text-primary);">01. User Request</strong>
             <span style="font-size: var(--font-size-xs); color: var(--color-text-muted);">Remote Web Browser</span>
@@ -394,6 +503,7 @@
     </div>
   </footer>
 
+  <script src="../js/motion.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>

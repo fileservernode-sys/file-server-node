@@ -1,21 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Step-by-step guide to configuring your Android phone as a personal file server and accessing your files remotely without complex router tweaking.">
+  
   <meta name="keywords" content="How to turn old phone into file server, Android personal cloud setup, phone server guide, self-hosted file server step by step">
-  <title>How It Works — Step-by-Step Server Setup | ZdexCloud</title>
 
-  <!-- Canonical URL & Open Graph SEO -->
-  <link rel="canonical" href="https://zdexcloud.com/how-it-works">
+  <title>How It Works — Step-by-Step Server Setup | ZdexCloud</title>
+  <meta name="description" content="Step-by-step guide to configuring your Android phone as a personal file server and accessing your files remotely without complex router tweaking.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/how-it-works.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="article">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/how-it-works.html">
   <meta property="og:title" content="How It Works — Step-by-Step Server Setup | ZdexCloud">
-  <meta property="og:description" content="Follow the complete 10-step sequence from platform account creation to remote file streaming from your Android host.">
-  <meta property="og:url" content="https://zdexcloud.com/how-it-works">
+  <meta property="og:description" content="Step-by-step guide to configuring your Android phone as a personal file server and accessing your files remotely without complex router tweaking.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
   <meta name="twitter:title" content="How It Works — Step-by-Step Server Setup | ZdexCloud">
-  <meta name="twitter:description" content="Turn your unused Android smartphone into a remotely accessible file server in under 5 minutes.">
+  <meta name="twitter:description" content="Step-by-step guide to configuring your Android phone as a personal file server and accessing your files remotely without complex router tweaking.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
 
   <!-- HowTo JSON-LD Schema -->
   <script type="application/ld+json">
@@ -27,28 +50,28 @@
     "step": [
       {
         "@type": "HowToStep",
-        "name": "Create Control Plane Account",
-        "text": "Sign up on the ZdexCloud website using your email address and verify with the 6-digit OTP code."
+        "name": "Install Android App",
+        "text": "Download and install the official ZdexCloud APK onto your dedicated smartphone host."
       },
       {
         "@type": "HowToStep",
-        "name": "Install Android Application",
-        "text": "Download and install the ZdexCloud Android APK on your target phone host."
+        "name": "Sign In and Configure Device",
+        "text": "Authenticate with your account and configure dedicated file-server credentials."
       },
       {
         "@type": "HowToStep",
-        "name": "Pair Storage Node",
-        "text": "Authenticate the app with your account to register the phone as one of your 5 allowed server hosts."
+        "name": "Activate Storage Host Engine",
+        "text": "Switch on Server Mode to activate local HTTP file hosting on the phone."
       },
       {
         "@type": "HowToStep",
-        "name": "Configure Dedicated Credentials",
-        "text": "Set up phone-specific file manager credentials for secure remote login."
+        "name": "Establish Outbound Secure Connection",
+        "text": "The phone initiates an outbound TLS 1.3 WebSocket tunnel to the gateway."
       },
       {
         "@type": "HowToStep",
-        "name": "Enable Server Mode & Access Remotely",
-        "text": "Start Server Mode on the Android app and access your file manager remotely via the control plane or direct endpoint URL."
+        "name": "Access Files Remotely",
+        "text": "Open your assigned unique subdomain URL from any browser to manage and stream files."
       }
     ]
   }
@@ -158,154 +181,218 @@
         <div class="page-header-eyebrow"><span class="badge badge-accent">Complete User Journey</span></div>
         <h1 class="page-header-title">From Registration to Remote File Access</h1>
         <p class="page-header-subtitle">
-          Follow the 10-step sequence that sets up your phone as an accessible personal server without complex router port forwarding or static IP configurations.
+          Follow the 5-stage setup sequence that turns your spare phone into an accessible personal server without complex router port forwarding or static IP configurations.
         </p>
       </div>
     </div>
   </section>
 
-  <main>
-    <!-- 10 STEPS PROCESS SECTION -->
+  <main class="page-entrance">
+    <!-- 5-STAGE VISUAL STORYTELLING SEQUENCE -->
     <section class="section-wrapper">
       <div class="container">
-        <div class="section-header section-header-center">
-          <div class="section-eyebrow"><span class="badge badge-accent">End-to-End Sequence</span></div>
-          <h2 class="section-title">The 10-Step Setup & Remote Access Journey</h2>
-          <p class="section-subtitle">Clear technical progression from account creation to remote file management.</p>
+        <div class="section-header section-header-center motion-reveal">
+          <div class="section-eyebrow"><span class="badge badge-accent">Visual Setup Sequence</span></div>
+          <h2 class="section-title">The 5-Stage Journey to Private Storage</h2>
+          <p class="section-subtitle">How your spare Android device converts into an always-on, zero-port personal file server.</p>
         </div>
 
-        <div class="timeline-wrapper">
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">01</span>
-              <div class="timeline-line"></div>
+        <div class="stages-story-container">
+          <div class="stages-story-list">
+            
+            <!-- STAGE 01 -->
+            <div class="stage-story-card motion-reveal">
+              <div class="stage-badge-col">
+                <div class="stage-number-disc">01</div>
+                <div class="stage-icon-sub">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </div>
+              </div>
+              <div class="stage-story-body">
+                <h3 class="stage-story-title">Install the ZdexCloud Android App</h3>
+                <p class="stage-story-desc">
+                  Download and install the official ZdexCloud APK onto your dedicated smartphone host. Compatible with any device running Android 8.0 (Oreo) or higher, including legacy phones with as little as 1.5 GB of RAM.
+                </p>
+                <div class="stage-callout-pill">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Hardware requirement: Android 8.0+ • Minimal RAM footprint</span>
+                </div>
+              </div>
             </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Create Platform Account</h3>
-              <p class="card-description">Register your user account on the main website using your email address and set your master account password.</p>
+
+            <!-- STAGE 02 -->
+            <div class="stage-story-card motion-reveal">
+              <div class="stage-badge-col">
+                <div class="stage-number-disc">02</div>
+                <div class="stage-icon-sub">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="8.5" cy="7" r="4"></circle>
+                    <polyline points="17 11 19 13 23 9"></polyline>
+                  </svg>
+                </div>
+              </div>
+              <div class="stage-story-body">
+                <h3 class="stage-story-title">Sign In and Configure Your Device</h3>
+                <p class="stage-story-desc">
+                  Sign in with your verified platform account. The app registers the phone with your central device registry (linking it as one of your up to 5 allowed server hosts) and prompts you to configure dedicated file-server credentials.
+                </p>
+                <div class="stage-callout-pill">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Dual Auth: Web access password is fully isolated from master account</span>
+                </div>
+              </div>
             </div>
+
+            <!-- STAGE 03 -->
+            <div class="stage-story-card motion-reveal">
+              <div class="stage-badge-col">
+                <div class="stage-number-disc">03</div>
+                <div class="stage-icon-sub">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                  </svg>
+                </div>
+              </div>
+              <div class="stage-story-body">
+                <h3 class="stage-story-title">Your Phone Becomes the Storage Host</h3>
+                <p class="stage-story-desc">
+                  Switch on Server Mode. The app initiates its embedded lightweight HTTP file server engine directly on the phone. All files remain strictly on your phone's internal storage or inserted microSD card.
+                </p>
+                <div class="stage-callout-pill">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>100% Local Media: Central servers never store or inspect your files</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- STAGE 04 -->
+            <div class="stage-story-card motion-reveal">
+              <div class="stage-badge-col">
+                <div class="stage-number-disc">04</div>
+                <div class="stage-icon-sub">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="stage-story-body">
+                <h3 class="stage-story-title">The Device Establishes the Outbound Secure Connection</h3>
+                <p class="stage-story-desc">
+                  Your phone initiates an outbound encrypted WebSocket tunnel (TLS 1.3) directly to the ZdexCloud gateway. Because the connection is outbound, it traverses NAT, carrier CGNAT, and mobile firewalls with zero router port forwarding.
+                </p>
+                <div class="stage-callout-pill">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Zero Port Forwarding: No open home ports • Safe behind symmetric NAT</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- STAGE 05 -->
+            <div class="stage-story-card motion-reveal">
+              <div class="stage-badge-col">
+                <div class="stage-number-disc">05</div>
+                <div class="stage-icon-sub">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="stage-story-body">
+                <h3 class="stage-story-title">Access Your Files Remotely</h3>
+                <p class="stage-story-desc">
+                  Open your unique server subdomain URL in any web browser. Authenticate with your dedicated server credentials to browse folders, upload documents, download backups, and stream photos and videos anywhere in the world.
+                </p>
+                <div class="stage-callout-pill">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Accessible everywhere: Desktop, laptop, tablet, or phone web browsers</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DEEP-DIVE CONFIGURATION & RELIABILITY SECTION -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header motion-reveal">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Reliability Engineering</span></div>
+          <h2 class="section-title">Three tips for 24/7 uninterrupted hosting</h2>
+          <p class="section-subtitle">Keep your Android phone server stable, connected, and operating efficiently.</p>
+        </div>
+
+        <div class="grid-3-col motion-reveal">
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <h3 class="card-title">Battery Optimization Whitelist</h3>
+            <p class="card-description">
+              Android aggressively suspends background services to save battery. Add ZdexCloud to the "Do Not Optimize" battery whitelist in Android Settings so Server Mode runs continuously.
+            </p>
           </div>
 
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">02</span>
-              <div class="timeline-line"></div>
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
             </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Verify Email Address</h3>
-              <p class="card-description">Confirm email ownership via 6-digit OTP code to secure device management permissions and enable server provisioning.</p>
-            </div>
+            <h3 class="card-title">Stable Wi-Fi & Power Supply</h3>
+            <p class="card-description">
+              Keep your phone connected to a standard 5W/10W charger and dedicated home Wi-Fi. The phone's built-in battery functions as an uninterrupted power supply (UPS) during short power outages.
+            </p>
           </div>
 
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">03</span>
-              <div class="timeline-line"></div>
+          <div class="card card-hover">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
             </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Install Android App</h3>
-              <p class="card-description">Download and install the Flutter Android storage host application on your target phone host.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">04</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Sign Into App</h3>
-              <p class="card-description">Authenticate inside the Android app using your main platform account credentials to connect to control plane API.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">05</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Register Android Device</h3>
-              <p class="card-description">Link the physical Android phone with your platform account registry (counts as 1 of your 5 allowed server nodes).</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">06</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Configure File Server Credentials</h3>
-              <p class="card-description">Create dedicated username and password credentials specifically for web file manager access, isolated from your main account password.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">07</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Start Server Mode</h3>
-              <p class="card-description">Enable Server Mode on the Android phone to initiate the local HTTP file-serving engine and background service.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">08</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Secure Outbound Gateway Connection</h3>
-              <p class="card-description">The app establishes an outbound WebSocket tunnel to our gateway, bypassing CGNAT and eliminating router port forwarding requirements.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">09</span>
-              <div class="timeline-line"></div>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Server Discovery & Route Resolution</h3>
-              <p class="card-description">Open the dashboard or server discovery portal to locate your active server instance and resolve its unique subdomain URL.</p>
-            </div>
-          </div>
-
-          <div class="timeline-step-item">
-            <div class="timeline-marker">
-              <span class="timeline-number-badge">10</span>
-            </div>
-            <div class="timeline-content-card">
-              <h3 class="card-title">Access & Manage Files Remotely</h3>
-              <p class="card-description">Log in with your dedicated server credentials to browse, upload, download, and stream personal media directly from your phone storage.</p>
-            </div>
+            <h3 class="card-title">Storage Permissions</h3>
+            <p class="card-description">
+              Ensure "All Files Access" is granted to the app so the embedded file manager can browse your phone storage, camera rolls, download folders, and external SD cards without restriction.
+            </p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- WHAT HAPPENS TO YOUR FILES SECTION -->
-    <section class="section-wrapper section-wrapper-alt">
+    <section class="section-wrapper">
       <div class="container">
-        <div class="security-banner">
-          <h2 class="section-title">What happens to your files?</h2>
-          <p class="section-subtitle">
+        <div class="security-banner motion-reveal">
+          <div class="section-header" style="margin-bottom: var(--space-md);">
+            <div class="section-eyebrow"><span class="badge badge-accent">Privacy & Sovereignty</span></div>
+            <h2 class="section-title">What happens to your files?</h2>
+          </div>
+          <p class="section-subtitle" style="margin-bottom: var(--space-lg);">
             Your files remain stored directly on your Android phone's flash storage media. The platform provides software control plane metadata and outbound routing tunnels — it does not act as your central file repository.
           </p>
+          <div class="stage-callout-pill" style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: #065F46;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Direct data path: Your phone's storage media streams data directly to your browser session.</span>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- FINAL CTA -->
-    <section class="section-wrapper">
+    <section class="section-wrapper section-wrapper-alt">
       <div class="container">
-        <div class="final-cta-banner">
+        <div class="final-cta-banner motion-reveal">
           <h2 class="final-cta-title">Ready to get started?</h2>
           <p class="final-cta-description">Create your account now and set up your personal server in minutes.</p>
-          <a href="get-started.html" class="btn btn-primary btn-lg">Create Account</a>
+          <a href="get-started.html" class="btn btn-primary btn-lg">Create Account Free</a>
         </div>
       </div>
     </section>
@@ -375,6 +462,7 @@
     </div>
   </footer>
 
+  <script src="../js/motion.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>

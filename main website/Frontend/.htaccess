@@ -1,0 +1,30 @@
+# Apache Configuration for ZdexCloud Frontend
+
+# MIME Type Declarations
+AddType image/svg+xml .svg .svgz
+AddType application/manifest+json .webmanifest
+AddType image/x-icon .ico
+AddType image/png .png
+
+# Enable mod_rewrite for URL routing
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Pretty URL rewriting for /pages/*.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{DOCUMENT_ROOT}/pages/$1.html -f
+  RewriteRule ^([a-zA-Z0-9_-]+)/?$ pages/$1.html [L]
+
+  # Direct alias /register -> /pages/get-started.html
+  RewriteRule ^register/?$ pages/get-started.html [L]
+</IfModule>
+
+# Security & Cache Headers
+<IfModule mod_headers.c>
+  # 1 year cache for static images and favicons
+  <FilesMatch "\.(ico|png|svg|jpg|jpeg|gif|webp|webmanifest)$">
+    Header set Cache-Control "max-age=31536000, public"
+  </FilesMatch>
+</IfModule>

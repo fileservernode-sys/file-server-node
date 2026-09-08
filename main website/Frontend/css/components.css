@@ -41,8 +41,16 @@
   transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: translateY(0);
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35);
+}
+
+.btn:active,
+.btn-primary:active,
+.btn-secondary:active,
+.btn-accent:active {
+  transform: scale(0.98) translateY(0);
   box-shadow: var(--shadow-xs);
 }
 
@@ -653,33 +661,56 @@
   transition: color var(--transition-fast);
 }
 
+.accordion-trigger:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-brand-primary);
+}
+
 .accordion-trigger:hover {
-  color: var(--color-brand-accent);
+  color: var(--color-brand-primary);
 }
 
 .accordion-icon {
   width: var(--icon-size-md);
   height: var(--icon-size-md);
-  transition: transform var(--transition-normal);
+  transition: transform var(--duration-base) var(--ease-emphasized);
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
 .accordion-item.is-open .accordion-icon {
   transform: rotate(180deg);
-  color: var(--color-brand-accent);
+  color: var(--color-brand-primary);
 }
 
 .accordion-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-moderate) var(--ease-standard);
+  overflow: hidden;
+}
+
+.accordion-panel-inner {
+  min-height: 0;
   padding: 0 var(--space-xl) var(--space-lg) var(--space-xl);
   font-size: var(--font-size-body);
   color: var(--color-text-secondary);
   line-height: var(--line-height-body);
-  display: none;
 }
 
 .accordion-item.is-open .accordion-panel {
+  grid-template-rows: 1fr;
+}
+
+/* Fallback for direct text children inside panel */
+.accordion-panel:not(:has(.accordion-panel-inner)) {
+  padding: 0 var(--space-xl) var(--space-lg) var(--space-xl);
+  display: none;
+}
+
+.accordion-item.is-open .accordion-panel:not(:has(.accordion-panel-inner)) {
   display: block;
+  animation: zdexFadeIn var(--duration-fast) var(--ease-enter);
 }
 
 /* --------------------------------------------------------------------------
@@ -715,5 +746,335 @@
 .pricing-table tr:last-child td {
   border-bottom: none;
 }
+
+.pricing-table td:first-child {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.pricing-table tr:hover td {
+  background-color: rgba(37, 99, 235, 0.02);
+}
+
+.pricing-table th:nth-child(2),
+.pricing-table td:nth-child(2) {
+  background-color: rgba(37, 99, 235, 0.03);
+  font-weight: var(--font-weight-semibold);
+}
+
+.pricing-table th:nth-child(2) {
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom: 2px solid var(--color-brand-primary);
+}
+
+.pricing-card-highlight {
+  border-color: var(--color-brand-primary) !important;
+  position: relative;
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 1024px) {
+  .pricing-card-highlight {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-xl);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   12. MOTION & TRANSITION SYSTEM FOUNDATION (ZD-UX-1)
+   -------------------------------------------------------------------------- */
+
+/* Page Entrance Animation */
+.page-entrance {
+  animation: zdexPageEntrance var(--duration-deliberate) var(--ease-emphasized) forwards;
+}
+
+@keyframes zdexPageEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance-xs));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Standard Motion Utility Classes */
+.motion-fade-in {
+  animation: zdexFadeIn var(--duration-base) var(--ease-enter) forwards;
+}
+
+.motion-fade-out {
+  animation: zdexFadeOut var(--duration-fast) var(--ease-exit) forwards;
+}
+
+.motion-slide-up {
+  animation: zdexSlideUp var(--duration-moderate) var(--ease-emphasized) forwards;
+}
+
+.motion-slide-down {
+  animation: zdexSlideDown var(--duration-moderate) var(--ease-emphasized) forwards;
+}
+
+.motion-scale-in {
+  animation: zdexScaleIn var(--duration-moderate) var(--ease-spring) forwards;
+}
+
+/* Scroll Reveal Primitive (Consumable by JS Motion Observer) */
+.motion-reveal {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-sm));
+  transition: opacity var(--duration-moderate) var(--ease-emphasized),
+              transform var(--duration-moderate) var(--ease-emphasized);
+  will-change: opacity, transform;
+}
+
+.motion-reveal.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger Delays for Grid and List Items */
+.motion-stagger-1 { transition-delay: 40ms; animation-delay: 40ms; }
+.motion-stagger-2 { transition-delay: 80ms; animation-delay: 80ms; }
+.motion-stagger-3 { transition-delay: 120ms; animation-delay: 120ms; }
+.motion-stagger-4 { transition-delay: 160ms; animation-delay: 160ms; }
+.motion-stagger-5 { transition-delay: 200ms; animation-delay: 200ms; }
+
+/* Interactive Hover & Lift Primitives */
+.interactive-lift {
+  transition: transform var(--duration-fast) var(--ease-standard),
+              box-shadow var(--duration-fast) var(--ease-standard);
+  will-change: transform, box-shadow;
+}
+
+.interactive-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.interactive-lift:active {
+  transform: scale(0.98) translateY(0);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Micro-interaction for Tappable Elements */
+.interactive-tap {
+  transition: transform var(--duration-instant) var(--ease-standard);
+}
+
+.interactive-tap:active {
+  transform: scale(0.97);
+}
+
+/* --------------------------------------------------------------------------
+   13. MODAL & DIALOG MOTION FOUNDATION
+   -------------------------------------------------------------------------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--color-bg-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--z-modal-backdrop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-moderate) var(--ease-standard);
+}
+
+.modal-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% + var(--motion-distance-sm))) scale(0.96);
+  z-index: var(--z-modal);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  max-width: min(540px, calc(100vw - 32px));
+  width: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-moderate) var(--ease-emphasized),
+              transform var(--duration-moderate) var(--ease-emphasized);
+}
+
+.modal-dialog.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* --------------------------------------------------------------------------
+   14. TOAST NOTIFICATION MOTION FOUNDATION
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  bottom: var(--space-xl);
+  right: var(--space-xl);
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  min-height: var(--target-min-size);
+  opacity: 0;
+  transform: translateY(var(--motion-distance-sm));
+  transition: opacity var(--duration-moderate) var(--ease-emphasized),
+              transform var(--duration-moderate) var(--ease-emphasized);
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.is-hiding {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-xs));
+  transition: opacity var(--duration-fast) var(--ease-exit),
+              transform var(--duration-fast) var(--ease-exit);
+}
+
+.toast--online { border-left-color: var(--color-status-online); }
+.toast--connecting { border-left-color: var(--color-status-connecting); }
+.toast--error { border-left-color: var(--color-status-error); }
+
+/* --------------------------------------------------------------------------
+   15. SKELETON SHIMMER & STATUS PULSE KEYFRAMES
+   -------------------------------------------------------------------------- */
+@keyframes zdexFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zdexFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes zdexSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-distance-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zdexSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--motion-distance-sm)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zdexScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes zdexPulseConnecting {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+}
+
+@keyframes zdexShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.pulse-connecting {
+  animation: zdexPulseConnecting 1.6s infinite ease-in-out;
+}
+
+/* --------------------------------------------------------------------------
+   16. REDUCED MOTION SAFETY OVERRIDES
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .motion-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .motion-fade-in,
+  .motion-fade-out,
+  .motion-slide-up,
+  .motion-slide-down,
+  .motion-scale-in,
+  .pulse-connecting {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .modal-dialog,
+  .modal-backdrop,
+  .toast {
+    transition: none !important;
+  }
+  
+  .modal-dialog.is-open {
+    transform: translate(-50%, -50%) scale(1) !important;
+  }
+}
+
 
 

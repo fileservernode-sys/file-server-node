@@ -1,0 +1,10 @@
+# robots.txt for ZdexCloud (https://zdexcloud.com)
+User-agent: *
+Allow: /
+
+# Disallow internal API proxies and private assets
+Disallow: /api/
+Disallow: /file-manager-assets/
+
+# XML Sitemap
+Sitemap: https://zdexcloud.com/sitemap.xml
