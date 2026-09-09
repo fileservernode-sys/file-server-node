@@ -47,6 +47,54 @@ void main() {
       expect(expiredSession.isExpired, isTrue);
     });
 
+    test('AuthSession enforces strict 24-hour non-sliding lifetime', () {
+      final now = DateTime.now();
+      // Case 1: Session issued 25 hours ago, even if expiresAt was set to future
+      final expiredByAge = AuthSession(
+        accessToken: 'token-1',
+        refreshToken: 'token-1',
+        user: PlatformUser(
+          id: '1',
+          email: 'test@example.com',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: now,
+        ),
+        issuedAt: now.subtract(const Duration(hours: 25)),
+        expiresAt: now.add(const Duration(hours: 5)),
+      );
+      expect(expiredByAge.isExpired, isTrue);
+
+      // Case 2: Session within 24 hours is valid
+      final validSession = AuthSession(
+        accessToken: 'token-2',
+        refreshToken: 'token-2',
+        user: PlatformUser(
+          id: '2',
+          email: 'valid@example.com',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: now,
+        ),
+        issuedAt: now.subtract(const Duration(hours: 12)),
+        expiresAt: now.add(const Duration(hours: 12)),
+      );
+      expect(validSession.isExpired, isFalse);
+
+      // Case 3: fromJson fallback defaults to max 24 hours
+      final jsonSession = AuthSession.fromJson({
+        'accessToken': 'token-3',
+        'refreshToken': 'token-3',
+        'userId': '3',
+        'email': 'fallback@example.com',
+      });
+      expect(jsonSession.isExpired, isFalse);
+      expect(
+        jsonSession.expiresAt.difference(DateTime.now()).inHours,
+        lessThanOrEqualTo(24),
+      );
+    });
+
     test('LoginRequest formats email to lowercase', () {
       const req = LoginRequest(
           email: 'USER@EXAMPLE.COM ', password: 'secretPassword123');
@@ -56,11 +104,13 @@ void main() {
 
   group('Batch 6D Auth Repository & State Management Tests', () {
     late AuthRepositoryImpl repository;
+    late InMemorySecureStorageService secureStorage;
 
     setUp(() {
+      secureStorage = InMemorySecureStorageService();
       repository = AuthRepositoryImpl(
         remoteDataSource: const MockAuthRemoteDataSource(),
-        secureStorageService: InMemorySecureStorageService(),
+        secureStorageService: secureStorage,
       );
     });
 
@@ -115,6 +165,37 @@ void main() {
       await notifier.logout();
       expect(notifier.state.status, AuthStatus.unauthenticated);
       expect(notifier.state.session, isNull);
+    });
+
+    test('AuthStateNotifier purges expired session and sets unauthenticated message',
+        () async {
+      // Seed storage with an expired session
+      final expired = AuthSession(
+        accessToken: 'expired-token',
+        refreshToken: 'expired-token',
+        user: PlatformUser(
+          id: 'exp-user',
+          email: 'expired@example.com',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now(),
+        ),
+        expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      );
+      await secureStorage.saveSession(expired);
+
+      final notifier = AuthStateNotifier(repository);
+      final restored = await notifier.restoreSession();
+
+      expect(restored, isFalse);
+      expect(notifier.state.status, AuthStatus.unauthenticated);
+      expect(notifier.state.session, isNull);
+      expect(notifier.state.errorMessage,
+          'Your session has expired. Please sign in again.');
+
+      // Verify repository session is cleared
+      final current = await repository.getCurrentSession();
+      expect(current, isNull);
     });
   });
 

@@ -75,7 +75,7 @@ class AuthResponse {
         accessToken: payload['token'] as String,
         refreshToken: payload['token'] as String,
         user: PlatformUser.fromJson(payload['user'] as Map<String, dynamic>),
-        expiresAt: DateTime.now().add(const Duration(days: 30)),
+        expiresAt: DateTime.now().add(const Duration(hours: 24)),
       );
     }
 

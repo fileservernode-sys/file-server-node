@@ -39,11 +39,7 @@ class FileSecureStorageService implements SecureStorageService {
   @override
   Future<AuthSession?> getSession() async {
     if (_cachedSession != null) {
-      if (_cachedSession!.isExpired) {
-        _cachedSession = null;
-      } else {
-        return _cachedSession;
-      }
+      return _cachedSession;
     }
 
     try {
@@ -52,10 +48,8 @@ class FileSecureStorageService implements SecureStorageService {
         final content = await file.readAsString();
         final json = jsonDecode(content) as Map<String, dynamic>;
         final session = AuthSession.fromJson(json);
-        if (!session.isExpired) {
-          _cachedSession = session;
-          return _cachedSession;
-        }
+        _cachedSession = session;
+        return _cachedSession;
       }
     } catch (_) {}
     return null;
@@ -118,9 +112,6 @@ class InMemorySecureStorageService implements SecureStorageService {
 
   @override
   Future<AuthSession?> getSession() async {
-    if (_session != null && _session!.isExpired) {
-      _session = null;
-    }
     return _session;
   }
 

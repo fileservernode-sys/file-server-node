@@ -1,20 +1,30 @@
 import 'platform_user.dart';
 
-/// Strongly Typed Authenticated Session Entity
 class AuthSession {
+  static const Duration maxSessionDuration = Duration(hours: 24);
+
   final String accessToken;
   final String refreshToken;
   final PlatformUser user;
   final DateTime expiresAt;
+  final DateTime? issuedAt;
 
   const AuthSession({
     required this.accessToken,
     required this.refreshToken,
     required this.user,
     required this.expiresAt,
+    this.issuedAt,
   });
 
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
+  DateTime get effectiveIssuedAt =>
+      issuedAt ?? expiresAt.subtract(maxSessionDuration);
+
+  bool get isExpired {
+    final now = DateTime.now();
+    return now.isAfter(expiresAt) ||
+        now.difference(effectiveIssuedAt) >= maxSessionDuration;
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -22,6 +32,7 @@ class AuthSession {
       'refreshToken': refreshToken,
       'user': user.toJson(),
       'expiresAt': expiresAt.toIso8601String(),
+      'issuedAt': effectiveIssuedAt.toIso8601String(),
     };
   }
 
@@ -39,13 +50,20 @@ class AuthSession {
       );
     }
 
+    final issuedAt = json['issuedAt'] != null
+        ? DateTime.parse(json['issuedAt'] as String)
+        : null;
+
     return AuthSession(
       accessToken: (json['accessToken'] ?? json['token'] ?? '') as String,
       refreshToken: (json['refreshToken'] ?? json['token'] ?? '') as String,
       user: user,
+      issuedAt: issuedAt,
       expiresAt: json['expiresAt'] != null
           ? DateTime.parse(json['expiresAt'] as String)
-          : DateTime.now().add(const Duration(days: 30)),
+          : (issuedAt != null
+              ? issuedAt.add(maxSessionDuration)
+              : DateTime.now().add(maxSessionDuration)),
     );
   }
 }

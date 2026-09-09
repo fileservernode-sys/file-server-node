@@ -165,7 +165,7 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
       accessToken: 'mock-jwt-access-token',
       refreshToken: 'mock-jwt-refresh-token',
       user: mockUser,
-      expiresAt: DateTime.now().add(const Duration(days: 30)),
+      expiresAt: DateTime.now().add(const Duration(hours: 24)),
     );
 
     return AuthResponse(

@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
+
+  <meta name="keywords" content="ZdexCloud terms of service, user agreement, on-device storage terms, acceptable use policy, 24-hour session policy, personal file server terms">
 
   <title>Terms of Service | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="ZdexCloud Terms of Service covering account registration, platform usage, self-hosted device hosting obligations, and service availability.">
+  <meta name="description" content="Comprehensive Terms of Service for ZdexCloud personal file server platform, governing account creation, on-device physical storage custody, backup responsibilities, relay gateway access, and subscription tiers.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/terms.html">
@@ -24,21 +26,138 @@
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/terms.html">
   <meta property="og:title" content="Terms of Service | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="ZdexCloud Terms of Service covering account registration, platform usage, self-hosted device hosting obligations, and service availability.">
+  <meta property="og:description" content="Comprehensive Terms of Service for ZdexCloud personal file server platform, governing account creation, on-device physical storage custody, backup responsibilities, relay gateway access, and subscription tiers.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud Terms of Service and Operational Agreement">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
   <meta name="twitter:title" content="Terms of Service | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="ZdexCloud Terms of Service covering account registration, platform usage, self-hosted device hosting obligations, and service availability.">
+  <meta name="twitter:description" content="Comprehensive Terms of Service for ZdexCloud personal file server platform, governing account creation, on-device physical storage custody, backup responsibilities, relay gateway access, and subscription tiers.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud Terms of Service and Operational Agreement">
 
-  
+  <!-- WebPage JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Terms of Service | ZdexCloud Personal File Server",
+    "url": "https://zdexcloud.com/pages/terms.html",
+    "description": "Terms of Service and operational agreement governing account registration, on-device storage boundaries, user backup responsibilities, relay gateway access, and commercial plans for ZdexCloud.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "ZdexCloud",
+      "url": "https://zdexcloud.com",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@zdexcloud.com",
+        "contactType": "customer support"
+      }
+    }
+  }
+  </script>
+
+  <!-- BreadcrumbList JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://zdexcloud.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Terms of Service",
+        "item": "https://zdexcloud.com/pages/terms.html"
+      }
+    ]
+  }
+  </script>
+
+  <!-- FAQPage JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is ZdexCloud?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ZdexCloud is a personal file server platform that transforms an everyday Android smartphone into a private, self-hosted file server accessible from any web browser without router port forwarding or public IP requirements."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Who provides the storage?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The user provides the physical storage. All files, documents, and media remain on the user's Android smartphone flash memory or microSD card. ZdexCloud provides only the control plane, pairing signaling, and secure relay gateway."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need port forwarding?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. ZdexCloud operates through an outbound-only encrypted WebSocket connection initiated by the Android application over standard HTTPS/WSS port 443, eliminating router port forwarding, DDNS, and firewall reconfiguration."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How many servers can I register?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The Free plan includes 1 server instance. Upgrading to Pro Monthly (₹49/month) or Pro Yearly (₹500/year, saving ₹88 annually) unlocks up to 5 concurrent server instances under a single account."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is ZdexCloud responsible for backing up my files?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Because files remain strictly on your physical Android hardware and are not replicated on ZdexCloud servers, you are solely responsible for maintaining independent 3-2-1 backups of all critical data."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can my Android server stop working because of battery optimization?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Aggressive OEM background task managers can terminate the foreground service if unrestricted battery settings are not granted. Users must configure the ZdexCloud Android application to run unrestricted in Android system settings."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens when my web session expires?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Web dashboard sessions expire strictly after 24 hours of creation for security. However, your Android server lifecycle is completely independent: the phone background service continues serving files uninterrupted, and you simply sign back into the web portal."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I use ZdexCloud for illegal or unauthorized activity?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Our Acceptable Use Policy strictly prohibits using the platform, relay infrastructure, or software for distributing malicious software, child sexual abuse material, copyright infringement, unauthorized network scanning, or abusive operations."
+            }
+          }
+        ]
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -139,10 +258,10 @@
         <span class="breadcrumb-current">Terms of Service</span>
       </div>
       <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-subtle">Legal Framework</span></div>
-        <h1 class="page-header-title">Terms of Service Framework</h1>
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Terms of Service &amp; Operational Agreement</span></div>
+        <h1 class="page-header-title">ZdexCloud Terms of Service</h1>
         <p class="page-header-subtitle">
-          Last updated: August 15, 2026. Guidelines governing platform account usage, device registration, and gateway access.
+          Last updated: September 2026. These terms govern your access to the ZdexCloud platform, control plane, relay gateway, and Android file server software.
         </p>
       </div>
     </div>
@@ -150,37 +269,424 @@
 
   <main class="page-entrance">
     <section class="section-wrapper">
-      <div class="container" style="max-width: 800px;">
-        <div class="alert alert-info">
-          <strong>Notice:</strong> This Terms of Service framework outlines platform responsibilities. Final legal terms are subject to formal legal review.
-        </div>
+      <div class="container" style="max-width: 960px;">
 
-        <div style="display: flex; flex-direction: column; gap: var(--space-xl); margin-top: var(--space-xl);">
-          <div>
-            <h3>1. Acceptance of Terms</h3>
-            <p>By creating an account or registering a device on the ZdexCloud platform, you agree to comply with these terms.</p>
-          </div>
-
-          <div>
-            <h3>2. Account Responsibilities</h3>
-            <p>Users are responsible for maintaining the confidentiality of their platform account passwords and dedicated file-server credentials.</p>
-          </div>
-
-          <div>
-            <h3>3. Device & File Content Responsibilities</h3>
-            <p>Users are solely responsible for content stored on their registered Android phone hardware and for maintaining physical device integrity.</p>
-          </div>
-
-          <div>
-            <h3>4. Service Availability</h3>
-            <p>While gateway infrastructure is designed for high availability, remote access availability depends on the online status, network quality, and power supply of the host Android phone.</p>
-          </div>
-
-          <div>
-            <h3>5. Contact & Support</h3>
-            <p>For inquiries regarding these Terms of Service or platform operations, please contact <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a> or visit our <a href="contact.html">Contact Page</a>.</p>
+        <!-- CORE ARCHITECTURAL CALLOUT -->
+        <div class="card" style="background: rgba(37, 99, 235, 0.05); border: 1px solid rgba(37, 99, 235, 0.2); border-radius: var(--radius-lg); padding: var(--space-xl); margin-bottom: var(--space-2xl);">
+          <div style="display: flex; align-items: flex-start; gap: var(--space-md);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <div>
+              <h2 style="font-size: 1.25rem; margin: 0 0 var(--space-xs) 0; color: var(--text-primary);">User-Operated Host Hardware: Clarifying the Storage Model</h2>
+              <p style="margin: 0; font-size: 1rem; line-height: 1.6; color: var(--text-secondary);">
+                ZdexCloud provides software applications and relay infrastructure to connect your personal client devices with your Android smartphone. <strong>You supply the physical storage hardware, and your files reside on your phone.</strong> ZdexCloud is not a centralized cloud storage provider, does not retain copies of your files, and does not maintain backup archives of your personal data.
+              </p>
+            </div>
           </div>
         </div>
+
+        <!-- MAIN LEGAL TEXT -->
+        <div style="display: flex; flex-direction: column; gap: var(--space-2xl);">
+
+          <!-- 1. Acceptance of Terms -->
+          <section id="acceptance">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">1. Acceptance of Terms &amp; Scope of Agreement</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              By creating an account, accessing the web dashboard at <a href="https://zdexcloud.com" class="text-primary font-medium">zdexcloud.com</a>, connecting through our web services, routing traffic through our secure connection service, or installing the ZdexCloud Android application (package: <code>net.remotenode.fileserver</code>), you enter into a legally binding agreement governed by these Terms of Service.
+            </p>
+            <p class="card-description">
+              If you do not agree with any provision of these terms, you must immediately discontinue use of the platform and uninstall the Android application.
+            </p>
+          </section>
+
+          <!-- 2. Architectural Boundaries -->
+          <section id="architectural-boundaries">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">2. Architecture &amp; Service Boundaries</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              To ensure full clarity regarding rights and liabilities, the platform is divided into distinct operational boundaries:
+            </p>
+            <div class="grid-2-col" style="gap: var(--space-lg); margin-top: var(--space-md);">
+              <div class="card" style="padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-xs);">The ZdexCloud Platform Service</h3>
+                <p class="card-description" style="font-size: 0.95rem;">
+                  Operates the central control plane, user account authentication, device registration database, pairing session brokering, and the TLS-secured outbound WebSocket relay gateway.
+                </p>
+              </div>
+              <div class="card" style="padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-xs);">The User-Operated Host Node</h3>
+                <p class="card-description" style="font-size: 0.95rem;">
+                  Consists of the Android phone, the Android operating system, internal flash memory, microSD expansion storage, and local network connectivity managed entirely by you.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 3. Physical Storage & Ownership -->
+          <section id="storage-custody">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">3. Physical Storage Ownership &amp; Data Custody</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              You retain sole and exclusive title, intellectual property rights, and physical custody of all documents, media, software, and files served from your Android device.
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>No Central Cloud File Ingestion:</strong> Files are stored directly on the physical storage of your Android phone. ZdexCloud does not ingest, index, duplicate, or inspect your file contents.</li>
+              <li><strong>Zero Content Monetization:</strong> We do not analyze your files for targeted advertising, automated profiling, or training external models.</li>
+              <li><strong>On-Device Custody:</strong> Because files never reside on ZdexCloud central disks, you maintain absolute sovereign custody of your physical storage media.</li>
+            </ul>
+          </section>
+
+          <!-- 4. Host Hardware, Battery & Environmental Responsibilities -->
+          <section id="hardware-responsibilities">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">4. Host Hardware, Battery &amp; Operating Environment Responsibilities</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              Operating an Android phone as a personal file server requires proper device stewardship. You are exclusively responsible for:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>Power Supply &amp; Thermal Management:</strong> Ensuring the device is placed in a ventilated environment and connected to an appropriate charger or battery maintenance system. ZdexCloud shall not be liable for device battery degradation, overheating, or hardware fatigue resulting from user device configuration or charging practices.</li>
+              <li><strong>OS Battery Optimization Settings:</strong> Android original equipment manufacturers (OEMs)—including Samsung One UI, Xiaomi HyperOS, and OnePlus OxygenOS—enforce aggressive background process managers. You must explicitly configure the ZdexCloud app to "Unrestricted" battery usage. ZdexCloud is not responsible for server unavailability caused by aggressive OEM process termination.</li>
+              <li><strong>Network Bandwidth &amp; Cellular Limits:</strong> Supplying suitable Wi-Fi or cellular connectivity. You are solely responsible for carrier data allowances, roaming fees, and speed caps.</li>
+            </ul>
+          </section>
+
+          <!-- 5. Network Connectivity & Port Forwarding Architecture -->
+          <section id="network-architecture">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">5. Network Connectivity &amp; Zero Port Forwarding</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              Traditional home servers require configuring public IP addresses, router NAT traversal, dynamic DNS records, and opening router inbound ports. ZdexCloud eliminates these security risks through an outbound connection model:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>Outbound-Only Encrypted Tunnel:</strong> The Android app initiates an outbound TLS connection over standard HTTPS/WSS port 443 to the ZdexCloud relay gateway.</li>
+              <li><strong>Zero Port Forwarding:</strong> You are not required to open router ports, expose internal IP addresses to the public internet, or maintain dynamic DNS records.</li>
+              <li><strong>Carrier-Grade NAT (CGNAT) Compatibility:</strong> This architecture allows the server to function seamlessly across mobile 4G/5G networks, public Wi-Fi, and residential ISPs with symmetric CGNAT.</li>
+            </ul>
+          </section>
+
+          <!-- 6. User Backup Responsibility (CRITICAL) -->
+          <section id="backup-responsibility">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">6. Strict User Backup Responsibility &amp; Data Loss Disclaimer</h2>
+            <div class="card" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: var(--space-lg); border-radius: var(--radius-md); margin-bottom: var(--space-md);">
+              <p style="margin: 0; font-size: 0.95rem; line-height: 1.6; color: var(--text-primary);">
+                <strong>CRITICAL REQUIREMENT:</strong> Because ZdexCloud does not copy, duplicate, or store your files on central infrastructure, <strong>you must maintain independent 3-2-1 backups</strong> (three copies of data across two different media with one offsite copy).
+              </p>
+            </div>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              Smartphones and microSD cards are single physical nodes subject to hardware loss, physical impact, flash memory wear, accidental erasure, or operating system failure. Under no circumstances is ZdexCloud liable for:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li>Loss, corruption, alteration, or unavailability of files stored on your Android hardware.</li>
+              <li>MicroSD card or internal flash drive read/write corruption.</li>
+              <li>Inability to access files resulting from device power loss, network disconnection, or physical hardware theft.</li>
+            </ul>
+            <p class="card-description" style="margin-top: var(--space-sm);">
+              ZdexCloud engineers possess no technical ability to reconstruct, restore, or recover lost files from your host hardware.
+            </p>
+          </section>
+
+          <!-- 7. Authentication & Strict 24-Hour Session Policy -->
+          <section id="session-policy">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">7. Authentication &amp; Strict 24-Hour Web Session Policy</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              To maintain robust security against credential misuse and stale sessions, ZdexCloud enforces a hard cutoff session security model:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>Strict 24-Hour Session Lifetime:</strong> Web platform authentication sessions expire strictly after 24 hours of creation. There are no sliding-window extensions. When a session reaches 24 hours, you must re-authenticate with your credentials.</li>
+              <li><strong>Independent Server Lifecycle:</strong> The expiration of your web browser session does not stop your Android file server. The Android background foreground service maintains its independent lifecycle, keeping your server online and available for future web dashboard sessions or companion access.</li>
+              <li><strong>Credential Confidentiality:</strong> You are responsible for safeguarding your login email, password, and two-factor OTP codes. You must notify <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a> immediately if you suspect unauthorized account access.</li>
+            </ul>
+          </section>
+
+          <!-- 8. Commercial Plans & Pricing -->
+          <section id="commercial-plans">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">8. Commercial Subscription Plans, Pricing &amp; Quotas</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              ZdexCloud offers transparent tiers designed for personal file management without hidden bandwidth fees:
+            </p>
+            
+            <div class="table-responsive" style="margin: var(--space-md) 0;">
+              <table class="data-table" style="width: 100%; border-collapse: collapse; border: 1px solid var(--border-color); font-size: 0.95rem;">
+                <thead>
+                  <tr style="background: var(--bg-card); border-bottom: 2px solid var(--border-color); text-align: left;">
+                    <th style="padding: var(--space-sm) var(--space-md);">Plan Tier</th>
+                    <th style="padding: var(--space-sm) var(--space-md);">Price</th>
+                    <th style="padding: var(--space-sm) var(--space-md);">Server Instances</th>
+                    <th style="padding: var(--space-sm) var(--space-md);">Features &amp; Terms</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: var(--space-sm) var(--space-md); font-weight: 600;">Free Plan</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">₹0</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">1 Server Node</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">Standard relay connectivity, remote file manager, web dashboard.</td>
+                  </tr>
+                  <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: var(--space-sm) var(--space-md); font-weight: 600;">Pro Monthly</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">₹49 / month</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">Up to 5 Server Nodes</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">Multi-device hosting, priority relay routing, monthly billing cycle.</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: var(--space-sm) var(--space-md); font-weight: 600;">Pro Yearly</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">₹500 / year</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">Up to 5 Server Nodes</td>
+                    <td style="padding: var(--space-sm) var(--space-md);">Includes an annual saving of ₹88 compared to monthly billing (effective ₹41.67/month equivalent).</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>Billing &amp; Cancellation:</strong> Pro subscriptions can be cancelled at any time from your account settings. Upon cancellation, your Pro privileges remain active until the conclusion of the paid billing interval.</li>
+              <li><strong>Instance Quotas:</strong> Server instance limits are enforced by the control plane. To pair additional hardware beyond your plan quota, you must unpair an inactive node or upgrade to a Pro tier.</li>
+            </ul>
+          </section>
+
+          <!-- 9. Acceptable Use Policy -->
+          <section id="acceptable-use">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">9. Acceptable Use Policy (AUP)</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              You agree to use ZdexCloud only for lawful personal file access and remote administration. You strictly agree NOT to use the platform, software, or relay infrastructure to:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li>Distribute malicious software, including computer viruses, worms, trojan horses, ransomware, spyware, or keyloggers.</li>
+              <li>Store, share, distribute, or facilitate access to Child Sexual Abuse Material (CSAM) or any form of unlawful child sexual exploitation. Any occurrence will result in immediate termination and formal notification to law enforcement authorities.</li>
+              <li>Distribute material that infringes intellectual property rights, trademarks, patents, or trade secrets of any third party.</li>
+              <li>Launch Denial of Service (DoS/DDoS) attacks, perform automated vulnerability probing, conduct unauthorized port scans, or degrade platform relay infrastructure.</li>
+              <li>Impersonate any individual, entity, or service, or misrepresent affiliation with ZdexCloud.</li>
+            </ul>
+          </section>
+
+          <!-- 10. Intellectual Property & Software License -->
+          <section id="license">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">10. Software License &amp; Intellectual Property Rights</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              Subject to these Terms, ZdexCloud grants you a limited, non-exclusive, non-transferable, revocable license to download, install, and operate the ZdexCloud Android application and access the web dashboard solely for personal and internal file administration.
+            </p>
+            <p class="card-description">
+              All rights, titles, and interests in the ZdexCloud platform, user interfaces, branding, trademarks, logos, and server software architecture remain the exclusive property of ZdexCloud. You agree not to reverse engineer, decompile, or disassemble proprietary platform relay protocols, except to the extent permitted by applicable open-source component licenses.
+            </p>
+          </section>
+
+          <!-- 11. Availability, Maintenance & Relay Service -->
+          <section id="service-availability">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">11. Service Availability, Relay Performance &amp; Maintenance</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              ZdexCloud strives to maintain high availability for control plane authentication and relay infrastructure. However, you acknowledge that:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li>File transfer speeds are strictly bounded by your host Android phone's upload bandwidth and your client network download throughput.</li>
+              <li>Relay nodes may undergo routine maintenance, security patching, and upgrades resulting in temporary service interruptions.</li>
+              <li>No system can guarantee perpetual zero-downtime operation across varied mobile carrier networks and global routing paths.</li>
+            </ul>
+          </section>
+
+          <!-- 12. Disclaimer of Warranties -->
+          <section id="disclaimer">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">12. Disclaimer of Warranties</h2>
+            <p class="card-description">
+              THE PLATFORM, CONTROL PLANE, RELAY GATEWAYS, AND ANDROID APPLICATION ARE PROVIDED STRICTLY ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. TO THE FULLEST EXTENT PERMISSIBLE UNDER APPLICABLE LAW, ZDEXCLOUD DISCLAIMS ALL WARRANTIES, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+            </p>
+          </section>
+
+          <!-- 13. Limitation of Liability -->
+          <section id="limitation-of-liability">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">13. Limitation of Liability</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL ZDEXCLOUD, ITS DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO:
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li>Loss of personal files, documents, records, or digital media.</li>
+              <li>Hardware failures, battery wear, flash degradation, or device thermal shutdown.</li>
+              <li>Loss of profits, business interruptions, or procurement of substitute services.</li>
+              <li>Unauthorized access resulting from compromised user authentication credentials.</li>
+            </ul>
+            <p class="card-description" style="margin-top: var(--space-sm);">
+              In any event, the total aggregate liability of ZdexCloud arising out of or related to these terms shall not exceed the greater of ₹500 or the total subscription fees paid by you to ZdexCloud in the preceding 12-month period.
+            </p>
+          </section>
+
+          <!-- 14. Suspension & Termination -->
+          <section id="termination">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">14. Account Suspension &amp; Termination</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              You may terminate your account at any time through the web account dashboard. Upon account closure, control plane records and device pairings are queued for deletion.
+            </p>
+            <p class="card-description">
+              ZdexCloud reserves the right to suspend or terminate account access immediately, without prior notice, if you breach these Terms of Service, engage in prohibited activities under our Acceptable Use Policy, or create security risks for the platform.
+            </p>
+          </section>
+
+          <!-- 15. Modifications to Terms -->
+          <section id="modifications">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">15. Amendments to These Terms</h2>
+            <p class="card-description">
+              We may periodically update these Terms of Service to reflect system enhancements, operational updates, or legal compliance. Any changes will be published directly on this page with an updated revision date. Your continued use of the service following such revisions signifies your agreement to the updated terms.
+            </p>
+          </section>
+
+          <!-- 16. Governing Principles & Contact -->
+          <section id="contact-inquiries">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">16. Contact &amp; Legal Support</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              For legal inquiries, copyright notices, terms clarifications, or abuse reports, please contact our support team:
+            </p>
+            <div class="card" style="padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs);">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <strong style="color: var(--text-primary);">Email Support:</strong>
+                <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a>
+              </div>
+              <p class="card-description" style="margin: 0; font-size: 0.9rem;">
+                Official correspondence regarding operational agreements, security notifications, and account terms.
+              </p>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- 8 TERMS AEO DIRECT-ANSWER QUESTION BLOCKS -->
+        <section class="faq-section" style="margin-top: var(--space-3xl); border-top: 2px solid var(--border-color); padding-top: var(--space-2xl);">
+          <div style="margin-bottom: var(--space-xl); text-align: center;">
+            <span class="badge badge-primary">Direct Answers &amp; Operational Policies</span>
+            <h2 style="font-size: 1.75rem; margin-top: var(--space-sm); color: var(--text-primary);">Frequently Asked Terms &amp; Policy Questions</h2>
+            <p style="color: var(--text-secondary); max-width: 680px; margin: 0 auto; font-size: 1rem;">
+              Clear, precise answers to common questions about ownership, on-device physical storage, backup obligations, and service boundaries.
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
+
+            <!-- Q1: What is ZdexCloud -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                What is ZdexCloud?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                ZdexCloud is a personal file server platform that turns an Android smartphone into a private, self-hosted file server accessible from any web browser without requiring port forwarding, router configuration, or public IP addresses.
+              </p>
+            </div>
+
+            <!-- Q2: Who provides the storage -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Who provides the storage?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                You provide the physical storage. All files, documents, and media remain on the internal flash storage or microSD card of your Android phone. ZdexCloud provides only the control plane, pairing signaling, and secure relay gateway.
+              </p>
+            </div>
+
+            <!-- Q3: Do I need port forwarding -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Do I need port forwarding?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                No. ZdexCloud operates through an outbound-only encrypted WebSocket connection over standard HTTPS/WSS port 443, eliminating router port forwarding, DDNS, and firewall reconfiguration entirely.
+              </p>
+            </div>
+
+            <!-- Q4: How many servers can I register -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                How many servers can I register?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                The Free plan includes 1 server instance. Upgrading to Pro Monthly (₹49/month) or Pro Yearly (₹500/year, with a saving of ₹88 annually) unlocks up to 5 concurrent server instances under a single account.
+              </p>
+            </div>
+
+            <!-- Q5: Is ZdexCloud responsible for backing up my files -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Is ZdexCloud responsible for backing up my files?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                No. Because files remain strictly on your physical Android hardware and are not replicated on ZdexCloud servers, you are solely responsible for maintaining independent 3-2-1 backups of all critical data.
+              </p>
+            </div>
+
+            <!-- Q6: Can my Android server stop working because of battery optimization -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Can my Android server stop working because of battery optimization?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                Yes. Aggressive OEM background task managers can terminate the foreground service if unrestricted battery settings are not granted. Users must configure the ZdexCloud Android application to run unrestricted in Android system settings.
+              </p>
+            </div>
+
+            <!-- Q7: What happens when my web session expires -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                What happens when my web session expires?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                Web dashboard sessions expire strictly after 24 hours of creation for security. However, your Android server lifecycle is completely independent: the phone background service continues serving files uninterrupted, and you simply sign back into the web portal.
+              </p>
+            </div>
+
+            <!-- Q8: Can I use ZdexCloud for illegal or unauthorized activity -->
+            <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              <h3 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm);">
+                <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Can I use ZdexCloud for illegal or unauthorized activity?
+              </h3>
+              <p class="card-description" style="margin: 0; font-size: 0.95rem; line-height: 1.6;">
+                No. Our Acceptable Use Policy strictly prohibits using the platform, relay infrastructure, or software for distributing malicious software, child sexual abuse material, copyright infringement, unauthorized network scanning, or abusive operations.
+              </p>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </section>
   </main>
@@ -220,7 +726,7 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
@@ -236,7 +742,7 @@
         <div>
           <h4 class="footer-col-title">Legal</h4>
           <ul class="footer-link-list">
-            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="terms.html" class="footer-link is-active" aria-current="page">Terms of Service</a></li>
             <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
           </ul>
         </div>

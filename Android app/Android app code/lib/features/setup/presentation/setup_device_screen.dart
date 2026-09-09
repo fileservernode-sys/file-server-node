@@ -332,7 +332,7 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                           title: 'Power & battery',
                           subtitle: _isCharging
                               ? 'Device is connected to power ($_batteryLevel%)'
-                              : 'Running on battery ($_batteryLevel%) • Keep plugged in for 24/7 uptime',
+                              : 'Running on battery ($_batteryLevel%) • Keep plugged in for continuous operation',
                         ),
                         const Divider(height: AppSpacing.lg),
 
@@ -365,7 +365,34 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Contextual Help Affordance
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    color: AppColors.surfaceSubtle,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.help_outline_rounded,
+                            size: 20, color: AppColors.primary),
+                        const SizedBox(width: AppSpacing.sm),
+                        const Expanded(
+                          child: Text(
+                            'Why do permissions & power settings matter?',
+                            style: AppTypography.caption,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/help/topic',
+                                arguments: 'permissions-battery');
+                          },
+                          child: const Text('Learn more'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
 
                   if (!isAlreadyConfigured)
                     PrimaryButton(

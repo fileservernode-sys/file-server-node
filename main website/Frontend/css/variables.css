@@ -295,6 +295,27 @@
 
   /* Minimum Accessible Touch Target */
   --min-touch-target: 44px;
+
+  /* Global Utility Aliases */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --color-text: var(--color-text-primary);
+  --color-accent: var(--color-brand-primary);
+  --color-bg-card: var(--color-bg-surface);
+  --text-xs: var(--font-size-xs);
+  --text-sm: var(--font-size-sm);
+  --text-base: var(--font-size-body);
+  --text-lg: var(--font-size-body-lg);
+  --text-xl: var(--font-size-xl);
+  --text-2xl: var(--font-size-2xl);
+  --font-mono: var(--font-family-mono);
+  --font-sans: var(--font-family-sans);
+  --leading-normal: 1.5;
 }
 
 

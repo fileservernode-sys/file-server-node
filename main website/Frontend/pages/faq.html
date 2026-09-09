@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <meta name="keywords" content="ZdexCloud FAQ, phone file server questions, Android NAS help, personal cloud security FAQ">
-
-  <title>Frequently Asked Questions & Help | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Frequently asked questions regarding ZdexCloud personal Android file servers, hardware compatibility, security, remote streaming, and storage tiers.">
+  <meta name="description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, security, 24-hour web sessions, Android requirements, and pricing.">
+  <meta name="keywords" content="ZdexCloud FAQ, Android file server help, personal cloud questions, phone NAS guide, remote file access troubleshooting, self-hosted file server FAQ">
+  <title>Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server</title>
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/faq.html">
@@ -25,22 +22,21 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/faq.html">
-  <meta property="og:title" content="Frequently Asked Questions & Help | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Frequently asked questions regarding ZdexCloud personal Android file servers, hardware compatibility, security, remote streaming, and storage tiers.">
+  <meta property="og:title" content="Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, security, and sessions.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud Technical FAQ">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Frequently Asked Questions & Help | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Frequently asked questions regarding ZdexCloud personal Android file servers, hardware compatibility, security, remote streaming, and storage tiers.">
+  <meta name="twitter:title" content="Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, and security.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud Technical FAQ">
 
-  
   <!-- FAQPage JSON-LD Schema -->
   <script type="application/ld+json">
   {
@@ -49,26 +45,50 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "Are my personal files stored on ZdexCloud cloud servers?",
+        "name": "What is ZdexCloud and how does it work?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Your files remain 100% stored on your Android device's internal storage or SD card. ZdexCloud functions as a control plane and secure tunnel relay, never holding or inspecting your files."
+          "text": "ZdexCloud is a personal file server platform that transforms an Android smartphone into a private, remotely accessible storage server. The phone acts as the primary host holding your files, while ZdexCloud provides an outbound TLS 1.3 WebSocket tunnel and browser-based file manager to access your files anywhere without router port forwarding."
         }
       },
       {
         "@type": "Question",
-        "name": "Do I need to configure port forwarding on my home router?",
+        "name": "Are my files uploaded or stored on ZdexCloud central servers?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. ZdexCloud uses an outbound WebSocket tunnel established by the Android app to our secure gateway, eliminating the need for port forwarding or static IP setup."
+          "text": "No. Your files remain stored directly on your Android phone's internal flash storage or microSD card. ZdexCloud connection gateways act strictly as transit layers forwarding data frames between your browser and your phone; personal file contents are not permanently stored on central servers."
         }
       },
       {
         "@type": "Question",
-        "name": "How many Android phones can I connect to one account?",
+        "name": "Do I need to configure port forwarding on my home Wi-Fi router?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "You can register and manage up to 5 paired Android server hosts under a single account."
+          "text": "No. ZdexCloud requires zero router configuration. The Android application establishes an outbound encrypted connection over TLS 1.3 to the ZdexCloud connection service, naturally traversing home NAT routers, CGNAT, and mobile carrier firewalls."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is ZdexCloud's strict 24-hour web session policy?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ZdexCloud enforces a strict 24-hour absolute session lifetime for web dashboard logins. Once 24 hours have elapsed since signing in, the browser session expires automatically to protect your account. The Android phone server continues running in the background independently of web logout."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What are the pricing tiers and server limits?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ZdexCloud offers three commercial plans: Free at ₹0 forever with 1 registered phone server; Pro Monthly at ₹49 per month for up to 5 servers with priority relay routing; and Pro Yearly at ₹500 per year for up to 5 servers, saving ₹88 per year compared to monthly billing."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What Android OS versions are supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ZdexCloud supports smartphones running Android 8.0 (Oreo / API level 26) and higher. The phone must remain powered and connected to Wi-Fi or cellular data with battery optimization disabled for the app."
         }
       }
     ]
@@ -109,7 +129,7 @@
         <a href="pricing.html" class="nav-link">Pricing</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="contact.html" class="nav-link">Contact</a>
-        <a href="faq.html" class="nav-link">FAQ</a>
+        <a href="faq.html" class="nav-link is-active" aria-current="page">FAQ</a>
       </nav>
 
       <!-- Desktop Header Actions -->
@@ -159,7 +179,7 @@
       <a href="pricing.html" class="drawer-nav-link">Pricing</a>
       <a href="about.html" class="drawer-nav-link">About</a>
       <a href="contact.html" class="drawer-nav-link">Contact</a>
-      <a href="faq.html" class="drawer-nav-link">FAQ</a>
+      <a href="faq.html" class="drawer-nav-link is-active">FAQ</a>
     </div>
     <div class="drawer-actions">
       <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
@@ -176,165 +196,862 @@
         <span class="breadcrumb-current">FAQ</span>
       </div>
       <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-accent">Help & Answers</span></div>
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Knowledge Base & Technical FAQ</span></div>
         <h1 class="page-header-title">Frequently Asked Questions</h1>
         <p class="page-header-subtitle">
-          Find answers to common questions about setting up, securing, and managing your Android personal file server.
+          Authoritative technical answers covering platform architecture, storage mechanics, remote gateway routing, security, 24-hour sessions, Android optimization, and pricing.
         </p>
       </div>
     </div>
   </section>
 
   <main class="page-entrance">
+
+    <!-- TOP CATEGORY NAVIGATION PILLS -->
+    <section class="section-wrapper" style="padding-top: var(--space-xl); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle);">
+      <div class="container">
+        <div style="margin-bottom: var(--space-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted);">
+          Jump to Topic:
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-xs);">
+          <a href="#general" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">1. General</a>
+          <a href="#storage" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">2. Storage</a>
+          <a href="#remote-access" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">3. Remote Access</a>
+          <a href="#android" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">4. Android App</a>
+          <a href="#file-manager" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">5. File Manager</a>
+          <a href="#multi-device" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">6. Multi-Device</a>
+          <a href="#security" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">7. Security & Privacy</a>
+          <a href="#authentication" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">8. 24-Hr Session</a>
+          <a href="#pricing" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">9. Pricing & Plans</a>
+          <a href="#reliability" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">10. Reliability</a>
+          <a href="#backups" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">11. Backups & 3-2-1</a>
+          <a href="#troubleshooting" class="badge badge-subtle" style="padding: 6px 12px; text-decoration: none; font-size: var(--font-size-xs);">12. Troubleshooting</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ CONTENT ACCORDION CONTAINER -->
     <section class="section-wrapper">
-      <div class="container" style="max-width: 900px;">
-        
-        <!-- GENERAL CATEGORY -->
-        <div style="margin-bottom: var(--space-3xl);">
-          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">General Questions</h2>
+      <div class="container" style="max-width: 920px;">
+
+        <!-- 1. GENERAL CATEGORY -->
+        <div id="general" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">1. General Architecture & Overview</h2>
+          </div>
+          
           <div class="accordion">
-            
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  What is the Remote Android Personal File Server Platform?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>What is ZdexCloud and what problem does it solve?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              It is a platform that converts an unused Android phone into a remotely accessible personal file server. The phone serves as the primary file storage host while our platform handles account coordination, remote discovery, and secure gateway routing.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  ZdexCloud is a personal file server platform that transforms an unused Android smartphone into a private, remotely accessible file server. Instead of paying perpetual monthly rental fees to corporate cloud providers or discarding functional electronics as electronic waste, ZdexCloud enables you to repurpose mobile hardware into a dedicated personal storage node with global browser-based access.
+                </div>
+              </div>
             </div>
 
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  What can I do with an old Android phone?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>How does ZdexCloud differ from Google Drive, Dropbox, and iCloud?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              You can repurpose it into a dedicated 24/7 personal cloud server for hosting photos, videos, documents, and backups without paying recurring cloud storage subscription fees.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  In commercial cloud services, your files are uploaded to multi-tenant corporate data centers where you pay recurring monthly fees per gigabyte. With ZdexCloud, your files reside directly on your Android phone hardware. ZdexCloud provides the discovery control plane and outbound encrypted WebSocket tunnel, eliminating monthly storage rental fees while keeping physical data custody entirely in your hands.
+                </div>
+              </div>
             </div>
 
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  Does my phone need to stay powered on and connected to Wi-Fi?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>How does ZdexCloud differ from traditional self-hosting (Nextcloud, TrueNAS, Synology)?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              Yes. For remote access to be available, the phone must remain connected to power and an active Wi-Fi or mobile network with Server Mode enabled.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  Traditional self-hosting typically requires dedicated desktop or NAS hardware, higher continuous power draw, complex router port forwarding, static public IP addresses or Dynamic DNS configuration, and manual SSL certificate renewals. ZdexCloud utilizes low-power Android smartphone hardware and an automated outbound TLS 1.3 WebSocket tunnel, providing remote access with zero router network configuration.
+                </div>
+              </div>
             </div>
 
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What kind of Android phone do I need?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Almost any Android smartphone running Android 8.0 (API level 26) or newer with at least 2GB of RAM is fully supported. Older spare phones with cracked screens or missing SIM cards function perfectly as long as the touchscreen allows initial setup and the phone connects to Wi-Fi.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- STORAGE CATEGORY -->
-        <div style="margin-bottom: var(--space-3xl);">
-          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Storage & Files</h2>
+        <!-- 2. STORAGE CATEGORY -->
+        <div id="storage" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">2. Storage & File Hosting Mechanics</h2>
+          </div>
+          
           <div class="accordion">
-            
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  Where are my files physically stored?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>Where are my files physically stored?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              Your files remain strictly on your Android phone's storage media. They are not uploaded to central cloud servers unless you explicitly configure third-party exports.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  Your files remain stored directly on your Android smartphone's internal NAND flash storage or inserted microSD card. Files are not permanently stored, replicated, or staged on ZdexCloud central servers.
+                </div>
+              </div>
             </div>
 
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  Does the platform upload my files to third-party cloud storage?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>Does ZdexCloud support external microSD cards and USB OTG drives?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              No. The cloud control plane owns metadata and routing coordination only. Your actual files stay on your physical phone.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  Yes. The ZdexCloud Android application allows you to configure storage roots from internal shared storage or mounted removable media such as high-capacity microSD cards (128GB, 256GB, 512GB, 1TB) or supported USB OTG storage.
+                </div>
+              </div>
             </div>
 
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What is the maximum storage capacity supported?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  There is no platform software cap imposed by ZdexCloud. Your total storage capacity is determined strictly by your physical Android device hardware and mounted storage cards. If your phone supports a 1TB microSD card, you have 1TB of private cloud storage without paying extra fees.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does ZdexCloud impose file type or file size restrictions?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud treats all files as raw binary data streams. You can store photos, videos, RAW camera files, documents, compressed archives, databases, and custom binaries without content-type blocking or artificial file size penalties.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- REMOTE ACCESS CATEGORY -->
-        <div style="margin-bottom: var(--space-3xl);">
-          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Remote Access & Gateway</h2>
+        <!-- 3. REMOTE ACCESS CATEGORY -->
+        <div id="remote-access" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">3. Remote Access & Gateway Tunneling</h2>
+          </div>
+          
           <div class="accordion">
-            
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  Do I need to configure port forwarding on my home router?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>Do I need to configure port forwarding on my home Wi-Fi router?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              No. The Android app creates an outbound secure tunnel to our gateway, bypassing the need for public IP addresses or router configuration.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud operates without router port forwarding, UPnP, or static public IPs. The Android app initiates an outbound TLS 1.3 WebSocket connection to our cloud gateway, which standard home firewalls and mobile carriers permit without opening inbound ports.
+                </div>
+              </div>
             </div>
 
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  What happens if my phone's IP address changes?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>How does ZdexCloud traverse Carrier-Grade NAT (CGNAT) and mobile networks?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              Because the connection is established outbound from the phone to our gateway, local IP address changes do not interrupt your remote endpoint routing.
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  Because the connection originates outbound from the Android client to the ZdexCloud connection service over standard HTTPS/WSS port 443, stateful firewall tracking tables keep the bidirectional tunnel open. This bypasses CGNAT barriers common on residential fiber, 4G, and 5G cellular networks.
+                </div>
+              </div>
             </div>
 
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens if my phone's local or public IP address changes?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  IP changes do not disrupt your routing identity. When your phone's Wi-Fi router reassigns a local DHCP address or your ISP changes your public WAN IP, the ZdexCloud Android background service automatically detects the network interface transition and re-establishes the outbound tunnel using its persistent cryptographic device token.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Can I access my Android file server while away from home on mobile data?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Yes. You can log into your ZdexCloud dashboard from any desktop, laptop, tablet, or smartphone web browser anywhere in the world. As long as your Android server phone is powered and connected to the Internet at home, you have full remote access.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- SECURITY CATEGORY -->
-        <div>
-          <h2 class="section-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-lg);">Security & Authentication</h2>
+        <!-- 4. ANDROID CATEGORY -->
+        <div id="android" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">4. Android Hardware & App Requirements</h2>
+          </div>
+          
           <div class="accordion">
-            
             <div class="accordion-item">
               <h3 class="accordion-header">
                 <button class="accordion-trigger" aria-expanded="false">
-                  Why does the file server require dedicated credentials?
-                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <span>What Android OS versions are supported?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
               </h3>
               <div class="accordion-panel">
-            <div class="accordion-panel-inner">
-              We enforce strict security separation between Platform Account credentials (used for device management) and File-Server credentials (used for accessing actual files on the phone).
-            </div>
-          </div>
+                <div class="accordion-panel-inner">
+                  ZdexCloud supports Android 8.0 (Oreo / API level 26) through modern Android releases. This broad support ensures that older smartphones manufactured over the past eight years can be successfully repurposed rather than thrown away.
+                </div>
+              </div>
             </div>
 
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why does the app require battery optimization whitelisting?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Modern Android operating systems feature aggressive power-saving subsystems (Doze mode, App Standby Buckets, and OEM task killers) that terminate background processes when the screen turns off. Granting Foreground Service permissions and exempting ZdexCloud from battery optimization helps maintain continuous background server operation, subject to device power management and charging conditions.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Will keeping the phone plugged in 24/7 damage the battery or cause overheating?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  To protect battery longevity on a dedicated server phone, we recommend: 1) Placing the phone on a flat, well-ventilated surface away from direct sunlight; 2) Using a standard low-power phone charger rather than ultra-fast quick chargers; and 3) Enabling Android's built-in battery protection feature (such as 80% or 85% charge limit) if supported by your device firmware.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does the phone screen need to stay turned on?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. The phone screen can be completely powered off. The ZdexCloud file engine operates within an Android Foreground Service holding a partial wake lock and Wi-Fi lock, allowing headless continuous server operation while consuming minimal energy.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. FILE MANAGER CATEGORY -->
+        <div id="file-manager" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">5. Browser-Based Web File Manager</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What capabilities does the browser-based web file manager provide?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  The web file manager provides a complete, modern desktop-grade file browsing interface directly in your browser. Capabilities include hierarchical folder navigation, multi-file uploads with progress tracking, file downloads, renaming, deleting, in-browser image previews, and direct media streaming.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Can I stream videos and music directly from the phone in my browser?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Yes. The built-in file server supports HTTP range requests (byte-range streaming), allowing web browsers to seek, pause, and stream video (MP4, WebM) and audio files directly without waiting to download the entire file first.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Do I need to install client software on my laptop or computer?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. There is zero client software, plugin, or browser extension required. You simply navigate to your ZdexCloud dashboard URL in Google Chrome, Mozilla Firefox, Apple Safari, Microsoft Edge, or any modern web browser.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. MULTI-DEVICE CATEGORY -->
+        <div id="multi-device" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">6. Multi-Device & Multi-Server Management</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How many Android phones can I register under one account?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Under the Free plan, you can register 1 active Android phone server. On the Pro tiers (Pro Monthly at ₹49/month or Pro Yearly at ₹500/year), you can register and concurrently manage up to 5 Android phone servers from a single dashboard.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How does switching between multiple phone servers work?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  When you have Pro access with multiple registered phones, your web dashboard displays a server switcher dropdown. You can switch between your home phone server, office server, or media library node instantly with a single click without logging in and out.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Can multiple registered Android servers run concurrently?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Yes. All registered servers on a Pro plan maintain independent outbound WebSocket connections simultaneously. Each phone serves its own storage media independently, allowing you to organize storage by category (e.g. Server 1 for media, Server 2 for documents).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. SECURITY CATEGORY -->
+        <div id="security" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">7. Security & Privacy Architecture</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Are my files inspected, indexed, or stored on ZdexCloud relays?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud connection gateways act strictly as transit connection layers forwarding data frames between your browser and your phone; personal files are not permanently stored on central disks or scanned for advertising profiling.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How is data protected while in transit?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  All communication between your browser, the ZdexCloud gateway, and the Android phone is secured using standard TLS 1.3 cryptographic transport. This prevents eavesdropping, tampering, and man-in-the-middle attacks across public Wi-Fi networks and transit providers.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why are file-server credentials separate from platform account credentials?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  ZdexCloud employs a defense-in-depth security model: Platform account credentials authenticate your web session with the control plane, while separate file-server credentials authenticate file access directly on the phone. Even if an account credential were compromised, file-level access requires dedicated authentication against the phone itself.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does ZdexCloud have backdoors to view user files?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud does not possess administrative bypasses or hidden backdoor credentials into your phone's file storage. The Android application executes strictly within standard sandboxed Android OS permissions and only accesses folders explicitly selected during configuration.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. AUTHENTICATION & SESSIONS CATEGORY -->
+        <div id="authentication" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">8. Authentication & Strict 24-Hour Session Policy</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What is ZdexCloud's strict 24-hour absolute session lifetime policy?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  ZdexCloud enforces a strict 24-hour absolute session lifetime for browser dashboard logins. Exactly 24 hours after signing in, the authentication token expires automatically, requiring you to re-authenticate with your email and OTP code.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why does ZdexCloud expire web sessions after 24 hours instead of keeping users logged in indefinitely?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Indefinite web sessions pose a critical security vulnerability: if a laptop is lost, stolen, or accessed via an untrusted browser, an open session provides perpetual access to private storage nodes. The 24-hour boundary enforces strict credential rotation and session expiration, mitigating persistent token theft and session hijacking.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does the Android phone server stop running when my web session expires?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. The Android phone server operates independently of browser login sessions. The phone's background engine and outbound connection continue running continuously in the background. When your browser session expires after 24 hours, only your web browser session ends; your phone server remains online and accessible when you log back in.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How does Two-Factor Authentication (OTP) work during sign-in?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Account sign-in requires dual verification: your registered email and password followed by a single-use numeric One-Time Password (OTP) dispatched to your registered email address. This prevents unauthorized account takeovers even if an attacker acquires your password.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. PRICING CATEGORY -->
+        <div id="pricing" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">9. Pricing Plans, Tiers & Billing</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What commercial tiers are available on ZdexCloud?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  ZdexCloud offers three commercial plans: <strong>Free (₹0 forever)</strong> for starting with 1 registered Android phone server; <strong>Pro Monthly (₹49/month)</strong> for managing up to 5 servers with priority routing and monthly flexibility; and <strong>Pro Yearly (₹500/year)</strong> for managing up to 5 servers while saving ₹88 per year (effective ₹41.67/month vs ₹588 monthly equivalent).
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why is data storage free on ZdexCloud?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Storage is free because ZdexCloud does not operate centralized data hosting disks for your files. Storage is supplied entirely by the phone hardware you already own. Our commercial plans cover relay tunnel network traffic, device discovery coordination, and multi-server management slots.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does upgrading to Pro increase my phone's storage space?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. Upgrading to Pro does not add cloud storage gigabytes. It increases your account server limit from 1 to up to 5 registered Android phones and grants priority gateway routing. To increase storage, simply insert a larger microSD card into your phone.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens to my data if my subscription expires?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Your files are completely safe and unaffected because they reside on your physical smartphone. If a Pro subscription ends, your account transitions to the Free plan: your primary server remains online and accessible, while additional servers beyond the 1-server limit pause until Pro is renewed.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. RELIABILITY CATEGORY -->
+        <div id="reliability" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">10. Reliability, Network Drops & Availability</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens if the phone temporarily loses Wi-Fi or mobile data?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  If the phone loses network connectivity, the web dashboard displays the server as temporarily offline. The ZdexCloud Android background engine continuously monitors network state; the moment Wi-Fi or cellular connectivity returns, the outbound WebSocket tunnel automatically reconnects within seconds.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does the server restart automatically if the phone reboots?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Yes, provided the 'Start on Boot' toggle is enabled within the ZdexCloud Android app settings. When the phone powers on or completes a software update reboot, Android's boot completed broadcast launches the foreground service and restores server availability automatically.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens during a power outage?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Unlike traditional PC or NAS servers that instantly crash during power cuts, an Android smartphone contains an integrated battery that functions as an automatic Uninterruptible Power Supply (UPS). If your home router is also on a small UPS or the phone has active cellular data fallback, the server remains online throughout the outage.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 11. BACKUPS & REDUNDANCY CATEGORY -->
+        <div id="backups" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">11. Data Protection & 3-2-1 Backup Strategy</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does ZdexCloud replace an automated backup system?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud is a private personal file server and remote access platform, not an automated RAID or offsite disaster recovery service. Storing your files on a single phone means that physical damage, theft, or storage media failure could cause data loss without independent backups.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What is the 3-2-1 backup principle and how should I apply it?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  The industry-standard 3-2-1 backup rule states: Maintain 3 total copies of critical data across 2 different storage media types, with 1 copy located offsite. In a ZdexCloud setup, your Android phone serves as Copy 1; you should periodically duplicate important files to an external hard drive (Copy 2) and retain an encrypted offsite copy or second phone server (Copy 3).
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens if my phone hardware fails or the SD card corrupts?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Because ZdexCloud maintains zero copies of your personal data on relay infrastructure, data recovery is impossible from our servers if your physical device fails. We strongly advise backing up irreplaceable photos and documents to an external computer or secondary media card regularly.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 12. TROUBLESHOOTING CATEGORY -->
+        <div id="troubleshooting" style="margin-bottom: var(--space-3xl); scroll-margin-top: 100px;">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); padding-bottom: var(--space-xs); border-bottom: 2px solid var(--color-border-subtle);">
+            <div style="color: var(--color-brand-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            </div>
+            <h2 class="section-title" style="font-size: var(--font-size-2xl); margin: 0;">12. Troubleshooting & Common Operational Issues</h2>
+          </div>
+          
+          <div class="accordion">
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why does my server show 'Offline' in the web dashboard?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  An 'Offline' status typically indicates: 1) The Android phone lost Wi-Fi or cellular Internet connectivity; 2) Server Mode was stopped in the app; 3) The phone ran out of battery; or 4) Android OS power management terminated the background service. Check that the phone has an active network connection, verify the persistent notification is visible in the Android status bar, and ensure battery optimization is disabled.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why does Android terminate the file server after a few hours?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Aggressive OEM battery managers (such as Xiaomi MIUI/HyperOS, Samsung One UI, Huawei EMUI, or OnePlus OxygenOS) aggressively kill background tasks. To fix this: navigate to Android Settings > Apps > ZdexCloud > Battery > select 'Unrestricted' / 'Don't Optimize', and enable 'Autostart' or 'Background Activity' in your phone's device manager.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Why is file download or upload slow?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  File transfer speed is primarily governed by the upload speed of the phone's home Wi-Fi network and the physical read/write speed of the phone's internal flash or microSD card. For optimal speed, connect your phone to a 5GHz Wi-Fi network and use a high-speed UHS-I U3 or V30 rated microSD card.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What should I do if the QR code pairing scan fails?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  If camera scanning fails, ensure the browser screen brightness is adequate and clean the phone camera lens. Alternatively, you can bypass the camera scan by signing in directly with your email and password within the Android application.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
     </section>
+
+    <!-- STILL HAVE QUESTIONS CTA -->
+    <section class="section-wrapper" style="background-color: var(--color-bg-subtle); border-top: 1px solid var(--color-border);">
+      <div class="container text-center" style="max-width: 680px;">
+        <h2 style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+          Still Have Technical Questions?
+        </h2>
+        <p style="font-size: var(--font-size-body-base); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-xl);">
+          Explore our in-depth architectural guides, step-by-step setup documentation, or reach out directly to our engineering support team.
+        </p>
+        <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+          <a href="documentation.html" class="btn btn-primary">Read Technical Docs</a>
+          <a href="how-it-works.html" class="btn btn-secondary">Architecture Deep-Dive</a>
+          <a href="contact.html" class="btn btn-ghost">Contact Support</a>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->

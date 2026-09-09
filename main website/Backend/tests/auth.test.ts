@@ -117,6 +117,13 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     assert.strictEqual(body.data.user.emailVerified, true);
     assert.ok(body.data.token || body.data.session?.accessToken);
     userToken = body.data.token || body.data.session?.accessToken;
+
+    // Strict 24-hour TTL verification
+    assert.ok(body.data.session?.expiresAt);
+    const expiresAt = new Date(body.data.session.expiresAt).getTime();
+    const now = Date.now();
+    const diffHours = (expiresAt - now) / (1000 * 60 * 60);
+    assert.ok(diffHours >= 23.9 && diffHours <= 24.1, `Expected ~24 hours TTL, got ${diffHours}`);
   });
 
   test('GET /api/v1/auth/me returns authenticated user profile', async () => {
@@ -132,6 +139,28 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
     assert.strictEqual(body.data.user.email, testEmail);
+  });
+
+  test('Expired session tokens (>24h) are rejected by GET /api/v1/auth/me with 401', async () => {
+    const expiredToken = 'expired-session-token-' + Date.now();
+    await prisma.userSession.create({
+      data: {
+        userId: (await prisma.user.findUnique({ where: { email: testEmail } }))!.id,
+        token: expiredToken,
+        expiresAt: new Date(Date.now() - 1000) // Expired in the past
+      }
+    });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { authorization: `Bearer ${expiredToken}` }
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+    const body = JSON.parse(response.payload);
+    assert.strictEqual(body.success, false);
+    assert.strictEqual(body.error?.code, 'UNAUTHORIZED');
   });
 
   test('POST /api/v1/auth/login validates credentials and dispatches 2FA OTP', async () => {

@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobileDrawer();
   initActiveNavigation();
   initAuthHeaderState();
+  initSessionLifecycleMonitor();
   initStatusDemoToggles();
   initSmoothScroll();
   initAccordion();
@@ -234,19 +235,28 @@ function initActiveNavigation() {
 }
 
 /**
- * 4. Dynamic Authenticated Header State Sync
+ * 4. Dynamic Authenticated Header State Sync (Strict 24-Hour Policy)
  */
 function initAuthHeaderState() {
-  const authToken = localStorage.getItem('rn_auth_token');
+  const isAuth = typeof AuthService !== 'undefined' ? AuthService.isSessionValid() : Boolean(localStorage.getItem('rn_auth_token'));
   const userDataRaw = localStorage.getItem('rn_user_data');
-  const isAuth = Boolean(authToken);
 
   const headerActions = document.querySelector('.header-actions');
   const userEmailSpan = document.getElementById('user-email-header');
   const logoutBtn = document.getElementById('btn-logout');
 
-  // Populate user data if elements exist
-  if (userDataRaw && userEmailSpan) {
+  // If token is expired or invalid, scrub stale state
+  if (!isAuth && localStorage.getItem('rn_auth_token')) {
+    if (typeof AuthService !== 'undefined') {
+      AuthService.clearSession();
+    } else {
+      localStorage.removeItem('rn_auth_token');
+      localStorage.removeItem('rn_user_data');
+    }
+  }
+
+  // Populate user data if elements exist and session is valid
+  if (isAuth && userDataRaw && userEmailSpan) {
     try {
       const userData = JSON.parse(userDataRaw);
       const email = userData.email || 'User';
@@ -264,12 +274,15 @@ function initAuthHeaderState() {
   // Handle Logout Button
   if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('rn_auth_token');
-      localStorage.removeItem('rn_user_data');
-      sessionStorage.clear();
-      
-      const isInnerPage = window.location.pathname.includes('/pages/');
-      window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
+      if (typeof AuthService !== 'undefined') {
+        AuthService.logoutUser();
+      } else {
+        localStorage.removeItem('rn_auth_token');
+        localStorage.removeItem('rn_user_data');
+        sessionStorage.clear();
+        const isInnerPage = window.location.pathname.includes('/pages/');
+        window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
+      }
     });
   }
 
@@ -294,13 +307,41 @@ function initAuthHeaderState() {
     const dynamicLogoutBtn = document.getElementById('btn-header-logout');
     if (dynamicLogoutBtn) {
       dynamicLogoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('rn_auth_token');
-        localStorage.removeItem('rn_user_data');
-        sessionStorage.clear();
-        window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
+        if (typeof AuthService !== 'undefined') {
+          AuthService.logoutUser();
+        } else {
+          localStorage.removeItem('rn_auth_token');
+          localStorage.removeItem('rn_user_data');
+          sessionStorage.clear();
+          window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
+        }
       });
     }
   }
+}
+
+/**
+ * 4.1 Session Lifecycle Monitor (Checks Expiration & Near-Expiry Warnings Every 30s)
+ */
+function initSessionLifecycleMonitor() {
+  if (typeof AuthService === 'undefined') return;
+
+  const checkSession = () => {
+    const hasStoredToken = Boolean(localStorage.getItem('zdexcloud_token') || localStorage.getItem('rn_auth_token'));
+    if (!hasStoredToken) return;
+
+    if (!AuthService.isSessionValid()) {
+      AuthService.handleSessionExpired('Your session has expired. Please sign in again.');
+    } else {
+      AuthService.checkSessionWarning();
+    }
+  };
+
+  // Immediate check on page load
+  checkSession();
+
+  // Periodic check every 30 seconds
+  setInterval(checkSession, 30000);
 }
 
 /**
@@ -313,6 +354,7 @@ function initAccordion() {
       const item = trigger.closest('.accordion-item');
       if (!item) return;
 
+      const panel = item.querySelector('.accordion-panel');
       const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
       
       const parentAccordion = item.closest('.accordion');
@@ -322,6 +364,8 @@ function initAccordion() {
             sibling.classList.remove('is-open');
             const siblingBtn = sibling.querySelector('.accordion-trigger');
             if (siblingBtn) siblingBtn.setAttribute('aria-expanded', 'false');
+            const siblingPanel = sibling.querySelector('.accordion-panel');
+            if (siblingPanel) siblingPanel.setAttribute('hidden', '');
           }
         });
       }
@@ -329,9 +373,11 @@ function initAccordion() {
       if (isExpanded) {
         item.classList.remove('is-open');
         trigger.setAttribute('aria-expanded', 'false');
+        if (panel) panel.setAttribute('hidden', '');
       } else {
         item.classList.add('is-open');
         trigger.setAttribute('aria-expanded', 'true');
+        if (panel) panel.removeAttribute('hidden');
       }
     });
   });

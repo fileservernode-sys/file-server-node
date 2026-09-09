@@ -3,6 +3,7 @@ import '../../features/about/presentation/about_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/otp_screen.dart';
 import '../../features/help/presentation/help_screen.dart';
+import '../../features/help/presentation/help_topic_screen.dart';
 import '../../features/server/presentation/server_status_screen.dart';
 import '../../features/setup/presentation/setup_configuration_screen.dart';
 import '../../features/setup/presentation/setup_credentials_screen.dart';
@@ -44,6 +45,7 @@ class AppRouter {
   // Status & Information Routes
   static const String serverStatusRoute = '/server/status';
   static const String helpRoute = '/help';
+  static const String helpTopicRoute = '/help/topic';
   static const String aboutRoute = '/about';
   static const String showcaseRoute = '/showcase';
 
@@ -124,6 +126,14 @@ class AppRouter {
       case helpRoute:
         return MaterialPageRoute(
           builder: (_) => const HelpScreen(),
+          settings: settings,
+        );
+      case helpTopicRoute:
+        final topicId = (settings.arguments is String)
+            ? settings.arguments as String
+            : 'getting-started';
+        return MaterialPageRoute(
+          builder: (_) => HelpTopicScreen(topicId: topicId),
           settings: settings,
         );
       case aboutRoute:

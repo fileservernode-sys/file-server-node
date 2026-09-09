@@ -106,10 +106,27 @@ class _SetupCredentialsScreenState
                             style: AppTypography.caption.copyWith(
                                 color: AppColors.textSecondary, height: 1.4),
                           ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: const Size(0, 32),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: const Icon(Icons.help_outline_rounded, size: 16),
+                              label: const Text('Learn about credentials & security', style: AppTypography.caption),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/help/topic',
+                                    arguments: 'security-privacy');
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.lg),
 
                     // Credential Input Fields
                     AppTextField(

@@ -75,12 +75,23 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<bool> restoreSession() async {
     try {
       final session = await _repository.getCurrentSession();
-      if (session != null && !session.isExpired) {
-        state = state.copyWith(
-          status: AuthStatus.authenticated,
-          session: session,
-        );
-        return true;
+      if (session != null) {
+        if (!session.isExpired) {
+          state = state.copyWith(
+            status: AuthStatus.authenticated,
+            session: session,
+          );
+          return true;
+        } else {
+          // Session expired beyond strict 24-hour lifetime — clean up
+          await _repository.logout();
+          state = state.copyWith(
+            status: AuthStatus.unauthenticated,
+            session: null,
+            errorMessage: 'Your session has expired. Please sign in again.',
+          );
+          return false;
+        }
       }
     } catch (_) {}
     return false;

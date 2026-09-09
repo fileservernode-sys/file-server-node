@@ -232,7 +232,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Help & Documentation'), findsOneWidget);
+      expect(find.text('Help & Learn'), findsOneWidget);
       expect(find.text('Getting Started'), findsOneWidget);
     });
 
@@ -247,8 +247,8 @@ void main() {
         ),
       );
 
-      expect(find.text('About Platform'), findsOneWidget);
-      expect(find.text('ZdexCloud Personal File Server'), findsOneWidget);
+      expect(find.text('About ZdexCloud'), findsOneWidget);
+      expect(find.text('ZdexCloud'), findsOneWidget);
     });
   });
 

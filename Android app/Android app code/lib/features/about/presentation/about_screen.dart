@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
-import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/url_launcher_service.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 
-/// About Screen — Displays platform brand identity, architecture diagram, and mission metadata
+/// About Screen — Displays ZdexCloud brand identity, architecture overview, and canonical web resources
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final websiteUrl = AppConfig.current.websiteUrl;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
-        title: 'About Platform',
+        title: 'About ZdexCloud',
         showBackButton: true,
       ),
       body: SafeArea(
@@ -27,28 +25,58 @@ class AboutScreen extends StatelessWidget {
             constraints:
                 const BoxConstraints(maxWidth: AppSpacing.maxContentWidth),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.xl),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
                   const SizedBox(height: AppSpacing.md),
                   const ContainerIconCircle(
                     icon: Icons.dns_rounded,
-                    size: 48,
+                    size: 44,
                     color: AppColors.primary,
                   ),
                   const SizedBox(height: AppSpacing.md),
                   const Text(
-                    'ZdexCloud Personal File Server',
+                    'ZdexCloud',
                     style: AppTypography.pageTitle,
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   const Text(
-                    'Version 1.0.0 (Phase 1 — Commercial SaaS Engine)',
-                    style: AppTypography.caption,
+                    'Personal file server powered by your Android device.',
+                    style: AppTypography.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    'Version 1.0.0',
+                    style: AppTypography.caption
+                        .copyWith(color: AppColors.textMuted),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xl),
+
+                  // Mission & Philosophy Card
+                  const AppCard(
+                    padding: EdgeInsets.all(AppSpacing.xl),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('About the Platform',
+                            style: AppTypography.cardTitle),
+                        SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Your Android phone provides the storage. ZdexCloud provides the software and remote-access experience.',
+                          style: AppTypography.body,
+                        ),
+                        SizedBox(height: AppSpacing.md),
+                        Text(
+                          'Transform everyday or spare Android smartphones into dedicated, eco-friendly private personal servers with instant browser access from any device.',
+                          style: AppTypography.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Architecture Diagram Flow Card
                   const AppCard(
@@ -57,24 +85,24 @@ class AboutScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Product Architecture Flow',
-                            style: AppTypography.sectionTitle),
+                            style: AppTypography.cardTitle),
                         SizedBox(height: AppSpacing.md),
                         _ArchStep(
                           stepNum: '1',
                           title: 'Physical Android Phone Host',
-                          subtitle: 'Personal files stored on phone media',
+                          subtitle: 'Personal files stored locally on phone media',
                         ),
                         Divider(height: AppSpacing.lg),
                         _ArchStep(
                           stepNum: '2',
-                          title: 'Local HTTP File Server',
-                          subtitle: 'Runs on 127.0.0.1:8080 on-device socket',
+                          title: 'Local File Server Engine',
+                          subtitle: 'Embedded on-device engine with local authentication',
                         ),
                         Divider(height: AppSpacing.lg),
                         _ArchStep(
                           stepNum: '3',
-                          title: 'ZdexCloud Outbound Gateway',
-                          subtitle: 'Encrypted WebSocket tunnel without port forwarding',
+                          title: 'ZdexCloud Connection Service',
+                          subtitle: 'Encrypted outbound connection without port forwarding',
                         ),
                         Divider(height: AppSpacing.lg),
                         _ArchStep(
@@ -87,50 +115,108 @@ class AboutScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
-                  // Mission & Principles Card
-                  const AppCard(
-                    padding: EdgeInsets.all(AppSpacing.xl),
+                  // Canonical Website Links Card
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Our Mission', style: AppTypography.sectionTitle),
-                        SizedBox(height: AppSpacing.xs),
+                        const Text('Official Website & Resources',
+                            style: AppTypography.cardTitle),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
-                          'Transform unused older Android smartphones into powerful, self-hosted, private personal file servers with zero cloud dependency.',
-                          style: AppTypography.body,
+                          'Explore full architecture documentation, security whitepapers, and legal policies on zdexcloud.com.',
+                          style: AppTypography.bodySmall
+                              .copyWith(color: AppColors.textSecondary),
                         ),
-                        SizedBox(height: AppSpacing.lg),
-                        Text('Architecture Highlights',
-                            style: AppTypography.sectionTitle),
-                        SizedBox(height: AppSpacing.xs),
-                        Text(
-                          '• Android 5.0+ (Lollipop+) compatibility\n'
-                          '• Clean separation of Platform & File-Server credentials\n'
-                          '• Local Web File Manager hosted on physical phone storage\n'
-                          '• Secure encrypted control plane architecture',
-                          style: AppTypography.bodySmall,
+                        const SizedBox(height: AppSpacing.md),
+                        _WebLinkTile(
+                          icon: Icons.account_tree_outlined,
+                          title: 'How It Works',
+                          subtitle: 'See complete architecture guide',
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.howItWorksUrl),
+                        ),
+                        const Divider(),
+                        _WebLinkTile(
+                          icon: Icons.menu_book_outlined,
+                          title: 'Documentation',
+                          subtitle: 'Setup guides & technical documentation',
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.documentationUrl),
+                        ),
+                        const Divider(),
+                        _WebLinkTile(
+                          icon: Icons.shield_outlined,
+                          title: 'Privacy Policy',
+                          subtitle: 'How your data is protected',
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.privacyUrl),
+                        ),
+                        const Divider(),
+                        _WebLinkTile(
+                          icon: Icons.gavel_outlined,
+                          title: 'Terms of Service',
+                          subtitle: 'Platform terms and service boundaries',
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.termsUrl),
+                        ),
+                        const Divider(),
+                        _WebLinkTile(
+                          icon: Icons.mail_outline_rounded,
+                          title: 'Contact Support',
+                          subtitle: 'support@zdexcloud.com',
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.contactUrl),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
+                  const SizedBox(height: AppSpacing.xl),
 
-                  TertiaryButton(
+                  SecondaryButton(
                     label: 'Visit Main Website (zdexcloud.com)',
                     icon: Icons.open_in_new_rounded,
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('Opening $websiteUrl...')),
-                      );
+                      UrlLauncherService.openUrl(
+                          context, UrlLauncherService.websiteBaseUrl);
                     },
                   ),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _WebLinkTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _WebLinkTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, color: AppColors.primary, size: 22),
+      title: Text(title,
+          style: AppTypography.body.copyWith(fontWeight: FontWeight.w500)),
+      subtitle: Text(subtitle, style: AppTypography.caption),
+      trailing: const Icon(Icons.open_in_new_rounded,
+          size: 16, color: AppColors.textMuted),
+      onTap: onTap,
     );
   }
 }
@@ -176,17 +262,19 @@ class _ArchStep extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 24,
-          height: 24,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               stepNum,
               style: AppTypography.caption.copyWith(
-                  color: Colors.white, fontWeight: FontWeight.bold),
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
             ),
           ),
         ),
@@ -206,4 +294,3 @@ class _ArchStep extends StatelessWidget {
     );
   }
 }
-

@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <meta name="keywords" content="ZdexCloud documentation, Android server guide, phone file server docs, self-hosted storage hub, mobile NAS documentation">
+  <meta name="keywords" content="ZdexCloud documentation, Android file server setup, turn old Android phone into server, Android file server tutorial, remote Android file access, Android server troubleshooting, Android foreground service file server, CGNAT file server, personal file server documentation, remote file manager, Android storage server">
 
-  <title>Documentation Hub & Knowledge Base | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="ZdexCloud technical documentation center: Android phone server installation, architecture, encrypted gateway tunneling, security, and REST API guides.">
+  <title>Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server</title>
+  <meta name="description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/documentation.html">
@@ -25,31 +24,48 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/documentation.html">
-  <meta property="og:title" content="Documentation Hub & Knowledge Base | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="ZdexCloud technical documentation center: Android phone server installation, architecture, encrypted gateway tunneling, security, and REST API guides.">
+  <meta property="og:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud Documentation Hub">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Documentation Hub & Knowledge Base | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="ZdexCloud technical documentation center: Android phone server installation, architecture, encrypted gateway tunneling, security, and REST API guides.">
+  <meta name="twitter:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud Documentation Hub">
 
-  
-  <!-- TechArticle JSON-LD Schema -->
+  <!-- Structured Data (Schema.org) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "TechArticle",
-    "headline": "ZdexCloud Technical Documentation & Platform Knowledge Base",
-    "description": "Guides and references for Android file server provisioning, storage permissions, gateway routing, and credential security.",
-    "articleSection": "Documentation",
-    "inLanguage": "en"
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://zdexcloud.com/pages/documentation.html#webpage",
+        "url": "https://zdexcloud.com/pages/documentation.html",
+        "name": "Documentation Hub & Technical Knowledge Base | ZdexCloud",
+        "description": "Comprehensive operator guides, setup manuals, and troubleshooting references for ZdexCloud personal file servers.",
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://zdexcloud.com/#website",
+          "name": "ZdexCloud",
+          "url": "https://zdexcloud.com/"
+        }
+      },
+      {
+        "@type": "TechArticle",
+        "@id": "https://zdexcloud.com/pages/documentation.html#article",
+        "headline": "ZdexCloud Technical Documentation & Operator Knowledge Base",
+        "description": "Guides and references for Android file server provisioning, storage permissions, gateway routing, credential security, and session policies.",
+        "articleSection": "Documentation",
+        "inLanguage": "en"
+      }
+    ]
   }
   </script>
 
@@ -59,14 +75,84 @@
   <link rel="stylesheet" href="../css/components.css">
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/sections.css">
+
+  <style>
+    .docs-nav-bar {
+      display: flex;
+      gap: var(--space-xs);
+      overflow-x: auto;
+      padding: var(--space-sm) 0;
+      margin-bottom: var(--space-xl);
+      border-bottom: 1px solid var(--color-border-subtle);
+      white-space: nowrap;
+    }
+    .docs-nav-item {
+      padding: var(--space-xs) var(--space-md);
+      border-radius: var(--radius-full);
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border-subtle);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .docs-nav-item:hover, .docs-nav-item.active {
+      background: var(--color-brand-primary);
+      color: #FFF;
+      border-color: var(--color-brand-primary);
+    }
+    .table-responsive-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      margin: var(--space-md) 0;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border-subtle);
+      background: var(--color-bg-surface);
+    }
+    .tech-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: var(--font-size-sm);
+    }
+    .tech-table th, .tech-table td {
+      padding: var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+    .tech-table th {
+      background: rgba(255, 255, 255, 0.02);
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .tech-table tr:last-child td {
+      border-bottom: none;
+    }
+    .code-snippet-box {
+      background: #0F172A;
+      color: #E2E8F0;
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      font-family: monospace;
+      font-size: var(--font-size-xs);
+      overflow-x: auto;
+      margin: var(--space-sm) 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .troubleshoot-item {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+    }
+  </style>
 </head>
 <body>
 
   <!-- HEADER -->
   <header class="site-header" id="header">
     <div class="container header-container">
-      
-      <!-- Brand Logo / Text Mark -->
       <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
         <span class="brand-icon">
           <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -79,24 +165,21 @@
         <span class="brand-text">ZdexCloud</span>
       </a>
 
-      <!-- Desktop Navigation -->
       <nav class="desktop-nav" aria-label="Main Navigation">
         <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
-        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="documentation.html" class="nav-link active">Documentation</a>
         <a href="pricing.html" class="nav-link">Pricing</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
 
-      <!-- Desktop Header Actions -->
       <div class="header-actions">
         <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
         <a href="get-started.html" class="btn btn-primary" id="header-btn-signup">Get Started</a>
       </div>
 
-      <!-- Mobile Menu Toggle Button -->
       <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
         <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -104,7 +187,6 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-
     </div>
   </header>
 
@@ -133,7 +215,7 @@
     <div class="drawer-nav-list">
       <a href="product.html" class="drawer-nav-link">Product</a>
       <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
-      <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="documentation.html" class="drawer-nav-link active">Documentation</a>
       <a href="pricing.html" class="drawer-nav-link">Pricing</a>
       <a href="about.html" class="drawer-nav-link">About</a>
       <a href="contact.html" class="drawer-nav-link">Contact</a>
@@ -145,153 +227,386 @@
     </div>
   </aside>
 
-  <!-- PAGE HEADER -->
-  <section class="page-header">
-    <div class="container">
-      <div class="breadcrumbs">
-        <a href="../index.html" class="breadcrumb-link">Home</a>
-        <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">Documentation</span>
-      </div>
-      <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-accent">Help Center & Guides</span></div>
-        <h1 class="page-header-title">Documentation & Knowledge Base</h1>
-        <p class="page-header-subtitle">
-          Comprehensive setup guides, Android app installation tutorials, storage permission walkthroughs, and troubleshooting instructions.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <main class="page-entrance">
-    <!-- DOCUMENTATION CATEGORIES GRID -->
-    <section class="section-wrapper">
+  <main class="page-entrance" id="main-content">
+    <!-- PAGE HEADER -->
+    <section class="page-header" id="hero">
       <div class="container">
-        <div class="grid-3-col">
-          
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <polygon points="10 8 16 12 10 16 10 8"></polygon>
-              </svg>
-            </div>
-            <h3 class="card-title">Getting Started</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Core guides for account setup and initial app installation.</p>
-            <ul class="footer-link-list">
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating your platform account</a></li>
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Installing the Flutter Android app</a></li>
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Linking your Android device</a></li>
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating file server credentials</a></li>
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Starting Server Mode</a></li>
-            </ul>
+        <div class="breadcrumbs">
+          <a href="../index.html" class="breadcrumb-link">Home</a>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-current">Documentation</span>
+        </div>
+        <div class="page-header-content">
+          <div class="page-header-eyebrow">
+            <span class="badge badge-accent">Technical Knowledge Base</span>
           </div>
-
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-              </svg>
-            </div>
-            <h3 class="card-title">Using Your File Server</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Guides for managing files via the in-built web file manager.</p>
-            <ul class="footer-link-list">
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Browsing directories & storage stats</a></li>
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Uploading & downloading files</a></li>
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Creating, moving & deleting folders</a></li>
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Viewing photos & streaming videos</a></li>
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Managing permitted storage locations</a></li>
-            </ul>
-          </div>
-
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              </svg>
-            </div>
-            <h3 class="card-title">Remote Access</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Understanding connection states and routing endpoints.</p>
-            <ul class="footer-link-list">
-              <li><a href="how-it-works.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> How gateway outbound routing works</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Server status indicators explained</a></li>
-              <li><a href="server-access.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Resolving assigned subdomains</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Connection stability tips</a></li>
-            </ul>
-          </div>
-
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-                <line x1="12" y1="18" x2="12.01" y2="18"></line>
-              </svg>
-            </div>
-            <h3 class="card-title">Android Device Setup</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Optimizing Android storage and background execution.</p>
-            <ul class="footer-link-list">
-              <li><a href="product.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Granting storage permissions</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Disabling battery saver optimizations</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Autostart & background execution</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Handling low-storage conditions</a></li>
-            </ul>
-          </div>
-
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                <line x1="12" y1="9" x2="12" y2="13"></line>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-              </svg>
-            </div>
-            <h3 class="card-title">Troubleshooting</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Diagnosing offline statuses and network errors.</p>
-            <ul class="footer-link-list">
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Server showing OFFLINE state</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Gateway connection timeouts</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Invalid file-server password</a></li>
-              <li><a href="faq.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Unstable Wi-Fi reconnect sequence</a></li>
-            </ul>
-          </div>
-
-          <div class="card card-hover">
-            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              </svg>
-            </div>
-            <h3 class="card-title">Security & Privacy</h3>
-            <p class="card-description" style="margin-bottom: var(--space-md);">Overview of data isolation and authentication separation.</p>
-            <ul class="footer-link-list">
-              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Platform Account vs File-Server Auth</a></li>
-              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Local storage security model</a></li>
-              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Revoking registered devices</a></li>
-              <li><a href="privacy.html" class="footer-link" style="display: flex; align-items: center; gap: 6px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg> Path traversal protection standards</a></li>
-            </ul>
-          </div>
-
+          <h1 class="page-header-title">ZdexCloud Documentation</h1>
+          <p class="page-header-subtitle">
+            Setup instructions, server operations, remote file management, network configuration, session security policies, and troubleshooting knowledge base.
+          </p>
         </div>
       </div>
     </section>
 
-    <!-- NEED HELP CALLOUT -->
-    <section class="section-wrapper section-wrapper-alt">
+    <!-- SECTION NAVIGATOR -->
+    <section class="section-wrapper" style="padding-top: var(--space-md); padding-bottom: 0;">
+      <div class="container">
+        <div class="docs-nav-bar">
+          <a href="#getting-started" class="docs-nav-item">1. Getting Started</a>
+          <a href="#android-server" class="docs-nav-item">2. Android Server</a>
+          <a href="#remote-access-guide" class="docs-nav-item">3. Remote File Access</a>
+          <a href="#networking" class="docs-nav-item">4. Networking &amp; CGNAT</a>
+          <a href="#multi-device" class="docs-nav-item">5. Multi-Device Fleet</a>
+          <a href="#security-privacy" class="docs-nav-item">6. Security &amp; Auth Policy</a>
+          <a href="#troubleshooting" class="docs-nav-item">7. Troubleshooting</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 1: GETTING STARTED -->
+    <section class="section-wrapper" id="getting-started">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Category 01</span></div>
+          <h2 class="section-title">Getting Started: Step-by-Step Setup Guide</h2>
+          <p class="section-subtitle">Follow these 8 steps to commission your Android smartphone into a working file server.</p>
+        </div>
+
+        <div class="grid-2-col">
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-3">Provisioning Sequence</h3>
+            <ol class="text-xs text-muted space-y-3 pl-4 list-decimal">
+              <li>
+                <strong>Create Your Account:</strong> Navigate to <a href="get-started.html" class="text-brand">zdexcloud.com/pages/get-started.html</a>. Enter your email and verify the 6-digit OTP sent to your inbox.
+              </li>
+              <li>
+                <strong>Download Android App:</strong> Download the official ZdexCloud APK onto your dedicated Android smartphone (running Android 8.0 Oreo or higher).
+              </li>
+              <li>
+                <strong>Sign In on Android:</strong> Launch the app and sign in with your verified account email and password.
+              </li>
+              <li>
+                <strong>Link Hardware Node:</strong> The application automatically provisions a hardware-bound <code class="font-mono">installationId</code> in Android Keystore, pairing the phone to your account.
+              </li>
+              <li>
+                <strong>Grant Permissions:</strong> Grant "All Files Access" / storage permissions and notification permissions when prompted.
+              </li>
+              <li>
+                <strong>Name Your Server:</strong> Assign a distinct, recognizable server label (e.g. "Living Room Server", "Studio Backup").
+              </li>
+              <li>
+                <strong>Start Server Mode:</strong> Set a dedicated server password and tap "Start Server". Confirm the state becomes <code class="font-mono">RUNNING</code>.
+              </li>
+              <li>
+                <strong>Access Remotely:</strong> Open <a href="dashboard.html" class="text-brand">zdexcloud.com/pages/dashboard.html</a> on your PC or tablet, click your server, enter the server password, and begin managing files!
+              </li>
+            </ol>
+          </div>
+
+          <div class="card p-6 bg-secondary">
+            <h3 class="text-base font-bold mb-3">Prerequisites Checklist</h3>
+            <ul class="text-xs text-muted space-y-2.5 pl-4 list-disc">
+              <li><strong>Dedicated Android Phone:</strong> Android 8.0 (API level 26) or higher with at least 1.5 GB RAM.</li>
+              <li><strong>Continuous Power:</strong> Standard 5V USB wall charger to keep the phone powered permanently.</li>
+              <li><strong>Stable Network:</strong> 2.4GHz / 5GHz Wi-Fi network with internet access.</li>
+              <li><strong>Storage Medium:</strong> Sufficient internal flash memory or an inserted Class 10 / UHS-1 micro-SD card.</li>
+              <li><strong>Modern Web Browser:</strong> Google Chrome, Mozilla Firefox, Apple Safari, or Microsoft Edge on your computer or tablet.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 2: ANDROID SERVER OPERATIONS -->
+    <section class="section-wrapper section-wrapper-alt" id="android-server">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-accent">Category 02</span></div>
+          <h2 class="section-title">Android Server Operations &amp; System Policies</h2>
+          <p class="section-subtitle">Understanding permissions, foreground services, notifications, and battery optimization.</p>
+        </div>
+
+        <div class="table-responsive-wrapper">
+          <table class="tech-table" aria-label="Android System Permissions Matrix">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Permission / Setting</th>
+                <th style="width: 40%;">Why ZdexCloud Needs It</th>
+                <th style="width: 35%;">Impact If Denied</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>All Files Access (Storage)</strong></td>
+                <td>Allows the local server engine to index, read, upload, and stream files from <code class="font-mono">/storage/emulated/0</code> and micro-SD cards.</td>
+                <td>Server cannot read or write user files; file manager will show empty directories.</td>
+              </tr>
+              <tr>
+                <td><strong>Foreground Service (<code class="font-mono">FOREGROUND_SERVICE</code>)</strong></td>
+                <td>Keeps the local HTTP loopback engine and outbound WebSocket alive while the phone screen is locked or sleeping.</td>
+                <td>Android OS terminates the server process after a few minutes of screen-off time.</td>
+              </tr>
+              <tr>
+                <td><strong>Post Notifications (<code class="font-mono">POST_NOTIFICATIONS</code>)</strong></td>
+                <td>Android 13+ requirement to display the persistent server status notification necessary for foreground execution.</td>
+                <td>Foreground service status cannot be established; server may be killed by OS.</td>
+              </tr>
+              <tr>
+                <td><strong>Battery Optimization Whitelist</strong></td>
+                <td>Exempts ZdexCloud from Android Doze mode, preventing network socket suspension when the phone is stationary.</td>
+                <td>Outbound socket pauses during sleep; remote browser experiences connection timeouts.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card p-6 mt-4">
+          <h3 class="text-base font-bold mb-2">How to Keep the Server Continuously Available</h3>
+          <p class="text-xs text-muted mb-3">
+            To optimize for continuous, unattended background operation:
+          </p>
+          <ul class="text-xs text-muted space-y-1.5 pl-4 list-disc">
+            <li>Keep the device plugged into AC power using a standard 5V wall adapter.</li>
+            <li>In phone Wi-Fi advanced settings, set <strong>"Keep Wi-Fi on during sleep"</strong> to <strong>Always</strong>.</li>
+            <li>In <strong>Settings &gt; Apps &gt; ZdexCloud &gt; Battery</strong>, select <strong>Unrestricted</strong>.</li>
+            <li>On OEM builds (Xiaomi, Samsung, Huawei), lock the app in the Recent Apps view and enable "Autostart".</li>
+            <li>Place the phone in a shaded, ventilated area to prevent thermal throttling.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 3: REMOTE FILE ACCESS & WEB MANAGER -->
+    <section class="section-wrapper" id="remote-access-guide">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Category 03</span></div>
+          <h2 class="section-title">Remote File Manager Operator Guide</h2>
+          <p class="section-subtitle">How to perform file management, media streaming, and directory operations remotely.</p>
+        </div>
+
+        <div class="grid-3-col">
+          <div class="card card-hover">
+            <h3 class="card-title">Directory Navigation</h3>
+            <p class="card-description">
+              Use breadcrumbs to navigate nested folder trees. Click category shortcuts (Photos, Videos, Docs, Audio, Archives) for instant filtered views of your media.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">File Uploads &amp; Downloads</h3>
+            <p class="card-description">
+              Drag &amp; drop files into the upload modal to transfer files to your phone. Click the download icon on any file to stream it directly to your computer.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Media Streaming &amp; Lightbox</h3>
+            <p class="card-description">
+              Click photo thumbnails to preview high-res images in a lightbox. Click MP4 or WebM videos to stream playback with seeking controls in an embedded HTML5 player.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Folder Creation &amp; Rename</h3>
+            <p class="card-description">
+              Click "New Folder" to create nested folders on your phone. Click "Rename" on any item to update its label without transferring files over the network.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Safe Deletions</h3>
+            <p class="card-description">
+              Click "Delete" to remove unwanted files. A confirmation modal warns that the item will be permanently erased from your physical phone storage host.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Storage Allocation Bar</h3>
+            <p class="card-description">
+              View real-time storage metrics: total phone capacity, ZdexCloud files volume, system/other app usage, free disk space, and largest stored files.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 4: NETWORKING & CGNAT -->
+    <section class="section-wrapper section-wrapper-alt" id="networking">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-accent">Category 04</span></div>
+          <h2 class="section-title">Networking Architecture, WSS &amp; CGNAT</h2>
+          <p class="section-subtitle">How outbound WebSocket tunnels eliminate port forwarding and traverse restrictive firewalls.</p>
+        </div>
+
+        <div class="grid-2-col">
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">Outbound TLS 1.3 WebSocket Tunnel</h3>
+            <p class="text-xs text-muted mb-3">
+              When Server Mode starts, the phone executes an outbound TCP handshake over secure port 443. Once authenticated via its unique connection token, the duplex tunnel stays open:
+            </p>
+            <ul class="text-xs text-muted space-y-1.5 pl-4 list-disc">
+              <li><strong>Zero Open Ports:</strong> Your home router requires no forwarded ports or static IP bindings.</li>
+              <li><strong>Stateless Buffer:</strong> The gateway receives RPC requests from your browser and pushes them down to the phone's open socket in RAM.</li>
+              <li><strong>Zero Disk Writes on Relay:</strong> Gateway memory buffers streaming chunks; zero file bytes are written to disk.</li>
+            </ul>
+          </div>
+
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">Carrier-Grade NAT (CGNAT) Compatibility</h3>
+            <p class="text-xs text-muted mb-3">
+              Most mobile network providers (4G/5G) and fiber ISPs deploy CGNAT, sharing one public IPv4 address among hundreds of subscribers:
+            </p>
+            <ul class="text-xs text-muted space-y-1.5 pl-4 list-disc">
+              <li><strong>Why CGNAT Breaks Old Servers:</strong> Inbound port requests cannot route to your specific router.</li>
+              <li><strong>Why ZdexCloud Works:</strong> CGNAT fully allows client-initiated outbound connections. Because the phone dials out, the tunnel establishes reliably.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 5: MULTI-DEVICE FLEET MANAGEMENT -->
+    <section class="section-wrapper" id="multi-device">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Category 05</span></div>
+          <h2 class="section-title">Multi-Device Fleet Management</h2>
+          <p class="section-subtitle">Managing up to 5 physical Android servers under a single user account.</p>
+        </div>
+
+        <div class="grid-2-col">
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">Fleet Limits &amp; Identity</h3>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li><strong>5 Server Cap:</strong> Each ZdexCloud account can register and run up to 5 active physical phone servers.</li>
+              <li><strong>Persistent Identity:</strong> Each device generates its own hardware-bound <code class="font-mono">installationId</code> stored in Android Keystore.</li>
+              <li><strong>Independent Passwords:</strong> You can assign different server passwords to each phone for layered security.</li>
+            </ul>
+          </div>
+
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">1-Click Server Switching</h3>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li>Open the server selector dropdown in the top header of the web file manager.</li>
+              <li>Switch between your servers (e.g. "Home Vault", "Office Node", "Travel Phone") instantly.</li>
+              <li>Each server session is independently managed without logging out of your central account.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 6: SECURITY, PRIVACY & AUTHENTICATION POLICY -->
+    <section class="section-wrapper section-wrapper-alt" id="security-privacy">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-accent">Category 06</span></div>
+          <h2 class="section-title">Security, Privacy &amp; Authentication Session Policy</h2>
+          <p class="section-subtitle">Understanding credential separation, transport encryption, and our strict 24-hour session model.</p>
+        </div>
+
+        <div class="grid-2-col">
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">Strict 24-Hour Authentication Session Model</h3>
+            <p class="text-xs text-muted mb-3">
+              For security hygiene and compliance with modern enterprise standards, ZdexCloud enforces a <strong>strict 24-hour absolute session lifetime</strong>:
+            </p>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li>When you sign in with Email and 2FA OTP, your session token is valid for exactly 24 hours.</li>
+              <li>Sessions are <strong>not</strong> extended indefinitely by background activity.</li>
+              <li>After 24 hours, the session expires and you must sign in again with your credentials.</li>
+              <li><strong>Server Independence:</strong> Your Android phone server continues running uninterrupted in the background regardless of whether your web browser session has expired.</li>
+            </ul>
+          </div>
+
+          <div class="card p-6">
+            <h3 class="text-base font-bold mb-2">Account Credentials vs. Server Passwords</h3>
+            <p class="text-xs text-muted mb-3">
+              Access is protected by two distinct, decoupled security boundaries:
+            </p>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li><strong>Platform Account (Email + 2FA OTP):</strong> Controls device pairing, account settings, and discovery.</li>
+              <li><strong>Server Password:</strong> Stored locally on the phone to authenticate remote file operations. Even if an account were compromised, the attacker cannot unlock server files without the distinct server password.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card p-6 mt-6">
+          <h4 class="text-sm font-bold mb-2">Backup Recommendation: The 3-2-1 Rule</h4>
+          <p class="text-xs text-muted">
+            ZdexCloud turns your hardware into a high-utility <em>personal file server</em> for remote access, sharing, and streaming. It is <strong>not</strong> an automated offsite cold-disaster backup service. If your phone suffers physical damage, water damage, or hardware failure, files stored solely on that device could be lost. We strongly advise following the <strong>3-2-1 backup rule</strong>: keep 3 copies of important data on 2 different media types, with 1 copy stored in an independent cold or offsite location.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATEGORY 7: TROUBLESHOOTING KNOWLEDGE BASE -->
+    <section class="section-wrapper" id="troubleshooting">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow"><span class="badge badge-subtle">Category 07</span></div>
+          <h2 class="section-title">Troubleshooting Knowledge Base</h2>
+          <p class="section-subtitle">Diagnostic steps and solutions for common operational symptoms.</p>
+        </div>
+
+        <div class="space-y-4">
+          <div class="troubleshoot-item">
+            <h4 class="text-sm font-bold text-brand mb-1">Symptom 1: Server shows "OFFLINE" in the Web Dashboard</h4>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> The Android phone lost power, disconnected from Wi-Fi, or the Android OS suspended the background process.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Verify the phone is plugged into power, connected to Wi-Fi, and the ZdexCloud app status shows "RUNNING".</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> Once network connectivity is restored, the phone reconnects to the gateway within seconds and displays "ONLINE".</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h4 class="text-sm font-bold text-brand mb-1">Symptom 2: Server stops running when screen is locked or sleeping</h4>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Android Doze mode or manufacturer power saving terminated the background service.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Open Android Settings &gt; Apps &gt; ZdexCloud &gt; Battery and verify it is set to <strong>Unrestricted</strong>. On Xiaomi/Samsung phones, enable "Autostart".</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> The foreground service maintains active server operation continuously while the screen is locked.</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h4 class="text-sm font-bold text-brand mb-1">Symptom 3: "Invalid Server Password" error in web file manager</h4>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Entering your platform account password instead of the dedicated server password set on the phone.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Confirm the password entered matches the server password configured inside the Android app on the host device.</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> Successful authentication unlocks the web file manager immediately.</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h4 class="text-sm font-bold text-brand mb-1">Symptom 4: "Session Expired" notification after 24 hours</h4>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Normal behavior under our strict 24-hour absolute session security model.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Simply log in again with your email and 2FA OTP code.</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> A fresh 24-hour session is issued and your servers remain available.</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h4 class="text-sm font-bold text-brand mb-1">Symptom 5: Remote upload or download fails mid-transfer</h4>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Wi-Fi instability on the host phone or upstream bandwidth saturation.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Verify phone Wi-Fi signal strength and available storage space on the device.</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> Retrying the transfer over stable Wi-Fi completes successfully.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="section-wrapper section-wrapper-alt" id="cta">
       <div class="container">
         <div class="final-cta-banner">
-          <h2 class="final-cta-title">Need personalized assistance?</h2>
-          <p class="final-cta-description">Our support team is available to help with setup or technical questions.</p>
-          <a href="contact.html" class="btn btn-primary btn-lg">Contact Technical Support</a>
+          <h2 class="final-cta-title">Ready to build your personal server?</h2>
+          <p class="final-cta-description">Set up your free account today and start transforming your unused smartphone into personal infrastructure.</p>
+          <div style="display: flex; gap: var(--space-sm); justify-content: center; flex-wrap: wrap;">
+            <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="contact.html" class="btn btn-secondary btn-lg">Contact Technical Support</a>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
   <!-- FOOTER -->
-  <!-- FOOTER -->
-  <footer class="site-footer">
+  <footer class="site-footer" id="footer">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
@@ -307,8 +622,11 @@
             <span>ZdexCloud</span>
           </a>
           <p class="footer-tagline">
-            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+            Personal infrastructure created from hardware you already own. Turn your Android phone into a secure, remotely accessible personal file server.
           </p>
+          <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: var(--space-sm); font-family: monospace;">
+            Canonical Web: <a href="https://zdexcloud.com" style="color: var(--color-brand-primary);">zdexcloud.com</a>
+          </div>
         </div>
 
         <div>
@@ -325,8 +643,9 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+            <li><a href="contact.html" class="footer-link">Support &amp; Status</a></li>
           </ul>
         </div>
 

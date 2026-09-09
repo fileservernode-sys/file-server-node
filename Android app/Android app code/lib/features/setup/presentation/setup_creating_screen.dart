@@ -22,11 +22,11 @@ class SetupCreatingScreen extends ConsumerStatefulWidget {
 class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
   final List<String> _stages = const [
     'Registering Android host device with control plane...',
-    'Starting embedded HTTP file-server engine on 0.0.0.0:8080...',
-    'Verifying local socket listener health probe (127.0.0.1:8080)...',
-    'Configuring secure gateway transport endpoint...',
-    'Establishing secure WebSocket connection to Remote Gateway...',
-    'Verifying gateway reverse-proxy routing & public server access...',
+    'Starting embedded HTTP file-server engine...',
+    'Verifying local socket listener health probe...',
+    'Configuring secure connection transport endpoint...',
+    'Establishing secure connection to connection service...',
+    'Verifying secure reverse-proxy routing & public server access...',
   ];
 
   @override
@@ -102,27 +102,27 @@ class _SetupCreatingScreenState extends ConsumerState<SetupCreatingScreen> {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         _StageCheckItem(
-                            title: 'Registering host device node with backend',
+                            title: 'Registering host device with secure backend',
                             isDone: stageIdx >= 1),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Starting local HTTP engine (0.0.0.0:8080)',
+                            title: 'Starting embedded local file-server engine',
                             isDone: stageIdx >= 2),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Verifying local socket listener (127.0.0.1:8080)',
+                            title: 'Verifying local file-server engine status',
                             isDone: stageIdx >= 3),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Configuring gateway transport routing',
+                            title: 'Configuring secure connection routing',
                             isDone: stageIdx >= 4),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Connecting outbound WebSocket to Remote Gateway',
+                            title: 'Establishing outbound connection to connection service',
                             isDone: stageIdx >= 5 || setupState.isGatewayConnected),
                         const SizedBox(height: AppSpacing.xs),
                         _StageCheckItem(
-                            title: 'Verifying public reverse-proxy routing',
+                            title: 'Verifying secure reverse-proxy routing',
                             isDone: setupState.endpointStatus == 'ACTIVE'),
                       ],
                     ),

@@ -153,9 +153,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
-    // Create Authenticated Session Token (30-day TTL)
+    // Create Authenticated Session Token (Strict 24-Hour TTL / 1-Day Policy)
+    const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
     const token = generateSessionToken();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
     await prisma.userSession.create({
       data: {

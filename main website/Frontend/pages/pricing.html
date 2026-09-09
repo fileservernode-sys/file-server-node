@@ -3,39 +3,81 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Transparent, predictable plans for ZdexCloud personal Android file servers. Free Community Tier with up to 5 paired storage hosts and zero monthly storage fees.">
-  <meta name="keywords" content="ZdexCloud pricing, free phone file server, self-hosted cloud cost, personal NAS cost comparison, zero monthly storage fee">
-  <title>Pricing Tiers & Cost Comparison | ZdexCloud — Personal File Server</title>
+  <meta name="description" content="Transparent, predictable pricing for ZdexCloud personal Android file servers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers. Zero monthly storage fees.">
+  <meta name="keywords" content="ZdexCloud pricing, Android file server plans, self-hosted personal cloud cost, NAS pricing comparison, ₹49 month file server, ₹500 year file server">
+  <title>Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server</title>
 
-  <!-- Canonical URL & Open Graph SEO -->
-  <link rel="canonical" href="https://zdexcloud.com/pricing">
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/pricing.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Pricing Tiers & Cost Comparison | ZdexCloud">
-  <meta property="og:description" content="Host up to 5 personal Android file servers for free. Compare 5-year savings vs subscription cloud storage.">
-  <meta property="og:url" content="https://zdexcloud.com/pricing">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/pricing.html">
+  <meta property="og:title" content="Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Transparent pricing for ZdexCloud personal Android file servers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers. Zero monthly storage fees.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud Pricing Plans">
+
+  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Pricing Tiers & Cost Comparison | ZdexCloud">
-  <meta name="twitter:description" content="Zero cloud storage monthly fees. Turn hardware you own into private cloud servers.">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="No cloud storage markup or storage tiers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud Pricing Plans">
 
   <!-- Product & Offer JSON-LD Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": "ZdexCloud Storage Platform Tiers",
-    "description": "Personal Android File Server platform with free community access for up to 5 paired server hosts.",
+    "name": "ZdexCloud Personal File Server Platform",
+    "description": "Transform an Android smartphone into a private, remotely accessible personal file server with zero recurring storage fees.",
+    "brand": {
+      "@type": "Brand",
+      "name": "ZdexCloud"
+    },
     "offers": [
       {
         "@type": "Offer",
-        "name": "Free Community Tier",
+        "name": "Free Tier",
         "price": "0",
-        "priceCurrency": "USD",
-        "availability": "https://schema.org/InStock"
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock",
+        "description": "Start with 1 registered Android phone server, zero storage hosting fees, and full web file manager access."
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro Monthly",
+        "price": "49",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock",
+        "description": "Up to 5 registered Android phone servers, priority gateway relay routing, and multi-server dashboard management."
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro Yearly",
+        "price": "500",
+        "priceCurrency": "INR",
+        "availability": "https://schema.org/InStock",
+        "description": "Up to 5 registered Android phone servers, save ₹88 per year compared to monthly billing with an effective rate of ₹41.67 per month."
       }
     ]
   }
   </script>
 
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -66,7 +108,7 @@
         <a href="product.html" class="nav-link">Product</a>
         <a href="how-it-works.html" class="nav-link">How It Works</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
-        <a href="pricing.html" class="nav-link">Pricing</a>
+        <a href="pricing.html" class="nav-link is-active" aria-current="page">Pricing</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
@@ -116,7 +158,7 @@
       <a href="product.html" class="drawer-nav-link">Product</a>
       <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
       <a href="documentation.html" class="drawer-nav-link">Documentation</a>
-      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
+      <a href="pricing.html" class="drawer-nav-link is-active">Pricing</a>
       <a href="about.html" class="drawer-nav-link">About</a>
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
@@ -136,125 +178,460 @@
         <span class="breadcrumb-current">Pricing</span>
       </div>
       <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-accent">Predictable Pricing Tiers</span></div>
-        <h1 class="page-header-title">Zero Monthly Storage Fees</h1>
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Transparent Pricing</span></div>
+        <h1 class="page-header-title">Simple, Transparent Plans. Zero Monthly Storage Fees.</h1>
         <p class="page-header-subtitle">
-          Pay $0 for data hosting by leveraging hardware you already own. Up to 5 paired Android phone servers included free.
+          Pay ₹0 for cloud storage hosting because your files stay safely on your Android hardware. ZdexCloud plans cover secure relay tunneling, device coordination, and multi-server management.
         </p>
       </div>
     </div>
   </section>
 
-  <main>
-    <!-- COMING SOON NOTICE -->
-    <section class="section-wrapper">
+  <main class="page-entrance">
+
+    <!-- ARCHITECTURAL CLARIFICATION CALLOUT -->
+    <section class="section-wrapper" style="padding-top: var(--space-xl); padding-bottom: var(--space-lg);">
       <div class="container">
-        <div class="alert alert-info">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <div>
-            <strong>Early Access Preview:</strong> Commercial plans and exact gateway bandwidth allocation numbers are provisional and will be finalized prior to full production deployment.
-          </div>
-        </div>
-
-        <!-- PRICING TIERS GRID -->
-        <div class="grid-3-col" style="margin-top: var(--space-2xl);">
-          <div class="card card-hover">
-            <span class="badge badge-subtle" style="margin-bottom: var(--space-xs);">Community / Personal</span>
-            <h3 class="card-title">Free Tier</h3>
-            <p style="font-size: var(--font-size-3xl); font-weight: bold; color: var(--color-text-primary); margin: var(--space-sm) 0;">$0 <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ month</span></p>
-            <p class="card-description" style="margin-bottom: var(--space-lg);">Ideal for setting up a single Android phone for personal remote file access.</p>
-            <ul class="footer-link-list" style="margin-bottom: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-xs);">
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to 5 Registered Android Phones</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Full Web File Manager Access</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Outbound Relay Tunnel Access</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Zero Monthly Storage Fees</li>
-            </ul>
-            <a href="get-started.html" class="btn btn-secondary" style="width: 100%;">Get Started Free</a>
-          </div>
-
-          <div class="card card-hover" style="border-color: var(--color-brand-primary);">
-            <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Pro Host</span>
-            <h3 class="card-title">Personal Server Pro</h3>
-            <p style="font-size: var(--font-size-3xl); font-weight: bold; color: var(--color-text-primary); margin: var(--space-sm) 0;">TBD <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ month</span></p>
-            <p class="card-description" style="margin-bottom: var(--space-lg);">Designed for power users hosting multiple phone servers or higher bandwidth needs.</p>
-            <ul class="footer-link-list" style="margin-bottom: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-xs);">
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Up to 5 Registered Devices</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Dedicated Gateway Route</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Custom Subdomain Assignment</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Priority Reconnect Sequence</li>
-            </ul>
-            <a href="get-started.html" class="btn btn-primary" style="width: 100%;">Request Pro Access</a>
-          </div>
-
-          <div class="card card-hover">
-            <span class="badge badge-subtle" style="margin-bottom: var(--space-xs);">Custom Setup</span>
-            <h3 class="card-title">Multi-Node Tiers</h3>
-            <p style="font-size: var(--font-size-3xl); font-weight: bold; color: var(--color-text-primary); margin: var(--space-sm) 0;">Custom</p>
-            <p class="card-description" style="margin-bottom: var(--space-lg);">For advanced self-hosters managing multiple distributed storage nodes.</p>
-            <ul class="footer-link-list" style="margin-bottom: var(--space-xl); display: flex; flex-direction: column; gap: var(--space-xs);">
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Custom Device Limits</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Dedicated Gateway Instance</li>
-              <li style="display: flex; align-items: center; gap: 8px;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> SLA Support Availability</li>
-            </ul>
-            <a href="contact.html" class="btn btn-secondary" style="width: 100%;">Inquire Custom Tiers</a>
+        <div class="card" style="border-left: 4px solid var(--color-brand-primary); background-color: var(--color-bg-subtle);">
+          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <div style="color: var(--color-brand-primary); flex-shrink: 0; margin-top: 2px;">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div>
+              <h2 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+                How ZdexCloud Pricing Works: Storage vs. Server Slots
+              </h2>
+              <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+                Unlike conventional cloud platforms that charge recurring monthly fees per gigabyte, ZdexCloud charges <strong>₹0 for storage capacity</strong>. Your storage is provided by your phone's internal flash storage or microSD card (whether 64GB, 256GB, or 1TB). Our commercial plans define <strong>how many registered Android server nodes</strong> you can manage under one account (1 on Free, up to 5 on Pro) and provide priority gateway relay routing.
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- PRICING COMPARISON MATRIX -->
+    <!-- PRICING TIERS GRID -->
+    <section class="section-wrapper" style="padding-top: var(--space-md);">
+      <div class="container">
+        <div class="section-header text-center" style="margin-bottom: var(--space-2xl);">
+          <h2 class="section-title">Select the Plan That Fits Your Storage Setup</h2>
+          <p class="section-subtitle">
+            Start with one Android phone for free, or upgrade to Pro to manage up to 5 distributed phone servers from a single dashboard.
+          </p>
+        </div>
+
+        <div class="grid-3-col">
+          
+          <!-- FREE PLAN -->
+          <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
+                <span class="badge badge-subtle">Start with one Android phone</span>
+              </div>
+              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Free</h3>
+              <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
+                Ideal for repurposing a single Android smartphone as a private, remotely accessible personal file server.
+              </p>
+              
+              <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹0</span>
+                  <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ forever</span>
+                </div>
+                <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 4px;">
+                  Zero monthly storage fees • Zero credit card required
+                </div>
+              </div>
+
+              <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-xl);">
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>1 Registered Android Phone Server</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Full Browser-Based Web File Manager</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Outbound TLS 1.3 WebSocket Relay Tunnel</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Photo & Video Streaming via Browser</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Upload, Download, Rename & Delete Operations</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>24-Hour Absolute Web Session Security</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>No Cloud Storage Tier Fees (On-Device Storage)</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Standard Community Documentation Support</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <a href="get-started.html" class="btn btn-secondary btn-block">Get Started Free</a>
+            </div>
+          </div>
+
+          <!-- PRO MONTHLY PLAN -->
+          <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
+                <span class="badge badge-accent">Multi-Server Flexibility</span>
+              </div>
+              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Monthly</h3>
+              <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
+                For users managing multiple Android storage servers with flexible month-to-month billing.
+              </p>
+              
+              <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹49</span>
+                  <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ month</span>
+                </div>
+                <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 4px;">
+                  Billed monthly • Cancel anytime
+                </div>
+              </div>
+
+              <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-xl);">
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Up to 5 Registered Android Phone Servers</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Centralized Dashboard Multi-Server Switching</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Priority Gateway Relay Routing</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Concurrent Active Server Operation</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Custom Server Naming & Categorization</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Full Browser Web File Manager & Streaming</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>24-Hour Absolute Web Session Security</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Priority Email Customer Support</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <a href="get-started.html" class="btn btn-secondary btn-block">Start Pro Monthly</a>
+            </div>
+          </div>
+
+          <!-- PRO YEARLY PLAN (HIGHLIGHTED) -->
+          <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between; border: 2px solid var(--color-brand-primary); position: relative; box-shadow: var(--shadow-md);">
+            <div style="position: absolute; top: -12px; right: 24px;">
+              <span class="badge badge-accent" style="background-color: var(--color-brand-primary); color: #ffffff; font-weight: var(--font-weight-bold); padding: 4px 12px; border-radius: var(--radius-full);">BEST VALUE</span>
+            </div>
+            
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
+                <span class="badge badge-accent">Best value for long-term ZdexCloud use</span>
+              </div>
+              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Yearly</h3>
+              <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
+                Annual plan with substantial savings. Best value for managing up to 5 Android storage nodes year-round.
+              </p>
+              
+              <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
+                <div style="display: flex; align-items: baseline; gap: 4px;">
+                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-brand-primary);">₹500</span>
+                  <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ year</span>
+                </div>
+                <div style="display: inline-block; background-color: rgba(16, 185, 129, 0.12); color: #059669; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px 8px; border-radius: var(--radius-sm); margin-top: 6px;">
+                  Save ₹88/year (Effective ₹41.67/month vs ₹588 monthly equivalent)
+                </div>
+              </div>
+
+              <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-xl);">
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Up to 5 Registered Android Phone Servers</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Save ₹88 per year</strong> compared to ₹49/month billing (₹500 vs ₹588)</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Effective Rate: ₹41.67 / month</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Centralized Dashboard Multi-Server Switching</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Priority Gateway Relay Routing</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>Concurrent Active Server Operation</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>12-Month Guaranteed Price Lock</span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span>All Future Pro Features & Priority Support Included</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <a href="get-started.html" class="btn btn-primary btn-block">Get Pro Yearly</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURE COMPARISON MATRIX -->
     <section class="section-wrapper section-wrapper-alt">
       <div class="container">
-        <div class="section-header">
-          <h2 class="section-title">Feature Comparison Matrix</h2>
+        <div class="section-header text-center">
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Comprehensive Breakdown</span></div>
+          <h2 class="section-title">Detailed Feature Comparison Matrix</h2>
+          <p class="section-subtitle">
+            Compare platform capabilities, server limits, network routing, and security policies across all three commercial tiers.
+          </p>
         </div>
 
         <div class="pricing-table-wrapper">
-          <table class="pricing-table">
+          <table class="pricing-table" aria-label="ZdexCloud Feature Comparison Matrix">
             <thead>
               <tr>
-                <th>Feature / Capability</th>
-                <th>Free Tier</th>
-                <th>Pro Server Tier</th>
-                <th>Multi-Node Tier</th>
+                <th scope="col" style="min-width: 240px;">Feature / Capability</th>
+                <th scope="col" style="min-width: 160px; text-align: center;">Free Plan</th>
+                <th scope="col" style="min-width: 170px; text-align: center;">Pro Monthly</th>
+                <th scope="col" style="min-width: 180px; text-align: center; background-color: rgba(37, 99, 235, 0.08); color: var(--color-brand-primary);">Pro Yearly (Best Value)</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td><strong>Registered Devices</strong></td>
-                <td>Up to 5 Phones</td>
-                <td>Up to 5 Phones</td>
-                <td>Custom</td>
+              <!-- Group 1: Device & Storage Capacity -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  Server Capacity & Hardware Storage
+                </td>
               </tr>
               <tr>
-                <td><strong>Phone Storage Capacity</strong></td>
-                <td>Unlimited (Phone Dependent)</td>
-                <td>Unlimited (Phone Dependent)</td>
-                <td>Unlimited (Phone Dependent)</td>
+                <td><strong>Registered Server Slots</strong></td>
+                <td style="text-align: center;">1 Android Phone</td>
+                <td style="text-align: center;">Up to 5 Android Phones</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Android Phones</td>
               </tr>
               <tr>
-                <td><strong>Remote Access Gateway</strong></td>
-                <td>Standard Tunnel</td>
-                <td>High-Priority Tunnel</td>
-                <td>Dedicated Gateway Node</td>
+                <td><strong>Storage Hosting Allocation</strong></td>
+                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
+                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
+                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
               </tr>
               <tr>
-                <td><strong>In-Built Web File Manager</strong></td>
-                <td>Included</td>
-                <td>Included</td>
-                <td>Included</td>
+                <td><strong>MicroSD Card & External Storage Support</strong></td>
+                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
+                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
+                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
               </tr>
               <tr>
-                <td><strong>Photo & Video Streaming</strong></td>
-                <td>Included</td>
-                <td>Included</td>
-                <td>Included</td>
+                <td><strong>Monthly Cloud Storage Hosting Fee</strong></td>
+                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
+                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
+                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
+              </tr>
+
+              <!-- Group 2: Remote Access & Network Routing -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  Remote Access & Gateway Tunneling
+                </td>
               </tr>
               <tr>
-                <td><strong>Subdomain Assignment</strong></td>
-                <td>Standard Subdomain</td>
-                <td>Custom Subdomain</td>
-                <td>Custom Domain Support</td>
+                <td><strong>Outbound WebSocket Tunnel Relay</strong></td>
+                <td style="text-align: center;">Standard Relay</td>
+                <td style="text-align: center;">Priority Relay Routing</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Priority Relay Routing</td>
+              </tr>
+              <tr>
+                <td><strong>Router Port Forwarding Requirement</strong></td>
+                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
+                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
+                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
+              </tr>
+              <tr>
+                <td><strong>CGNAT & Mobile Data Traversal</strong></td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+              </tr>
+              <tr>
+                <td><strong>Automatic Reconnect on Network Recovery</strong></td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+              </tr>
+
+              <!-- Group 3: File Management & Streaming -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  File Management & Media Streaming
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Browser-Based Web File Manager</strong></td>
+                <td style="text-align: center;">Full Access</td>
+                <td style="text-align: center;">Full Access</td>
+                <td style="text-align: center;">Full Access</td>
+              </tr>
+              <tr>
+                <td><strong>In-Browser Photo & Video Streaming</strong></td>
+                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
+                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
+                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
+              </tr>
+              <tr>
+                <td><strong>File Upload, Rename & Deletion</strong></td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+              </tr>
+              <tr>
+                <td><strong>Direct Download URL Generation</strong></td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+              </tr>
+
+              <!-- Group 4: Multi-Server Management -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  Multi-Server Management
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Centralized Web Dashboard Server Switching</strong></td>
+                <td style="text-align: center; color: var(--color-text-muted);">N/A (Single Server)</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold);">Up to 5 Servers</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Servers</td>
+              </tr>
+              <tr>
+                <td><strong>Concurrent Server Operation</strong></td>
+                <td style="text-align: center;">1 Active Server</td>
+                <td style="text-align: center;">Up to 5 Active Servers</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Active Servers</td>
+              </tr>
+              <tr>
+                <td><strong>Custom Server Naming & Organization</strong></td>
+                <td style="text-align: center;">1 Server Name</td>
+                <td style="text-align: center;">Up to 5 Custom Labels</td>
+                <td style="text-align: center;">Up to 5 Custom Labels</td>
+              </tr>
+
+              <!-- Group 5: Security & Authentication -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  Security & Authentication Policies
+                </td>
+              </tr>
+              <tr>
+                <td><strong>In-Flight Transport Security</strong></td>
+                <td style="text-align: center;">TLS 1.3 Encryption</td>
+                <td style="text-align: center;">TLS 1.3 Encryption</td>
+                <td style="text-align: center;">TLS 1.3 Encryption</td>
+              </tr>
+              <tr>
+                <td><strong>Stateless Connection Gateway (No Permanent Cloud Storage)</strong></td>
+                <td style="text-align: center; color: #10B981;">Guaranteed</td>
+                <td style="text-align: center; color: #10B981;">Guaranteed</td>
+                <td style="text-align: center; color: #10B981;">Guaranteed</td>
+              </tr>
+              <tr>
+                <td><strong>Web Session Lifetime Policy</strong></td>
+                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
+                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
+                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
+              </tr>
+              <tr>
+                <td><strong>Independent Android Server Continuity</strong></td>
+                <td style="text-align: center;">Continuous Background Operation</td>
+                <td style="text-align: center;">Continuous Background Operation</td>
+                <td style="text-align: center;">Continuous Background Operation</td>
+              </tr>
+              <tr>
+                <td><strong>Platform 2FA Email OTP Verification</strong></td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+                <td style="text-align: center;">Included</td>
+              </tr>
+              <tr>
+                <td><strong>Separated Server Access Credentials</strong></td>
+                <td style="text-align: center;">Enforced</td>
+                <td style="text-align: center;">Enforced</td>
+                <td style="text-align: center;">Enforced</td>
+              </tr>
+
+              <!-- Group 6: Commercial & Pricing Details -->
+              <tr style="background-color: var(--color-bg-subtle);">
+                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
+                  Commercial Terms & Support
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Price</strong></td>
+                <td style="text-align: center; font-weight: var(--font-weight-bold);">₹0</td>
+                <td style="text-align: center; font-weight: var(--font-weight-bold);">₹49 / month</td>
+                <td style="text-align: center; font-weight: var(--font-weight-bold); color: var(--color-brand-primary);">₹500 / year</td>
+              </tr>
+              <tr>
+                <td><strong>Annual Savings</strong></td>
+                <td style="text-align: center;">N/A</td>
+                <td style="text-align: center;">Standard Rate (₹588/yr equiv.)</td>
+                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">Save ₹88/year (Effective ₹41.67/mo)</td>
+              </tr>
+              <tr>
+                <td><strong>Price Lock Guarantee</strong></td>
+                <td style="text-align: center;">Forever Free Tier</td>
+                <td style="text-align: center;">Month-to-Month</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold);">12-Month Guaranteed Lock</td>
+              </tr>
+              <tr>
+                <td><strong>Customer Support</strong></td>
+                <td style="text-align: center;">Community & Online Documentation</td>
+                <td style="text-align: center;">Priority Email Support</td>
+                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Priority Email Support</td>
               </tr>
             </tbody>
           </table>
@@ -262,40 +639,260 @@
       </div>
     </section>
 
-    <!-- PRICING FAQ -->
+    <!-- COST COMPARISON: ZDEXCLOUD VS TRADITIONAL SUBSCRIPTION CLOUD -->
     <section class="section-wrapper">
       <div class="container">
-        <div class="section-header">
-          <h2 class="section-title">Pricing Frequently Asked Questions</h2>
+        <div class="section-header text-center">
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Long-Term Economics</span></div>
+          <h2 class="section-title">ZdexCloud vs. Traditional Subscription Cloud Storage</h2>
+          <p class="section-subtitle">
+            Compare the long-term total cost of ownership (TCO) of renting centralized cloud storage vs. hosting on Android hardware you already own.
+          </p>
         </div>
 
-        <div class="accordion" style="max-width: 800px;">
+        <div class="grid-2-col" style="gap: var(--space-xl); margin-bottom: var(--space-2xl);">
+          
+          <!-- TRADITIONAL CLOUD CARD -->
+          <div class="card" style="border-left: 4px solid var(--color-border); background-color: var(--color-bg-subtle);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+              <div style="color: var(--color-text-muted);">
+                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+              </div>
+              <h3 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text-primary);">
+                Traditional Cloud Subscriptions
+              </h3>
+            </div>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+              Commercial cloud providers (Google Drive, Microsoft OneDrive, Dropbox, iCloud) charge recurring monthly or annual rents for proprietary storage blocks (100GB, 200GB, 2TB).
+            </p>
+            
+            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
+              <li><strong>Monthly Cost:</strong> ₹130 to ₹650+ per month depending on tier</li>
+              <li><strong>1-Year Cost:</strong> ₹1,560 to ₹7,800+ per year</li>
+              <li><strong>3-Year Cost:</strong> ₹4,680 to ₹23,400+ paid indefinitely</li>
+              <li><strong>Data Custody:</strong> Files stored on corporate multi-tenant data centers</li>
+              <li><strong>Price Stability:</strong> Vulnerable to sudden subscription fee increases</li>
+            </ul>
+
+            <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); padding-top: var(--space-sm);">
+              Cancel subscription = lose immediate access to your stored files unless transferred.
+            </div>
+          </div>
+
+          <!-- ZDEXCLOUD CARD -->
+          <div class="card" style="border-left: 4px solid var(--color-brand-primary); background-color: var(--color-bg-surface); box-shadow: var(--shadow-sm);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+              <div style="color: var(--color-brand-primary);">
+                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                </svg>
+              </div>
+              <h3 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text-primary);">
+                ZdexCloud Personal File Server
+              </h3>
+            </div>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+              Repurposes existing Android hardware into private servers. Zero per-gigabyte storage rent. You control your storage media directly.
+            </p>
+            
+            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: var(--space-md);">
+              <li><strong>Free Tier (1 Server):</strong> <strong>₹0 forever</strong> for 128GB–512GB+ on phone</li>
+              <li><strong>Pro Monthly (Up to 5 Servers):</strong> ₹49/month with full flexibility</li>
+              <li><strong>Pro Yearly (Up to 5 Servers):</strong> <strong>₹500/year</strong> (effective ₹41.67/month, Save ₹88/yr)</li>
+              <li><strong>3-Year Total Cost:</strong> ₹0 (Free) or ₹1,500 total (Pro Yearly for 5 phones)</li>
+              <li><strong>Data Custody:</strong> Physical hardware hosted on your device; no permanent central file storage</li>
+            </ul>
+
+            <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); padding-top: var(--space-sm);">
+              Cancel subscription = your files remain completely safe and accessible on your physical Android phone.
+            </div>
+          </div>
+
+        </div>
+
+        <!-- HONEST HARDWARE TRADE-OFFS TABLE -->
+        <div class="card" style="background-color: var(--color-bg-subtle);">
+          <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+            Honest Hardware & Operational Trade-Offs
+          </h3>
+          <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+            We believe in complete technical transparency. While commercial cloud services factor massive data center operating costs into your monthly bill, ZdexCloud shifts hosting to your physical premises:
+          </p>
+          <div class="grid-3-col" style="gap: var(--space-md);">
+            <div>
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Hardware Ownership</div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                You provide the spare Android smartphone (Android 8.0+), charger, and optional microSD card. You never pay hardware rental fees to ZdexCloud.
+              </p>
+            </div>
+            <div>
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Electricity Footprint</div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                An idle Android phone server consumes approximately 2W to 4W of power (~₹20 to ₹50 in electricity per year), which is vastly cheaper than cloud subscriptions or traditional 50W PC NAS setups.
+              </p>
+            </div>
+            <div>
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Home Network Bandwidth</div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                File download speed depends on the phone's home Wi-Fi or cellular upload bandwidth. For high-bandwidth 4K video streaming, ensure your phone has a stable Wi-Fi connection.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PRICING FREQUENTLY ASKED QUESTIONS -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Got Questions?</span></div>
+          <h2 class="section-title">Pricing Frequently Asked Questions</h2>
+          <p class="section-subtitle">
+            Direct, transparent answers regarding billing, server limits, storage capacity, and subscription policies.
+          </p>
+        </div>
+
+        <div class="accordion" style="max-width: 860px; margin: 0 auto;">
+          
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                Do I have to pay to use my phone's storage?
-                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <span>What am I actually paying for if my files stay on my phone?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
-              No. Storage space belongs entirely to your Android phone. Our platform charges relate to gateway connectivity relay infrastructure and device registration coordination.
+              <div class="accordion-panel-inner">
+                You are paying for the cloud coordination infrastructure, device registration plane, and secure outbound WebSocket relay routing. While your data is stored exclusively on your Android phone's flash memory, ZdexCloud maintains cloud gateways that allow you to reach your phone remotely from any web browser without configuring home router port forwarding or purchasing dynamic DNS services.
+              </div>
             </div>
           </div>
 
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                Are there hidden data transfer fees?
-                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                <span>Does upgrading to Pro increase my storage space?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
-              We aim to offer clear monthly plans without surprising per-gigabyte overage charges.
+              <div class="accordion-panel-inner">
+                No. Upgrading to Pro does not add cloud storage gigabytes because ZdexCloud does not host your files in the cloud. Instead, upgrading to Pro increases your registered server limit from 1 to up to 5 phones and grants priority gateway routing. To increase storage capacity, you simply insert a larger microSD card into your Android phone or use a phone with larger internal flash memory.
+              </div>
             </div>
           </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>What is the difference between Pro Monthly and Pro Yearly?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Both Pro Monthly (₹49/month) and Pro Yearly (₹500/year) unlock up to 5 registered Android server nodes and priority gateway routing. However, Pro Yearly offers an annual saving of ₹88 compared to monthly billing (₹500 vs. ₹588 annual equivalent), representing an effective monthly rate of ₹41.67 per month, along with a 12-month fixed price guarantee.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>What happens if my Pro subscription expires or is canceled?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Your files are never deleted or locked because they reside on your physical phone hardware. If a Pro subscription expires, your account simply transitions to the Free tier. Your primary registered phone server remains active and accessible, while additional server slots beyond the 1-server Free limit become paused until you reactivate Pro.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Are there hidden bandwidth overage charges or per-file fees?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                No. ZdexCloud does not bill per-gigabyte egress fees, transfer penalties, or per-file charges. Normal personal usage for file synchronization, media streaming, and document backups is included under your tier's gateway routing policies.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>How does the strict 24-hour web session affect my subscription?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                The strict 24-hour web session is a browser security policy and has no impact on your subscription status or server operation. After 24 hours of logging into the web dashboard, your web browser session expires to protect your account. Your Android phone server continues running continuously in the background, and your subscription remains fully active; you simply sign in again when you return.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Can I connect more than 5 phones to one account?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                The maximum server limit supported on our standard Pro tiers is up to 5 registered Android phone servers per account. If you manage extensive multi-node deployments or laboratory fleets, please contact our team via the contact page for customized coordination options.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>How do I get started with ZdexCloud?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Getting started takes less than two minutes. Create your free account on our Get Started page, download the ZdexCloud Android APK to your spare smartphone, sign in or scan your pairing QR code, and start Server Mode. Your phone is immediately accessible via your private web dashboard.
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
+
+    <!-- FINAL CALL TO ACTION -->
+    <section class="section-wrapper" style="background-color: var(--color-bg-surface); border-top: 1px solid var(--color-border);">
+      <div class="container text-center" style="max-width: 720px;">
+        <h2 style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md); color: var(--color-text-primary);">
+          Ready to Reclaim Your Private Storage?
+        </h2>
+        <p style="font-size: var(--font-size-body-lg); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-xl);">
+          Stop paying monthly per-gigabyte cloud storage bills. Turn your spare Android phone into a high-capacity personal cloud server today.
+        </p>
+        <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+          <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+          <a href="how-it-works.html" class="btn btn-secondary btn-lg">See How It Works</a>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -362,6 +959,7 @@
     </div>
   </footer>
 
+  <script src="../js/motion.js"></script>
   <script src="../js/main.js"></script>
 </body>
 </html>

@@ -79,8 +79,8 @@ class SetupReviewScreen extends ConsumerWidget {
                                 : 'account_user'),
                         const Divider(height: AppSpacing.lg),
                         const _ReviewRow(
-                            label: 'Local Interface',
-                            value: 'Port 8080 (Loopback)'),
+                            label: 'Local Engine',
+                            value: 'Embedded (Local Loopback)'),
                       ],
                     ),
                   ),

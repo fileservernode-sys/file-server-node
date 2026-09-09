@@ -633,11 +633,15 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.accordion-item:hover {
+  border-color: var(--color-border-hover);
 }
 
 .accordion-item.is-open {
-  border-color: var(--color-border-hover);
+  border-color: var(--color-brand-primary);
   box-shadow: var(--shadow-sm);
 }
 
@@ -651,6 +655,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-md);
   text-align: left;
   font-size: var(--font-size-body-lg);
   font-weight: var(--font-weight-semibold);
@@ -671,14 +676,28 @@
 }
 
 .accordion-icon {
-  width: var(--icon-size-md);
-  height: var(--icon-size-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-size-md, 24px);
+  height: var(--icon-size-md, 24px);
+  font-size: 1.35rem;
+  font-weight: 400;
+  line-height: 1;
   transition: transform var(--duration-base) var(--ease-emphasized);
   color: var(--color-text-muted);
   flex-shrink: 0;
+  user-select: none;
 }
 
 .accordion-item.is-open .accordion-icon {
+  transform: rotate(45deg);
+  color: var(--color-brand-primary);
+}
+
+/* For SVG icons (like chevron in faq.html): rotate 180deg */
+.accordion-item.is-open svg.accordion-icon,
+.accordion-item.is-open .accordion-icon svg {
   transform: rotate(180deg);
   color: var(--color-brand-primary);
 }
@@ -688,81 +707,113 @@
   grid-template-rows: 0fr;
   transition: grid-template-rows var(--duration-moderate) var(--ease-standard);
   overflow: hidden;
+  visibility: hidden;
 }
 
-.accordion-panel-inner {
-  min-height: 0;
-  padding: 0 var(--space-xl) var(--space-lg) var(--space-xl);
-  font-size: var(--font-size-body);
-  color: var(--color-text-secondary);
-  line-height: var(--line-height-body);
+/* Closed state with hidden attribute */
+.accordion-panel[hidden] {
+  display: none !important;
 }
 
 .accordion-item.is-open .accordion-panel {
   grid-template-rows: 1fr;
+  visibility: visible;
+}
+
+.accordion-item.is-open .accordion-panel[hidden] {
+  display: grid !important;
+}
+
+.accordion-panel-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 var(--space-xl);
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-body);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-standard),
+              padding var(--duration-moderate) var(--ease-standard);
+}
+
+.accordion-item.is-open .accordion-panel-inner {
+  padding: 0 var(--space-xl) var(--space-lg) var(--space-xl);
+  opacity: 1;
 }
 
 /* Fallback for direct text children inside panel */
 .accordion-panel:not(:has(.accordion-panel-inner)) {
-  padding: 0 var(--space-xl) var(--space-lg) var(--space-xl);
+  padding: 0 var(--space-xl);
   display: none;
 }
 
 .accordion-item.is-open .accordion-panel:not(:has(.accordion-panel-inner)) {
   display: block;
+  padding-bottom: var(--space-lg);
   animation: zdexFadeIn var(--duration-fast) var(--ease-enter);
 }
 
 /* --------------------------------------------------------------------------
    11. PRICING TABLE FOUNDATION
    -------------------------------------------------------------------------- */
-.pricing-table-wrapper {
+.pricing-table-wrapper,
+.comparison-table-wrapper {
   width: 100%;
   overflow-x: auto;
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-xl);
 }
 
-.pricing-table {
+.pricing-table,
+.comparison-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
   font-size: var(--font-size-body-sm);
 }
 
-.pricing-table th, .pricing-table td {
+.pricing-table th, .pricing-table td,
+.comparison-table th, .comparison-table td {
   padding: var(--space-md) var(--space-lg);
   border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.pricing-table th {
+.pricing-table th,
+.comparison-table th {
   background-color: var(--color-bg-subtle);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
 }
 
-.pricing-table tr:last-child td {
+.pricing-table tr:last-child td,
+.comparison-table tr:last-child td {
   border-bottom: none;
 }
 
-.pricing-table td:first-child {
+.pricing-table td:first-child,
+.comparison-table td:first-child {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
 }
 
-.pricing-table tr:hover td {
+.pricing-table tr:hover td,
+.comparison-table tr:hover td {
   background-color: rgba(37, 99, 235, 0.02);
 }
 
 .pricing-table th:nth-child(2),
-.pricing-table td:nth-child(2) {
+.pricing-table td:nth-child(2),
+.comparison-table .highlight-col {
   background-color: rgba(37, 99, 235, 0.03);
   font-weight: var(--font-weight-semibold);
 }
 
-.pricing-table th:nth-child(2) {
+.pricing-table th:nth-child(2),
+.comparison-table th.highlight-col {
   color: var(--color-brand-primary);
   font-weight: var(--font-weight-bold);
   border-bottom: 2px solid var(--color-brand-primary);

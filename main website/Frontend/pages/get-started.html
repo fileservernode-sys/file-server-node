@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Get Started | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Create a ZdexCloud platform account to register your Android phone and start your personal file server in under 3 minutes.">
+  <meta name="robots" content="index, follow">
+  <meta name="description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud. Zero router port forwarding, zero monthly storage fees.">
+  <meta name="keywords" content="Android file server setup, turn old phone into file server, personal cloud storage onboarding, Android NAS guide, self-hosted phone storage setup, remote file server without port forwarding">
+  <title>Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud</title>
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/get-started.html">
@@ -20,25 +20,91 @@
   <meta name="theme-color" content="#2563EB">
 
   <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
+  <meta property="og:type" content="article">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/get-started.html">
-  <meta property="og:title" content="Get Started | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Create a ZdexCloud platform account to register your Android phone and start your personal file server in under 3 minutes.">
+  <meta property="og:title" content="Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud">
+  <meta property="og:description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud Onboarding Guide">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Get Started | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Create a ZdexCloud platform account to register your Android phone and start your personal file server in under 3 minutes.">
+  <meta name="twitter:title" content="Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud">
+  <meta name="twitter:description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud Onboarding Guide">
 
-  
+  <!-- HowTo & WebPage JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": "https://zdexcloud.com/pages/get-started.html#webpage",
+        "url": "https://zdexcloud.com/pages/get-started.html",
+        "name": "Get Started — Turn an Android Phone into a Personal File Server",
+        "description": "Step-by-step onboarding guide to convert an Android smartphone into a private, remotely accessible personal file server.",
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://zdexcloud.com/#website",
+          "name": "ZdexCloud",
+          "url": "https://zdexcloud.com"
+        }
+      },
+      {
+        "@type": "HowTo",
+        "@id": "https://zdexcloud.com/pages/get-started.html#howto",
+        "name": "How to Turn an Old Android Phone into a Personal File Server",
+        "description": "A complete, step-by-step guide to setting up a private personal file server on an Android phone using ZdexCloud without router port forwarding.",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Create your ZdexCloud platform account",
+            "text": "Sign up on the ZdexCloud website to create your central control plane account for managing servers and web dashboard access."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Install the ZdexCloud Android application",
+            "text": "Download and install the lightweight ZdexCloud APK on your spare Android phone running Android 8.0 or newer."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Sign in and configure storage on the phone",
+            "text": "Log into the mobile app, grant storage permissions, and choose internal flash storage or an external microSD card as your storage root."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 4,
+            "name": "Name and register your server",
+            "text": "Assign a custom server name and set dedicated file-server credentials separate from your platform account password."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 5,
+            "name": "Keep the phone connected and optimize power",
+            "text": "Connect the phone to power and Wi-Fi, disable Android battery optimization for the app, and allow headless background operation."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 6,
+            "name": "Access your files remotely from any browser",
+            "text": "Open your web browser on any computer or phone, sign in to your dashboard, and manage your files securely without router port forwarding."
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -130,34 +196,115 @@
     </div>
   </aside>
 
-  <!-- MAIN REGISTRATION COMPOSITION -->
+  <!-- PAGE HEADER -->
+  <section class="page-header">
+    <div class="container">
+      <div class="breadcrumbs">
+        <a href="../index.html" class="breadcrumb-link">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Get Started</span>
+      </div>
+      <div class="page-header-content">
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Step-by-Step Onboarding Guide</span></div>
+        <h1 class="page-header-title">Turn an Old Android Phone Into Your Personal File Server</h1>
+        <p class="page-header-subtitle">
+          Transform spare mobile hardware into a secure, dedicated personal file storage host. Follow our comprehensive six-step guide to create your account, configure your phone, and access your files remotely without router port forwarding.
+        </p>
+      </div>
+    </div>
+  </section>
+
   <main class="page-entrance">
-    <section class="auth-page-section">
+
+    <!-- PREREQUISITES / WHAT YOU NEED -->
+    <section class="section-wrapper" style="padding-top: var(--space-xl); padding-bottom: var(--space-xl);">
+      <div class="container">
+        <div class="section-header text-center">
+          <h2 class="section-title">What You Need Before Starting</h2>
+          <p class="section-subtitle">
+            Repurposing an Android phone requires minimal hardware that most households already possess.
+          </p>
+        </div>
+
+        <div class="grid-4-col" style="gap: var(--space-lg);">
+          <div class="card" style="border-top: 3px solid var(--color-brand-primary);">
+            <div style="color: var(--color-brand-primary); margin-bottom: var(--space-sm);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: 4px;">1. Spare Android Phone</h3>
+            <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+              Running Android 8.0 (API level 26) or higher with at least 2GB of RAM. Older phones with minor cosmetic screen cracks work perfectly.
+            </p>
+          </div>
+
+          <div class="card" style="border-top: 3px solid var(--color-brand-primary);">
+            <div style="color: var(--color-brand-primary); margin-bottom: var(--space-sm);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: 4px;">2. Continuous Power</h3>
+            <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+              A standard low-power phone charger and reliable cable to keep the device powered without unnecessary thermal stress.
+            </p>
+          </div>
+
+          <div class="card" style="border-top: 3px solid var(--color-brand-primary);">
+            <div style="color: var(--color-brand-primary); margin-bottom: var(--space-sm);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: 4px;">3. Stable Network</h3>
+            <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+              Home Wi-Fi (2.4GHz or 5GHz) or cellular data connection with reasonable upload bandwidth for smooth remote file transfers.
+            </p>
+          </div>
+
+          <div class="card" style="border-top: 3px solid var(--color-brand-primary);">
+            <div style="color: var(--color-brand-primary); margin-bottom: var(--space-sm);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: 4px;">4. Any Web Browser</h3>
+            <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+              Chrome, Firefox, Safari, or Edge on any laptop, desktop, or mobile device to access your files remotely with zero client software.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 1: CREATE ACCOUNT (REGISTRATION FORM INTEGRATED) -->
+    <section class="section-wrapper section-wrapper-alt" id="step-1">
       <div class="container">
         
-        <div class="auth-split-wrapper">
+        <div style="margin-bottom: var(--space-xl);">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 1 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 1: Create Your ZdexCloud Platform Account</h2>
+          <p class="section-subtitle" style="text-align: left; margin: 0; max-width: 800px;">
+            Your ZdexCloud account serves as your central control plane. It coordinates device discovery and grants browser access to your registered Android servers. Storage capacity is hosted on your phone hardware (₹0 cloud storage fees).
+          </p>
+        </div>
+
+        <div class="auth-split-wrapper" style="box-shadow: var(--shadow-sm); border-radius: var(--radius-xl); overflow: hidden;">
           
-          <!-- LEFT BRAND PANEL -->
+          <!-- LEFT INFO PANEL -->
           <div class="auth-brand-side">
             <div>
               <div class="auth-brand-badge">
                 <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-                <span>Account Onboarding Step 1 of 2</span>
+                <span>Free Community Account</span>
               </div>
 
-              <h2 class="auth-brand-headline">Create your ZdexCloud platform account.</h2>
+              <h3 class="auth-brand-headline" style="font-size: var(--font-size-2xl);">Start with 1 phone server free.</h3>
               <p class="auth-brand-desc">
-                Register your account to begin connecting your Android smartphone storage host. Up to 5 server phone hosts included free.
+                Registering an account gives you immediate access to our web control plane. Upgrading to Pro (₹49/mo or ₹500/yr) allows managing up to 5 Android servers under one account.
               </p>
 
               <div class="auth-feature-list">
                 <div class="auth-feature-item">
                   <div class="auth-feature-icon">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">5 Server Nodes Included</div>
-                    <div class="auth-feature-sub">Link up to 5 Android storage devices per account.</div>
+                    <div class="auth-feature-title">1 Server Slot Included Free</div>
+                    <div class="auth-feature-sub">Repurpose one Android phone with zero monthly fees.</div>
                   </div>
                 </div>
 
@@ -166,8 +313,8 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">Instant OTP Verification</div>
-                    <div class="auth-feature-sub">6-digit email security code confirms identity.</div>
+                    <div class="auth-feature-title">Two-Factor OTP Security</div>
+                    <div class="auth-feature-sub">A 6-digit email security code confirms identity.</div>
                   </div>
                 </div>
 
@@ -176,25 +323,25 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">Quick 2-Minute Setup</div>
-                    <div class="auth-feature-sub">Install Android app and connect instantly.</div>
+                    <div class="auth-feature-title">Strict 24-Hour Web Sessions</div>
+                    <div class="auth-feature-sub">Browser sessions expire in 24 hours while phone server operates continuously.</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="auth-brand-footer">
-              <span>ZERO STORAGE FEES</span>
-              <span>FREE COMMUNITY TIER</span>
+              <span>ZERO MONTHLY STORAGE FEES</span>
+              <span>DIRECT PHONE HOSTED</span>
             </div>
           </div>
 
-          <!-- RIGHT FORM PANEL -->
+          <!-- RIGHT REGISTRATION FORM -->
           <div class="auth-card-side">
             
             <div class="auth-card-header">
-              <h1 class="auth-card-title">Create Your Account</h1>
-              <p class="auth-card-subtitle">Start transforming your spare phone into a personal server.</p>
+              <h3 class="auth-card-title" style="font-size: var(--font-size-xl);">Register Your Platform Account</h3>
+              <p class="auth-card-subtitle">Enter your details to create your control plane credentials.</p>
             </div>
 
             <!-- Error Alert Container -->
@@ -205,7 +352,6 @@
 
             <!-- Registration Form -->
             <form id="register-form">
-              
               <div class="form-group">
                 <label for="reg-name" class="form-label">Full Name *</label>
                 <input type="text" id="reg-name" class="form-input" placeholder="e.g. Alex Morgan" required autocomplete="name">
@@ -267,6 +413,390 @@
 
       </div>
     </section>
+
+    <!-- STEP 2: INSTALL THE ANDROID APP -->
+    <section class="section-wrapper" id="step-2">
+      <div class="container">
+        <div style="max-width: 860px; margin: 0 auto;">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 2 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 2: Install the ZdexCloud Android App</h2>
+          <p class="section-subtitle" style="text-align: left; margin-bottom: var(--space-xl);">
+            Download the lightweight ZdexCloud server engine onto your dedicated Android smartphone.
+          </p>
+
+          <div class="card" style="margin-bottom: var(--space-lg);">
+            <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+              <div style="color: var(--color-brand-primary); flex-shrink: 0; margin-top: 2px;">
+                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </div>
+              <div>
+                <h3 style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs);">
+                  Download the Official Android APK
+                </h3>
+                <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+                  Open this page on your Android phone browser or transfer the APK via USB cable. The app is completely self-contained and runs on Android 8.0 through Android 15+.
+                </p>
+                <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                  <a href="https://zdexcloud.com/downloads/zdexcloud-latest.apk" class="btn btn-primary">
+                    <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Download APK (Direct)
+                  </a>
+                  <a href="documentation.html" class="btn btn-secondary">Installation Docs</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Installation Prompts Notice -->
+          <div class="card" style="background-color: var(--color-bg-subtle);">
+            <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs);">
+              Understanding Android Sideloading Prompts:
+            </h4>
+            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-body-sm); color: var(--color-text-secondary);">
+              <li><strong>"Install unknown apps":</strong> If Android blocks the APK, tap <em>Settings</em> and toggle <em>Allow from this source</em> for your browser or file manager.</li>
+              <li><strong>Google Play Protect:</strong> Because the APK is installed directly, Play Protect may display a confirmation. Tap <em>More details</em> and select <em>Install anyway</em>.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: CONFIGURE STORAGE ROOT -->
+    <section class="section-wrapper section-wrapper-alt" id="step-3">
+      <div class="container">
+        <div style="max-width: 860px; margin: 0 auto;">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 3 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 3: Sign In & Select Your Storage Root</h2>
+          <p class="section-subtitle" style="text-align: left; margin-bottom: var(--space-xl);">
+            Launch the app on your phone and choose which storage folder or drive to share.
+          </p>
+
+          <div class="grid-2-col" style="gap: var(--space-lg);">
+            <div class="card">
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); color: var(--color-text-primary); margin-bottom: var(--space-xs);">
+                A. Sign In or Scan Pairing QR Code
+              </div>
+              <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+                Open the ZdexCloud app and sign in with the email and password you created in Step 1, or tap "Scan QR" to instantly pair the phone using the device registration screen in your web dashboard.
+              </p>
+            </div>
+
+            <div class="card">
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); color: var(--color-text-primary); margin-bottom: var(--space-xs);">
+                B. Grant Storage Permissions
+              </div>
+              <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+                When prompted, grant <em>All Files Access</em> (on Android 11+) so the file engine can read and write files to your selected root folder. Select internal storage or an inserted microSD card.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4: NAME SERVER & SEPARATE CREDENTIALS -->
+    <section class="section-wrapper" id="step-4">
+      <div class="container">
+        <div style="max-width: 860px; margin: 0 auto;">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 4 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 4: Name Your Server & Set Dedicated Server Credentials</h2>
+          <p class="section-subtitle" style="text-align: left; margin-bottom: var(--space-xl);">
+            Configure your server identity and establish separate security credentials for file-level access.
+          </p>
+
+          <div class="card" style="border-left: 4px solid var(--color-brand-primary); margin-bottom: var(--space-lg);">
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              Important Security Distinction: Platform Account vs. File Server Credentials
+            </h3>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              ZdexCloud enforces dual authentication isolation. Your <strong>Platform Account password</strong> is used to sign into the website and manage server slots. Your <strong>File Server credentials</strong> are set directly on the phone to authenticate file operations. This defense-in-depth model ensures that access to your physical phone storage remains strictly protected.
+            </p>
+          </div>
+
+          <div class="card">
+            <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs);">
+              Server Configuration Fields:
+            </h4>
+            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-sm); font-size: var(--font-size-body-sm); color: var(--color-text-secondary);">
+              <li><strong>Server Label:</strong> Enter a recognizable name (e.g., <em>Living Room Node</em>, <em>Studio Backup</em>).</li>
+              <li><strong>Server Username & Password:</strong> Establish credentials used to authenticate file manager sessions.</li>
+              <li><strong>Start Server Mode:</strong> Tap the toggle to initiate the local HTTP server and outbound WebSocket relay tunnel.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5: KEEP CONNECTED & RELIABILITY -->
+    <section class="section-wrapper section-wrapper-alt" id="step-5">
+      <div class="container">
+        <div style="max-width: 860px; margin: 0 auto;">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 5 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 5: Keep the Phone Connected & Optimize for Continuous Operation</h2>
+          <p class="section-subtitle" style="text-align: left; margin-bottom: var(--space-xl);">
+            Configure Android OS power management settings to ensure continuous, headless server availability.
+          </p>
+
+          <div class="grid-3-col" style="gap: var(--space-md); margin-bottom: var(--space-xl);">
+            <div class="card">
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); color: var(--color-text-primary); margin-bottom: 4px;">
+                1. Whitelist Battery
+              </div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                Go to Android <em>Settings > Apps > ZdexCloud > Battery</em> and select <strong>Unrestricted</strong>. This prevents Android Doze mode from sleeping the network tunnel.
+              </p>
+            </div>
+
+            <div class="card">
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); color: var(--color-text-primary); margin-bottom: 4px;">
+                2. Standard Low-Power Charger
+              </div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                Connect the phone to a standard 5V/1A or 5V/2A charger in a well-ventilated area. If available in settings, enable Android's 85% battery charge protection limit.
+              </p>
+            </div>
+
+            <div class="card">
+              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-base); color: var(--color-text-primary); margin-bottom: 4px;">
+                3. Screen Off Headless
+              </div>
+              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
+                You do not need to keep the screen on. Press the power button to turn off the display. The server operates headlessly in the background.
+              </p>
+            </div>
+          </div>
+
+          <!-- CHECKLISTS -->
+          <div class="grid-2-col" style="gap: var(--space-lg);">
+            <div class="card" style="background-color: var(--color-bg-surface);">
+              <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+                Before-You-Start Checklist
+              </h4>
+              <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Phone backed up and factory reset (recommended for dedicated servers)</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Connected to 2.4GHz or 5GHz home Wi-Fi network</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> MicroSD card formatted and mounted (if using external storage)</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Screen timeout set and lock screen configured</li>
+              </ul>
+            </div>
+
+            <div class="card" style="background-color: var(--color-bg-surface);">
+              <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+                Continuous Reliability Checklist
+              </h4>
+              <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Battery optimization disabled ('Unrestricted')</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 'Start on Boot' enabled in app settings</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Autostart / Background App permissions granted (Xiaomi/Samsung)</li>
+                <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Phone placed in ventilated area away from blankets or direct sun</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 6: ACCESS REMOTELY -->
+    <section class="section-wrapper" id="step-6">
+      <div class="container">
+        <div style="max-width: 860px; margin: 0 auto;">
+          <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 6 of 6</span>
+          <h2 class="section-title" style="margin-top: var(--space-xs);">Step 6: Access Your Files Remotely from Any Web Browser</h2>
+          <p class="section-subtitle" style="text-align: left; margin-bottom: var(--space-xl);">
+            You are ready to access your files from anywhere in the world without configuring router port forwarding.
+          </p>
+
+          <div class="card" style="margin-bottom: var(--space-xl);">
+            <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+              <div style="color: var(--color-brand-primary); flex-shrink: 0; margin-top: 2px;">
+                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+              <div>
+                <h3 style="font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs);">
+                  Open the ZdexCloud Dashboard
+                </h3>
+                <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+                  On your laptop, office computer, or secondary phone, visit <strong>zdexcloud.com</strong> and sign in. Your registered Android server will display with an "Online" status badge. Click into the web file manager to upload documents, download files, view images, and stream high-definition videos directly from your phone storage.
+                </p>
+                <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+                  <a href="login.html" class="btn btn-primary">Sign In to Dashboard</a>
+                  <a href="how-it-works.html" class="btn btn-secondary">Learn How Tunneling Works</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIFECYCLE SEPARATION REASSURANCE -->
+          <div class="card" style="background-color: var(--color-bg-subtle);">
+            <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              What Happens After Setup: Android Server vs. Web Session Lifecycles
+            </h4>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              Your Android phone server operates <strong>continuously in the background independently</strong> of whether you are logged into the website. Our strict 24-hour web session security policy applies only to your web browser dashboard: after 24 hours of browser access, your web login expires to protect your account. Your Android server continues running in the background, and your files remain safe and accessible the moment you log back in.
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMON ONBOARDING PROBLEMS & SOLUTIONS -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header text-center">
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Troubleshooting</span></div>
+          <h2 class="section-title">Common Onboarding Issues & Fixes</h2>
+          <p class="section-subtitle">
+            Quick solutions to the most common setup questions encountered across diverse Android manufacturers.
+          </p>
+        </div>
+
+        <div class="grid-2-col" style="gap: var(--space-lg); max-width: 900px; margin: 0 auto;">
+          <div class="card">
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              1. Play Protect Warning During APK Sideload
+            </h3>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              Because ZdexCloud is installed directly as an APK, Google Play Protect may display a warning dialog. Tap <em>More details</em> and then tap <em>Install anyway</em> to proceed.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              2. Server Shows 'Offline' in Web Dashboard
+            </h3>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              Verify that the phone has an active Wi-Fi or cellular network connection, check that Server Mode is turned on in the app, and ensure the sticky notification is visible in the Android status bar.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              3. Android Terminates Background Service Overnight
+            </h3>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              Certain OEM operating systems (MIUI, One UI, OxygenOS) have aggressive task killers. Ensure ZdexCloud is whitelisted in <em>Settings > Battery > Unrestricted</em> and granted Autostart permissions.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+              4. Port Forwarding Inquiries
+            </h3>
+            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
+              You do not need to configure home router port forwarding or acquire a static IP. The Android app establishes an outbound WebSocket tunnel to our gateway relay, naturally bypassing NAT and CGNAT.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AEO DIRECT ANSWER BLOCKS -->
+    <section class="section-wrapper">
+      <div class="container" style="max-width: 860px;">
+        <div class="section-header text-center">
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Direct Answers</span></div>
+          <h2 class="section-title">Frequently Asked Onboarding Questions</h2>
+          <p class="section-subtitle">
+            Concise, authoritative answers to genuine technical questions about turning an Android phone into a file server.
+          </p>
+        </div>
+
+        <div class="accordion">
+          
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>How do I turn an old Android phone into a file server?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Install the ZdexCloud Android APK on any smartphone running Android 8.0 or newer, sign in with your account, select your storage directory, and start Server Mode. The app runs a lightweight background server that you can access remotely from any web browser without router port forwarding.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Can I use an old Android phone as personal cloud storage?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Yes. Old Android phones contain internal flash memory, low-power ARM processors, and Wi-Fi chips that make them exceptional, ultra-low-power (2W to 4W) personal cloud storage hosts. Files remain physically stored on the device with zero recurring storage fees.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Does ZdexCloud require router port forwarding?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                No. ZdexCloud requires zero router changes or port forwarding. The Android application initiates an outbound WebSocket connection over TLS 1.3 to our cloud gateway, which standard home firewalls and mobile carrier networks naturally permit.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Does the Android phone need to stay powered on?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                Yes. For files to be accessible remotely, the phone must remain connected to power and an active Wi-Fi or cellular network. However, the screen can be completely turned off; the server operates headlessly in the background.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>What happens if Android stops the background service?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                If Android terminates the service due to battery optimization, the server will temporarily show as offline in your web dashboard. To prevent this, whitelist ZdexCloud under Android Battery settings ('Unrestricted') and enable 'Start on Boot'.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA / RESOURCE LINKS -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container text-center" style="max-width: 720px;">
+        <h2 style="font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); margin-bottom: var(--space-md); color: var(--color-text-primary);">
+          Ready to Reclaim Your Private Storage?
+        </h2>
+        <p style="font-size: var(--font-size-body-lg); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-xl);">
+          Create your free platform account above, download the Android APK, and start your private personal cloud server in minutes.
+        </p>
+        <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+          <a href="#step-1" class="btn btn-primary btn-lg">Create Free Account</a>
+          <a href="documentation.html" class="btn btn-secondary btn-lg">Read Technical Docs</a>
+          <a href="faq.html" class="btn btn-ghost btn-lg">Read FAQ</a>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -345,7 +875,7 @@
         btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
       } else {
         input.type = 'password';
-        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
       }
     }
 

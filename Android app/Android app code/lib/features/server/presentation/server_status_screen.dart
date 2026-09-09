@@ -28,7 +28,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   bool _isLocalRunning = true;
   bool _isServiceRunning = true;
   bool _isBatteryIgnored = true;
-  String _localUrl = 'http://127.0.0.1:8080';
+  String _localUrl = 'Active (Local Loopback)';
   bool _isLoading = false;
 
   @override
@@ -43,7 +43,6 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   Future<void> _refreshServerStatus() async {
     final service = ref.read(serverServiceProvider);
     final status = await service.getServerStatus();
-    final url = await service.getLocalUrl();
     final serviceRunning = await service.isServiceRunning();
     final batteryIgnored = await service.isBatteryOptimizationIgnored();
 
@@ -52,7 +51,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
         _isLocalRunning = status['status'] == 'ONLINE' || serviceRunning;
         _isServiceRunning = serviceRunning;
         _isBatteryIgnored = batteryIgnored;
-        _localUrl = url;
+        _localUrl = _isLocalRunning ? 'Active (Local Loopback)' : 'Stopped';
       });
     }
   }
@@ -453,19 +452,19 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
-                          label: 'Local Server URL',
+                          label: 'Local Storage Engine',
                           value: _localUrl,
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
-                          label: 'Remote Gateway Access',
+                          label: 'Connection Service',
                           value: setup.isGatewayConnected
                               ? 'CONNECTED'
                               : 'DISCONNECTED',
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
-                          label: 'Gateway Status',
+                          label: 'Remote Relay Status',
                           value: setup.endpointStatus,
                         ),
                       ],

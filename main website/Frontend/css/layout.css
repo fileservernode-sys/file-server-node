@@ -23,14 +23,16 @@
   max-width: var(--container-narrow-max-width);
 }
 
+.section,
 .section-wrapper {
-  padding-top: var(--space-4xl);
-  padding-bottom: var(--space-4xl);
+  padding-top: var(--space-5xl);
+  padding-bottom: var(--space-5xl);
   position: relative;
 }
 
+.section-muted,
 .section-wrapper-alt {
-  background-color: var(--color-bg-surface);
+  background-color: var(--color-bg-subtle);
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
 }
@@ -427,9 +429,10 @@ body.drawer-open {
   .mobile-menu-toggle {
     display: flex !important;
   }
+  .section,
   .section-wrapper {
-    padding-top: var(--space-2xl);
-    padding-bottom: var(--space-2xl);
+    padding-top: var(--space-3xl);
+    padding-bottom: var(--space-3xl);
   }
   .footer-grid {
     grid-template-columns: 1fr;

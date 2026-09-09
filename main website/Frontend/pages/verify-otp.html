@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Verify OTP Code | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Enter your 6-digit email OTP verification code to access your ZdexCloud platform account securely.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Enter your 6-digit email verification code to complete sign in or account registration for ZdexCloud.">
+  <title>Verify Email Code | ZdexCloud — Personal File Server</title>
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/verify-otp.html">
@@ -23,22 +22,33 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/verify-otp.html">
-  <meta property="og:title" content="Verify OTP Code | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Enter your 6-digit email OTP verification code to access your ZdexCloud platform account securely.">
+  <meta property="og:title" content="Verify Email Code | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Enter your 6-digit email verification code to access your ZdexCloud platform account.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud OTP Verification">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Verify OTP Code | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Enter your 6-digit email OTP verification code to access your ZdexCloud platform account securely.">
+  <meta name="twitter:title" content="Verify Email Code | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Enter your 6-digit email verification code to access your ZdexCloud platform account.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud OTP Verification">
 
-  
+  <!-- WebPage JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Verify Email Security Code",
+    "description": "Two-factor email code verification interface for ZdexCloud platform accounts.",
+    "url": "https://zdexcloud.com/pages/verify-otp.html"
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -139,9 +149,9 @@
                 <span>Two-Factor Account Verification</span>
               </div>
 
-              <h2 class="auth-brand-headline">Security verification required.</h2>
+              <h2 class="auth-brand-headline">Confirm your identity securely.</h2>
               <p class="auth-brand-desc">
-                We've dispatched a 6-digit one-time passcode to confirm ownership of your email address and authorize platform registration.
+                We've dispatched a 6-digit numeric security code to verify ownership of your registered email address.
               </p>
 
               <div class="auth-feature-list">
@@ -150,8 +160,8 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">Email Protection</div>
-                    <div class="auth-feature-sub">Verifies email ownership before granting device registry access.</div>
+                    <div class="auth-feature-title">Account Protection</div>
+                    <div class="auth-feature-sub">Verifies email ownership before granting device access.</div>
                   </div>
                 </div>
 
@@ -161,7 +171,7 @@
                   </div>
                   <div>
                     <div class="auth-feature-title">Time-Sensitive Code</div>
-                    <div class="auth-feature-sub">Codes expire automatically to prevent unauthorized access.</div>
+                    <div class="auth-feature-sub">Single-use security code valid for immediate authentication.</div>
                   </div>
                 </div>
 
@@ -179,7 +189,7 @@
 
             <div class="auth-brand-footer">
               <span>ONE-TIME PASSCODE</span>
-              <span>AES-256 ENCRYPTED</span>
+              <span>TLS 1.3 ENCRYPTED</span>
             </div>
           </div>
 
@@ -193,7 +203,7 @@
 
               <h1 class="auth-card-title">Verify Email Code</h1>
               <p class="auth-card-subtitle">
-                Enter the 6-digit code sent to <strong id="target-email-display" style="color: var(--color-text-primary);">your registered email</strong>.
+                Enter the 6-digit code sent to <strong id="target-email-display" style="color: var(--color-text-primary);">your email</strong>.
               </p>
             </div>
 
@@ -210,28 +220,33 @@
 
             <!-- Form -->
             <form id="otp-verification-form">
-              <div class="otp-cells-container">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 1">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 2">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 3">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 4">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 5">
-                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="off" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 6">
+              <div class="otp-cells-container" style="display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-lg); width: 100%;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 1" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 2" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 3" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 4" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 5" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
+                <input type="text" maxlength="1" class="otp-input otp-cell-input" autocomplete="one-time-code" required inputmode="numeric" pattern="[0-9]" aria-label="Digit 6" style="width: 14%; max-width: 48px; min-width: 38px; height: 52px; text-align: center; font-size: var(--font-size-xl); font-weight: bold;">
               </div>
 
-              <button type="submit" id="btn-verify-otp" class="btn btn-primary btn-lg" style="width: 100%; margin-bottom: var(--space-md);">
+              <button type="submit" id="btn-verify-otp" class="btn btn-primary btn-lg" style="width: 100%; min-height: 44px; margin-bottom: var(--space-md);">
                 Verify Code & Continue
               </button>
             </form>
 
             <div style="text-align: center; margin-top: var(--space-xs);">
-              <button type="button" id="btn-resend-otp" class="btn btn-ghost" style="font-size: var(--font-size-sm); color: var(--color-brand-primary); font-weight: var(--font-weight-semibold);">
+              <button type="button" id="btn-resend-otp" class="btn btn-ghost" style="font-size: var(--font-size-sm); color: var(--color-brand-primary); font-weight: var(--font-weight-semibold); min-height: 44px;">
                 Resend Code (<span id="resend-countdown">60</span>s)
               </button>
             </div>
 
-            <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-xs); color: var(--color-text-muted);">
-              Need to change your email? <a href="get-started.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Back to Registration</a>
+            <!-- HELPFUL MICROCOPY -->
+            <div style="margin-top: var(--space-lg); padding: var(--space-sm) var(--space-md); background-color: var(--color-bg-subtle); border-radius: var(--radius-md); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">
+              <strong>Didn't receive the email?</strong> Please check your spam or junk folder. Codes arrive within seconds. If needed, click Resend Code once the 60-second cooldown completes.
+            </div>
+
+            <div style="text-align: center; margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-xs); color: var(--color-text-muted);">
+              Need to change your email? <a href="get-started.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Back to Registration</a> or <a href="login.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Sign In</a>
             </div>
 
           </div>
@@ -314,7 +329,8 @@
       const urlParams = new URLSearchParams(window.location.search);
       const email = urlParams.get('email') || '';
       if (email) {
-        document.getElementById('target-email-display').textContent = email;
+        const displayEl = document.getElementById('target-email-display');
+        if (displayEl) displayEl.textContent = email;
       }
 
       const inputs = document.querySelectorAll('.otp-input');

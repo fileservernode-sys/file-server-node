@@ -386,6 +386,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Help & Learn Quick Access Card
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      color: AppColors.surfaceSubtle,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.help_outline_rounded,
+                              size: 22, color: AppColors.primary),
+                          const SizedBox(width: AppSpacing.sm),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Help & Learn Hub',
+                                    style: AppTypography.cardTitle),
+                                SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  'Explore setup guides, storage architecture, and remote access guides.',
+                                  style: AppTypography.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          TextButton(
+                            onPressed: () => Navigator.pushNamed(context, '/help'),
+                            child: const Text('Explore'),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ],
               ),

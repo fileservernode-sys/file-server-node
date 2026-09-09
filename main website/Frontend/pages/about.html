@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="index, follow">
   
-  <meta name="keywords" content="About ZdexCloud, electronic waste reduction, local-first cloud, Android server mission, self-hosted file infrastructure">
+  <meta name="keywords" content="About ZdexCloud, Android personal file server, self-hosted storage, hardware repurposing, local data sovereignty, outbound gateway tunnel, personal cloud alternative">
 
-  <title>About Us — Our Mission & Philosophy | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Learn about ZdexCloud's mission to repurpose unused smartphones into accessible personal cloud infrastructure and combat electronics e-waste through decentralized, local-first computing.">
+  <title>About ZdexCloud — Personal File Server Mission &amp; Philosophy</title>
+  <meta name="description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/about.html">
@@ -25,33 +25,40 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/about.html">
-  <meta property="og:title" content="About Us — Our Mission & Philosophy | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Learn about ZdexCloud's mission to repurpose unused smartphones into accessible personal cloud infrastructure and combat electronics e-waste through decentralized, local-first computing.">
+  <meta property="og:title" content="About ZdexCloud — Personal File Server Mission &amp; Philosophy">
+  <meta property="og:description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server Mission and Architecture">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="About Us — Our Mission & Philosophy | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Learn about ZdexCloud's mission to repurpose unused smartphones into accessible personal cloud infrastructure and combat electronics e-waste through decentralized, local-first computing.">
+  <meta name="twitter:title" content="About ZdexCloud — Personal File Server Mission &amp; Philosophy">
+  <meta name="twitter:description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server Mission and Architecture">
 
-  
-  <!-- AboutPage JSON-LD Schema -->
+  <!-- AboutPage & Organization JSON-LD Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "AboutPage",
     "name": "About ZdexCloud",
-    "description": "ZdexCloud is a personal infrastructure platform that converts unused Android smartphones into self-hosted remote file servers.",
-    "publisher": {
+    "url": "https://zdexcloud.com/pages/about.html",
+    "description": "ZdexCloud is a personal file server platform that repurposes Android smartphones into self-hosted remote file servers with physical storage ownership.",
+    "mainEntity": {
       "@type": "Organization",
       "name": "ZdexCloud",
-      "url": "https://zdexcloud.com"
+      "url": "https://zdexcloud.com",
+      "logo": "https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png",
+      "description": "Personal file server platform software turning Android devices into self-hosted, remotely accessible private file servers.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@zdexcloud.com",
+        "contactType": "customer support"
+      }
     }
   }
   </script>
@@ -88,7 +95,7 @@
         <a href="how-it-works.html" class="nav-link">How It Works</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
         <a href="pricing.html" class="nav-link">Pricing</a>
-        <a href="about.html" class="nav-link">About</a>
+        <a href="about.html" class="nav-link is-active" aria-current="page">About</a>
         <a href="contact.html" class="nav-link">Contact</a>
         <a href="faq.html" class="nav-link">FAQ</a>
       </nav>
@@ -138,7 +145,7 @@
       <a href="how-it-works.html" class="drawer-nav-link">How It Works</a>
       <a href="documentation.html" class="drawer-nav-link">Documentation</a>
       <a href="pricing.html" class="drawer-nav-link">Pricing</a>
-      <a href="about.html" class="drawer-nav-link">About</a>
+      <a href="about.html" class="drawer-nav-link is-active" aria-current="page">About</a>
       <a href="contact.html" class="drawer-nav-link">Contact</a>
       <a href="faq.html" class="drawer-nav-link">FAQ</a>
     </div>
@@ -157,44 +164,59 @@
         <span class="breadcrumb-current">About</span>
       </div>
       <div class="page-header-content">
-        <div class="page-header-eyebrow"><span class="badge badge-accent">Our Mission & Purpose</span></div>
+        <div class="page-header-eyebrow"><span class="badge badge-accent">Mission &amp; Architecture</span></div>
         <h1 class="page-header-title">Unlocking the Power of Idle Hardware</h1>
         <p class="page-header-subtitle">
-          We believe that personal data belongs on personal hardware. ZdexCloud gives second life to idle Android devices while giving you complete data sovereignty.
+          We believe personal files belong on personal hardware. ZdexCloud turns capable, unused Android smartphones into secure, remotely accessible personal file servers without monthly storage rental fees.
         </p>
       </div>
     </div>
   </section>
 
   <main class="page-entrance">
-    <!-- MISSION SECTION -->
+
+    <!-- 1. WHAT ZDEXCLOUD IS -->
     <section class="section-wrapper">
       <div class="container">
-        <div class="grid-2-col" style="align-items: center;">
+        <div class="grid-2-col" style="align-items: center; gap: var(--space-2xl);">
           <div>
-            <h2 class="section-title">The Product Mission</h2>
+            <div class="badge badge-subtle" style="margin-bottom: var(--space-sm);">The Core Concept</div>
+            <h2 class="section-title">What ZdexCloud Is</h2>
             <p class="card-description" style="margin-bottom: var(--space-md);">
-              Our goal is to make personal self-hosted cloud storage accessible to non-technical users by abstracting away port forwarding, dynamic DNS, TLS certificates, and complex server administration.
+              ZdexCloud is lightweight personal infrastructure software designed to turn an existing Android smartphone into a self-hosted, remotely accessible personal file server.
+            </p>
+            <p class="card-description" style="margin-bottom: var(--space-md);">
+              Modern smartphones are complete, highly efficient computing nodes. Each phone contains a multi-core ARM processor, gigabytes of RAM, low-power radios, internal flash memory, microSD expansion capability, and a built-in battery that functions as an uninterruptible power supply (UPS).
             </p>
             <p class="card-description">
-              By combining hardware you already own with simple software control planes and secure outbound tunneling, we enable private personal cloud storage without monthly storage rental fees.
+              Instead of letting this hardware sit forgotten in a drawer, ZdexCloud runs an on-device HTTP file server as an Android foreground service. It connects outward through an encrypted WebSocket tunnel to our relay gateway, enabling you to browse, stream, download, and manage your private files from any web browser worldwide—with zero router port forwarding.
             </p>
           </div>
 
-          <div class="card">
-            <h3 class="card-title">Core Principles</h3>
-            <ul style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md);">
-              <li style="display: flex; align-items: flex-start; gap: 10px;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="margin-top: 2px;"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                <div><strong>Sustainable Tech Reuse:</strong> Repurpose existing smartphones into energy-efficient 24/7 personal servers.</div>
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl);">
+            <h3 class="card-title" style="margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm);">
+              <svg class="icon icon-md text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+              <span>On-Device Storage Reality</span>
+            </h3>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md); list-style: none; padding: 0;">
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Direct Physical Storage:</strong> Files reside physically on the phone's internal storage or microSD card under your direct custody.</div>
               </li>
-              <li style="display: flex; align-items: flex-start; gap: 10px;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="margin-top: 2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                <div><strong>Local Data Ownership:</strong> Your files remain stored physically on your Android device hardware.</div>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Zero Storage Rental Fees:</strong> You never rent storage gigabytes from ZdexCloud. You use the flash memory you already own.</div>
               </li>
-              <li style="display: flex; align-items: flex-start; gap: 10px;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="margin-top: 2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                <div><strong>Frictionless Simplicity:</strong> Zero manual router port forwarding or public IP management.</div>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Browser-Grade Management:</strong> Full desktop file manager in any web browser with directory browsing and native media streaming.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Decoupled Lifecycles:</strong> The Android server runs continuously in the background independently of web dashboard logins or 24-hour browser session timeouts.</div>
               </li>
             </ul>
           </div>
@@ -202,16 +224,419 @@
       </div>
     </section>
 
-    <!-- FINAL CTA -->
+    <!-- 2. WHY THE PRODUCT EXISTS -->
     <section class="section-wrapper section-wrapper-alt">
       <div class="container">
-        <div class="final-cta-banner">
-          <h2 class="final-cta-title">Join us in making personal storage simple.</h2>
-          <p class="final-cta-description">Create your account today and configure your first Android phone server.</p>
-          <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+        <div class="section-header text-center" style="max-width: 800px; margin: 0 auto var(--space-2xl);">
+          <div class="badge badge-subtle" style="margin-bottom: var(--space-sm);">The Motivation</div>
+          <h2 class="section-title">Why ZdexCloud Exists</h2>
+          <p class="section-subtitle">
+            Two major technological trends created an unnecessary dilemma for modern computer users: electronic waste from rapid smartphone replacement, and the growing cost and lock-in of subscription cloud storage.
+          </p>
+        </div>
+
+        <div class="grid-3-col" style="gap: var(--space-xl);">
+          <!-- Problem 1: Idle Hardware -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl);">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md); color: var(--accent-primary);">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-sm);">Unused Hardware in Drawers</h3>
+            <p class="card-description">
+              Consumers replace smartphones every two to three years. Millions of fully operational phones sit discarded in drawers despite having 4 to 8 CPU cores, 4GB to 8GB of RAM, and 128GB+ of high-speed flash storage. Discarding or storing functional silicon idly is an inefficient waste of capable computing power.
+            </p>
+          </div>
+
+          <!-- Problem 2: Recurring Storage Subscriptions -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl);">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md); color: var(--accent-primary);">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-sm);">Endless Storage Subscriptions</h3>
+            <p class="card-description">
+              Traditional cloud storage vendors charge perpetual monthly rental fees. Over three years, subscribing to 100GB to 2TB tiers costs thousands of rupees indefinitely. Furthermore, your private documents, personal photographs, and financial archives reside on third-party corporate data centers.
+            </p>
+          </div>
+
+          <!-- Problem 3: Self-Hosting Complexity -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl);">
+            <div class="feature-icon-wrapper" style="margin-bottom: var(--space-md); color: var(--accent-primary);">
+              <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+              </svg>
+            </div>
+            <h3 class="card-title" style="margin-bottom: var(--space-sm);">Traditional Self-Hosting Barriers</h3>
+            <p class="card-description">
+              Conventional self-hosting (NAS boxes, homelabs, Nextcloud) often requires expensive dedicated hardware, router port forwarding, static public IP addresses, dynamic DNS setup, and ongoing Linux maintenance. For non-sysadmins and users behind CGNAT mobile carriers, it is often too complex.
+            </p>
+          </div>
         </div>
       </div>
     </section>
+
+    <!-- 3. PRODUCT PHILOSOPHY -->
+    <section class="section-wrapper">
+      <div class="container">
+        <div class="section-header text-center" style="max-width: 800px; margin: 0 auto var(--space-2xl);">
+          <div class="badge badge-subtle" style="margin-bottom: var(--space-sm);">Guiding Principles</div>
+          <h2 class="section-title">Our Product Philosophy</h2>
+          <p class="section-subtitle">
+            Every architectural and design decision in ZdexCloud is guided by six practical, transparent principles.
+          </p>
+        </div>
+
+        <div class="grid-2-col" style="gap: var(--space-xl);">
+          <!-- Philosophy A -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">1. Storage Ownership</h3>
+              <p class="card-description">
+                The Android phone remains the physical storage host. Your data lives on your device's solid-state flash memory or microSD card. We believe private files should remain under the physical custody of the person who created them.
+              </p>
+            </div>
+          </div>
+
+          <!-- Philosophy B -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">2. Remote Accessibility</h3>
+              <p class="card-description">
+                Having physical custody should not mean being locked to your home Wi-Fi network. ZdexCloud provides secure remote browser access through an outbound relay, enabling seamless file management from anywhere in the world.
+              </p>
+            </div>
+          </div>
+
+          <!-- Philosophy C -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">3. Simplicity Without Port Forwarding</h3>
+              <p class="card-description">
+                Users should not need to navigate complex router administration panels, configure NAT rules, or expose open incoming ports to the public internet. ZdexCloud relies on secure outbound connections established from the phone.
+              </p>
+            </div>
+          </div>
+
+          <!-- Philosophy D -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">4. Transparent Boundaries</h3>
+              <p class="card-description">
+                We state clearly what the product does and what it cannot do. We never make exaggerated marketing claims, invent fake uptime numbers, or pretend that a repurposed phone replaces an enterprise high-availability datacenter.
+              </p>
+            </div>
+          </div>
+
+          <!-- Philosophy E -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">5. Practical Hardware Reuse</h3>
+              <p class="card-description">
+                Extending the useful lifespan of existing smartphones provides real utility and curbs premature electronic waste. An Android phone operating at 2W to 4W provides an energy-efficient personal server for pennies a year.
+              </p>
+            </div>
+          </div>
+
+          <!-- Philosophy F -->
+          <div class="card" style="display: flex; gap: var(--space-md); padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <div style="flex-shrink: 0; color: var(--accent-primary);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </div>
+            <div>
+              <h3 class="card-title" style="margin-bottom: var(--space-xs); font-size: 1.15rem;">6. Practical Reliability</h3>
+              <p class="card-description">
+                Continuous availability requires physical reality: steady power, stable home Wi-Fi, and proper battery optimization exemptions. We design our software to handle intermittent network reconnects automatically and gracefully.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. WHO IT IS FOR & WHO IT IS NOT FOR -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header text-center" style="max-width: 800px; margin: 0 auto var(--space-2xl);">
+          <div class="badge badge-subtle" style="margin-bottom: var(--space-sm);">Realistic Expectations</div>
+          <h2 class="section-title">Is ZdexCloud Right for You?</h2>
+          <p class="section-subtitle">
+            We believe in honest technology. Understanding whether ZdexCloud matches your specific use case ensures you get the most out of your personal file server.
+          </p>
+        </div>
+
+        <div class="grid-2-col" style="gap: var(--space-xl); align-items: stretch;">
+          <!-- WHO IT IS FOR -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl); display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-lg);">
+              <span class="badge badge-accent" style="font-size: 0.9rem; padding: 4px 12px;">Who ZdexCloud Is For</span>
+            </div>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-md); list-style: none; padding: 0; margin: 0; flex-grow: 1;">
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Users with Unused Android Phones:</strong> Anyone with a functioning spare smartphone (Android 8.0+) who wants to give it practical utility.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Privacy-Conscious Individuals:</strong> Users who prefer keeping family photos, tax records, and personal documents on local hardware rather than multi-tenant commercial clouds.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Students &amp; Researchers:</strong> People needing a private central archive for coursework, research notes, and code repositories without ongoing storage fees.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Developers &amp; Homelab Beginners:</strong> Tech enthusiasts seeking an ultra-low-power private storage node that runs without port forwarding or noisy cooling fans.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <div><strong>Creators &amp; Remote Workers:</strong> Individuals who want to stream personal audio and video collections or access home files on the go from any web browser.</div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- WHO IT IS NOT FOR -->
+          <div class="card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: var(--space-xl); display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-lg);">
+              <span class="badge badge-subtle" style="font-size: 0.9rem; padding: 4px 12px; color: var(--text-secondary);">Who It Is Not For &amp; Limitations</span>
+            </div>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-md); list-style: none; padding: 0; margin: 0; flex-grow: 1;">
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                <div><strong>Not an Enterprise NAS Replacement:</strong> ZdexCloud does not feature multi-drive RAID parity arrays (RAID 5/6), hot-swappable enterprise bays, ECC RAM, or ZFS scrubbing.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                <div><strong>Not a Replacement for 3-2-1 Backups:</strong> A single phone is a single physical node. You should always maintain independent backups (3 copies, 2 media types, 1 offsite copy) of critical data.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                <div><strong>Not a High-Availability Distributed Cluster:</strong> Server uptime depends directly on the physical phone's battery health, power cord stability, and local Wi-Fi connectivity.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                <div><strong>No Endless Cloud Capacity:</strong> Storage capacity is physically bounded by the flash storage or microSD card installed in your Android device.</div>
+              </li>
+              <li style="display: flex; align-items: flex-start; gap: 12px;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                <div><strong>Not a Commercial Hosting CDN:</strong> The system is engineered for personal, private file access and streaming—not for serving high-traffic public web applications.</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. ABOUT AEO KNOWLEDGE BLOCKS -->
+    <section class="section-wrapper" id="about-qa">
+      <div class="container">
+        <div class="section-header text-center" style="max-width: 800px; margin: 0 auto var(--space-2xl);">
+          <div class="badge badge-accent" style="margin-bottom: var(--space-sm);">Direct Answers</div>
+          <h2 class="section-title">Frequently Asked Brand &amp; Architecture Questions</h2>
+          <p class="section-subtitle">
+            Direct, authoritative answers to common questions regarding ZdexCloud's architecture, storage mechanics, and product positioning.
+          </p>
+        </div>
+
+        <div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-lg);">
+          <!-- Q1 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">What is ZdexCloud?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              ZdexCloud is personal file server software that repurposes an Android smartphone into a self-hosted, remotely accessible storage server while keeping your physical phone as the storage host.
+            </p>
+            <p class="card-description">
+              It allows users to utilize existing Android hardware to store, browse, upload, download, and stream their personal files from any web browser without renting cloud storage or configuring router port forwarding.
+            </p>
+          </div>
+
+          <!-- Q2 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">How does ZdexCloud work?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              ZdexCloud runs an embedded HTTP server on your Android phone as a background foreground service and establishes an outbound encrypted WebSocket tunnel to our relay gateway.
+            </p>
+            <p class="card-description">
+              When you log into the ZdexCloud web dashboard from any computer or tablet, file manager requests travel securely through the outbound tunnel directly to your phone, which performs file operations and streams bytes back to your browser.
+            </p>
+          </div>
+
+          <!-- Q3 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Can an old Android phone become a file server?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              Yes, any smartphone running Android 8.0 (API level 26) or higher with at least 500MB of free storage and a stable Wi-Fi connection can function as a dedicated personal file server.
+            </p>
+            <p class="card-description">
+              Because smartphones have multi-core ARM processors, low operational power draw, and a built-in battery that prevents shutdown during brief power blinks, they make remarkably efficient dedicated personal servers.
+            </p>
+          </div>
+
+          <!-- Q4 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Where are my files stored?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              Your files are stored physically on the internal flash storage or microSD card of your Android phone.
+            </p>
+            <p class="card-description">
+              ZdexCloud does not host, duplicate, or inspect your private files on central platform cloud storage servers. The gateway acts strictly as a stateless relay tunnel for encrypted byte streams.
+            </p>
+          </div>
+
+          <!-- Q5 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Is ZdexCloud a cloud storage service?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              No, ZdexCloud is not a conventional multi-tenant cloud storage service like Google Drive, Dropbox, or OneDrive.
+            </p>
+            <p class="card-description">
+              Instead of renting cloud storage buckets on commercial data center servers, ZdexCloud provides the software and tunneling infrastructure to make your personal physical hardware remotely accessible.
+            </p>
+          </div>
+
+          <!-- Q6 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Does ZdexCloud require port forwarding?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              No, ZdexCloud requires zero router port forwarding, zero static IP addresses, and zero dynamic DNS configuration.
+            </p>
+            <p class="card-description">
+              The Android app initiates an outbound TLS 1.3 WebSocket connection to our gateway. Because the connection is outbound, standard home firewalls and mobile carrier CGNAT networks allow it automatically.
+            </p>
+          </div>
+
+          <!-- Q7 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Who is ZdexCloud designed for?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              ZdexCloud is designed for individuals seeking personal, self-hosted file access without cloud subscription fees or complex server administration.
+            </p>
+            <p class="card-description">
+              This includes users with unused Android devices, privacy-conscious individuals, students, creators managing local media, homelab enthusiasts, and remote workers who want access to home files from anywhere.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. EXPLORE THE PLATFORM (INTERNAL LINKS GRAPH) -->
+    <section class="section-wrapper section-wrapper-alt">
+      <div class="container">
+        <div class="section-header text-center" style="max-width: 800px; margin: 0 auto var(--space-2xl);">
+          <div class="badge badge-subtle" style="margin-bottom: var(--space-sm);">Explore the Platform</div>
+          <h2 class="section-title">Learn More About ZdexCloud</h2>
+          <p class="section-subtitle">
+            Dive deeper into our technical architecture, commercial plans, step-by-step guides, and community support.
+          </p>
+        </div>
+
+        <div class="grid-3-col" style="gap: var(--space-lg);">
+          <a href="product.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>Product Overview</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Explore the Android server engine, remote web file manager, and streaming capabilities.</p>
+          </a>
+
+          <a href="how-it-works.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>How It Works</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Deep dive into outbound TLS 1.3 tunneling, CGNAT traversal, and zero-port-forwarding networking.</p>
+          </a>
+
+          <a href="documentation.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>Documentation</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Step-by-step setup manuals, permission wizards, battery configuration, and troubleshooting guides.</p>
+          </a>
+
+          <a href="pricing.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>Pricing &amp; Plans</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Compare our Free plan (1 phone, ₹0) with Pro Monthly (₹49) and Pro Yearly (₹500, up to 5 phones).</p>
+          </a>
+
+          <a href="faq.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>Frequently Asked Questions</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Answers to 40+ operational, security, storage, and networking questions.</p>
+          </a>
+
+          <a href="contact.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.2rem; margin-bottom: var(--space-xs); color: var(--text-primary); display: flex; align-items: center; justify-content: space-between;">
+              <span>Contact Support</span>
+              <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </h3>
+            <p class="card-description">Reach our technical support team for pairing assistance, account inquiries, or bug reports.</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. FINAL CTA -->
+    <section class="section-wrapper">
+      <div class="container">
+        <div class="final-cta-banner" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: var(--space-2xl); text-align: center;">
+          <h2 class="final-cta-title" style="font-size: 2rem; margin-bottom: var(--space-md);">Turn an Idle Android Phone Into Your Personal File Server</h2>
+          <p class="final-cta-description" style="max-width: 650px; margin: 0 auto var(--space-xl); font-size: 1.1rem; color: var(--text-secondary);">
+            Create your free account in 60 seconds, install the server APK on your Android device, and enjoy personal, self-hosted file management from any web browser.
+          </p>
+          <div style="display: flex; justify-content: center; gap: var(--space-md); flex-wrap: wrap;">
+            <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
+            <a href="documentation.html" class="btn btn-secondary btn-lg">Read Setup Documentation</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -249,7 +674,7 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>

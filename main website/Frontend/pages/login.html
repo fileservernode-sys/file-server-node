@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+  <meta name="robots" content="noindex, follow">
+  <meta name="description" content="Sign in to your ZdexCloud platform account. Securely access your web dashboard, view registered Android phone servers, and manage remote file access.">
   <title>Sign In | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Sign into your ZdexCloud platform account to manage your registered Android file server devices and access files remotely.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/login.html">
@@ -24,21 +23,32 @@
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/login.html">
   <meta property="og:title" content="Sign In | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Sign into your ZdexCloud platform account to manage your registered Android file server devices and access files remotely.">
+  <meta property="og:description" content="Sign in to your ZdexCloud platform account to manage registered Android servers and access files remotely.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud Sign In">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
   <meta name="twitter:title" content="Sign In | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Sign into your ZdexCloud platform account to manage your registered Android file server devices and access files remotely.">
+  <meta name="twitter:description" content="Sign in to your ZdexCloud platform account to manage registered Android servers and access files remotely.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud Sign In">
 
-  
+  <!-- WebPage JSON-LD Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Sign In to ZdexCloud",
+    "description": "Platform account sign-in interface for managing registered Android personal file servers.",
+    "url": "https://zdexcloud.com/pages/login.html"
+  }
+  </script>
+
+  <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
@@ -147,7 +157,7 @@
 
               <h2 class="auth-brand-headline">Manage your personal server infrastructure.</h2>
               <p class="auth-brand-desc">
-                Sign into your platform account to view live device statuses, manage server registrations, and configure secure outbound gateway access.
+                Sign in to your ZdexCloud account to view live Android server statuses, switch between registered nodes, and open the remote web file manager.
               </p>
 
               <div class="auth-feature-list">
@@ -156,8 +166,18 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">Local Storage Host</div>
-                    <div class="auth-feature-sub">Files remain on your Android phone media host.</div>
+                    <div class="auth-feature-title">Independent Android Server Lifecycle</div>
+                    <div class="auth-feature-sub">Your phone server runs 24/7 independently of web sessions.</div>
+                  </div>
+                </div>
+
+                <div class="auth-feature-item">
+                  <div class="auth-feature-icon">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  </div>
+                  <div>
+                    <div class="auth-feature-title">Strict 24-Hour Session Policy</div>
+                    <div class="auth-feature-sub">Browser dashboard sessions expire in 24 hours for security.</div>
                   </div>
                 </div>
 
@@ -166,25 +186,15 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                   </div>
                   <div>
-                    <div class="auth-feature-title">Dual Auth Isolation</div>
-                    <div class="auth-feature-sub">Platform login is separated from file-server credentials.</div>
-                  </div>
-                </div>
-
-                <div class="auth-feature-item">
-                  <div class="auth-feature-icon">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                  </div>
-                  <div>
-                    <div class="auth-feature-title">Outbound Relay Route</div>
-                    <div class="auth-feature-sub">No router port forwarding or public IP required.</div>
+                    <div class="auth-feature-title">Separate File-Server Credentials</div>
+                    <div class="auth-feature-sub">Phone storage access requires dedicated on-device credentials.</div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="auth-brand-footer">
-              <span>ZDEXCLOUD PLATFORM</span>
+              <span>ZDEXCLOUD CONTROL PLANE</span>
               <span>TLS 1.3 SECURED</span>
             </div>
           </div>
@@ -205,7 +215,6 @@
 
             <!-- Form -->
             <form id="login-form">
-              
               <div class="form-group">
                 <label for="login-email" class="form-label">Email Address</label>
                 <input type="email" id="login-email" class="form-input" placeholder="name@example.com" required autocomplete="email">
@@ -238,7 +247,12 @@
               <span>Continue with Google</span>
             </button>
 
-            <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+            <!-- 24-HOUR SESSION NOTICE -->
+            <div style="margin-top: var(--space-lg); padding: var(--space-sm) var(--space-md); background-color: var(--color-bg-subtle); border-radius: var(--radius-md); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5;">
+              <strong>Security Policy:</strong> Web dashboard sessions have a strict 24-hour absolute session lifetime. Your Android server operates independently 24/7 in the background regardless of your browser login state.
+            </div>
+
+            <div style="text-align: center; margin-top: var(--space-lg); padding-top: var(--space-md); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
               Don't have an account? <a href="get-started.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Create an Account</a>
             </div>
 
@@ -248,6 +262,77 @@
 
       </div>
     </section>
+
+    <!-- LOGIN HELP & SESSION FAQ -->
+    <section class="section-wrapper section-wrapper-alt" style="padding-top: var(--space-2xl); padding-bottom: var(--space-2xl);">
+      <div class="container" style="max-width: 860px;">
+        <div class="section-header text-center" style="margin-bottom: var(--space-xl);">
+          <h2 class="section-title" style="font-size: var(--font-size-xl);">Platform Authentication & Sessions</h2>
+          <p class="section-subtitle">
+            Answers to common questions regarding account authentication, 24-hour session expiration, and server continuity.
+          </p>
+        </div>
+
+        <div class="accordion">
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>How long does a ZdexCloud login session last?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                ZdexCloud enforces a strict 24-hour absolute session lifetime for browser dashboard logins. Exactly 24 hours after signing in, the authentication session expires automatically to prevent unauthorized access from abandoned browser sessions. Continued browsing activity does not extend the session indefinitely.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>What happens when my web session expires?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                When your session reaches the 24-hour limit, the web dashboard prompts you to sign in again. Your personal files and registered server status remain completely unaffected; you simply re-enter your credentials to resume browser access.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Does logging into the website keep my Android server running?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                No. The Android phone server operates completely independently of whether you are logged into the website. The phone runs its own background service 24/7. Signing out of the website or session expiration does not stop or pause your Android server.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-trigger" aria-expanded="false">
+                <span>Why might I need to sign in again?</span>
+                <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+            </h3>
+            <div class="accordion-panel">
+              <div class="accordion-panel-inner">
+                You will need to sign in again if: 1) Your strict 24-hour session expired; 2) You explicitly clicked Sign Out; 3) You cleared your browser cookies or local storage; or 4) You updated your password.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- FOOTER -->
@@ -335,6 +420,13 @@
       const submitBtn = document.getElementById('btn-login-submit');
       const errorAlert = document.getElementById('login-error-alert');
       const errorMessage = document.getElementById('login-error-message');
+
+      // Check for expired session notice in URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('expired') === 'true') {
+        errorMessage.textContent = 'Your session has expired. Please sign in again to continue.';
+        errorAlert.classList.remove('hidden');
+      }
 
       // Email + Password Submission -> Triggers Email OTP
       loginForm.addEventListener('submit', async (e) => {

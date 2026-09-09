@@ -7,6 +7,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../../core/utils/url_launcher_service.dart';
 import '../../auth/application/auth_state.dart';
 import '../../setup/application/setup_state.dart';
 
@@ -272,15 +273,51 @@ class SettingsScreen extends ConsumerWidget {
                       children: [
                         _buildSettingTile(
                           icon: Icons.help_outline_rounded,
-                          title: 'Help & Documentation',
-                          subtitle: 'Setup guides and troubleshooting',
+                          title: 'Help & Learn',
+                          subtitle: 'Setup guides, storage & troubleshooting',
                           onTap: () => Navigator.pushNamed(context, '/help'),
                         ),
                         const Divider(),
                         _buildSettingTile(
+                          icon: Icons.menu_book_outlined,
+                          title: 'Documentation',
+                          subtitle: 'Full technical guides at zdexcloud.com',
+                          trailingIcon: Icons.open_in_new_rounded,
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.documentationUrl),
+                        ),
+                        const Divider(),
+                        _buildSettingTile(
+                          icon: Icons.support_agent_outlined,
+                          title: 'Contact Support',
+                          subtitle: 'Official support & assistance',
+                          trailingIcon: Icons.open_in_new_rounded,
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.contactUrl),
+                        ),
+                        const Divider(),
+                        _buildSettingTile(
+                          icon: Icons.shield_outlined,
+                          title: 'Privacy Policy',
+                          subtitle: 'How your data is protected',
+                          trailingIcon: Icons.open_in_new_rounded,
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.privacyUrl),
+                        ),
+                        const Divider(),
+                        _buildSettingTile(
+                          icon: Icons.gavel_outlined,
+                          title: 'Terms of Service',
+                          subtitle: 'Service rules and subscription terms',
+                          trailingIcon: Icons.open_in_new_rounded,
+                          onTap: () => UrlLauncherService.openUrl(
+                              context, UrlLauncherService.termsUrl),
+                        ),
+                        const Divider(),
+                        _buildSettingTile(
                           icon: Icons.info_outline_rounded,
-                          title: 'About Platform',
-                          subtitle: 'Version and product architecture',
+                          title: 'About ZdexCloud',
+                          subtitle: 'Platform overview and architecture',
                           onTap: () => Navigator.pushNamed(context, '/about'),
                         ),
                         const Divider(),
@@ -336,6 +373,7 @@ class SettingsScreen extends ConsumerWidget {
     required String subtitle,
     required VoidCallback onTap,
     Color titleColor = AppColors.textPrimary,
+    IconData trailingIcon = Icons.chevron_right,
   }) {
     return ListTile(
       leading: Icon(icon, color: titleColor),
@@ -344,7 +382,7 @@ class SettingsScreen extends ConsumerWidget {
               .copyWith(color: titleColor, fontWeight: FontWeight.w500)),
       subtitle: Text(subtitle, style: AppTypography.caption),
       trailing:
-          const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+          Icon(trailingIcon, size: 20, color: AppColors.textMuted),
       onTap: onTap,
     );
   }
