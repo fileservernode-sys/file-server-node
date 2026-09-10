@@ -43,7 +43,7 @@ void main() {
             MockDeviceRemoteDataSource(mockDevices: mockDevices),
           ),
           serverServiceProvider.overrideWithValue(const MockServerService()),
-          remoteConnectionServiceProvider.overrideWithValue(const MockRemoteConnectionService()),
+          remoteConnectionServiceProvider.overrideWithValue(MockRemoteConnectionService()),
         ],
       );
 

@@ -823,23 +823,47 @@ class LocalServerEngine {
 
             try {
                 val body = exchange.requestBody.bufferedReader().readText()
-                val parentPath = body.substringAfter("\"path\":\"").substringBefore("\"")
-                val folderName = body.substringAfter("\"name\":\"").substringBefore("\"")
+                val json = try { org.json.JSONObject(body) } catch (_: Exception) { null }
+                val parentPath = json?.optString("path")?.ifEmpty { "/" }
+                    ?: body.substringAfter("\"path\"").substringAfter("\"").substringBefore("\"").trim().ifEmpty { "/" }
+                val folderName = json?.optString("name")?.trim()
+                    ?: body.substringAfter("\"name\"").substringAfter("\"").substringBefore("\"").trim()
+
+                if (folderName.isEmpty()) {
+                    sendJsonResponse(exchange, 400, """{"success":false,"error":{"code":"INVALID_FOLDER_NAME","message":"Folder name cannot be empty."}}""")
+                    return
+                }
+
+                if (folderName.contains("/") || folderName.contains("\\") || folderName.contains("\u0000") || folderName.contains("..") || folderName == "." || folderName == "..") {
+                    sendJsonResponse(exchange, 400, """{"success":false,"error":{"code":"INVALID_FOLDER_NAME","message":"Folder name contains invalid characters or path traversal attempt."}}""")
+                    return
+                }
 
                 val targetParent = resolveSandboxPath(rootDir, parentPath)
-                val newFolder = File(targetParent, folderName)
-                resolveSandboxPath(rootDir, newFolder.canonicalPath.substringAfter(rootDir.canonicalPath))
+                if (!targetParent.exists() || !targetParent.isDirectory) {
+                    sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"PARENT_NOT_FOUND","message":"Parent directory does not exist."}}""")
+                    return
+                }
+
+                val newFolder = File(targetParent, folderName).canonicalFile
+                val canonicalRoot = rootDir.canonicalFile
+                if (!newFolder.path.startsWith(canonicalRoot.path)) {
+                    sendJsonResponse(exchange, 403, """{"success":false,"error":{"code":"PATH_TRAVERSAL_REJECTED","message":"Path traversal attempt rejected."}}""")
+                    return
+                }
 
                 if (newFolder.exists()) {
                     sendJsonResponse(exchange, 400, """{"success":false,"error":{"code":"FOLDER_EXISTS","message":"Folder already exists."}}""")
                     return
                 }
 
-                val created = newFolder.mkdirs()
+                val created = newFolder.mkdir() || newFolder.mkdirs() || newFolder.exists()
                 if (created) {
-                    sendJsonResponse(exchange, 200, """{"success":true,"data":{}}""")
+                    val relPath = newFolder.path.substringAfter(canonicalRoot.path).replace("\\", "/")
+                    val safeRelPath = if (relPath.isEmpty() || !relPath.startsWith("/")) "/$relPath" else relPath
+                    sendJsonResponse(exchange, 200, """{"success":true,"data":{"name":"${newFolder.name}","path":"$safeRelPath"}}""")
                 } else {
-                    sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"CREATE_FAILED","message":"Failed to create folder."}}""")
+                    sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"CREATE_FAILED","message":"Failed to create folder on storage host."}}""")
                 }
             } catch (e: SecurityException) {
                 sendJsonResponse(exchange, 403, """{"success":false,"error":{"code":"PATH_TRAVERSAL_REJECTED","message":"Path traversal attempt rejected."}}""")
@@ -997,8 +1021,11 @@ class LocalServerEngine {
                     throw SecurityException("Invalid upload filename.")
                 }
 
-                val newFile = File(targetDir, sanitizedFilename)
-                resolveSandboxPath(rootDir, newFile.canonicalPath.substringAfter(rootDir.canonicalPath))
+                val newFile = File(targetDir, sanitizedFilename).canonicalFile
+                val canonicalRoot = rootDir.canonicalFile
+                if (!newFile.path.startsWith(canonicalRoot.path)) {
+                    throw SecurityException("Access denied: Upload target escapes sandbox root.")
+                }
 
                 var os: OutputStream? = null
                 try {

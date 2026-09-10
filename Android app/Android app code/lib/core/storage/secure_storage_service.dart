@@ -17,22 +17,61 @@ abstract class SecureStorageService {
 class FileSecureStorageService implements SecureStorageService {
   AuthSession? _cachedSession;
   final Map<String, String> _storage = {};
-  File? _sessionFile;
+  Directory? _baseDir;
 
-  File _getFile() {
-    if (_sessionFile == null) {
-      final dir = Directory.systemTemp.path;
-      _sessionFile = File('$dir/rn_session.json');
+  Directory _getStorageDir() {
+    if (_baseDir != null) return _baseDir!;
+
+    // 1. Android internal app data directories
+    final androidPaths = [
+      '/data/user/0/net.remotenode.fileserver/files',
+      '/data/data/net.remotenode.fileserver/files',
+    ];
+
+    for (final p in androidPaths) {
+      final d = Directory(p);
+      if (d.existsSync()) {
+        _baseDir = d;
+        return _baseDir!;
+      }
     }
-    return _sessionFile!;
+
+    // 2. User home directory fallback (Development / Desktop / VM testing)
+    final home =
+        Platform.environment['USERPROFILE'] ?? Platform.environment['HOME'];
+    if (home != null && home.isNotEmpty) {
+      final appDir = Directory('$home/.zdexcloud');
+      try {
+        if (!appDir.existsSync()) {
+          appDir.createSync(recursive: true);
+        }
+        _baseDir = appDir;
+        return _baseDir!;
+      } catch (_) {}
+    }
+
+    // 3. Fallback to system temporary directory
+    _baseDir = Directory.systemTemp;
+    return _baseDir!;
+  }
+
+  File _getSessionFile() {
+    final dir = _getStorageDir();
+    return File('${dir.path}/rn_session.json');
+  }
+
+  File _getKvFile(String key) {
+    final dir = _getStorageDir();
+    final safeKey = key.replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_');
+    return File('${dir.path}/rn_kv_$safeKey.txt');
   }
 
   @override
   Future<void> saveSession(AuthSession session) async {
     _cachedSession = session;
     try {
-      final file = _getFile();
-      await file.writeAsString(jsonEncode(session.toJson()));
+      final file = _getSessionFile();
+      await file.writeAsString(jsonEncode(session.toJson()), flush: true);
     } catch (_) {}
   }
 
@@ -43,13 +82,15 @@ class FileSecureStorageService implements SecureStorageService {
     }
 
     try {
-      final file = _getFile();
+      final file = _getSessionFile();
       if (await file.exists()) {
         final content = await file.readAsString();
-        final json = jsonDecode(content) as Map<String, dynamic>;
-        final session = AuthSession.fromJson(json);
-        _cachedSession = session;
-        return _cachedSession;
+        if (content.trim().isNotEmpty) {
+          final json = jsonDecode(content) as Map<String, dynamic>;
+          final session = AuthSession.fromJson(json);
+          _cachedSession = session;
+          return _cachedSession;
+        }
       }
     } catch (_) {}
     return null;
@@ -59,7 +100,7 @@ class FileSecureStorageService implements SecureStorageService {
   Future<void> clearSession() async {
     _cachedSession = null;
     try {
-      final file = _getFile();
+      final file = _getSessionFile();
       if (await file.exists()) {
         await file.delete();
       }
@@ -70,8 +111,8 @@ class FileSecureStorageService implements SecureStorageService {
   Future<void> write({required String key, required String value}) async {
     _storage[key] = value;
     try {
-      final file = File('${Directory.systemTemp.path}/rn_kv_$key.txt');
-      await file.writeAsString(value);
+      final file = _getKvFile(key);
+      await file.writeAsString(value, flush: true);
     } catch (_) {}
   }
 
@@ -79,7 +120,7 @@ class FileSecureStorageService implements SecureStorageService {
   Future<String?> read({required String key}) async {
     if (_storage.containsKey(key)) return _storage[key];
     try {
-      final file = File('${Directory.systemTemp.path}/rn_kv_$key.txt');
+      final file = _getKvFile(key);
       if (await file.exists()) {
         final val = await file.readAsString();
         _storage[key] = val;
@@ -93,7 +134,7 @@ class FileSecureStorageService implements SecureStorageService {
   Future<void> delete({required String key}) async {
     _storage.remove(key);
     try {
-      final file = File('${Directory.systemTemp.path}/rn_kv_$key.txt');
+      final file = _getKvFile(key);
       if (await file.exists()) {
         await file.delete();
       }

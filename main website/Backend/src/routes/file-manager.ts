@@ -266,9 +266,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
     }
 
+    const folderName = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!folderName) {
+      return reply.status(400).send(createErrorResponse('INVALID_FOLDER_NAME', 'Folder name cannot be empty or whitespace only'));
+    }
+
     const result = await proxyToGateway(device.id, 'CREATE_FOLDER', {
       path: body.path || '/',
-      name: body.name
+      name: folderName
     });
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });

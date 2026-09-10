@@ -164,9 +164,13 @@ const ApiService = {
       const res = await fetch(EmbeddedFileManager.url('folders'), {
         method: 'POST',
         headers: EmbeddedFileManager.getHeaders(),
-        body: JSON.stringify({ path: parentPath, name: folderName })
+        body: JSON.stringify({ path: parentPath || '/', name: folderName })
       });
-      return await res.json();
+      const data = await res.json();
+      if (!res.ok && data.success === undefined) {
+        data.success = false;
+      }
+      return data;
     } catch (e) {
       return { success: false, error: { message: e.message } };
     }

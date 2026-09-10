@@ -15,12 +15,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 2. Global File Picker Binding
   const filePicker = document.getElementById('file-picker');
-  filePicker?.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      FileManagerHelper.handleUpload(e.target.files);
-      filePicker.value = '';
-    }
-  });
+  if (filePicker && !filePicker.dataset.bound) {
+    filePicker.dataset.bound = 'true';
+    filePicker.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        const files = Array.from(e.target.files);
+        filePicker.value = '';
+        FileManagerHelper.handleUpload(files);
+      }
+    });
+  }
 
   // 3. Quick Upload Button Triggers
   document.getElementById('btn-quick-upload')?.addEventListener('click', () => {
@@ -36,11 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('drop', (e) => {
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       e.preventDefault();
-      FileManagerHelper.handleUpload(e.dataTransfer.files);
+      const files = Array.from(e.dataTransfer.files);
+      FileManagerHelper.handleUpload(files);
     }
   });
 
-  if (dropZone) {
+  if (dropZone && !dropZone.dataset.bound) {
+    dropZone.dataset.bound = 'true';
     dropZone.addEventListener('dragover', (e) => {
       e.preventDefault();
       dropZone.classList.add('drag-over');
@@ -50,7 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       dropZone.classList.remove('drag-over');
       if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        FileManagerHelper.handleUpload(e.dataTransfer.files);
+        const files = Array.from(e.dataTransfer.files);
+        FileManagerHelper.handleUpload(files);
       }
     });
   }
@@ -61,16 +68,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 5. New Folder Form Submission
-  document.getElementById('form-new-folder')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const input = document.getElementById('input-folder-name');
-    const folderName = input.value.trim();
-    if (folderName) {
-      FileManagerHelper.handleCreateFolder(folderName);
-      input.value = '';
-      UIManager.hideModal('modal-new-folder');
-    }
-  });
+  const newFolderForm = document.getElementById('form-new-folder');
+  if (newFolderForm && !newFolderForm.dataset.appBound) {
+    newFolderForm.dataset.appBound = 'true';
+    newFolderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('input-folder-name');
+      const submitBtn = newFolderForm.querySelector('button[type="submit"]');
+      const folderName = input ? input.value.trim() : '';
+      if (!folderName) {
+        UIManager.showToast('Please enter a valid folder name', 'warning');
+        return;
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+      }
+
+      try {
+        const success = await FileManagerHelper.handleCreateFolder(folderName);
+        if (success) {
+          if (input) input.value = '';
+          UIManager.hideModal('modal-new-folder');
+        }
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Folder';
+        }
+      }
+    });
+  }
 
   // 6. Refresh Button Handlers
   document.getElementById('btn-photos-refresh')?.addEventListener('click', () => PhotosController.load());

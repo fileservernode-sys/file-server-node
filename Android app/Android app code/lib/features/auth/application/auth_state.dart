@@ -46,7 +46,7 @@ class AuthState {
 
 /// Riverpod Providers for Auth Architecture
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
-  return InMemorySecureStorageService();
+  return FileSecureStorageService();
 });
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {

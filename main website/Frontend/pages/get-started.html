@@ -864,8 +864,8 @@
   </footer>
 
   <script src="../js/motion.js"></script>
-  <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/main.js"></script>
   <script>
     function togglePasswordVisibility(inputId, btnEl) {
       const input = document.getElementById(inputId);
@@ -884,6 +884,16 @@
       const submitBtn = document.getElementById('btn-register-submit');
       const errorAlert = document.getElementById('register-error-alert');
       const errorMessage = document.getElementById('register-error-message');
+
+      // Check for active valid session -> Auto-redirect to dashboard
+      const urlParams = new URLSearchParams(window.location.search);
+      const isExplicitExpired = urlParams.get('expired') === 'true';
+      const isExplicitLogout = urlParams.get('logout') === 'true';
+
+      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined' && AuthService.isSessionValid()) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
 
       // Registration Submit -> Sends Email OTP
       regForm.addEventListener('submit', async (e) => {

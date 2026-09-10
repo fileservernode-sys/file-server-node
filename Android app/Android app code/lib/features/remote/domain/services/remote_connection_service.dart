@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/utils/logger.dart';
 import 'remote_transport.dart';
@@ -68,17 +69,22 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
   final StreamController<RemoteConnectionInfo> _statusController =
       StreamController<RemoteConnectionInfo>.broadcast();
 
+  final Random _random = Random();
   RemoteConnectionInfo _currentInfo;
   int _reconnectAttempts = 0;
-  static const int _maxReconnectAttempts = 5;
   Timer? _reconnectTimer;
   Timer? _pingTimer;
   StreamSubscription? _transportSubscription;
   Completer<bool>? _authCompleter;
 
+  int _connectionGeneration = 0;
+  int _missedPings = 0;
+  DateTime? _lastPongReceivedAt;
+
   String? _lastDeviceId;
   String? _lastSessionToken;
   bool _isExplicitlyDisconnecting = false;
+  bool _isReconnecting = false;
 
   HttpRemoteConnectionService({
     HttpClient? httpClient,
@@ -115,14 +121,16 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       return _currentInfo;
     }
     _isConnecting = true;
+    _isExplicitlyDisconnecting = false;
     _reconnectTimer?.cancel();
+    final currentGen = ++_connectionGeneration;
 
     try {
       _lastDeviceId = deviceId;
       _lastSessionToken = sessionToken;
 
       _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.connecting));
-      AppLogger.info('[RemoteConnection] Initiating connection registration for device: $deviceId');
+      AppLogger.info('[RemoteConnection] Initiating connection registration for device: $deviceId (generation: $currentGen)');
 
       int registerAttempts = 0;
       HttpClientResponse? res;
@@ -130,7 +138,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
       // Up to 8 attempts with 4s gaps = ~32s window, enough for Render free-tier cold start
       const int maxRegisterAttempts = 8;
-      while (registerAttempts < maxRegisterAttempts) {
+      while (registerAttempts < maxRegisterAttempts && currentGen == _connectionGeneration) {
         registerAttempts++;
         final url = Uri.parse('$_baseUrl/connections/register');
         final req = await _httpClient.postUrl(url);
@@ -160,6 +168,11 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         }
       }
 
+      if (currentGen != _connectionGeneration) {
+        AppLogger.info('[RemoteConnection] Connection attempt superseded by newer generation ($currentGen != $_connectionGeneration)');
+        return _currentInfo;
+      }
+
       if (res != null && res.statusCode == 200 && json != null && json['success'] == true) {
         final conn = json['data']['connection'];
         final connId = conn['id'] as String?;
@@ -180,7 +193,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         try {
           AppLogger.info('[RemoteConnection] Connecting transport to: ${AppConfig.current.gatewayWsUrl}');
           await _transport.connect(AppConfig.current.gatewayWsUrl);
-          _setupTransportMessageListener();
+          _setupTransportMessageListener(currentGen);
           AppLogger.info('[RemoteConnection] Transport connected. Sending AUTH handshake...');
           await _transport.send({
             'type': 'AUTH',
@@ -201,28 +214,38 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
           AppLogger.warning('[RemoteConnection] First transport attempt failed, retrying...', e);
           try {
             await Future.delayed(const Duration(milliseconds: 800));
-            _authCompleter = Completer<bool>();
-            await _transport.connect(AppConfig.current.gatewayWsUrl);
-            _setupTransportMessageListener();
-            await _transport.send({
-              'type': 'AUTH',
-              'connectionToken': token,
-              'deviceId': deviceId,
-            });
-            final authSuccess = await _authCompleter!.future.timeout(
-              const Duration(seconds: 8),
-              onTimeout: () {
-                AppLogger.warning('[RemoteConnection] Retry AUTH_SUCCESS timed out after 8s');
-                return false;
-              },
-            );
-            wsConnected = authSuccess;
+            if (currentGen == _connectionGeneration) {
+              _authCompleter = Completer<bool>();
+              await _transport.connect(AppConfig.current.gatewayWsUrl);
+              _setupTransportMessageListener(currentGen);
+              await _transport.send({
+                'type': 'AUTH',
+                'connectionToken': token,
+                'deviceId': deviceId,
+              });
+              final authSuccess = await _authCompleter!.future.timeout(
+                const Duration(seconds: 8),
+                onTimeout: () {
+                  AppLogger.warning('[RemoteConnection] Retry AUTH_SUCCESS timed out after 8s');
+                  return false;
+                },
+              );
+              wsConnected = authSuccess;
+            }
           } catch (retryErr) {
             AppLogger.error('[RemoteConnection] Retry transport attempt failed', retryErr);
           }
         }
 
+        if (currentGen != _connectionGeneration) {
+          AppLogger.info('[RemoteConnection] Connection generation superseded during auth handshake');
+          return _currentInfo;
+        }
+
         _reconnectAttempts = 0;
+        _missedPings = 0;
+        _lastPongReceivedAt = DateTime.now();
+
         final newInfo = RemoteConnectionInfo(
           connectionId: connId,
           remoteEndpoint: remoteEp,
@@ -238,6 +261,16 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         if (wsConnected) {
           _startPingTimer();
         }
+        return _currentInfo;
+      }
+
+      if (res?.statusCode == 401) {
+        const sessionMsg = 'Platform session expired (24h). Please sign in again.';
+        AppLogger.warning('[RemoteConnection] 24h Platform session expired (401)');
+        _updateInfo(const RemoteConnectionInfo(
+          status: RemoteConnectionState.failed,
+          errorMessage: sessionMsg,
+        ));
         return _currentInfo;
       }
 
@@ -261,11 +294,14 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     }
   }
 
-  void _setupTransportMessageListener() {
+  void _setupTransportMessageListener(int generation) {
     _transportSubscription?.cancel();
     _transportSubscription = _transport.messageStream.listen((msg) async {
+      if (generation != _connectionGeneration) {
+        return;
+      }
       final type = msg['type'];
-      AppLogger.info('[RemoteConnection] Inbound transport event: $type');
+      AppLogger.info('[RemoteConnection] Inbound transport event: $type (gen: $generation)');
       if (type == 'FILE_REQUEST') {
         await _handleRemoteFileRequest(msg);
       } else if (type == 'FILE_STREAM_CANCEL') {
@@ -275,6 +311,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         if (_authCompleter != null && !_authCompleter!.isCompleted) {
           _authCompleter!.complete(true);
         }
+        _missedPings = 0;
+        _lastPongReceivedAt = DateTime.now();
         _updateInfo(RemoteConnectionInfo(
           connectionId: msg['connectionId'] as String? ?? _currentInfo.connectionId,
           remoteEndpoint: msg['remoteEndpoint'] as String? ?? _currentInfo.remoteEndpoint,
@@ -298,6 +336,8 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         ));
       } else if (type == 'PONG') {
         AppLogger.info('[RemoteConnection] PONG received from gateway');
+        _missedPings = 0;
+        _lastPongReceivedAt = DateTime.now();
         _updateInfo(RemoteConnectionInfo(
           connectionId: _currentInfo.connectionId,
           remoteEndpoint: _currentInfo.remoteEndpoint,
@@ -308,8 +348,13 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         ));
       } else if (type == 'DISCONNECT' || type == 'ERROR') {
         AppLogger.warning('[RemoteConnection] Transport disconnected / error event: $type');
-        if (!_isExplicitlyDisconnecting && _lastDeviceId != null && _lastSessionToken != null && _currentInfo.isConnected) {
-          reconnect();
+        if (_isExplicitlyDisconnecting) {
+          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.disconnected));
+        } else {
+          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
+          if (_lastDeviceId != null && _lastSessionToken != null) {
+            reconnect();
+          }
         }
       }
     });
@@ -421,10 +466,12 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
         final name = msg['name'] as String? ?? 'New Folder';
         final localRes = await _executeLocalApiPost(
             '/api/folders', {'path': path, 'name': name});
+        final isSuccess = localRes['success'] == true ||
+            (localRes['success'] == null && localRes['error'] == null);
         await _transport.send({
           'type': 'FILE_RESPONSE',
           'requestId': requestId,
-          'success': localRes['success'] ?? true,
+          'success': isSuccess,
           'data': localRes['data'] ?? {},
           'error': localRes['error']
         });
@@ -626,10 +673,18 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     required String sessionToken,
   }) async {
     _isExplicitlyDisconnecting = true;
+    _isReconnecting = false;
+    _isConnecting = false;
+    ++_connectionGeneration;
     _pingTimer?.cancel();
+    _pingTimer = null;
     _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _transportSubscription?.cancel();
+    _transportSubscription = null;
+    _reconnectAttempts = 0;
     _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
+    _updateInfo(_currentInfo);
 
     try {
       await _transport.send({'type': 'DISCONNECT'});
@@ -655,40 +710,70 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
   @override
   Future<RemoteConnectionInfo> reconnect() async {
-    if (_reconnectAttempts >= _maxReconnectAttempts) {
-      _currentInfo = const RemoteConnectionInfo(
-        status: RemoteConnectionState.failed,
-        errorMessage:
-            'Maximum reconnect attempts reached. Transport connection failed.',
-      );
+    if (_isReconnecting || _isConnecting) {
+      AppLogger.info('[RemoteConnection] Reconnect/Connect already active, deduplicating call');
       return _currentInfo;
     }
 
+    _reconnectTimer?.cancel();
+    final currentGen = ++_connectionGeneration;
     _reconnectAttempts++;
-    _currentInfo =
-        const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting);
+    _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
 
-    // Exponential Backoff: 1s, 2s, 4s, 8s, 16s (max 30s)
-    final delaySeconds = (1 << (_reconnectAttempts - 1)).clamp(1, 30);
-    await Future.delayed(Duration(seconds: delaySeconds));
+    // Bounded Exponential Backoff: 1s, 2s, 4s, 8s, 16s, 30s, capped at max 60s
+    final baseDelaySec = (1 << (_reconnectAttempts - 1).clamp(0, 6)).clamp(1, 60);
+    // Bounded random jitter: up to 20% (min 50ms, max 2000ms)
+    final jitterMs = _random.nextInt((baseDelaySec * 200).clamp(50, 2000));
+    final delay = Duration(seconds: baseDelaySec, milliseconds: jitterMs);
 
-    final devId = _lastDeviceId;
-    final token = _lastSessionToken;
-    if (devId != null && token != null && token.isNotEmpty) {
-      return connect(deviceId: devId, sessionToken: token);
+    AppLogger.info('[RemoteConnection] Scheduling reconnect attempt $_reconnectAttempts after ${delay.inMilliseconds}ms (generation: $currentGen)');
+    _isReconnecting = true;
+    try {
+      await Future.delayed(delay);
+      if (currentGen != _connectionGeneration || _isExplicitlyDisconnecting) {
+        AppLogger.info('[RemoteConnection] Reconnect superseded by generation $_connectionGeneration or explicit disconnect');
+        return _currentInfo;
+      }
+
+      final devId = _lastDeviceId;
+      final token = _lastSessionToken;
+      if (devId != null && token != null && token.isNotEmpty && !_isExplicitlyDisconnecting) {
+        return await connect(deviceId: devId, sessionToken: token);
+      }
+    } finally {
+      _isReconnecting = false;
     }
 
     _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
+    _updateInfo(_currentInfo);
     return _currentInfo;
   }
 
   void _startPingTimer() {
     _pingTimer?.cancel();
+    _missedPings = 0;
+    _lastPongReceivedAt = DateTime.now();
+
     _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
       if (_currentInfo.isConnected) {
+        // Silent liveness check: if missed >= 2 pings or last pong older than 35s
+        if (_missedPings >= 2 ||
+            (_lastPongReceivedAt != null &&
+                DateTime.now().difference(_lastPongReceivedAt!).inSeconds > 35)) {
+          AppLogger.warning('[RemoteConnection] Silent heartbeat loss detected (>35s without PONG). Triggering reconnect.');
+          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
+          try {
+            await _transport.disconnect();
+          } catch (_) {}
+          reconnect();
+          return;
+        }
+
         try {
           await _transport.send(const PingMessage().toJson());
+          _missedPings++;
         } catch (e) {
+          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
           reconnect();
         }
       }
@@ -708,22 +793,56 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
 
 /// Mock Remote Connection Service for Development & Testing State Verification
 class MockRemoteConnectionService implements RemoteConnectionService {
-  final RemoteConnectionState _initialState;
+  final StreamController<RemoteConnectionInfo> _statusController =
+      StreamController<RemoteConnectionInfo>.broadcast();
+  RemoteConnectionInfo _currentInfo;
 
-  const MockRemoteConnectionService({
+  int reconnectAttempts = 0;
+  int connectionGeneration = 0;
+  bool isPingTimerActive = false;
+  bool simulateSessionExpired = false;
+  bool simulateHeartbeatTimeout = false;
+  Duration simulatedBackoffDelay = Duration.zero;
+
+  MockRemoteConnectionService({
     RemoteConnectionState initialState = RemoteConnectionState.disconnected,
-  }) : _initialState = initialState;
+  }) : _currentInfo = RemoteConnectionInfo(status: initialState);
 
   @override
-  Stream<RemoteConnectionInfo> get statusStream => const Stream.empty();
+  Stream<RemoteConnectionInfo> get statusStream => _statusController.stream;
+
+  void emitStatus(RemoteConnectionInfo info) {
+    _currentInfo = info;
+    if (!_statusController.isClosed) {
+      _statusController.add(info);
+    }
+  }
 
   @override
   Future<RemoteConnectionInfo> connect({
     required String deviceId,
     required String sessionToken,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    return RemoteConnectionInfo(
+    connectionGeneration++;
+    if (simulateSessionExpired) {
+      const expiredInfo = RemoteConnectionInfo(
+        status: RemoteConnectionState.failed,
+        errorMessage: 'Platform session expired (24h). Please sign in again.',
+      );
+      emitStatus(expiredInfo);
+      return expiredInfo;
+    }
+
+    emitStatus(const RemoteConnectionInfo(status: RemoteConnectionState.connecting));
+    if (simulatedBackoffDelay > Duration.zero) {
+      await Future.delayed(simulatedBackoffDelay);
+    } else {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+
+    reconnectAttempts = 0;
+    isPingTimerActive = true;
+    final info = RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
       gatewayHostname: 'gateway.zdexcloud.com',
       remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
@@ -732,6 +851,8 @@ class MockRemoteConnectionService implements RemoteConnectionService {
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
+    emitStatus(info);
+    return info;
   }
 
   @override
@@ -739,15 +860,38 @@ class MockRemoteConnectionService implements RemoteConnectionService {
     required String connectionId,
     required String sessionToken,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 50));
-    return const RemoteConnectionInfo(
-        status: RemoteConnectionState.disconnected);
+    connectionGeneration++;
+    isPingTimerActive = false;
+    reconnectAttempts = 0;
+    await Future.delayed(const Duration(milliseconds: 10));
+    const info = RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
+    emitStatus(info);
+    return info;
   }
 
   @override
   Future<RemoteConnectionInfo> reconnect() async {
-    await Future.delayed(const Duration(milliseconds: 50));
-    return RemoteConnectionInfo(
+    reconnectAttempts++;
+    connectionGeneration++;
+    emitStatus(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
+
+    if (simulateSessionExpired) {
+      const expiredInfo = RemoteConnectionInfo(
+        status: RemoteConnectionState.failed,
+        errorMessage: 'Platform session expired (24h). Please sign in again.',
+      );
+      emitStatus(expiredInfo);
+      return expiredInfo;
+    }
+
+    if (simulatedBackoffDelay > Duration.zero) {
+      await Future.delayed(simulatedBackoffDelay);
+    } else {
+      await Future.delayed(const Duration(milliseconds: 20));
+    }
+
+    isPingTimerActive = true;
+    final info = RemoteConnectionInfo(
       connectionId: 'mock-conn-999',
       gatewayHostname: 'gateway.zdexcloud.com',
       remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
@@ -756,23 +900,17 @@ class MockRemoteConnectionService implements RemoteConnectionService {
       status: RemoteConnectionState.connected,
       lastHeartbeatAt: DateTime.now(),
     );
+    emitStatus(info);
+    return info;
   }
 
   @override
   Future<RemoteConnectionState> getStatus() async {
-    return _initialState;
+    return _currentInfo.status;
   }
 
   @override
   Future<RemoteConnectionInfo> getConnectionInfo() async {
-    return RemoteConnectionInfo(
-      connectionId: 'mock-conn-info',
-      gatewayHostname: 'gateway.zdexcloud.com',
-      remoteEndpoint: 'https://srv_mock999.gateway.zdexcloud.com',
-      hostname: 'srv_mock999.gateway.zdexcloud.com',
-      publicUrl: 'https://srv_mock999.gateway.zdexcloud.com',
-      status: _initialState,
-      lastHeartbeatAt: DateTime.now(),
-    );
+    return _currentInfo;
   }
 }

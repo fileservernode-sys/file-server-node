@@ -180,5 +180,115 @@ void main() {
       expect(data['filename'], 'sample_upload.png');
       expect(data['sizeBytes'], 1048576);
     });
+
+    test('Folder name validation accepts valid names and rejects invalid/traversal names', () {
+      bool isValidFolderName(String name) {
+        final trimmed = name.trim();
+        if (trimmed.isEmpty) return false;
+        if (trimmed.contains('/') ||
+            trimmed.contains('\\') ||
+            trimmed.contains('\u0000') ||
+            trimmed.contains('..') ||
+            trimmed == '.' ||
+            trimmed == '..') {
+          return false;
+        }
+        return true;
+      }
+
+      expect(isValidFolderName('Documents'), isTrue);
+      expect(isValidFolderName('Work Projects 2026'), isTrue);
+      expect(isValidFolderName('Invoices_Q3-Final'), isTrue);
+      expect(isValidFolderName(''), isFalse);
+      expect(isValidFolderName('   '), isFalse);
+      expect(isValidFolderName('..'), isFalse);
+      expect(isValidFolderName('../Escape'), isFalse);
+      expect(isValidFolderName('foo/bar'), isFalse);
+      expect(isValidFolderName(r'foo\bar'), isFalse);
+      expect(isValidFolderName('test\u0000name'), isFalse);
+    });
+
+    test('CREATE_FOLDER request & response payload conform to contract', () {
+      final createFolderRequest = {
+        'type': 'FILE_REQUEST',
+        'requestId': 'req-create-123',
+        'operation': 'CREATE_FOLDER',
+        'path': '/Documents',
+        'name': 'Invoices'
+      };
+
+      expect(createFolderRequest['operation'], 'CREATE_FOLDER');
+      expect(createFolderRequest['path'], '/Documents');
+      expect(createFolderRequest['name'], 'Invoices');
+
+      final createFolderSuccessResponse = {
+        'type': 'FILE_RESPONSE',
+        'requestId': 'req-create-123',
+        'success': true,
+        'data': {
+          'name': 'Invoices',
+          'path': '/Documents/Invoices'
+        }
+      };
+
+      expect(createFolderSuccessResponse['success'], isTrue);
+      expect((createFolderSuccessResponse['data'] as Map)['path'], '/Documents/Invoices');
+
+      final duplicateErrorResponse = {
+        'type': 'FILE_RESPONSE',
+        'requestId': 'req-create-123',
+        'success': false,
+        'error': {
+          'code': 'FOLDER_EXISTS',
+          'message': 'Folder already exists.'
+        }
+      };
+
+      expect(duplicateErrorResponse['success'], isFalse);
+      expect((duplicateErrorResponse['error'] as Map)['code'], 'FOLDER_EXISTS');
+    });
+
+    test('Multi-file sequential upload queue processes items one by one and preserves order', () async {
+      final executionOrder = <String>[];
+      final activeConcurrentCount = <int>[];
+      int currentlyActive = 0;
+
+      Future<Map<String, dynamic>> mockUpload(String filename, {bool shouldFail = false}) async {
+        currentlyActive++;
+        activeConcurrentCount.add(currentlyActive);
+        executionOrder.add('START_$filename');
+        await Future.delayed(const Duration(milliseconds: 10));
+        executionOrder.add('END_$filename');
+        currentlyActive--;
+        return shouldFail
+            ? {'success': false, 'error': {'code': 'UPLOAD_ERROR', 'message': 'Simulated failure'}}
+            : {'success': true, 'data': {'filename': filename}};
+      }
+
+      final testFiles = ['photo1.jpg', 'photo2.jpg', 'doc3.pdf', 'video4.mp4'];
+      final results = <String, bool>{};
+
+      for (final file in testFiles) {
+        final res = await mockUpload(file, shouldFail: file == 'doc3.pdf');
+        results[file] = res['success'] == true;
+      }
+
+      // Assert that concurrency never exceeded 1 (strictly sequential)
+      expect(activeConcurrentCount.every((c) => c <= 1), isTrue);
+
+      // Assert exact sequential ordering
+      expect(executionOrder, [
+        'START_photo1.jpg', 'END_photo1.jpg',
+        'START_photo2.jpg', 'END_photo2.jpg',
+        'START_doc3.pdf', 'END_doc3.pdf',
+        'START_video4.mp4', 'END_video4.mp4',
+      ]);
+
+      // Assert failure isolation: doc3.pdf failed, but photo1, photo2, and video4 succeeded
+      expect(results['photo1.jpg'], isTrue);
+      expect(results['photo2.jpg'], isTrue);
+      expect(results['doc3.pdf'], isFalse);
+      expect(results['video4.mp4'], isTrue);
+    });
   });
 }

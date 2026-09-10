@@ -6,7 +6,7 @@ void main() {
     late RemoteConnectionService remoteService;
 
     setUp(() {
-      remoteService = const MockRemoteConnectionService(
+      remoteService = MockRemoteConnectionService(
         initialState: RemoteConnectionState.disconnected,
       );
     });

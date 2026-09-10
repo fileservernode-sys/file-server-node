@@ -400,8 +400,8 @@
   </footer>
 
   <script src="../js/motion.js"></script>
-  <script src="../js/main.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/main.js"></script>
   <script>
     function togglePasswordVisibility(inputId, btnEl) {
       const input = document.getElementById(inputId);
@@ -421,9 +421,21 @@
       const errorAlert = document.getElementById('login-error-alert');
       const errorMessage = document.getElementById('login-error-message');
 
-      // Check for expired session notice in URL params
+      // Check for active valid session -> Seamlessly restore to dashboard
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('expired') === 'true') {
+      const isExplicitExpired = urlParams.get('expired') === 'true';
+      const isExplicitLogout = urlParams.get('logout') === 'true';
+
+      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined' && AuthService.isSessionValid()) {
+        const redirectTarget = urlParams.get('redirect') || 'dashboard.html';
+        if (!redirectTarget.startsWith('http') && !redirectTarget.startsWith('//')) {
+          window.location.href = redirectTarget;
+          return;
+        }
+      }
+
+      // Check for expired session notice in URL params
+      if (isExplicitExpired) {
         errorMessage.textContent = 'Your session has expired. Please sign in again to continue.';
         errorAlert.classList.remove('hidden');
       }

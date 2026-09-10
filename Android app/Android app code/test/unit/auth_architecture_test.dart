@@ -206,4 +206,54 @@ void main() {
       expect(AppRouter.otpRoute, '/auth/otp');
     });
   });
+
+  group('NF-1 Persistent FileSecureStorageService Tests', () {
+    test('FileSecureStorageService persists session across distinct service instances', () async {
+      final storage1 = FileSecureStorageService();
+      final now = DateTime.now();
+      final session = AuthSession(
+        accessToken: 'persist-token-abc',
+        refreshToken: 'persist-token-abc',
+        user: PlatformUser(
+          id: 'usr-persisted',
+          email: 'persist@zdexcloud.com',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: now,
+        ),
+        issuedAt: now,
+        expiresAt: now.add(const Duration(hours: 24)),
+      );
+
+      await storage1.saveSession(session);
+
+      // Create distinct instance to simulate app restart
+      final storage2 = FileSecureStorageService();
+      final restored = await storage2.getSession();
+
+      expect(restored, isNotNull);
+      expect(restored!.accessToken, 'persist-token-abc');
+      expect(restored.user.email, 'persist@zdexcloud.com');
+      expect(restored.isExpired, isFalse);
+
+      // Clear session
+      await storage2.clearSession();
+      final storage3 = FileSecureStorageService();
+      final cleared = await storage3.getSession();
+      expect(cleared, isNull);
+    });
+
+    test('FileSecureStorageService persists key-value data across instances', () async {
+      final storage1 = FileSecureStorageService();
+      await storage1.write(key: 'device_pref_key', value: 'dark_mode');
+
+      final storage2 = FileSecureStorageService();
+      final val = await storage2.read(key: 'device_pref_key');
+      expect(val, 'dark_mode');
+
+      await storage2.delete(key: 'device_pref_key');
+      final storage3 = FileSecureStorageService();
+      expect(await storage3.read(key: 'device_pref_key'), isNull);
+    });
+  });
 }

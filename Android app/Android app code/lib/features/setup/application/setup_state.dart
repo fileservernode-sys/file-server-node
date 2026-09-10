@@ -120,9 +120,38 @@ final setupStateProvider =
 /// Setup State Notifier — Executes End-to-End Real Subdomain & Server Lifecycle
 class SetupStateNotifier extends StateNotifier<SetupState> {
   final Ref _ref;
+  StreamSubscription<RemoteConnectionInfo>? _remoteStatusSubscription;
 
   SetupStateNotifier(this._ref) : super(const SetupState()) {
     initDeviceModel();
+    _subscribeToRemoteStatus();
+  }
+
+  void _subscribeToRemoteStatus() {
+    _remoteStatusSubscription?.cancel();
+    try {
+      final remoteService = _ref.read(remoteConnectionServiceProvider);
+      _remoteStatusSubscription = remoteService.statusStream.listen((connInfo) {
+        final isConn = connInfo.status == RemoteConnectionState.connected;
+        state = state.copyWith(
+          isGatewayConnected: isConn,
+          connectionId: connInfo.connectionId ?? state.connectionId,
+          endpointStatus: isConn
+              ? 'ACTIVE'
+              : (connInfo.status == RemoteConnectionState.reconnecting
+                  ? 'RECONNECTING'
+                  : (connInfo.status == RemoteConnectionState.connecting
+                      ? 'CONNECTING'
+                      : (state.assignedSubdomain != null ? 'DISCONNECTED' : 'NOT_CREATED'))),
+        );
+      });
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _remoteStatusSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> initDeviceModel() async {

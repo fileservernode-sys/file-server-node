@@ -850,8 +850,9 @@ const FileManagerHelper = {
       filePicker.dataset.bound = 'true';
       filePicker.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
-          FileManagerHelper.handleUpload(e.target.files);
+          const files = Array.from(e.target.files);
           filePicker.value = '';
+          FileManagerHelper.handleUpload(files);
         }
       });
     }
@@ -878,7 +879,8 @@ const FileManagerHelper = {
         e.preventDefault();
         dropZone.classList.remove('drag-over');
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          FileManagerHelper.handleUpload(e.dataTransfer.files);
+          const files = Array.from(e.dataTransfer.files);
+          FileManagerHelper.handleUpload(files);
         }
       });
     }
@@ -889,7 +891,8 @@ const FileManagerHelper = {
         const modal = document.getElementById('modal-upload');
         if (modal && modal.style.display !== 'none') {
           e.preventDefault();
-          FileManagerHelper.handleUpload(e.dataTransfer.files);
+          const files = Array.from(e.dataTransfer.files);
+          FileManagerHelper.handleUpload(files);
         }
       }
     });
@@ -897,103 +900,190 @@ const FileManagerHelper = {
     const newFolderForm = document.getElementById('form-new-folder');
     if (newFolderForm && !newFolderForm.dataset.bound) {
       newFolderForm.dataset.bound = 'true';
-      newFolderForm.addEventListener('submit', (e) => {
+      newFolderForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const input = document.getElementById('input-folder-name');
+        const submitBtn = newFolderForm.querySelector('button[type="submit"]');
         const folderName = input ? input.value.trim() : '';
-        if (folderName) {
-          FileManagerHelper.handleCreateFolder(folderName);
-          if (input) input.value = '';
-          UIManager.hideModal('modal-new-folder');
+
+        if (!folderName) {
+          UIManager.showToast('Please enter a valid folder name', 'warning');
+          return;
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Creating...';
+        }
+
+        try {
+          const success = await FileManagerHelper.handleCreateFolder(folderName);
+          if (success) {
+            if (input) input.value = '';
+            UIManager.hideModal('modal-new-folder');
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Folder';
+          }
         }
       });
     }
   },
 
-  async handleUpload(fileList) {
-    if (!fileList || fileList.length === 0) return;
-    const targetPath = MyFilesController.currentPath || '/';
+  async handleUpload(fileInputOrList) {
+    if (!fileInputOrList) return;
+    const files = Array.isArray(fileInputOrList)
+      ? fileInputOrList
+      : Array.from(fileInputOrList || []);
+    if (files.length === 0) return;
 
+    const targetPath = MyFilesController.currentPath || '/';
     UIManager.showModal('modal-upload');
+
+    // Create queue items array preserving selection order
+    const queueItems = files.map((file, idx) => ({
+      id: idx,
+      file,
+      name: file.name,
+      size: file.size,
+      status: 'queued',
+      progress: 0,
+      error: null
+    }));
+
     const queueContainer = document.getElementById('modal-upload-queue');
     if (queueContainer) {
-      let queueHtml = '';
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
+      let queueHtml = `
+        <div id="upload-queue-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.85rem; font-weight: 600; color: var(--color-text-secondary);">
+          <span id="upload-queue-summary">Uploading 1 of ${queueItems.length}...</span>
+        </div>
+        <div class="upload-queue-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto;">
+      `;
+      queueItems.forEach((item) => {
         queueHtml += `
-          <div class="upload-queue-card" id="upload-item-${i}">
+          <div class="upload-queue-card" id="upload-item-${item.id}">
             <div class="upload-file-icon">${AppIcons.document}</div>
             <div class="upload-file-meta">
-              <div class="upload-file-name">${file.name}</div>
-              <div class="upload-file-size">${StorageUtils.formatBytes(file.size)} • <span id="upload-status-${i}">Queued</span></div>
+              <div class="upload-file-name" title="${item.name}">${item.name}</div>
+              <div class="upload-file-size">${StorageUtils.formatBytes(item.size)} • <span id="upload-status-${item.id}">Queued</span></div>
               <div class="upload-progress-bar-wrap">
-                <div class="upload-progress-bar-fill" id="upload-progress-${i}" style="width: 0%;"></div>
+                <div class="upload-progress-bar-fill" id="upload-progress-${item.id}" style="width: 0%;"></div>
               </div>
             </div>
           </div>
         `;
-      }
+      });
+      queueHtml += `</div>`;
       queueContainer.innerHTML = queueHtml;
     }
 
-    let successCount = 0;
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
-      const statusEl = document.getElementById(`upload-status-${i}`);
-      const progressEl = document.getElementById(`upload-progress-${i}`);
+    let completedCount = 0;
+    let failedCount = 0;
 
-      if (statusEl) statusEl.textContent = 'Uploading... 0%';
+    // Execute uploads sequentially one by one
+    for (let i = 0; i < queueItems.length; i++) {
+      const item = queueItems[i];
+      const statusEl = document.getElementById(`upload-status-${item.id}`);
+      const progressEl = document.getElementById(`upload-progress-${item.id}`);
+      const summaryEl = document.getElementById('upload-queue-summary');
+
+      if (summaryEl) {
+        summaryEl.textContent = `Uploading ${i + 1} of ${queueItems.length}...`;
+      }
+      if (statusEl) {
+        statusEl.textContent = 'Uploading... 0%';
+        statusEl.style.color = 'var(--color-brand-primary, #0066cc)';
+      }
       if (progressEl) {
         progressEl.style.width = '0%';
         progressEl.style.backgroundColor = 'var(--color-brand-primary, #0066cc)';
       }
 
-      const res = await ApiService.uploadFile(targetPath, file, (percent) => {
-        if (progressEl) progressEl.style.width = `${percent}%`;
-        if (statusEl) statusEl.textContent = `Uploading... ${percent}%`;
-      });
+      let res = null;
+      try {
+        res = await ApiService.uploadFile(targetPath, item.file, (percent) => {
+          if (progressEl) progressEl.style.width = `${percent}%`;
+          if (statusEl) statusEl.textContent = `Uploading... ${percent}%`;
+        });
+      } catch (err) {
+        res = { success: false, error: { message: err?.message || 'Network error' } };
+      }
 
       if (res && res.success) {
-        successCount++;
+        completedCount++;
+        item.status = 'completed';
         if (statusEl) {
           statusEl.textContent = 'Completed';
-          statusEl.style.color = 'var(--color-status-online)';
+          statusEl.style.color = 'var(--color-status-online, #10b981)';
         }
         if (progressEl) {
           progressEl.style.width = '100%';
-          progressEl.style.backgroundColor = 'var(--color-status-online)';
+          progressEl.style.backgroundColor = 'var(--color-status-online, #10b981)';
         }
       } else {
+        failedCount++;
+        item.status = 'failed';
+        const errMsg = res?.error?.message || 'Failed';
         if (statusEl) {
-          statusEl.textContent = res?.error?.message || 'Failed';
-          statusEl.style.color = 'var(--color-status-error)';
+          statusEl.textContent = errMsg;
+          statusEl.style.color = 'var(--color-status-error, #ef4444)';
         }
         if (progressEl) {
           progressEl.style.width = '100%';
-          progressEl.style.backgroundColor = 'var(--color-status-error)';
+          progressEl.style.backgroundColor = 'var(--color-status-error, #ef4444)';
+        }
+
+        // Handle fatal authentication / session abort
+        if (res?.error?.code === 'UNAUTHORIZED' || res?.error?.code === 'SESSION_EXPIRED') {
+          if (summaryEl) {
+            summaryEl.textContent = `Upload aborted: Authentication expired`;
+          }
+          UIManager.showToast('Session expired during upload. Please sign in again.', 'error');
+          break;
         }
       }
     }
 
-    if (successCount > 0) {
-      UIManager.showToast(`${successCount} file(s) uploaded successfully`, 'online');
-      MyFilesController.load();
-      HomeController.load();
+    const summaryEl = document.getElementById('upload-queue-summary');
+    if (summaryEl) {
+      summaryEl.textContent = `Completed: ${completedCount} of ${queueItems.length} (${failedCount} failed)`;
     }
-    setTimeout(() => {
-      UIManager.hideModal('modal-upload');
-    }, 1500);
+
+    // Refresh directory view after all uploads finish
+    if (completedCount > 0) {
+      if (failedCount === 0) {
+        UIManager.showToast(`${completedCount} file(s) uploaded successfully`, 'online');
+      } else {
+        UIManager.showToast(`${completedCount} of ${queueItems.length} uploaded (${failedCount} failed)`, 'warning');
+      }
+      await MyFilesController.load();
+      await HomeController.load();
+    } else if (failedCount > 0) {
+      UIManager.showToast(`Upload failed for ${failedCount} file(s)`, 'error');
+    }
+
+    // Auto-hide modal only if all queued files completed successfully
+    if (failedCount === 0 && completedCount > 0) {
+      setTimeout(() => {
+        UIManager.hideModal('modal-upload');
+      }, 1500);
+    }
   },
 
   async handleCreateFolder(name) {
     const parentPath = MyFilesController.currentPath || '/';
     UIManager.showToast(`Creating folder "${name}"...`, 'online');
     const res = await ApiService.createFolder(parentPath, name);
-    if (res.success) {
-      UIManager.showToast('Folder created', 'online');
-      MyFilesController.load();
+    if (res && res.success) {
+      UIManager.showToast('Folder created successfully', 'online');
+      await MyFilesController.load();
+      return true;
     } else {
-      UIManager.showToast(res.error?.message || 'Failed to create folder', 'error');
+      const errMsg = res?.error?.message || 'Failed to create folder on storage host';
+      UIManager.showToast(errMsg, 'error');
+      return false;
     }
   }
 };

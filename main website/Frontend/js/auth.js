@@ -46,12 +46,18 @@ function isSessionValid() {
   const token = localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
   if (!token) return false;
 
-  const issuedAtRaw = localStorage.getItem(SESSION_ISSUED_KEY);
-  const expiresAtRaw = localStorage.getItem(SESSION_EXPIRES_KEY) || localStorage.getItem(SESSION_LEGACY_EXPIRES_KEY);
+  let issuedAtRaw = localStorage.getItem(SESSION_ISSUED_KEY);
+  let expiresAtRaw = localStorage.getItem(SESSION_EXPIRES_KEY) || localStorage.getItem(SESSION_LEGACY_EXPIRES_KEY);
 
-  // If token exists without timestamps (legacy session), treat as expired to enforce strict 24h policy
+  // If token exists without timestamps, safely initialize strict 24h boundary once from now
   if (!issuedAtRaw || !expiresAtRaw) {
-    return false;
+    const now = Date.now();
+    issuedAtRaw = now.toString();
+    expiresAtRaw = (now + SESSION_MAX_AGE_MS).toString();
+    localStorage.setItem(SESSION_ISSUED_KEY, issuedAtRaw);
+    localStorage.setItem(SESSION_EXPIRES_KEY, expiresAtRaw);
+    localStorage.setItem(SESSION_LEGACY_EXPIRES_KEY, expiresAtRaw);
+    return true;
   }
 
   const issuedAt = parseInt(issuedAtRaw, 10);
@@ -142,6 +148,9 @@ function clearSession() {
   localStorage.removeItem(SESSION_ISSUED_KEY);
   localStorage.removeItem(SESSION_EXPIRES_KEY);
   localStorage.removeItem(SESSION_LEGACY_EXPIRES_KEY);
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.clear();
+  }
 }
 
 // Helper: Handle Session Expiration with Clean Redirect and Safe Return URL

@@ -64,7 +64,7 @@ void main() {
 
     test('MockRemoteConnectionService simulates connection lifecycle cleanly',
         () async {
-      const service = MockRemoteConnectionService();
+      final service = MockRemoteConnectionService();
 
       final statusBefore = await service.getStatus();
       expect(statusBefore, RemoteConnectionState.disconnected);
