@@ -79,6 +79,61 @@ enum PushPlatform {
   WEB
 }
 
+enum BillingInterval {
+  FREE
+  MONTHLY
+  YEARLY
+}
+
+enum BillingStatus {
+  FREE
+  CREATED
+  ACTIVE
+  PAST_DUE
+  GRACE_PERIOD
+  CANCELLING
+  EXPIRED
+  REFUNDED
+}
+
+enum CurrencyCode {
+  INR
+  USD
+}
+
+enum PaymentProvider {
+  RAZORPAY
+}
+
+enum PaymentEnvironment {
+  TEST
+  LIVE
+}
+
+enum PaymentStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  REFUNDED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum EntitlementCode {
+  MAX_SERVERS
+  PRIORITY_RELAY
+}
+
+enum EntitlementValueType {
+  INTEGER
+  BOOLEAN
+}
+
 enum AuditEventType {
   ACCOUNT_CREATED
   EMAIL_VERIFIED
@@ -107,6 +162,171 @@ enum AuditEventType {
   PUSH_TOKEN_REVOKED
   NOTIFICATION_CREATED
   NOTIFICATION_DELIVERY_FAILED
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_ACTIVATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_PAST_DUE
+  SUBSCRIPTION_GRACE_PERIOD_STARTED
+  SUBSCRIPTION_GRACE_PERIOD_RECOVERED
+  SUBSCRIPTION_CANCELLATION_REQUESTED
+  SUBSCRIPTION_CANCELLATION_REVERSED
+  SUBSCRIPTION_CANCELLED
+  SUBSCRIPTION_EXPIRED
+  SUBSCRIPTION_REFUNDED
+  SUBSCRIPTION_UPGRADE_REQUESTED
+  SUBSCRIPTION_UPGRADED
+  SUBSCRIPTION_UPGRADE_RECONCILIATION_MATCHED
+  SUBSCRIPTION_UPGRADE_RECONCILIATION_MISMATCHED
+  SUBSCRIPTION_DOWNGRADE_REQUESTED
+  SUBSCRIPTION_DOWNGRADE_SCHEDULED
+  SUBSCRIPTION_DOWNGRADE_CANCEL_REQUESTED
+  SUBSCRIPTION_DOWNGRADE_CANCELLED
+  SUBSCRIPTION_DOWNGRADE_EFFECTIVE
+  SUBSCRIPTION_DOWNGRADE_MISMATCHED
+  REFUND_REQUESTED
+  REFUND_PROVIDER_REQUESTED
+  REFUND_PROCESSED
+  REFUND_FAILED
+  REFUND_REQUIRES_REVIEW
+  REFUND_POLICY_REJECTED
+  REFUND_DUPLICATE_REQUEST
+  REFUND_CANCELLED
+  BILLING_RECEIPT_CREATED
+  BILLING_RECEIPT_ISSUED
+  BILLING_RECEIPT_GENERATION_FAILED
+  BILLING_RECEIPT_ACCESSED
+  BILLING_RECEIPT_DOWNLOAD_REQUESTED
+  TAX_CALCULATED
+  TAX_CALCULATION_FAILED
+  TAX_CONFIGURATION_MISSING
+  PROCESSING_FEE_RECORDED
+  PROCESSING_FEE_PENDING
+  PROCESSING_FEE_RECONCILIATION_REQUIRED
+  BILLING_RECONCILIATION_STARTED
+  BILLING_RECONCILIATION_COMPLETED
+  BILLING_RECONCILIATION_RECORD_MATCHED
+  BILLING_RECONCILIATION_DISCREPANCY_DETECTED
+  BILLING_RECONCILIATION_DISCREPANCY_RESOLVED
+  BILLING_SETTLEMENT_RECORDED
+  BILLING_SETTLEMENT_RECONCILED
+  BILLING_STATE_UPDATED
+}
+
+enum TaxType {
+  GST
+  SALES_TAX
+  VAT
+  NONE
+}
+
+enum ProcessingFeeStatus {
+  PENDING
+  CAPTURED
+  RECONCILED
+  WAIVED
+}
+
+enum ProcessingFeeSource {
+  PROVIDER_WEBHOOK
+  SETTLEMENT_REPORT
+  ESTIMATED
+  MANUAL
+}
+
+enum BillingReceiptStatus {
+  DRAFT
+  ISSUED
+  VOIDED
+}
+
+enum BillingReceiptType {
+  SUBSCRIPTION_PURCHASE
+  SUBSCRIPTION_RENEWAL
+  SUBSCRIPTION_UPGRADE
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSING
+  PROCESSED
+  FAILED
+  REQUIRES_REVIEW
+}
+
+enum RefundReason {
+  DUPLICATE_PAYMENT
+  ERRONEOUS_PAYMENT
+  TECHNICAL_SERVICE_FAILURE
+  ANNUAL_WITHIN_REFUND_WINDOW
+  ADMIN_APPROVED_EXCEPTION
+  OTHER_APPROVED
+}
+
+enum PlanChangeStatus {
+  CREATED
+  PROCESSING
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  FAILED
+  REQUIRES_REVIEW
+}
+
+enum UpgradeReconciliationStatus {
+  PENDING
+  MATCHED
+  MISMATCHED
+  NOT_APPLICABLE
+  REQUIRES_REVIEW
+}
+
+enum ReconciliationStatus {
+  PENDING
+  MATCHED
+  MISMATCHED
+  REQUIRES_REVIEW
+  RESOLVED
+  IGNORED
+}
+
+enum ReconciliationDiscrepancyType {
+  PAYMENT_NOT_FOUND
+  PROVIDER_PAYMENT_NOT_FOUND
+  INTERNAL_PAYMENT_NOT_FOUND
+  PAYMENT_AMOUNT_MISMATCH
+  PAYMENT_CURRENCY_MISMATCH
+  PAYMENT_STATE_MISMATCH
+  REFUND_NOT_FOUND
+  PROVIDER_REFUND_NOT_FOUND
+  REFUND_AMOUNT_MISMATCH
+  REFUND_CURRENCY_MISMATCH
+  REFUND_STATE_MISMATCH
+  PROCESSING_FEE_MISMATCH
+  PROCESSING_FEE_TAX_MISMATCH
+  SETTLEMENT_NOT_FOUND
+  SETTLEMENT_AMOUNT_MISMATCH
+  SETTLEMENT_CURRENCY_MISMATCH
+  PROVIDER_ADJUSTMENT_UNMATCHED
+  PROVIDER_TRANSFER_UNMATCHED
+  DUPLICATE_PROVIDER_RECORD
+  DUPLICATE_INTERNAL_RECORD
+  UNKNOWN_PROVIDER_RECORD
+}
+
+enum ReconciliationRunStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  PARTIALLY_COMPLETED
+  FAILED
+}
+
+enum ReconciliationEntityType {
+  PAYMENT
+  REFUND
+  TRANSFER
+  ADJUSTMENT
+  SETTLEMENT
 }
 
 // -----------------------------------------------------------------------------
@@ -131,6 +351,14 @@ model User {
   notifications           NotificationRecord[]
   notificationPreferences UserNotificationPreferences?
   pushTokens              DevicePushToken[]
+  billingState            AccountBillingState?
+  subscriptions           Subscription[]
+  payments                BillingPayment[]
+  refunds                 BillingRefund[]
+  receipts                BillingReceipt[]
+  taxes                   BillingPaymentTax[]
+  planChanges             SubscriptionPlanChange[]
+  upgradeReconciliations  SubscriptionUpgradeReconciliation[]
 
   @@index([email])
 }
@@ -391,3 +619,650 @@ model DevicePushToken {
   @@index([isActive])
   @@index([lastSeenAt])
 }
+
+// -----------------------------------------------------------------------------
+// BILLING & PLAN CATALOG MODELS (ZC-BILLING-1.1 & ZC-BILLING-1.2)
+// -----------------------------------------------------------------------------
+
+/// Authoritative Commercial Plan Offering / SKU Definition
+model Plan {
+  id            String          @id @default(cuid())
+  code          String          @unique // e.g. FREE, PRO_MONTHLY, PRO_YEARLY
+  name          String                  // Display name e.g. "Free", "Pro Monthly", "Pro Yearly"
+  description   String?         @db.Text
+  interval      BillingInterval @default(FREE)
+  intervalCount Int             @default(1)
+  serverLimit   Int             @default(1)
+  priorityRelay Boolean         @default(false)
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  prices               PlanPrice[]
+  entitlements         PlanEntitlement[]
+  subscriptions        Subscription[]
+  providerPlanMappings BillingProviderPlanMapping[]
+  planChangesFrom      SubscriptionPlanChange[]     @relation("PlanChangeFromPlan")
+  planChangesTo        SubscriptionPlanChange[]     @relation("PlanChangeToPlan")
+
+  @@index([code])
+  @@index([isActive])
+}
+
+/// Immutable, Versioned Commercial Price Point per Currency & Region
+model PlanPrice {
+  id               String       @id @default(cuid())
+  planId           String
+  currency         CurrencyCode
+  amountMinorUnits Int          // Stored in minor currency units (paise for INR, cents for USD)
+  effectiveFrom    DateTime     @default(now())
+  effectiveTo      DateTime?
+  isActive         Boolean      @default(true)
+  version          Int          @default(1)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  plan                 Plan                         @relation(fields: [planId], references: [id], onDelete: Restrict)
+  subscriptions        Subscription[]
+  providerPlanMappings BillingProviderPlanMapping[]
+  planChangesFromPrice SubscriptionPlanChange[]     @relation("PlanChangeFromPrice")
+  planChangesToPrice   SubscriptionPlanChange[]     @relation("PlanChangeToPrice")
+
+  @@unique([planId, currency, version])
+  @@index([planId, currency, isActive])
+  @@index([currency, isActive])
+}
+
+/// Authoritative Technical Capability / Feature Definition
+model EntitlementDefinition {
+  id          String               @id @default(cuid())
+  code        EntitlementCode      @unique
+  name        String
+  description String?              @db.Text
+  valueType   EntitlementValueType @default(INTEGER)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  planEntitlements PlanEntitlement[]
+
+  @@index([code])
+}
+
+/// Technical Capability Rule / Allocation per Plan
+model PlanEntitlement {
+  id                      String                @id @default(cuid())
+  planId                  String
+  entitlementDefinitionId String
+  intValue                Int?
+  boolValue               Boolean?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  plan                  Plan                  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  entitlementDefinition EntitlementDefinition @relation(fields: [entitlementDefinitionId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, entitlementDefinitionId])
+  @@index([planId])
+  @@index([entitlementDefinitionId])
+}
+
+// -----------------------------------------------------------------------------
+// ACCOUNT BILLING STATE & SUBSCRIPTION MODELS (ZC-BILLING-1.3)
+// -----------------------------------------------------------------------------
+
+/// Persistent Account-Level Billing State
+model AccountBillingState {
+  id                   String        @id @default(cuid())
+  userId               String        @unique
+  status               BillingStatus @default(FREE)
+  activeSubscriptionId String?       @unique
+  billingCountry       String?
+  billingPostalCode    String?
+  currency             CurrencyCode?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeSubscription Subscription? @relation("ActiveAccountSubscription", fields: [activeSubscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+}
+
+/// Persistent Internal Subscription Contract
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  planId               String
+  planPriceId          String
+  provider             PaymentProvider    @default(RAZORPAY)
+  providerEnvironment  PaymentEnvironment @default(TEST)
+  providerSubscriptionId String?          @unique
+  providerPlanId       String?
+  status               BillingStatus      @default(ACTIVE)
+  billingInterval      BillingInterval    @default(MONTHLY)
+  currency             CurrencyCode       @default(INR)
+  amountMinorUnits     Int
+  priceVersion         Int                @default(1)
+  currentPeriodStart   DateTime           @default(now())
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  cancelledAt          DateTime?
+  gracePeriodStartedAt DateTime?
+  gracePeriodEndsAt    DateTime?
+  dunningMilestones    Json?
+  dunningLastEvaluatedAt DateTime?
+  expiredAt            DateTime?
+  refundedAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 Plan                 @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planPrice            PlanPrice            @relation(fields: [planPriceId], references: [id], onDelete: Restrict)
+  activeForAccount     AccountBillingState? @relation("ActiveAccountSubscription")
+  payments             BillingPayment[]
+  refunds              BillingRefund[]
+  receipts             BillingReceipt[]
+  planChanges          SubscriptionPlanChange[]
+  upgradeReconciliations SubscriptionUpgradeReconciliation[]
+
+  @@index([userId])
+  @@index([planId])
+  @@index([planPriceId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+  @@index([providerSubscriptionId])
+}
+
+// -----------------------------------------------------------------------------
+// EXTERNAL PAYMENT PROVIDER PLAN MAPPINGS (ZC-BILLING-3.3)
+// -----------------------------------------------------------------------------
+
+/// Persistent External Payment Provider Plan Entity Mapping
+model BillingProviderPlanMapping {
+  id               String             @id @default(cuid())
+  provider         PaymentProvider    @default(RAZORPAY)
+  environment      PaymentEnvironment @default(TEST)
+  planId           String
+  planPriceId      String
+  providerPlanId   String             // External provider entity ID e.g. plan_xxx
+  currency         CurrencyCode
+  amountMinorUnits Int
+  period           String             // monthly, yearly
+  interval         Int                @default(1)
+  priceVersion     Int                @default(1)
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  plan             Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planPrice        PlanPrice          @relation(fields: [planPriceId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, environment, planPriceId], map: "provider_env_price_uniq")
+  @@unique([provider, environment, providerPlanId], map: "provider_env_provider_plan_uniq")
+  @@index([planId], map: "provider_plan_map_plan_idx")
+  @@index([planPriceId], map: "provider_plan_map_price_idx")
+  @@index([provider, environment, isActive], map: "provider_env_active_idx")
+}
+
+// -----------------------------------------------------------------------------
+// BILLING WEBHOOK IDEMPOTENCY & EVENT LOG (ZC-BILLING-5.1)
+// -----------------------------------------------------------------------------
+
+/// Durable Payment Provider Webhook Event Log for Idempotency and Audit
+model BillingWebhookEvent {
+  id              String             @id @default(cuid())
+  provider        PaymentProvider    @default(RAZORPAY)
+  environment     PaymentEnvironment @default(TEST)
+  providerEventId String             // Extracted from x-razorpay-event-id or payload
+  eventType       String             // e.g. subscription.activated, subscription.authenticated
+  status          WebhookEventStatus @default(RECEIVED)
+  receivedAt      DateTime           @default(now())
+  processedAt     DateTime?
+  failureReason   String?            @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([provider, environment, providerEventId], map: "provider_env_event_uniq")
+  @@index([provider, environment, status], map: "provider_env_status_idx")
+  @@index([eventType], map: "provider_event_type_idx")
+}
+
+// -----------------------------------------------------------------------------
+// FINANCIAL PAYMENT / RENEWAL TRANSACTION RECORDS (ZC-BILLING-5.2)
+// -----------------------------------------------------------------------------
+
+/// Immutable Financial Payment / Renewal Transaction Record
+model BillingPayment {
+  id                     String             @id @default(cuid())
+  provider               PaymentProvider    @default(RAZORPAY)
+  environment            PaymentEnvironment @default(TEST)
+  providerPaymentId      String?            // External provider transaction/payment ID e.g. pay_xxx
+  providerSubscriptionId String?            // External provider subscription ID e.g. sub_xxx
+  providerEventId        String?            // Webhook provider event ID e.g. evt_xxx
+  userId                 String
+  subscriptionId         String
+  planChangeId           String?            // Optional link to SubscriptionPlanChange if upgrade charge
+  amountMinorUnits       Int                // Amount in minor currency units (paise/cents)
+  currency               CurrencyCode
+  status                 PaymentStatus      @default(SUCCESS)
+  chargedAt              DateTime           @default(now())
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription            @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  planChange   SubscriptionPlanChange? @relation(fields: [planChangeId], references: [id], onDelete: SetNull)
+  refunds       BillingRefund[]
+  receipt       BillingReceipt?
+  tax           BillingPaymentTax?
+  processingFee BillingPaymentProcessingFee?
+  reconciliationRecords BillingReconciliationRecord[]
+
+  @@unique([provider, environment, providerPaymentId], map: "provider_env_payment_uniq")
+  @@index([userId], map: "billing_payment_user_idx")
+  @@index([subscriptionId], map: "billing_payment_sub_idx")
+  @@index([planChangeId], map: "billing_payment_plan_change_idx")
+  @@index([providerSubscriptionId], map: "billing_payment_prov_sub_idx")
+  @@index([status], map: "billing_payment_status_idx")
+  @@index([chargedAt], map: "billing_payment_charged_idx")
+}
+
+// -----------------------------------------------------------------------------
+// SUBSCRIPTION PLAN CHANGE / UPGRADE AUDIT LOG (ZC-BILLING-5.6 & 6.1)
+// -----------------------------------------------------------------------------
+
+/// Immutable Historical Subscription Plan Change / Upgrade Record
+model SubscriptionPlanChange {
+  id                     String             @id @default(cuid())
+  userId                 String
+  subscriptionId         String
+  fromPlanId             String
+  fromPlanPriceId        String
+  toPlanId               String
+  toPlanPriceId          String
+  fromAmountMinorUnits   Int
+  toAmountMinorUnits     Int
+  currency               CurrencyCode
+  creditMinorUnits       Int
+  netAmountMinorUnits    Int
+  provider               PaymentProvider    @default(RAZORPAY)
+  providerEnvironment    PaymentEnvironment @default(TEST)
+  providerSubscriptionId String?
+  status                 PlanChangeStatus   @default(CREATED)
+  failureReason          String?            @db.Text
+  scheduledFor           DateTime?
+  cancelledAt            DateTime?
+  requestedAt            DateTime           @default(now())
+  completedAt            DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  user           User                                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription                        @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  fromPlan       Plan                                @relation("PlanChangeFromPlan", fields: [fromPlanId], references: [id], onDelete: Restrict)
+  toPlan         Plan                                @relation("PlanChangeToPlan", fields: [toPlanId], references: [id], onDelete: Restrict)
+  fromPlanPrice  PlanPrice                           @relation("PlanChangeFromPrice", fields: [fromPlanPriceId], references: [id], onDelete: Restrict)
+  toPlanPrice    PlanPrice                           @relation("PlanChangeToPrice", fields: [toPlanPriceId], references: [id], onDelete: Restrict)
+  reconciliation SubscriptionUpgradeReconciliation?
+  payments       BillingPayment[]
+  receipts       BillingReceipt[]
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+// -----------------------------------------------------------------------------
+// SUBSCRIPTION UPGRADE PROVIDER RECONCILIATION (ZC-BILLING-6.1)
+// -----------------------------------------------------------------------------
+
+/// Immutable / Auditable Provider Financial Reconciliation Record for Plan Upgrades
+model SubscriptionUpgradeReconciliation {
+  id                       String                      @id @default(cuid())
+  planChangeId             String                      @unique
+  subscriptionId           String
+  userId                   String
+  expectedAmountMinorUnits Int
+  actualAmountMinorUnits   Int?
+  expectedCreditMinorUnits Int
+  actualRefundMinorUnits   Int?
+  expectedCurrency         CurrencyCode
+  actualCurrency           CurrencyCode?
+  providerPaymentId        String?
+  providerInvoiceId        String?
+  providerEventId          String?
+  status                   UpgradeReconciliationStatus @default(PENDING)
+  mismatchReason           String?                     @db.Text
+  checkedAt                DateTime                    @default(now())
+  resolvedAt               DateTime?
+  createdAt                DateTime                    @default(now())
+  updatedAt                DateTime                    @updatedAt
+
+  planChange   SubscriptionPlanChange @relation(fields: [planChangeId], references: [id], onDelete: Cascade)
+  subscription Subscription           @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([planChangeId])
+  @@index([subscriptionId])
+  @@index([userId])
+  @@index([status])
+}
+
+// -----------------------------------------------------------------------------
+// BILLING REFUND RECORDS (ZC-BILLING-6.3)
+// -----------------------------------------------------------------------------
+
+/// Immutable Financial Refund Transaction Record
+model BillingRefund {
+  id                  String             @id @default(cuid())
+  userId              String
+  subscriptionId      String?
+  paymentId           String
+  provider            PaymentProvider    @default(RAZORPAY)
+  providerEnvironment PaymentEnvironment @default(TEST)
+  providerPaymentId   String?
+  providerRefundId    String?            @unique(map: "provider_refund_id_uniq")
+  amountMinorUnits    Int
+  currency            CurrencyCode
+  reason              RefundReason       @default(ADMIN_APPROVED_EXCEPTION)
+  reasonDetails       String?            @db.Text
+  status              RefundStatus       @default(REQUESTED)
+  idempotencyKey      String             @unique(map: "refund_idempotency_key_uniq")
+  correlationId       String?
+  requestedBy         String
+  requestedAt         DateTime           @default(now())
+  providerRequestedAt DateTime?
+  providerProcessedAt DateTime?
+  failureCode         String?
+  failureReason       String?            @db.Text
+  metadata            Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription?  @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  payment      BillingPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  reconciliationRecords BillingReconciliationRecord[]
+
+  @@index([userId], map: "billing_refund_user_idx")
+  @@index([subscriptionId], map: "billing_refund_sub_idx")
+  @@index([paymentId], map: "billing_refund_payment_idx")
+  @@index([status], map: "billing_refund_status_idx")
+  @@index([providerPaymentId], map: "billing_refund_prov_payment_idx")
+  @@index([requestedAt], map: "billing_refund_requested_idx")
+}
+
+// -----------------------------------------------------------------------------
+// CUSTOMER BILLING RECEIPT / INVOICE DOCUMENTS (ZC-BILLING-6.4)
+// -----------------------------------------------------------------------------
+
+/// Immutable Customer Billing Receipt / Document Record
+model BillingReceipt {
+  id                     String               @id @default(cuid())
+  receiptNumber          String               @unique(map: "billing_receipt_number_uniq")
+  userId                 String
+  subscriptionId         String?
+  paymentId              String               @unique(map: "billing_receipt_payment_uniq")
+  planChangeId           String?
+  type                   BillingReceiptType   @default(SUBSCRIPTION_PURCHASE)
+  status                 BillingReceiptStatus @default(ISSUED)
+
+  // Date snapshots
+  issuedAt               DateTime             @default(now())
+  chargedAt              DateTime             @default(now())
+  periodStart            DateTime?
+  periodEnd              DateTime?
+
+  // Plan & price snapshots
+  planCode               String
+  planName               String
+  billingInterval        BillingInterval
+  priceVersion           Int                  @default(1)
+
+  // Financial amounts in integer minor units (paise/cents)
+  currency               CurrencyCode
+  subtotalMinorUnits     Int
+  discountMinorUnits     Int                  @default(0)
+  taxMinorUnits          Int                  @default(0)
+  totalMinorUnits        Int
+  amountPaidMinorUnits   Int
+
+  // Customer snapshot at time of issuance
+  customerName           String?
+  customerEmail          String
+  billingCountry         String?
+  billingAddress         Json?
+
+  // Merchant snapshot
+  merchantName           String               @default("ZdexCloud")
+  merchantAddress        String?
+  merchantSupportEmail   String               @default("support@zdexcloud.com")
+  merchantTaxId          String?
+
+  // Provider snapshot
+  provider               PaymentProvider      @default(RAZORPAY)
+  providerEnvironment    PaymentEnvironment   @default(TEST)
+  providerPaymentId      String?
+  providerSubscriptionId String?
+  providerInvoiceId      String?
+
+  // Document metadata & versioning
+  documentTitle          String               @default("ZdexCloud Customer Billing Receipt")
+  documentVersion        Int                  @default(1)
+  metadata               Json?
+
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription?           @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  payment      BillingPayment          @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  planChange   SubscriptionPlanChange? @relation(fields: [planChangeId], references: [id], onDelete: SetNull)
+
+  @@index([userId], map: "billing_receipt_user_idx")
+  @@index([subscriptionId], map: "billing_receipt_sub_idx")
+  @@index([paymentId], map: "billing_receipt_payment_idx")
+  @@index([planChangeId], map: "billing_receipt_plan_change_idx")
+  @@index([receiptNumber], map: "billing_receipt_num_idx")
+  @@index([status], map: "billing_receipt_status_idx")
+  @@index([issuedAt], map: "billing_receipt_issued_idx")
+}
+
+// -----------------------------------------------------------------------------
+// BILLING PAYMENT TAX SNAPSHOTS (ZC-BILLING-6.5)
+// -----------------------------------------------------------------------------
+
+/// Immutable Persisted Tax Snapshot for a Billing Payment
+model BillingPaymentTax {
+  id                      String        @id @default(cuid())
+  paymentId               String        @unique(map: "billing_payment_tax_payment_uniq")
+  userId                  String
+  jurisdiction            String        // e.g. 'IN', 'US', 'GLOBAL'
+  taxType                 TaxType       @default(GST)
+  isInclusive             Boolean       @default(true)
+  taxRateBasisPoints      Int           // e.g. 1800 for 18.00%
+  taxableAmountMinorUnits Int           // Base amount before tax
+  taxAmountMinorUnits     Int           // Tax amount in minor units
+  grossAmountMinorUnits   Int           // Total customer amount (taxable + tax)
+  currency                CurrencyCode
+  taxVersion              Int           @default(1)
+  breakdown               Json?         // Structured breakdown (e.g. CGST, SGST, IGST)
+  metadata                Json?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  payment                 BillingPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  user                    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "billing_payment_tax_user_idx")
+  @@index([jurisdiction], map: "billing_payment_tax_jur_idx")
+  @@index([taxType], map: "billing_payment_tax_type_idx")
+}
+
+// -----------------------------------------------------------------------------
+// MERCHANT PAYMENT PROCESSING FEE RECORDS (ZC-BILLING-6.5)
+// -----------------------------------------------------------------------------
+
+/// Internal Merchant Payment Provider Processing Fee Record (Separate from Customer Charge)
+model BillingPaymentProcessingFee {
+  id                            String              @id @default(cuid())
+  paymentId                     String              @unique(map: "billing_payment_fee_payment_uniq")
+  provider                      PaymentProvider     @default(RAZORPAY)
+  providerEnvironment           PaymentEnvironment  @default(TEST)
+  providerPaymentId             String?
+  providerSettlementId          String?             // e.g. setl_xxx from Razorpay settlements
+  feeAmountMinorUnits           Int                 // Provider processing fee (excluding fee tax)
+  feeTaxMinorUnits              Int                 @default(0) // Tax on provider fee (GST on Razorpay fee)
+  totalFeeMinorUnits            Int                 // feeAmount + feeTax
+  feeCurrency                   CurrencyCode        @default(INR)
+  netSettlementAmountMinorUnits Int?                // Expected/actual net payout (gross - totalFee)
+  status                        ProcessingFeeStatus @default(PENDING)
+  source                        ProcessingFeeSource @default(ESTIMATED)
+  capturedAt                    DateTime?
+  reconciledAt                  DateTime?
+  metadata                      Json?
+  createdAt                     DateTime            @default(now())
+  updatedAt                     DateTime            @updatedAt
+
+  payment                       BillingPayment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([providerPaymentId], map: "billing_payment_fee_prov_pay_idx")
+  @@index([providerSettlementId], map: "billing_payment_fee_setl_idx")
+  @@index([status], map: "billing_payment_fee_status_idx")
+}
+
+// -----------------------------------------------------------------------------
+// BILLING RECONCILIATION RUNS & RECORDS (ZC-BILLING-6.6)
+// -----------------------------------------------------------------------------
+
+/// Authoritative Batch Execution for Payment Gateway Reconciliation
+model BillingReconciliationRun {
+  id                String                  @id @default(cuid())
+  provider          PaymentProvider         @default(RAZORPAY)
+  environment       PaymentEnvironment      @default(TEST)
+  periodStart       DateTime
+  periodEnd         DateTime
+  status            ReconciliationRunStatus @default(STARTED)
+  totalRecords      Int                     @default(0)
+  paymentRecords    Int                     @default(0)
+  refundRecords     Int                     @default(0)
+  transferRecords   Int                     @default(0)
+  adjustmentRecords Int                     @default(0)
+  matchedCount      Int                     @default(0)
+  mismatchCount     Int                     @default(0)
+  reviewCount       Int                     @default(0)
+  duplicateCount    Int                     @default(0)
+  failureCount      Int                     @default(0)
+  durationMs        Int?
+  correlationId     String?
+  metadata          Json?
+  startedAt         DateTime                @default(now())
+  completedAt       DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  records       BillingReconciliationRecord[]
+  discrepancies BillingReconciliationDiscrepancy[]
+
+  @@index([provider, environment, status], map: "billing_recon_run_prov_env_status_idx")
+  @@index([periodStart, periodEnd], map: "billing_recon_run_period_idx")
+}
+
+/// Authoritative Provider Settlement Payout Entity
+model BillingSettlement {
+  id                         String               @id @default(cuid())
+  provider                   PaymentProvider      @default(RAZORPAY)
+  environment                PaymentEnvironment   @default(TEST)
+  providerSettlementId       String               @unique(map: "billing_settlement_prov_id_uniq")
+  settlementUtr              String?
+  settlementCurrency         CurrencyCode         @default(INR)
+  settlementAmountMinorUnits Int
+  providerFeesMinorUnits     Int                  @default(0)
+  providerTaxMinorUnits      Int                  @default(0)
+  settlementStatus           String               @default("settled")
+  settledAt                  DateTime?
+  reconciliationStatus       ReconciliationStatus @default(PENDING)
+  metadata                   Json?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+
+  @@index([reconciliationStatus], map: "billing_settlement_status_idx")
+  @@index([settledAt], map: "billing_settlement_settled_idx")
+}
+
+/// Transaction-Level Granular Reconciliation Record
+model BillingReconciliationRecord {
+  id                       String                   @id @default(cuid())
+  runId                    String?
+  provider                 PaymentProvider          @default(RAZORPAY)
+  environment              PaymentEnvironment       @default(TEST)
+  providerEntityId         String
+  entityType               ReconciliationEntityType
+  providerPaymentId        String?
+  providerRefundId         String?
+  providerSettlementId     String?
+  settlementUtr            String?
+  amountMinorUnits         Int
+  debitMinorUnits          Int?
+  creditMinorUnits         Int?
+  currency                 CurrencyCode             @default(INR)
+  providerFeeMinorUnits    Int?
+  providerFeeTaxMinorUnits Int?
+  settled                  Boolean                  @default(false)
+  settledAt                DateTime?
+  orderId                  String?
+  internalPaymentId        String?
+  internalRefundId         String?
+  status                   ReconciliationStatus     @default(PENDING)
+  metadata                 Json?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+
+  run             BillingReconciliationRun?          @relation(fields: [runId], references: [id], onDelete: SetNull)
+  internalPayment BillingPayment?                    @relation(fields: [internalPaymentId], references: [id], onDelete: SetNull)
+  internalRefund  BillingRefund?                     @relation(fields: [internalRefundId], references: [id], onDelete: SetNull)
+  discrepancies   BillingReconciliationDiscrepancy[]
+
+  @@unique([provider, environment, providerEntityId, entityType], name: "billing_recon_rec_prov_entity_uniq", map: "billing_recon_rec_prov_entity_uniq")
+  @@index([runId], map: "billing_recon_rec_run_idx")
+  @@index([providerPaymentId], map: "billing_recon_rec_prov_pay_idx")
+  @@index([providerSettlementId], map: "billing_recon_rec_prov_setl_idx")
+  @@index([status], map: "billing_recon_rec_status_idx")
+}
+
+/// Granular Identified Reconciliation Discrepancy Record
+model BillingReconciliationDiscrepancy {
+  id                     String                        @id @default(cuid())
+  runId                  String?
+  reconciliationRecordId String?
+  provider               PaymentProvider               @default(RAZORPAY)
+  entityType             ReconciliationEntityType
+  providerEntityId       String
+  internalEntityId       String?
+  discrepancyType        ReconciliationDiscrepancyType
+  status                 ReconciliationStatus          @default(REQUIRES_REVIEW)
+  expectedValue          String?
+  actualValue            String?
+  resolutionReason       String?                       @db.Text
+  resolvedBy             String?
+  resolvedAt             DateTime?
+  metadata               Json?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+
+  run                  BillingReconciliationRun?    @relation(fields: [runId], references: [id], onDelete: SetNull)
+  reconciliationRecord BillingReconciliationRecord? @relation(fields: [reconciliationRecordId], references: [id], onDelete: SetNull)
+
+  @@index([runId], map: "billing_recon_disc_run_idx")
+  @@index([reconciliationRecordId], map: "billing_recon_disc_rec_idx")
+  @@index([discrepancyType], map: "billing_recon_disc_type_idx")
+  @@index([status], map: "billing_recon_disc_status_idx")
+}
+
+
+
+

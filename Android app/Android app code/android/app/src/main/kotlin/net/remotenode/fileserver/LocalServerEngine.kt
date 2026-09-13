@@ -135,8 +135,16 @@ class HttpServer private constructor(private val address: InetSocketAddress) {
                 return
             }
 
-            val contentLength = reqHeaders.getFirst("content-length")?.toLongOrNull() ?: -1L
-            val bodyStream = BoundedInputStream(bufferedInput, contentLength)
+            val contentLengthHeader = reqHeaders.getFirst("content-length")
+            val transferEncodingHeader = reqHeaders.getFirst("transfer-encoding")?.lowercase(Locale.ROOT)
+            val isChunked = transferEncodingHeader == "chunked"
+            val rawContentLength = contentLengthHeader?.toLongOrNull()
+
+            val bodyStream: InputStream = when {
+                rawContentLength != null && rawContentLength >= 0 -> BoundedInputStream(bufferedInput, rawContentLength)
+                isChunked -> ChunkedInputStream(bufferedInput)
+                else -> java.io.ByteArrayInputStream(ByteArray(0))
+            }
 
             val respHeaders = HttpHeaders()
             var headersSent = false
@@ -247,6 +255,80 @@ class BoundedInputStream(private val wrapped: InputStream, private val limit: Lo
         val bytesRead = wrapped.read(b, off, toRead)
         if (bytesRead > 0) count += bytesRead
         return bytesRead
+    }
+}
+
+class ChunkedInputStream(private val input: InputStream) : InputStream() {
+    private var currentChunkRemaining = 0
+    private var isEof = false
+
+    private fun readChunkSize(): Int {
+        val baos = ByteArrayOutputStream()
+        while (true) {
+            val b = input.read()
+            if (b == -1) return 0
+            if (b == '\n'.code) break
+            if (b != '\r'.code) {
+                baos.write(b)
+            }
+        }
+        val line = baos.toString(StandardCharsets.UTF_8.name()).trim()
+        val hex = line.split(";")[0].trim()
+        if (hex.isEmpty()) return 0
+        return try {
+            hex.toInt(16)
+        } catch (_: Exception) {
+            0
+        }
+    }
+
+    override fun read(): Int {
+        if (isEof) return -1
+        if (currentChunkRemaining <= 0) {
+            currentChunkRemaining = readChunkSize()
+            if (currentChunkRemaining <= 0) {
+                isEof = true
+                input.read()
+                input.read()
+                return -1
+            }
+        }
+        val b = input.read()
+        if (b != -1) {
+            currentChunkRemaining--
+            if (currentChunkRemaining == 0) {
+                input.read()
+                input.read()
+            }
+        } else {
+            isEof = true
+        }
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (isEof) return -1
+        if (currentChunkRemaining <= 0) {
+            currentChunkRemaining = readChunkSize()
+            if (currentChunkRemaining <= 0) {
+                isEof = true
+                input.read()
+                input.read()
+                return -1
+            }
+        }
+        val toRead = Math.min(len, currentChunkRemaining)
+        val readCount = input.read(b, off, toRead)
+        if (readCount > 0) {
+            currentChunkRemaining -= readCount
+            if (currentChunkRemaining == 0) {
+                input.read()
+                input.read()
+            }
+        } else {
+            isEof = true
+        }
+        return readCount
     }
 }
 

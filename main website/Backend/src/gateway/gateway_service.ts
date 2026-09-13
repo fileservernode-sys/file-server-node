@@ -237,6 +237,7 @@ export class GatewayService {
   private startTime = Date.now();
   private config: GatewayConfig;
   private tokenValidator: TokenValidator;
+  private heartbeatReaperTimer: NodeJS.Timeout | null = null;
 
   constructor(configOverrides: Partial<GatewayConfig> = {}, tokenValidator?: TokenValidator) {
     this.config = loadGatewayConfig(configOverrides);
@@ -529,6 +530,30 @@ export class GatewayService {
           maxConnections: this.config.GATEWAY_MAX_CONNECTIONS,
           rateLimitRpm: this.config.GATEWAY_RATE_LIMIT_RPM
         });
+
+        // Periodic Liveness Reaper: prune silent host sockets and send ping frames
+        this.heartbeatReaperTimer = setInterval(async () => {
+          const now = Date.now();
+          const deadThresholdMs = 60000; // 60 seconds of complete silence
+          for (const [connId, conn] of Array.from(this.activeConnections.entries())) {
+            if (now - conn.lastHeartbeatAt.getTime() > deadThresholdMs) {
+              this.log('warn', 'Reaping dead/silent host WebSocket connection', {
+                connectionId: connId,
+                deviceId: conn.deviceId,
+                lastHeartbeatAgeMs: now - conn.lastHeartbeatAt.getTime()
+              });
+              try {
+                conn.socket.terminate();
+              } catch {}
+              await this.cleanupConnection(connId);
+            } else if (conn.socket.readyState === WebSocket.OPEN) {
+              try {
+                conn.socket.ping();
+              } catch {}
+            }
+          }
+        }, this.config.GATEWAY_HEARTBEAT_INTERVAL_MS);
+
         resolve();
       });
     });
@@ -538,6 +563,11 @@ export class GatewayService {
     if (!this.isListening) return;
 
     this.log('info', 'Initiating graceful Gateway shutdown');
+
+    if (this.heartbeatReaperTimer) {
+      clearInterval(this.heartbeatReaperTimer);
+      this.heartbeatReaperTimer = null;
+    }
 
     // Cancel all active transfers
     for (const [transferId, transfer] of this.activeTransfers.entries()) {

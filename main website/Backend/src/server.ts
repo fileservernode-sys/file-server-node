@@ -29,6 +29,14 @@ async function startServer() {
       app.log.warn({ err: err?.message }, 'Gateway node startup registration deferred');
     }
 
+    // Initialize/verify authoritative Plan Catalog in MySQL
+    try {
+      const { PlanService } = await import('./services/billing/plan_service.js');
+      await PlanService.seedInitialCatalog(app.log);
+    } catch (err: any) {
+      app.log.warn({ err: err?.message }, 'Plan catalog startup initialization deferred');
+    }
+
     const address = await app.listen({
       port: config.PORT,
       host: config.HOST

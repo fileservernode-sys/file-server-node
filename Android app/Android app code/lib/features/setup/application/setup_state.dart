@@ -241,10 +241,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final ep = srv?['endpoint'] as Map<String, dynamic>?;
         final hostname = ep?['hostname'] as String?;
         final pubUrl = ep?['publicUrl'] as String? ?? (hostname != null ? 'https://$hostname' : null);
-        final epStatus = ep?['status'] as String? ?? (hostname != null ? 'ACTIVE' : 'NOT_CREATED');
         final conn = currentDev['connection'] as Map<String, dynamic>?;
         final connId = conn?['id'] as String?;
-        final isConn = conn?['status'] == 'CONNECTED';
 
         // Check if local HTTP server is actually running
         final serverService = _ref.read(serverServiceProvider);
@@ -253,7 +251,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final isLocal = localStatus['status'] == 'ONLINE';
 
         String? activeConnId = connId;
-        bool isGatewayConnected = isConn;
+        bool isGatewayConnected = false;
+        String epStatus = hostname != null ? 'DISCONNECTED' : 'NOT_CREATED';
 
         // Automatically connect outbound WebSocket to Gateway if device is registered
         if (devId != null && devId.isNotEmpty) {
@@ -263,9 +262,14 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
               deviceId: devId,
               sessionToken: sessionToken,
             );
-            if (connInfo.isConnected) {
+            if (connInfo.isConnected || connInfo.status == RemoteConnectionState.connected) {
               isGatewayConnected = true;
+              epStatus = 'ACTIVE';
               activeConnId = connInfo.connectionId ?? connId;
+            } else if (connInfo.status == RemoteConnectionState.reconnecting) {
+              epStatus = 'RECONNECTING';
+            } else if (connInfo.status == RemoteConnectionState.connecting) {
+              epStatus = 'CONNECTING';
             }
           } catch (_) {}
 

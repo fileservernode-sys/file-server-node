@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
+import { EntitlementService } from '../services/billing/entitlement_service.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
@@ -56,6 +57,9 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       throw new ForbiddenError('You do not have permission to configure servers on this device');
     }
 
+    // Authoritative server entitlement limit for user
+    const entitlements = await EntitlementService.resolveUserEntitlements(user.id);
+
     const serverInstance = await prisma.$transaction(async (tx) => {
       // 1. Lock user row to prevent race conditions during concurrent creations
       await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
@@ -68,13 +72,13 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         return existingOnDevice;
       }
 
-      // 3. Enforce max 5 servers per account
+      // 3. Enforce authoritative server entitlement limit per account
       const serverCount = await tx.serverInstance.count({
         where: { device: { userId: user.id } }
       });
 
-      if (serverCount >= 5) {
-        throw new ConflictError('Your account has reached the maximum limit of 5 active servers.', 'MAX_SERVERS_REACHED');
+      if (serverCount >= entitlements.maxServers) {
+        throw new ConflictError(`Your account has reached the maximum limit of ${entitlements.maxServers} active servers.`, 'MAX_SERVERS_REACHED');
       }
 
       // 4. Create new ServerInstance

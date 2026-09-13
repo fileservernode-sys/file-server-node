@@ -215,6 +215,121 @@
         </div>
       </div>
 
+      
+      <!-- BILLING & REGIONAL SETTINGS CARD (ZC-BILLING-2.3) -->
+      <section class="card" id="billing-region-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing & Regional Settings</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Authoritative billing country and currency configuration for your platform account.
+            </p>
+          </div>
+          <div id="billing-confirmation-badge">
+            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading status...</span>
+          </div>
+        </div>
+
+        <form id="form-billing-region" onsubmit="saveBillingRegion(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-lg);">
+            
+            <!-- Country Selector -->
+            <div>
+              <label for="billing-country-select" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Billing Country <span style="color: #DC2626;">*</span>
+              </label>
+              <select id="billing-country-select" name="country" required onchange="updateCurrencyPreview()" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm); cursor: pointer;">
+                <option value="" disabled selected>Select country...</option>
+                <optgroup label="Popular Regions">
+                  <option value="IN">India (IN)</option>
+                  <option value="US">United States (US)</option>
+                  <option value="GB">United Kingdom (GB)</option>
+                  <option value="DE">Germany (DE)</option>
+                  <option value="CA">Canada (CA)</option>
+                  <option value="AU">Australia (AU)</option>
+                  <option value="AE">United Arab Emirates (AE)</option>
+                  <option value="SG">Singapore (SG)</option>
+                  <option value="JP">Japan (JP)</option>
+                  <option value="FR">France (FR)</option>
+                </optgroup>
+                <optgroup label="All Countries (ISO 3166-1)">
+                  <option value="AF">Afghanistan (AF)</option>
+                  <option value="AL">Albania (AL)</option>
+                  <option value="DZ">Algeria (DZ)</option>
+                  <option value="AR">Argentina (AR)</option>
+                  <option value="AT">Austria (AT)</option>
+                  <option value="BD">Bangladesh (BD)</option>
+                  <option value="BE">Belgium (BE)</option>
+                  <option value="BR">Brazil (BR)</option>
+                  <option value="CL">Chile (CL)</option>
+                  <option value="CN">China (CN)</option>
+                  <option value="CO">Colombia (CO)</option>
+                  <option value="CZ">Czech Republic (CZ)</option>
+                  <option value="DK">Denmark (DK)</option>
+                  <option value="EG">Egypt (EG)</option>
+                  <option value="ES">Spain (ES)</option>
+                  <option value="FI">Finland (FI)</option>
+                  <option value="GR">Greece (GR)</option>
+                  <option value="HK">Hong Kong (HK)</option>
+                  <option value="ID">Indonesia (ID)</option>
+                  <option value="IE">Ireland (IE)</option>
+                  <option value="IL">Israel (IL)</option>
+                  <option value="IT">Italy (IT)</option>
+                  <option value="KR">South Korea (KR)</option>
+                  <option value="MX">Mexico (MX)</option>
+                  <option value="MY">Malaysia (MY)</option>
+                  <option value="NL">Netherlands (NL)</option>
+                  <option value="NO">Norway (NO)</option>
+                  <option value="NZ">New Zealand (NZ)</option>
+                  <option value="PH">Philippines (PH)</option>
+                  <option value="PK">Pakistan (PK)</option>
+                  <option value="PL">Poland (PL)</option>
+                  <option value="PT">Portugal (PT)</option>
+                  <option value="QA">Qatar (QA)</option>
+                  <option value="SA">Saudi Arabia (SA)</option>
+                  <option value="SE">Sweden (SE)</option>
+                  <option value="CH">Switzerland (CH)</option>
+                  <option value="TH">Thailand (TH)</option>
+                  <option value="TR">Turkey (TR)</option>
+                  <option value="TW">Taiwan (TW)</option>
+                  <option value="VN">Vietnam (VN)</option>
+                  <option value="ZA">South Africa (ZA)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Postal / ZIP Code -->
+            <div>
+              <label for="billing-postal-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Postal / ZIP Code <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-postal-input" name="postalCode" required placeholder="e.g. 392001 or 90210" maxlength="20" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);" />
+            </div>
+
+          </div>
+
+          <!-- Live Currency Indicator & Compliance Note -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-bg-secondary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle);">
+            <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+              <span>Authoritative Billing Currency: </span>
+              <strong id="billing-currency-preview" style="color: var(--color-brand-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);">INR (₹)</strong>
+              <span class="text-muted" style="margin-left: 6px;">(Derived server-side from billing country)</span>
+            </div>
+            <button type="submit" id="btn-save-billing" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 140px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Save Region</span>
+            </button>
+          </div>
+
+          <div id="billing-status-feedback" style="display: none; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs);"></div>
+        </form>
+      </section>
+
       <!-- SECTION TITLE & CONTROLS -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-xs);">
         <div>
@@ -358,6 +473,10 @@
 
       document.getElementById('btn-manual-refresh')?.addEventListener('click', () => {
         loadUserServers(false);
+      loadBillingRegion();
+      window.updateCurrencyPreview = updateCurrencyPreview;
+      window.saveBillingRegion = saveBillingRegion;
+      window.loadBillingRegion = loadBillingRegion;
       });
 
       // Initial Render & Fetch
@@ -659,6 +778,114 @@
         }
       } finally {
         isFetching = false;
+      }
+    }
+
+    
+    /**
+     * Billing Region Management (ZC-BILLING-2.3 & 2.4)
+     */
+    async function loadBillingRegion() {
+      try {
+        const res = await apiRequest('/billing', 'GET');
+        if (res.ok && res.data && res.data.success) {
+          const billing = res.data.data;
+          const countrySelect = document.getElementById('billing-country-select');
+          const postalInput = document.getElementById('billing-postal-input');
+          const badgeContainer = document.getElementById('billing-confirmation-badge');
+          const previewEl = document.getElementById('billing-currency-preview');
+
+          if (billing.billingCountry && countrySelect) {
+            countrySelect.value = billing.billingCountry;
+          }
+          if (billing.billingPostalCode && postalInput) {
+            postalInput.value = billing.billingPostalCode;
+          }
+          if (badgeContainer) {
+            if (billing.countryConfirmed) {
+              badgeContainer.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Confirmed (${escapeHtml(billing.currency || '')})</span>`;
+            } else {
+              badgeContainer.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Unconfirmed</span>`;
+            }
+          }
+          updateCurrencyPreview();
+        }
+      } catch (e) {
+        console.error('Failed to load billing region', e);
+      }
+    }
+
+    function updateCurrencyPreview() {
+      const countrySelect = document.getElementById('billing-country-select');
+      const previewEl = document.getElementById('billing-currency-preview');
+      if (!countrySelect || !previewEl) return;
+      const val = countrySelect.value ? countrySelect.value.toUpperCase() : '';
+      if (val === 'IN') {
+        previewEl.textContent = 'INR (₹)';
+      } else if (val) {
+        previewEl.textContent = 'USD ($)';
+      } else {
+        previewEl.textContent = 'Select country...';
+      }
+    }
+
+    async function saveBillingRegion(e) {
+      if (e) e.preventDefault();
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const feedback = document.getElementById('billing-status-feedback');
+      const btn = document.getElementById('btn-save-billing');
+
+      if (!countrySelect || !postalInput || !countrySelect.value || !postalInput.value.trim()) {
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+      }
+      if (feedback) feedback.style.display = 'none';
+
+      try {
+        const res = await apiRequest('/billing/country', 'PUT', {
+          country: countrySelect.value,
+          postalCode: postalInput.value.trim()
+        });
+
+        if (res.ok && res.data && res.data.success) {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#ECFDF5';
+            feedback.style.color = '#065F46';
+            feedback.style.border = '1px solid #A7F3D0';
+            feedback.textContent = `Billing region saved. Authoritative currency: ${res.data.data.currency}.`;
+          }
+          await loadBillingRegion();
+        } else {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#FEF2F2';
+            feedback.style.color = '#991B1B';
+            feedback.style.border = '1px solid #FECACA';
+            feedback.textContent = res.data?.error?.message || 'Failed to save billing region.';
+          }
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#FEF2F2';
+          feedback.style.color = '#991B1B';
+          feedback.style.border = '1px solid #FECACA';
+          feedback.textContent = 'Network error while updating billing region.';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Save Region</span>
+          `;
+        }
       }
     }
 

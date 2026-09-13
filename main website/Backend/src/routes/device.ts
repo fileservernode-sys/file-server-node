@@ -7,6 +7,7 @@ import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } fro
 import { hashPassword } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
+import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
 
@@ -78,6 +79,9 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
     let device: Device;
 
+    // Resolve authoritative server entitlement limit for user
+    const entitlements = await EntitlementService.resolveUserEntitlements(user.id);
+
     if (existingDevice) {
       // Idempotent update for the same physical device installation
       device = await prisma.device.update({
@@ -112,13 +116,13 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             }
           });
         } else {
-          // Check 5-server limit before creating a new ServerInstance
+          // Check authoritative server entitlement limit before creating a new ServerInstance
           const serverCount = await tx.serverInstance.count({
             where: { device: { userId: user.id } }
           });
 
-          if (serverCount >= 5) {
-            throw new ConflictError('Your account has reached the maximum limit of 5 active servers.', 'MAX_SERVERS_REACHED');
+          if (serverCount >= entitlements.maxServers) {
+            throw new ConflictError(`Your account has reached the maximum limit of ${entitlements.maxServers} active servers.`, 'MAX_SERVERS_REACHED');
           }
 
           await tx.serverInstance.create({
@@ -133,7 +137,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         }
       }, { maxWait: 15000, timeout: 30000 });
     } else {
-      // Create new Device + ServerInstance atomically, enforcing 5-server limit
+      // Create new Device + ServerInstance atomically, enforcing authoritative server entitlement limit
       device = await prisma.$transaction(async (tx) => {
         // Lock user row to serialize concurrent server creations for this account
         await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
@@ -142,8 +146,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           where: { device: { userId: user.id } }
         });
 
-        if (serverCount >= 5) {
-          throw new ConflictError('Your account has reached the maximum limit of 5 active servers.', 'MAX_SERVERS_REACHED');
+        if (serverCount >= entitlements.maxServers) {
+          throw new ConflictError(`Your account has reached the maximum limit of ${entitlements.maxServers} active servers.`, 'MAX_SERVERS_REACHED');
         }
 
         const newDevice = await tx.device.create({

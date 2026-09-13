@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Transparent, predictable pricing for ZdexCloud personal Android file servers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers. Zero monthly storage fees.">
-  <meta name="keywords" content="ZdexCloud pricing, Android file server plans, self-hosted personal cloud cost, NAS pricing comparison, ₹49 month file server, ₹500 year file server">
+  <meta name="description" content="Transparent, predictable pricing for ZdexCloud personal Android file servers. Free plan with 1 server at zero storage markup. Pro plans for up to 5 servers and priority relay.">
+  <meta name="keywords" content="ZdexCloud pricing, Android file server plans, self-hosted personal cloud cost, NAS pricing comparison, zero storage fees">
   <title>Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server</title>
 
   <!-- Canonical URL -->
@@ -23,7 +23,7 @@
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/pricing.html">
   <meta property="og:title" content="Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Transparent pricing for ZdexCloud personal Android file servers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers. Zero monthly storage fees.">
+  <meta property="og:description" content="Transparent pricing for ZdexCloud personal Android file servers. Free plan with 1 server at zero storage markup. Pro plans for up to 5 servers.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -33,49 +33,9 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
   <meta name="twitter:title" content="Pricing Plans & Storage Comparison | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="No cloud storage markup or storage tiers. Free plan with 1 server at ₹0. Pro plans at ₹49/month or ₹500/year for up to 5 servers.">
+  <meta name="twitter:description" content="Zero cloud storage markup. Free plan with 1 server. Pro plans for up to 5 servers and priority relay.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud Pricing Plans">
-
-  <!-- Product & Offer JSON-LD Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "ZdexCloud Personal File Server Platform",
-    "description": "Transform an Android smartphone into a private, remotely accessible personal file server with zero recurring storage fees.",
-    "brand": {
-      "@type": "Brand",
-      "name": "ZdexCloud"
-    },
-    "offers": [
-      {
-        "@type": "Offer",
-        "name": "Free Tier",
-        "price": "0",
-        "priceCurrency": "INR",
-        "availability": "https://schema.org/InStock",
-        "description": "Start with 1 registered Android phone server, zero storage hosting fees, and full web file manager access."
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro Monthly",
-        "price": "49",
-        "priceCurrency": "INR",
-        "availability": "https://schema.org/InStock",
-        "description": "Up to 5 registered Android phone servers, priority gateway relay routing, and multi-server dashboard management."
-      },
-      {
-        "@type": "Offer",
-        "name": "Pro Yearly",
-        "price": "500",
-        "priceCurrency": "INR",
-        "availability": "https://schema.org/InStock",
-        "description": "Up to 5 registered Android phone servers, save ₹88 per year compared to monthly billing with an effective rate of ₹41.67 per month."
-      }
-    ]
-  }
-  </script>
 
   <!-- Modular Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
@@ -83,6 +43,98 @@
   <link rel="stylesheet" href="../css/components.css">
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/sections.css">
+
+  <style>
+    /* Pricing Page Specific Enhancements */
+    .billing-toggle-container {
+      display: inline-flex;
+      align-items: center;
+      background: var(--color-bg-subtle, #f1f5f9);
+      border: 1px solid var(--color-border, #e2e8f0);
+      border-radius: var(--radius-full, 9999px);
+      padding: 4px;
+      gap: 4px;
+      margin: 0 auto;
+    }
+    .billing-toggle-btn {
+      border: none;
+      background: transparent;
+      color: var(--color-text-secondary, #64748b);
+      font-family: var(--font-family-sans, sans-serif);
+      font-size: var(--font-size-sm, 0.875rem);
+      font-weight: var(--font-weight-medium, 500);
+      padding: 8px 18px;
+      border-radius: var(--radius-full, 9999px);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .billing-toggle-btn:focus-visible {
+      outline: 2px solid var(--color-brand-primary, #2563eb);
+      outline-offset: 2px;
+    }
+    .billing-toggle-btn.is-active {
+      background: var(--color-surface, #ffffff);
+      color: var(--color-brand-primary, #2563eb);
+      font-weight: var(--font-weight-bold, 700);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .savings-pill {
+      background: #ECFDF5;
+      color: #059669;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full, 9999px);
+      border: 1px solid #A7F3D0;
+    }
+    .region-banner {
+      background: var(--color-surface, #ffffff);
+      border: 1px solid var(--color-border, #e2e8f0);
+      border-radius: var(--radius-lg, 12px);
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: var(--space-xl, 2rem);
+      font-size: var(--font-size-sm, 0.875rem);
+    }
+    .pricing-card-highlighted {
+      border: 2px solid var(--color-brand-primary, #2563eb) !important;
+      position: relative;
+      box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0,0,0,0.1));
+    }
+    .best-value-badge {
+      position: absolute;
+      top: -12px;
+      right: 24px;
+      background: var(--color-brand-primary, #2563eb);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: var(--radius-full, 9999px);
+      letter-spacing: 0.05em;
+    }
+    .skeleton-price {
+      display: inline-block;
+      height: 36px;
+      width: 100px;
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes skeleton-loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
 </head>
 <body>
 
@@ -181,7 +233,7 @@
         <div class="page-header-eyebrow"><span class="badge badge-accent">Transparent Pricing</span></div>
         <h1 class="page-header-title">Simple, Transparent Plans. Zero Monthly Storage Fees.</h1>
         <p class="page-header-subtitle">
-          Pay ₹0 for cloud storage hosting because your files stay safely on your Android hardware. ZdexCloud plans cover secure relay tunneling, device coordination, and multi-server management.
+          Pay zero cloud storage fees because your files stay safely on your Android hardware. ZdexCloud commercial plans cover secure relay tunneling, device coordination, and multi-server management.
         </p>
       </div>
     </div>
@@ -189,42 +241,56 @@
 
   <main class="page-entrance">
 
-    <!-- ARCHITECTURAL CLARIFICATION CALLOUT -->
-    <section class="section-wrapper" style="padding-top: var(--space-xl); padding-bottom: var(--space-lg);">
+    <!-- REGIONAL PRICING BANNER & TOGGLE CONTROLS -->
+    <section class="section-wrapper" style="padding-top: var(--space-xl); padding-bottom: 0;">
       <div class="container">
-        <div class="card" style="border-left: 4px solid var(--color-brand-primary); background-color: var(--color-bg-subtle);">
-          <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
-            <div style="color: var(--color-brand-primary); flex-shrink: 0; margin-top: 2px;">
-              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
+        
+        <!-- Regional Storefront Signal Banner -->
+        <div class="region-banner" id="region-banner">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="color: var(--color-brand-primary); display: flex; align-items: center;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             </div>
-            <div>
-              <h2 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-xs); color: var(--color-text-primary);">
-                How ZdexCloud Pricing Works: Storage vs. Server Slots
-              </h2>
-              <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin: 0;">
-                Unlike conventional cloud platforms that charge recurring monthly fees per gigabyte, ZdexCloud charges <strong>₹0 for storage capacity</strong>. Your storage is provided by your phone's internal flash storage or microSD card (whether 64GB, 256GB, or 1TB). Our commercial plans define <strong>how many registered Android server nodes</strong> you can manage under one account (1 on Free, up to 5 on Pro) and provide priority gateway relay routing.
-              </p>
+            <div id="region-banner-text">
+              <span>Resolving regional storefront pricing...</span>
             </div>
           </div>
+          <div id="region-banner-action">
+            <!-- Populated dynamically: e.g. "Change billing country" or "Confirm country" -->
+          </div>
         </div>
+
+        <!-- Billing Frequency Toggle -->
+        <div style="text-align: center; margin-bottom: var(--space-2xl);">
+          <div class="billing-toggle-container" role="group" aria-label="Billing frequency selection">
+            <button type="button" class="billing-toggle-btn" id="toggle-monthly" aria-pressed="false" onclick="selectBillingInterval('MONTHLY')">
+              <span>Monthly</span>
+            </button>
+            <button type="button" class="billing-toggle-btn is-active" id="toggle-yearly" aria-pressed="true" onclick="selectBillingInterval('YEARLY')">
+              <span>Yearly</span>
+              <span class="savings-pill" id="toggle-savings-badge">Save ~15%</span>
+            </button>
+          </div>
+          <div class="text-xs text-muted" style="margin-top: 8px;">
+            <span id="toggle-supporting-text">Yearly billing provides the best value with 12 months guaranteed price lock.</span>
+          </div>
+        </div>
+
+        <!-- API Error Recovery State -->
+        <div id="pricing-error-banner" style="display: none; margin-bottom: var(--space-xl); background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg); padding: var(--space-lg); text-align: center;">
+          <h3 style="font-size: var(--font-size-base); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Pricing catalog is temporarily unavailable</h3>
+          <p style="font-size: var(--font-size-sm); color: #B91C1C; margin-bottom: var(--space-md);" id="pricing-error-message">Could not connect to the pricing service.</p>
+          <button type="button" class="btn btn-primary btn-sm" onclick="loadPricingCatalog()">Retry Connection</button>
+        </div>
+
       </div>
     </section>
 
     <!-- PRICING TIERS GRID -->
-    <section class="section-wrapper" style="padding-top: var(--space-md);">
+    <section class="section-wrapper" style="padding-top: 0;">
       <div class="container">
-        <div class="section-header text-center" style="margin-bottom: var(--space-2xl);">
-          <h2 class="section-title">Select the Plan That Fits Your Storage Setup</h2>
-          <p class="section-subtitle">
-            Start with one Android phone for free, or upgrade to Pro to manage up to 5 distributed phone servers from a single dashboard.
-          </p>
-        </div>
-
-        <div class="grid-3-col">
+        
+        <div class="grid-3-col" id="pricing-cards-container">
           
           <!-- FREE PLAN -->
           <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between;">
@@ -232,14 +298,14 @@
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
                 <span class="badge badge-subtle">Start with one Android phone</span>
               </div>
-              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Free</h3>
+              <h2 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Free</h2>
               <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
                 Ideal for repurposing a single Android smartphone as a private, remotely accessible personal file server.
               </p>
               
               <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
                 <div style="display: flex; align-items: baseline; gap: 4px;">
-                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹0</span>
+                  <span id="price-free" style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹0</span>
                   <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ forever</span>
                 </div>
                 <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 4px;">
@@ -262,11 +328,7 @@
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Photo & Video Streaming via Browser</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Upload, Download, Rename & Delete Operations</span>
+                  <span>Standard Gateway Relay Routing</span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -276,32 +338,28 @@
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>No Cloud Storage Tier Fees (On-Device Storage)</span>
                 </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Standard Community Documentation Support</span>
-                </li>
               </ul>
             </div>
 
             <div>
-              <a href="get-started.html" class="btn btn-secondary btn-block">Get Started Free</a>
+              <a href="get-started.html" id="cta-free" class="btn btn-secondary btn-block">Get Started Free</a>
             </div>
           </div>
 
           <!-- PRO MONTHLY PLAN -->
-          <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div class="card card-hover" id="card-pro-monthly" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
                 <span class="badge badge-accent">Multi-Server Flexibility</span>
               </div>
-              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Monthly</h3>
+              <h2 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Monthly</h2>
               <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
                 For users managing multiple Android storage servers with flexible month-to-month billing.
               </p>
               
               <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
                 <div style="display: flex; align-items: baseline; gap: 4px;">
-                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹49</span>
+                  <span id="price-pro-monthly" style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary);">₹49</span>
                   <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ month</span>
                 </div>
                 <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 4px;">
@@ -316,19 +374,11 @@
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Priority Gateway Relay Routing</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>Centralized Dashboard Multi-Server Switching</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Priority Gateway Relay Routing</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Concurrent Active Server Operation</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Custom Server Naming & Categorization</span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -338,40 +388,34 @@
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>24-Hour Absolute Web Session Security</span>
                 </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Priority Email Customer Support</span>
-                </li>
               </ul>
             </div>
 
             <div>
-              <a href="get-started.html" class="btn btn-secondary btn-block">Start Pro Monthly</a>
+              <button type="button" id="cta-pro-monthly" onclick="handlePlanSelection('PRO_MONTHLY')" class="btn btn-secondary btn-block">Start Pro Monthly</button>
             </div>
           </div>
 
           <!-- PRO YEARLY PLAN (HIGHLIGHTED) -->
-          <div class="card card-hover" style="display: flex; flex-direction: column; justify-content: space-between; border: 2px solid var(--color-brand-primary); position: relative; box-shadow: var(--shadow-md);">
-            <div style="position: absolute; top: -12px; right: 24px;">
-              <span class="badge badge-accent" style="background-color: var(--color-brand-primary); color: #ffffff; font-weight: var(--font-weight-bold); padding: 4px 12px; border-radius: var(--radius-full);">BEST VALUE</span>
-            </div>
+          <div class="card card-hover pricing-card-highlighted" id="card-pro-yearly" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div class="best-value-badge">BEST VALUE</div>
             
             <div>
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xs);">
-                <span class="badge badge-accent">Best value for long-term ZdexCloud use</span>
+                <span class="badge badge-accent">Best value for long-term use</span>
               </div>
-              <h3 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Yearly</h3>
+              <h2 class="card-title" style="font-size: var(--font-size-2xl); margin-bottom: var(--space-xs);">Pro Yearly</h2>
               <p class="card-description" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
                 Annual plan with substantial savings. Best value for managing up to 5 Android storage nodes year-round.
               </p>
               
               <div style="margin-bottom: var(--space-lg); padding-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
                 <div style="display: flex; align-items: baseline; gap: 4px;">
-                  <span style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-brand-primary);">₹500</span>
+                  <span id="price-pro-yearly" style="font-size: var(--font-size-4xl); font-weight: var(--font-weight-bold); color: var(--color-brand-primary);">₹500</span>
                   <span style="font-size: var(--font-size-sm); color: var(--color-text-muted);">/ year</span>
                 </div>
-                <div style="display: inline-block; background-color: rgba(16, 185, 129, 0.12); color: #059669; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px 8px; border-radius: var(--radius-sm); margin-top: 6px;">
-                  Save ₹88/year (Effective ₹41.67/month vs ₹588 monthly equivalent)
+                <div id="savings-callout-yearly" style="display: inline-block; background-color: rgba(16, 185, 129, 0.12); color: #059669; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); padding: 2px 8px; border-radius: var(--radius-sm); margin-top: 6px;">
+                  Save ₹88/year (Effective ₹41.67/month)
                 </div>
               </div>
 
@@ -382,11 +426,15 @@
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span><strong>Save ₹88 per year</strong> compared to ₹49/month billing (₹500 vs ₹588)</span>
+                  <span id="savings-feature-line"><strong>Save ₹88 per year</strong> compared to monthly billing</span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span><strong>Effective Rate: ₹41.67 / month</strong></span>
+                  <span id="effective-rate-feature-line"><strong>Effective Rate: ₹41.67 / month</strong></span>
+                </li>
+                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <span><strong>Priority Gateway Relay Routing</strong></span>
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -394,25 +442,13 @@
                 </li>
                 <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Priority Gateway Relay Routing</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>Concurrent Active Server Operation</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   <span>12-Month Guaranteed Price Lock</span>
-                </li>
-                <li style="display: flex; align-items: flex-start; gap: 10px; font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
-                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  <span>All Future Pro Features & Priority Support Included</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <a href="get-started.html" class="btn btn-primary btn-block">Get Pro Yearly</a>
+              <button type="button" id="cta-pro-yearly" onclick="handlePlanSelection('PRO_YEARLY')" class="btn btn-primary btn-block">Get Pro Yearly</button>
             </div>
           </div>
 
@@ -420,218 +456,56 @@
       </div>
     </section>
 
-    <!-- FEATURE COMPARISON MATRIX -->
+    <!-- FEATURE COMPARISON MATRIX (CONCISE APPROVED 6-ROW) -->
     <section class="section-wrapper section-wrapper-alt">
       <div class="container">
         <div class="section-header text-center">
-          <div class="page-header-eyebrow"><span class="badge badge-accent">Comprehensive Breakdown</span></div>
-          <h2 class="section-title">Detailed Feature Comparison Matrix</h2>
+          <div class="page-header-eyebrow"><span class="badge badge-accent">Direct Comparison</span></div>
+          <h2 class="section-title">Technical Entitlement Comparison</h2>
           <p class="section-subtitle">
-            Compare platform capabilities, server limits, network routing, and security policies across all three commercial tiers.
+            Compare platform capabilities and server limits between the Free and Pro commercial tiers.
           </p>
         </div>
 
-        <div class="pricing-table-wrapper">
-          <table class="pricing-table" aria-label="ZdexCloud Feature Comparison Matrix">
+        <div class="pricing-table-wrapper" style="max-width: 900px; margin: 0 auto; overflow-x: auto;">
+          <table class="pricing-table" style="width: 100%; border-collapse: collapse; background: var(--color-surface); border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--color-border);" aria-label="ZdexCloud Feature Comparison Matrix">
             <thead>
-              <tr>
-                <th scope="col" style="min-width: 240px;">Feature / Capability</th>
-                <th scope="col" style="min-width: 160px; text-align: center;">Free Plan</th>
-                <th scope="col" style="min-width: 170px; text-align: center;">Pro Monthly</th>
-                <th scope="col" style="min-width: 180px; text-align: center; background-color: rgba(37, 99, 235, 0.08); color: var(--color-brand-primary);">Pro Yearly (Best Value)</th>
+              <tr style="border-bottom: 2px solid var(--color-border); background: var(--color-bg-subtle);">
+                <th scope="col" style="padding: 16px; text-align: left; font-size: var(--font-size-sm); font-weight: 700;">Platform Capability</th>
+                <th scope="col" style="padding: 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; width: 200px;">Free Tier</th>
+                <th scope="col" style="padding: 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; width: 220px; background: rgba(37, 99, 235, 0.06); color: var(--color-brand-primary);">Pro (Monthly / Yearly)</th>
               </tr>
             </thead>
             <tbody>
-              <!-- Group 1: Device & Storage Capacity -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  Server Capacity & Hardware Storage
-                </td>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Registered Android Server Nodes</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-primary);">1 Phone</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-brand-primary); background: rgba(37, 99, 235, 0.03);">Up to 5 Phones</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Gateway Relay Routing</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Standard Outbound</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-brand-primary); background: rgba(37, 99, 235, 0.03);">Priority Gateway Relay</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Storage Capacity</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-primary);">On-Device Hardware</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-primary); background: rgba(37, 99, 235, 0.03);">On-Device Hardware</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Monthly Cloud Storage Fees</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; color: #10B981;">Zero</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; color: #10B981; background: rgba(37, 99, 235, 0.03);">Zero</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--color-border-subtle);">
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Multi-Server Dashboard Switching</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Single Server Node</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); font-weight: 700; color: var(--color-brand-primary); background: rgba(37, 99, 235, 0.03);">Up to 5 Servers</td>
               </tr>
               <tr>
-                <td><strong>Registered Server Slots</strong></td>
-                <td style="text-align: center;">1 Android Phone</td>
-                <td style="text-align: center;">Up to 5 Android Phones</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Android Phones</td>
-              </tr>
-              <tr>
-                <td><strong>Storage Hosting Allocation</strong></td>
-                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
-                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
-                <td style="text-align: center;">Phone Hardware Dependent (0GB Cloud)</td>
-              </tr>
-              <tr>
-                <td><strong>MicroSD Card & External Storage Support</strong></td>
-                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
-                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
-                <td style="text-align: center;">Full Support (Hardware Dependent)</td>
-              </tr>
-              <tr>
-                <td><strong>Monthly Cloud Storage Hosting Fee</strong></td>
-                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
-                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
-                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">₹0</td>
-              </tr>
-
-              <!-- Group 2: Remote Access & Network Routing -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  Remote Access & Gateway Tunneling
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Outbound WebSocket Tunnel Relay</strong></td>
-                <td style="text-align: center;">Standard Relay</td>
-                <td style="text-align: center;">Priority Relay Routing</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Priority Relay Routing</td>
-              </tr>
-              <tr>
-                <td><strong>Router Port Forwarding Requirement</strong></td>
-                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
-                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
-                <td style="text-align: center; color: #10B981;">None (Zero Router Changes)</td>
-              </tr>
-              <tr>
-                <td><strong>CGNAT & Mobile Data Traversal</strong></td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-              </tr>
-              <tr>
-                <td><strong>Automatic Reconnect on Network Recovery</strong></td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-              </tr>
-
-              <!-- Group 3: File Management & Streaming -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  File Management & Media Streaming
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Browser-Based Web File Manager</strong></td>
-                <td style="text-align: center;">Full Access</td>
-                <td style="text-align: center;">Full Access</td>
-                <td style="text-align: center;">Full Access</td>
-              </tr>
-              <tr>
-                <td><strong>In-Browser Photo & Video Streaming</strong></td>
-                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
-                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
-                <td style="text-align: center;">Included (MP4, WebM, JPEG, PNG, etc.)</td>
-              </tr>
-              <tr>
-                <td><strong>File Upload, Rename & Deletion</strong></td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-              </tr>
-              <tr>
-                <td><strong>Direct Download URL Generation</strong></td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-              </tr>
-
-              <!-- Group 4: Multi-Server Management -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  Multi-Server Management
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Centralized Web Dashboard Server Switching</strong></td>
-                <td style="text-align: center; color: var(--color-text-muted);">N/A (Single Server)</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold);">Up to 5 Servers</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Servers</td>
-              </tr>
-              <tr>
-                <td><strong>Concurrent Server Operation</strong></td>
-                <td style="text-align: center;">1 Active Server</td>
-                <td style="text-align: center;">Up to 5 Active Servers</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Up to 5 Active Servers</td>
-              </tr>
-              <tr>
-                <td><strong>Custom Server Naming & Organization</strong></td>
-                <td style="text-align: center;">1 Server Name</td>
-                <td style="text-align: center;">Up to 5 Custom Labels</td>
-                <td style="text-align: center;">Up to 5 Custom Labels</td>
-              </tr>
-
-              <!-- Group 5: Security & Authentication -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  Security & Authentication Policies
-                </td>
-              </tr>
-              <tr>
-                <td><strong>In-Flight Transport Security</strong></td>
-                <td style="text-align: center;">TLS 1.3 Encryption</td>
-                <td style="text-align: center;">TLS 1.3 Encryption</td>
-                <td style="text-align: center;">TLS 1.3 Encryption</td>
-              </tr>
-              <tr>
-                <td><strong>Stateless Connection Gateway (No Permanent Cloud Storage)</strong></td>
-                <td style="text-align: center; color: #10B981;">Guaranteed</td>
-                <td style="text-align: center; color: #10B981;">Guaranteed</td>
-                <td style="text-align: center; color: #10B981;">Guaranteed</td>
-              </tr>
-              <tr>
-                <td><strong>Web Session Lifetime Policy</strong></td>
-                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
-                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
-                <td style="text-align: center;">Strict 24-Hour Absolute Session</td>
-              </tr>
-              <tr>
-                <td><strong>Independent Android Server Continuity</strong></td>
-                <td style="text-align: center;">Continuous Background Operation</td>
-                <td style="text-align: center;">Continuous Background Operation</td>
-                <td style="text-align: center;">Continuous Background Operation</td>
-              </tr>
-              <tr>
-                <td><strong>Platform 2FA Email OTP Verification</strong></td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-                <td style="text-align: center;">Included</td>
-              </tr>
-              <tr>
-                <td><strong>Separated Server Access Credentials</strong></td>
-                <td style="text-align: center;">Enforced</td>
-                <td style="text-align: center;">Enforced</td>
-                <td style="text-align: center;">Enforced</td>
-              </tr>
-
-              <!-- Group 6: Commercial & Pricing Details -->
-              <tr style="background-color: var(--color-bg-subtle);">
-                <td colspan="4" style="font-weight: var(--font-weight-bold); color: var(--color-text-primary); text-transform: uppercase; font-size: var(--font-size-xs); letter-spacing: 0.05em;">
-                  Commercial Terms & Support
-                </td>
-              </tr>
-              <tr>
-                <td><strong>Price</strong></td>
-                <td style="text-align: center; font-weight: var(--font-weight-bold);">₹0</td>
-                <td style="text-align: center; font-weight: var(--font-weight-bold);">₹49 / month</td>
-                <td style="text-align: center; font-weight: var(--font-weight-bold); color: var(--color-brand-primary);">₹500 / year</td>
-              </tr>
-              <tr>
-                <td><strong>Annual Savings</strong></td>
-                <td style="text-align: center;">N/A</td>
-                <td style="text-align: center;">Standard Rate (₹588/yr equiv.)</td>
-                <td style="text-align: center; color: #10B981; font-weight: var(--font-weight-semibold);">Save ₹88/year (Effective ₹41.67/mo)</td>
-              </tr>
-              <tr>
-                <td><strong>Price Lock Guarantee</strong></td>
-                <td style="text-align: center;">Forever Free Tier</td>
-                <td style="text-align: center;">Month-to-Month</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold);">12-Month Guaranteed Lock</td>
-              </tr>
-              <tr>
-                <td><strong>Customer Support</strong></td>
-                <td style="text-align: center;">Community & Online Documentation</td>
-                <td style="text-align: center;">Priority Email Support</td>
-                <td style="text-align: center; font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Priority Email Support</td>
+                <td style="padding: 14px 16px; font-size: var(--font-size-sm); font-weight: 600;">Browser Web File Manager & Security</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-primary);">Full Access • 24h Session</td>
+                <td style="padding: 14px 16px; text-align: center; font-size: var(--font-size-sm); color: var(--color-text-primary); background: rgba(37, 99, 235, 0.03);">Full Access • 24h Session</td>
               </tr>
             </tbody>
           </table>
@@ -639,123 +513,14 @@
       </div>
     </section>
 
-    <!-- COST COMPARISON: ZDEXCLOUD VS TRADITIONAL SUBSCRIPTION CLOUD -->
+    <!-- PRICING FREQUENTLY ASKED QUESTIONS (APPROVED 8 TOPICS) -->
     <section class="section-wrapper">
-      <div class="container">
-        <div class="section-header text-center">
-          <div class="page-header-eyebrow"><span class="badge badge-accent">Long-Term Economics</span></div>
-          <h2 class="section-title">ZdexCloud vs. Traditional Subscription Cloud Storage</h2>
-          <p class="section-subtitle">
-            Compare the long-term total cost of ownership (TCO) of renting centralized cloud storage vs. hosting on Android hardware you already own.
-          </p>
-        </div>
-
-        <div class="grid-2-col" style="gap: var(--space-xl); margin-bottom: var(--space-2xl);">
-          
-          <!-- TRADITIONAL CLOUD CARD -->
-          <div class="card" style="border-left: 4px solid var(--color-border); background-color: var(--color-bg-subtle);">
-            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <div style="color: var(--color-text-muted);">
-                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
-                </svg>
-              </div>
-              <h3 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text-primary);">
-                Traditional Cloud Subscriptions
-              </h3>
-            </div>
-            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
-              Commercial cloud providers (Google Drive, Microsoft OneDrive, Dropbox, iCloud) charge recurring monthly or annual rents for proprietary storage blocks (100GB, 200GB, 2TB).
-            </p>
-            
-            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-md);">
-              <li><strong>Monthly Cost:</strong> ₹130 to ₹650+ per month depending on tier</li>
-              <li><strong>1-Year Cost:</strong> ₹1,560 to ₹7,800+ per year</li>
-              <li><strong>3-Year Cost:</strong> ₹4,680 to ₹23,400+ paid indefinitely</li>
-              <li><strong>Data Custody:</strong> Files stored on corporate multi-tenant data centers</li>
-              <li><strong>Price Stability:</strong> Vulnerable to sudden subscription fee increases</li>
-            </ul>
-
-            <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); padding-top: var(--space-sm);">
-              Cancel subscription = lose immediate access to your stored files unless transferred.
-            </div>
-          </div>
-
-          <!-- ZDEXCLOUD CARD -->
-          <div class="card" style="border-left: 4px solid var(--color-brand-primary); background-color: var(--color-bg-surface); box-shadow: var(--shadow-sm);">
-            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
-              <div style="color: var(--color-brand-primary);">
-                <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                </svg>
-              </div>
-              <h3 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); margin: 0; color: var(--color-text-primary);">
-                ZdexCloud Personal File Server
-              </h3>
-            </div>
-            <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
-              Repurposes existing Android hardware into private servers. Zero per-gigabyte storage rent. You control your storage media directly.
-            </p>
-            
-            <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: var(--space-md);">
-              <li><strong>Free Tier (1 Server):</strong> <strong>₹0 forever</strong> for 128GB–512GB+ on phone</li>
-              <li><strong>Pro Monthly (Up to 5 Servers):</strong> ₹49/month with full flexibility</li>
-              <li><strong>Pro Yearly (Up to 5 Servers):</strong> <strong>₹500/year</strong> (effective ₹41.67/month, Save ₹88/yr)</li>
-              <li><strong>3-Year Total Cost:</strong> ₹0 (Free) or ₹1,500 total (Pro Yearly for 5 phones)</li>
-              <li><strong>Data Custody:</strong> Physical hardware hosted on your device; no permanent central file storage</li>
-            </ul>
-
-            <div style="font-size: var(--font-size-xs); color: var(--color-text-muted); border-top: 1px solid var(--color-border-subtle); padding-top: var(--space-sm);">
-              Cancel subscription = your files remain completely safe and accessible on your physical Android phone.
-            </div>
-          </div>
-
-        </div>
-
-        <!-- HONEST HARDWARE TRADE-OFFS TABLE -->
-        <div class="card" style="background-color: var(--color-bg-subtle);">
-          <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
-            Honest Hardware & Operational Trade-Offs
-          </h3>
-          <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
-            We believe in complete technical transparency. While commercial cloud services factor massive data center operating costs into your monthly bill, ZdexCloud shifts hosting to your physical premises:
-          </p>
-          <div class="grid-3-col" style="gap: var(--space-md);">
-            <div>
-              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Hardware Ownership</div>
-              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
-                You provide the spare Android smartphone (Android 8.0+), charger, and optional microSD card. You never pay hardware rental fees to ZdexCloud.
-              </p>
-            </div>
-            <div>
-              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Electricity Footprint</div>
-              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
-                An idle Android phone server consumes approximately 2W to 4W of power (~₹20 to ₹50 in electricity per year), which is vastly cheaper than cloud subscriptions or traditional 50W PC NAS setups.
-              </p>
-            </div>
-            <div>
-              <div style="font-weight: var(--font-weight-semibold); font-size: var(--font-size-body-sm); color: var(--color-text-primary); margin-bottom: 4px;">Home Network Bandwidth</div>
-              <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: 1.5; margin: 0;">
-                File download speed depends on the phone's home Wi-Fi or cellular upload bandwidth. For high-bandwidth 4K video streaming, ensure your phone has a stable Wi-Fi connection.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- PRICING FREQUENTLY ASKED QUESTIONS -->
-    <section class="section-wrapper section-wrapper-alt">
       <div class="container">
         <div class="section-header text-center">
           <div class="page-header-eyebrow"><span class="badge badge-accent">Got Questions?</span></div>
           <h2 class="section-title">Pricing Frequently Asked Questions</h2>
           <p class="section-subtitle">
-            Direct, transparent answers regarding billing, server limits, storage capacity, and subscription policies.
+            Direct, transparent answers regarding billing, server limits, regional currency, and subscription policies.
           </p>
         </div>
 
@@ -764,13 +529,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>What am I actually paying for if my files stay on my phone?</span>
+                <span>1. What is included in the Free tier?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                You are paying for the cloud coordination infrastructure, device registration plane, and secure outbound WebSocket relay routing. While your data is stored exclusively on your Android phone's flash memory, ZdexCloud maintains cloud gateways that allow you to reach your phone remotely from any web browser without configuring home router port forwarding or purchasing dynamic DNS services.
+                The Free plan allows you to register and remotely access 1 Android phone file server with zero storage hosting fees. It includes full access to the browser-based web file manager, secure outbound TLS 1.3 relay tunneling, media streaming, and standard 24-hour web session security.
               </div>
             </div>
           </div>
@@ -778,13 +543,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>Does upgrading to Pro increase my storage space?</span>
+                <span>2. How many servers can Pro run?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                No. Upgrading to Pro does not add cloud storage gigabytes because ZdexCloud does not host your files in the cloud. Instead, upgrading to Pro increases your registered server limit from 1 to up to 5 phones and grants priority gateway routing. To increase storage capacity, you simply insert a larger microSD card into your Android phone or use a phone with larger internal flash memory.
+                Both Pro Monthly and Pro Yearly support up to 5 simultaneously registered Android server nodes under a single account. All 5 nodes can be managed, switched, and accessed from your centralized web dashboard with priority gateway relay routing.
               </div>
             </div>
           </div>
@@ -792,13 +557,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>What is the difference between Pro Monthly and Pro Yearly?</span>
+                <span>3. What is the difference between Monthly and Yearly?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                Both Pro Monthly (₹49/month) and Pro Yearly (₹500/year) unlock up to 5 registered Android server nodes and priority gateway routing. However, Pro Yearly offers an annual saving of ₹88 compared to monthly billing (₹500 vs. ₹588 annual equivalent), representing an effective monthly rate of ₹41.67 per month, along with a 12-month fixed price guarantee.
+                Both plans grant the exact same technical capabilities (up to 5 servers and priority relay). Pro Monthly offers month-to-month flexibility, while Pro Yearly provides substantial annual savings and locks in your plan price for 12 months.
               </div>
             </div>
           </div>
@@ -806,13 +571,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>What happens if my Pro subscription expires or is canceled?</span>
+                <span>4. How much do I save with Yearly?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                Your files are never deleted or locked because they reside on your physical phone hardware. If a Pro subscription expires, your account simply transitions to the Free tier. Your primary registered phone server remains active and accessible, while additional server slots beyond the 1-server Free limit become paused until you reactivate Pro.
+                In India, Pro Yearly costs ₹500/year compared to ₹49/month (₹588/year equivalent), saving ₹88/year (an effective monthly rate of ₹41.67/month). Internationally, Pro Yearly costs $9.99/year compared to $0.99/month ($11.88/year equivalent), saving $1.89/year (an effective monthly rate of $0.83/month).
               </div>
             </div>
           </div>
@@ -820,13 +585,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>Are there hidden bandwidth overage charges or per-file fees?</span>
+                <span>5. Which currency will I be charged in?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                No. ZdexCloud does not bill per-gigabyte egress fees, transfer penalties, or per-file charges. Normal personal usage for file synchronization, media streaming, and document backups is included under your tier's gateway routing policies.
+                Your authoritative billing currency is determined exclusively by your confirmed billing country. Accounts with a confirmed billing country of India are billed in Indian Rupees (INR). Accounts with confirmed billing countries outside India are billed in US Dollars (USD).
               </div>
             </div>
           </div>
@@ -834,13 +599,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>How does the strict 24-hour web session affect my subscription?</span>
+                <span>6. Does changing my detected location change my billing country?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                The strict 24-hour web session is a browser security policy and has no impact on your subscription status or server operation. After 24 hours of logging into the web dashboard, your web browser session expires to protect your account. Your Android phone server continues running continuously in the background, and your subscription remains fully active; you simply sign in again when you return.
+                No. IP-based geolocation is used only as a non-authoritative storefront presentation hint. Your official billing country and billing currency are only established when explicitly confirmed by you in your account settings or at checkout.
               </div>
             </div>
           </div>
@@ -848,13 +613,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>Can I connect more than 5 phones to one account?</span>
+                <span>7. Can I cancel my Pro subscription?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                The maximum server limit supported on our standard Pro tiers is up to 5 registered Android phone servers per account. If you manage extensive multi-node deployments or laboratory fleets, please contact our team via the contact page for customized coordination options.
+                Yes. You can cancel your subscription at any time. Upon cancellation, your paid entitlements remain fully active until the end of your current paid billing period without premature cutoff.
               </div>
             </div>
           </div>
@@ -862,13 +627,13 @@
           <div class="accordion-item">
             <h3 class="accordion-header">
               <button class="accordion-trigger" aria-expanded="false">
-                <span>How do I get started with ZdexCloud?</span>
+                <span>8. What happens to my existing servers if Pro expires?</span>
                 <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
               </button>
             </h3>
             <div class="accordion-panel">
               <div class="accordion-panel-inner">
-                Getting started takes less than two minutes. Create your free account on our Get Started page, download the ZdexCloud Android APK to your spare smartphone, sign in or scan your pairing QR code, and start Server Mode. Your phone is immediately accessible via your private web dashboard.
+                Your data is never deleted because it stays on your physical phone. If Pro expires, your account transitions safely to the Free tier (1 active server limit). No servers or files are destroyed; your first paired device remains active, and additional slots become paused until Pro is reactivated.
               </div>
             </div>
           </div>
@@ -884,7 +649,7 @@
           Ready to Reclaim Your Private Storage?
         </h2>
         <p style="font-size: var(--font-size-body-lg); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-xl);">
-          Stop paying monthly per-gigabyte cloud storage bills. Turn your spare Android phone into a high-capacity personal cloud server today.
+          Stop paying monthly per-gigabyte cloud storage bills. Turn your spare Android phone into a personal cloud file server today.
         </p>
         <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
           <a href="get-started.html" class="btn btn-primary btn-lg">Get Started Free</a>
@@ -894,6 +659,199 @@
     </section>
 
   </main>
+
+  <!-- CHECKOUT PRICE BREAKDOWN MODAL (ZC-BILLING-4.2) -->
+  <div id="checkout-breakdown-modal" role="dialog" aria-modal="true" aria-labelledby="breakdown-modal-title" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--color-surface); border-radius: var(--radius-xl); max-width: 500px; width: 100%; padding: var(--space-xl); box-shadow: var(--shadow-xl); border: 1px solid var(--color-border); text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <h3 id="breakdown-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; color: var(--color-text-primary); margin: 0;">
+          Review Your Order
+        </h3>
+        <button type="button" onclick="closeBreakdownModal()" aria-label="Close order review" style="background: none; border: none; font-size: 20px; color: var(--color-text-muted); cursor: pointer; padding: 8px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;">&times;</button>
+      </div>
+
+      <div style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-subtle);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Plan Selected:</span>
+          <strong id="breakdown-plan-name" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">Pro Yearly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Billing Country:</span>
+          <span id="breakdown-country" style="font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-primary);">IN</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Billing Frequency:</span>
+          <span id="breakdown-interval" style="font-size: var(--font-size-sm); color: var(--color-text-primary);">Annual (Every 12 Months)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Base Subscription Price:</span>
+          <span id="breakdown-base-price" style="font-size: var(--font-size-sm); font-weight: 600; color: var(--color-text-primary);">₹500</span>
+        </div>
+        <div id="breakdown-savings-row" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 8px; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: var(--radius-sm);">
+          <span style="font-size: var(--font-size-xs); color: #059669; font-weight: 600;">Annual Savings:</span>
+          <span id="breakdown-savings-amount" style="font-size: var(--font-size-xs); color: #059669; font-weight: 700;">Save ₹88/year (~15% off)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Estimated Tax:</span>
+          <span id="breakdown-tax" style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Included in price</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Processing Fee:</span>
+          <span id="breakdown-fee" style="font-size: var(--font-size-sm); color: #059669; font-weight: 600;">Free</span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-md); padding: 0 4px;">
+        <span style="font-size: var(--font-size-base); font-weight: 700; color: var(--color-text-primary);">Total Due Today:</span>
+        <span id="breakdown-total" style="font-size: var(--font-size-2xl); font-weight: 800; color: var(--color-brand-primary);">₹500</span>
+      </div>
+
+      <p id="breakdown-renewal-notice" style="font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-lg); text-align: center;">
+        Renews annually at ₹500/year until cancelled. You can cancel anytime from your dashboard.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <button type="button" id="btn-proceed-checkout" onclick="proceedToRazorpayCheckout()" class="btn btn-primary btn-block" style="min-height: 44px;">Continue to Secure Checkout</button>
+        <button type="button" onclick="closeBreakdownModal()" class="btn btn-ghost btn-block" style="min-height: 44px;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT SUCCESS / VERIFICATION PENDING MODAL (ZC-BILLING-4.4) -->
+  <div id="checkout-success-modal" role="dialog" aria-modal="true" aria-labelledby="success-modal-heading" aria-describedby="success-modal-desc" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--color-surface); border-radius: var(--radius-xl); max-width: 500px; width: 100%; padding: var(--space-xl); box-shadow: var(--shadow-xl); border: 1px solid var(--color-border); text-align: center;">
+      
+      <!-- Premium Check Icon -->
+      <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(16, 185, 129, 0.1); color: #059669; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+
+      <!-- Verification Pending Status Badge -->
+      <div style="margin-bottom: var(--space-xs);">
+        <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: var(--font-size-xs); font-weight: 600;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span>
+          <span>Verification Pending</span>
+        </span>
+      </div>
+
+      <h3 id="success-modal-heading" style="font-size: var(--font-size-xl); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);">
+        Payment Submitted
+      </h3>
+
+      <p id="success-modal-desc" style="font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+        Your recurring payment authorization was submitted successfully. We're verifying it with the payment provider now.
+      </p>
+
+      <!-- Order Reference Summary -->
+      <div style="background: var(--color-bg-subtle); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border-subtle); text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">Plan:</span>
+          <strong id="success-plan-name" style="font-size: var(--font-size-xs); color: var(--color-text-primary);">ZdexCloud Pro</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">Billing Frequency:</span>
+          <span id="success-frequency" style="font-size: var(--font-size-xs); color: var(--color-text-primary);">Annual</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">Amount Submitted:</span>
+          <strong id="success-amount" style="font-size: var(--font-size-xs); color: var(--color-brand-primary);">₹500</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">Reference ID:</span>
+          <span id="success-payment-id" style="font-size: var(--font-size-xs); font-family: var(--font-family-mono); color: var(--color-text-muted);">Submitted</span>
+        </div>
+      </div>
+
+      <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); line-height: 1.5; margin-bottom: var(--space-lg);">
+        Your Pro subscription and 5-server capacity will activate once ZdexCloud confirms the payment with the payment provider.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <a href="dashboard.html" class="btn btn-primary btn-block" style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">Go to Dashboard</a>
+        <button type="button" onclick="closeSuccessModal()" class="btn btn-ghost btn-block" style="min-height: 44px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT FAILURE MODAL (ZC-BILLING-4.4) -->
+  <div id="checkout-failure-modal" role="dialog" aria-modal="true" aria-labelledby="failure-modal-heading" aria-describedby="failure-modal-desc" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--color-surface); border-radius: var(--radius-xl); max-width: 480px; width: 100%; padding: var(--space-xl); box-shadow: var(--shadow-xl); border: 1px solid var(--color-border); text-align: center;">
+      
+      <!-- Failure Icon -->
+      <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+      </div>
+
+      <h3 id="failure-modal-heading" style="font-size: var(--font-size-xl); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">
+        Payment Could Not Be Completed
+      </h3>
+
+      <p id="failure-modal-desc" style="font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
+        The payment could not be completed. No Pro plan activation has occurred. You can try again when you're ready.
+      </p>
+
+      <div id="failure-reason-box" style="display: none; background: #FEF2F2; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-md); border: 1px solid #FECACA; text-align: left;">
+        <span style="font-size: var(--font-size-xs); font-weight: 600; color: #991B1B;">Reason:</span>
+        <span id="failure-reason-text" style="font-size: var(--font-size-xs); color: #B91C1C; margin-left: 4px;"></span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <button type="button" id="btn-failure-retry" onclick="retryCheckoutFromFailure()" class="btn btn-primary btn-block" style="min-height: 44px;">Try Again</button>
+        <button type="button" onclick="closeFailureModal()" class="btn btn-ghost btn-block" style="min-height: 44px;">Back to Pricing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT UNCERTAIN / NETWORK INTERRUPTION MODAL (ZC-BILLING-4.4) -->
+  <div id="checkout-uncertain-modal" role="dialog" aria-modal="true" aria-labelledby="uncertain-modal-heading" aria-describedby="uncertain-modal-desc" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--color-surface); border-radius: var(--radius-xl); max-width: 480px; width: 100%; padding: var(--space-xl); box-shadow: var(--shadow-xl); border: 1px solid var(--color-border); text-align: center;">
+      
+      <!-- Amber Clock Icon -->
+      <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(217, 119, 6, 0.1); color: #D97706; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+      </div>
+
+      <h3 id="uncertain-modal-heading" style="font-size: var(--font-size-xl); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);">
+        Checkout Status Uncertain
+      </h3>
+
+      <p id="uncertain-modal-desc" style="font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-lg);">
+        We couldn't confirm the checkout result yet due to a network interruption. Please check your billing status in the dashboard before attempting another checkout.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+        <a href="dashboard.html" class="btn btn-primary btn-block" style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">Go to Dashboard</a>
+        <button type="button" onclick="closeUncertainModal()" class="btn btn-ghost btn-block" style="min-height: 44px;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKOUT DISMISSED TOAST NOTIFICATION -->
+  <div id="checkout-dismiss-toast" style="display: none; position: fixed; bottom: 24px; right: 24px; z-index: 10001; background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid #3B82F6; border-radius: var(--radius-md); padding: var(--space-md); box-shadow: var(--shadow-lg); max-width: 380px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <span style="font-size: var(--font-size-xs); color: var(--color-text-primary); font-weight: 500;">Checkout window closed. You can resume checkout when ready.</span>
+    </div>
+  </div>
+
+  <!-- NOTICE / STATUS MODAL -->
+  <div id="checkout-notice-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: var(--color-surface); border-radius: var(--radius-xl); max-width: 480px; width: 100%; padding: var(--space-2xl); box-shadow: var(--shadow-xl); border: 1px solid var(--color-border); text-align: center;">
+      <div style="width: 52px; height: 52px; margin: 0 auto var(--space-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      </div>
+      <h3 style="font-size: var(--font-size-lg); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);" id="modal-title">
+        Pro Subscription
+      </h3>
+      <p style="font-size: var(--font-size-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-lg);" id="modal-desc">
+        Notice description.
+      </p>
+      <div style="display: flex; gap: var(--space-sm); justify-content: center;">
+        <a href="dashboard.html" class="btn btn-primary btn-sm" style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center;">Go to Dashboard</a>
+        <button type="button" onclick="closeNoticeModal()" class="btn btn-ghost btn-sm" style="min-height: 44px;">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer class="site-footer">
@@ -959,7 +917,537 @@
     </div>
   </footer>
 
+  <!-- CORE SCRIPTS -->
   <script src="../js/motion.js"></script>
+  <script src="../js/config.js"></script>
+  <script src="../js/auth.js"></script>
   <script src="../js/main.js"></script>
+
+  <!-- PRICING CONTROLLER SCRIPT (ZC-BILLING-2.4, 4.1, 4.2, 4.4) -->
+  <script>
+    (function() {
+      'use strict';
+
+      let currentCatalog = null;
+      let activeCurrency = 'INR';
+      let selectedInterval = 'YEARLY';
+      let userBillingState = null;
+      let isAuthenticated = false;
+      let activeBreakdownData = null;
+      let activeBreakdownPlan = null;
+      let lastFocusedElement = null;
+
+      document.addEventListener('DOMContentLoaded', () => {
+        isAuthenticated = typeof AuthService !== 'undefined' && AuthService.isSessionValid();
+        initPricingPage();
+
+        // Keyboard navigation for accessible modal dismissal
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeAllModals();
+          }
+        });
+      });
+
+      function closeAllModals() {
+        closeBreakdownModal();
+        closeSuccessModal();
+        closeFailureModal();
+        closeUncertainModal();
+        closeNoticeModal();
+      }
+
+      window.selectBillingInterval = function(interval) {
+        selectedInterval = interval;
+        const btnMonthly = document.getElementById('toggle-monthly');
+        const btnYearly = document.getElementById('toggle-yearly');
+
+        if (interval === 'MONTHLY') {
+          btnMonthly?.classList.add('is-active');
+          btnMonthly?.setAttribute('aria-pressed', 'true');
+          btnYearly?.classList.remove('is-active');
+          btnYearly?.setAttribute('aria-pressed', 'false');
+
+          document.getElementById('card-pro-monthly')?.classList.add('pricing-card-highlighted');
+          document.getElementById('card-pro-yearly')?.classList.remove('pricing-card-highlighted');
+        } else {
+          btnYearly?.classList.add('is-active');
+          btnYearly?.setAttribute('aria-pressed', 'true');
+          btnMonthly?.classList.remove('is-active');
+          btnMonthly?.setAttribute('aria-pressed', 'false');
+
+          document.getElementById('card-pro-yearly')?.classList.add('pricing-card-highlighted');
+          document.getElementById('card-pro-monthly')?.classList.remove('pricing-card-highlighted');
+        }
+
+        const supporting = document.getElementById('toggle-supporting-text');
+        if (supporting) {
+          supporting.textContent = interval === 'YEARLY'
+            ? 'Yearly billing provides the best value with 12 months guaranteed price lock.'
+            : 'Monthly billing offers maximum month-to-month flexibility with no long-term commitment.';
+        }
+      };
+
+      window.handlePlanSelection = async function(planCode) {
+        lastFocusedElement = document.activeElement;
+
+        if (!isAuthenticated) {
+          const targetPlan = planCode.toLowerCase();
+          window.location.href = `get-started.html?plan=${targetPlan}`;
+          return;
+        }
+
+        if (planCode === 'FREE') {
+          window.location.href = 'dashboard.html';
+          return;
+        }
+
+        if (!userBillingState || !userBillingState.countryConfirmed) {
+          window.location.href = 'dashboard.html#billing-region-card';
+          return;
+        }
+
+        if (userBillingState.status === 'ACTIVE' && userBillingState.plan === planCode) {
+          window.showNoticeModal('Active Subscription', `You are currently active on the ${planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'} plan.`);
+          return;
+        }
+
+        try {
+          const res = await apiRequest(`/billing/checkout/price-breakdown?planCode=${encodeURIComponent(planCode)}`, 'GET');
+
+          if (!res.ok || !res.data || !res.data.success) {
+            const errorMsg = res.data?.error?.message || 'Failed to retrieve checkout price breakdown.';
+            window.showNoticeModal('Price Calculation Error', errorMsg);
+            return;
+          }
+
+          const breakdown = res.data.data;
+          activeBreakdownData = breakdown;
+          window.openBreakdownModal(breakdown);
+        } catch (err) {
+          window.openUncertainModal();
+        }
+      };
+
+      window.openBreakdownModal = function(breakdown) {
+        activeBreakdownPlan = breakdown.planCode;
+        activeBreakdownData = breakdown;
+        const modal = document.getElementById('checkout-breakdown-modal');
+        if (!modal) return;
+
+        const planNameEl = document.getElementById('breakdown-plan-name');
+        const countryEl = document.getElementById('breakdown-country');
+        const intervalEl = document.getElementById('breakdown-interval');
+        const basePriceEl = document.getElementById('breakdown-base-price');
+        const savingsRow = document.getElementById('breakdown-savings-row');
+        const savingsAmountEl = document.getElementById('breakdown-savings-amount');
+        const taxEl = document.getElementById('breakdown-tax');
+        const feeEl = document.getElementById('breakdown-fee');
+        const totalEl = document.getElementById('breakdown-total');
+        const renewalNoticeEl = document.getElementById('breakdown-renewal-notice');
+        const proceedBtn = document.getElementById('btn-proceed-checkout');
+
+        if (planNameEl) planNameEl.textContent = breakdown.planName || (breakdown.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly');
+        if (countryEl) countryEl.textContent = breakdown.billingCountry;
+        if (intervalEl) intervalEl.textContent = breakdown.interval === 'YEARLY' ? 'Annual (Every 12 Months)' : 'Monthly (Every Month)';
+        if (basePriceEl) basePriceEl.textContent = breakdown.formattedAmount;
+
+        if (savingsRow && savingsAmountEl) {
+          if (breakdown.savings && breakdown.savings.amountMinorUnits > 0) {
+            savingsRow.style.display = 'flex';
+            savingsAmountEl.textContent = `Save ${breakdown.savings.formattedAmount}/year (~${breakdown.savings.percentage}% off)`;
+          } else {
+            savingsRow.style.display = 'none';
+          }
+        }
+
+        if (taxEl) taxEl.textContent = breakdown.tax?.formattedAmount || 'Included in price';
+        if (feeEl) feeEl.textContent = breakdown.fees?.formattedAmount ? `${breakdown.fees.formattedAmount} (Free)` : 'Free';
+        if (totalEl) totalEl.textContent = breakdown.formattedTotal;
+        if (renewalNoticeEl) renewalNoticeEl.textContent = breakdown.renewal?.notice || `Renews at ${breakdown.formattedTotal}. Cancel anytime in dashboard.`;
+
+        if (proceedBtn) {
+          proceedBtn.disabled = false;
+          proceedBtn.textContent = 'Continue to Secure Checkout';
+        }
+
+        modal.style.display = 'flex';
+        proceedBtn?.focus();
+      };
+
+      window.closeBreakdownModal = function() {
+        const modal = document.getElementById('checkout-breakdown-modal');
+        if (modal) modal.style.display = 'none';
+      };
+
+      window.openSuccessModal = function(details) {
+        closeAllModals();
+        const modal = document.getElementById('checkout-success-modal');
+        if (!modal) return;
+
+        const planNameEl = document.getElementById('success-plan-name');
+        const freqEl = document.getElementById('success-frequency');
+        const amountEl = document.getElementById('success-amount');
+        const paymentIdEl = document.getElementById('success-payment-id');
+
+        if (planNameEl) planNameEl.textContent = details.planName || (activeBreakdownData?.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly');
+        if (freqEl) freqEl.textContent = details.interval || (activeBreakdownData?.interval === 'YEARLY' ? 'Annual' : 'Monthly');
+        if (amountEl) amountEl.textContent = details.formattedTotal || activeBreakdownData?.formattedTotal || '₹500';
+        if (paymentIdEl) paymentIdEl.textContent = details.paymentId || 'Submitted';
+
+        modal.style.display = 'flex';
+      };
+
+      window.closeSuccessModal = function() {
+        const modal = document.getElementById('checkout-success-modal');
+        if (modal) modal.style.display = 'none';
+        if (lastFocusedElement) lastFocusedElement.focus();
+      };
+
+      window.openFailureModal = function(details) {
+        closeAllModals();
+        const modal = document.getElementById('checkout-failure-modal');
+        if (!modal) return;
+
+        const reasonBox = document.getElementById('failure-reason-box');
+        const reasonText = document.getElementById('failure-reason-text');
+
+        if (details && details.reason) {
+          if (reasonBox) reasonBox.style.display = 'block';
+          if (reasonText) reasonText.textContent = details.reason;
+        } else {
+          if (reasonBox) reasonBox.style.display = 'none';
+        }
+
+        modal.style.display = 'flex';
+        document.getElementById('btn-failure-retry')?.focus();
+      };
+
+      window.closeFailureModal = function() {
+        const modal = document.getElementById('checkout-failure-modal');
+        if (modal) modal.style.display = 'none';
+        if (lastFocusedElement) lastFocusedElement.focus();
+      };
+
+      window.retryCheckoutFromFailure = function() {
+        closeFailureModal();
+        if (activeBreakdownData) {
+          window.openBreakdownModal(activeBreakdownData);
+        } else if (activeBreakdownPlan) {
+          window.handlePlanSelection(activeBreakdownPlan);
+        }
+      };
+
+      window.openUncertainModal = function() {
+        closeAllModals();
+        const modal = document.getElementById('checkout-uncertain-modal');
+        if (modal) modal.style.display = 'flex';
+      };
+
+      window.closeUncertainModal = function() {
+        const modal = document.getElementById('checkout-uncertain-modal');
+        if (modal) modal.style.display = 'none';
+        if (lastFocusedElement) lastFocusedElement.focus();
+      };
+
+      function showDismissToast() {
+        const toast = document.getElementById('checkout-dismiss-toast');
+        if (!toast) return;
+        toast.style.display = 'block';
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 5000);
+      }
+
+      window.proceedToRazorpayCheckout = async function() {
+        if (!activeBreakdownPlan) return;
+
+        const proceedBtn = document.getElementById('btn-proceed-checkout');
+        if (proceedBtn) {
+          proceedBtn.disabled = true;
+          proceedBtn.textContent = 'Preparing Secure Checkout...';
+        }
+
+        try {
+          const res = await apiRequest('/billing/checkout/session', 'POST', { planCode: activeBreakdownPlan });
+
+          if (!res.ok || !res.data || !res.data.success) {
+            const errorMsg = res.data?.error?.message || 'Failed to initialize checkout session.';
+            window.closeBreakdownModal();
+            window.showNoticeModal('Checkout Initialization Error', errorMsg);
+            return;
+          }
+
+          const session = res.data.data;
+          window.closeBreakdownModal();
+
+          const openRazorpayCheckout = () => {
+            if (typeof window.Razorpay === 'undefined') {
+              window.openUncertainModal();
+              return;
+            }
+
+            const rzp = new window.Razorpay({
+              key: session.keyId,
+              subscription_id: session.subscriptionId,
+              name: 'ZdexCloud',
+              description: `ZdexCloud ${session.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'} Subscription`,
+              image: '../favicon.ico',
+              handler: function(response) {
+                // Client-side UX callback ONLY.
+                // Billing activation happens authoritatively via backend webhooks (Phase 6).
+                window.openSuccessModal({
+                  planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+                  formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
+                  interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
+                  paymentId: response.razorpay_payment_id || 'Submitted'
+                });
+              },
+              modal: {
+                ondismiss: function() {
+                  showDismissToast();
+                  if (activeBreakdownData) {
+                    window.openBreakdownModal(activeBreakdownData);
+                  }
+                }
+              },
+              theme: {
+                color: '#2563EB'
+              }
+            });
+
+            // Intercept payment failure event from modal
+            rzp.on('payment.failed', function(failureResponse) {
+              const errDesc = failureResponse?.error?.description || 'The transaction could not be authorized by your payment method.';
+              window.openFailureModal({ reason: errDesc });
+            });
+
+            rzp.open();
+          };
+
+          if (proceedBtn) {
+            proceedBtn.textContent = 'Opening Secure Payment...';
+          }
+
+          if (typeof window.Razorpay === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.onload = openRazorpayCheckout;
+            script.onerror = () => {
+              window.openUncertainModal();
+            };
+            document.head.appendChild(script);
+          } else {
+            openRazorpayCheckout();
+          }
+        } catch (err) {
+          window.closeBreakdownModal();
+          window.openUncertainModal();
+        } finally {
+          if (proceedBtn) {
+            proceedBtn.disabled = false;
+            proceedBtn.textContent = 'Continue to Secure Checkout';
+          }
+        }
+      };
+
+      window.showNoticeModal = function(title, desc) {
+        closeAllModals();
+        const modal = document.getElementById('checkout-notice-modal');
+        const titleEl = document.getElementById('modal-title');
+        const descEl = document.getElementById('modal-desc');
+        if (titleEl) titleEl.textContent = title;
+        if (descEl) descEl.textContent = desc;
+        if (modal) modal.style.display = 'flex';
+      };
+
+      window.closeNoticeModal = function() {
+        const modal = document.getElementById('checkout-notice-modal');
+        if (modal) modal.style.display = 'none';
+        if (lastFocusedElement) lastFocusedElement.focus();
+      };
+
+      window.loadPricingCatalog = async function() {
+        const errorBanner = document.getElementById('pricing-error-banner');
+        if (errorBanner) errorBanner.style.display = 'none';
+
+        try {
+          if (isAuthenticated) {
+            try {
+              const billingRes = await apiRequest('/billing', 'GET');
+              if (billingRes.ok && billingRes.data && billingRes.data.success) {
+                userBillingState = billingRes.data.data;
+              }
+            } catch (e) {
+              console.warn('Failed to load user billing state', e);
+            }
+          }
+
+          // 2. Fetch plans from backend (if confirmed currency exists, request specifically for it)
+          let endpoint = '/plans';
+          if (userBillingState && userBillingState.countryConfirmed && userBillingState.currency) {
+            endpoint = `/plans?currency=${encodeURIComponent(userBillingState.currency)}`;
+          }
+
+          const plansRes = await apiRequest(endpoint, 'GET');
+
+          if (!plansRes.ok || !plansRes.data || !plansRes.data.success) {
+            throw new Error(plansRes.data?.error?.message || 'Failed to retrieve pricing catalog');
+          }
+
+          const catalogData = plansRes.data.data;
+          currentCatalog = catalogData.plans;
+          activeCurrency = catalogData.currency || 'INR';
+
+          renderRegionalBanner(catalogData);
+          renderPricingCards(catalogData);
+        } catch (err) {
+          if (errorBanner) {
+            errorBanner.style.display = 'block';
+            const msg = document.getElementById('pricing-error-message');
+            if (msg) msg.textContent = err.message || 'Could not load pricing catalog from server.';
+          }
+        }
+      };
+
+      function renderRegionalBanner(catalogData) {
+        const bannerText = document.getElementById('region-banner-text');
+        const bannerAction = document.getElementById('region-banner-action');
+        const isIndia = activeCurrency === 'INR';
+
+        if (isAuthenticated && userBillingState) {
+          if (userBillingState.countryConfirmed) {
+            const country = userBillingState.billingCountry || (isIndia ? 'IN' : 'US');
+            if (bannerText) {
+              bannerText.innerHTML = `Authoritative Billing Region: <strong>${escapeHtml(country)}</strong> (${escapeHtml(activeCurrency)}). Prices reflect your confirmed billing currency.`;
+            }
+            if (bannerAction) {
+              bannerAction.innerHTML = `<a href="dashboard.html#billing-region-card" class="btn btn-ghost btn-sm" style="font-size: 12px;">Manage Region</a>`;
+            }
+          } else {
+            if (bannerText) {
+              bannerText.innerHTML = `Prices shown in <strong>${escapeHtml(activeCurrency)}</strong> based on detected storefront region. Your billing country is unconfirmed.`;
+            }
+            if (bannerAction) {
+              bannerAction.innerHTML = `<a href="dashboard.html#billing-region-card" class="btn btn-outline btn-sm" style="font-size: 12px; color: var(--color-brand-primary);">Confirm Billing Country</a>`;
+            }
+          }
+        } else {
+          if (bannerText) {
+            bannerText.innerHTML = isIndia
+              ? `Prices shown in <strong>INR (₹)</strong> based on detected storefront region (India).`
+              : `Prices shown in <strong>USD ($)</strong> based on international storefront region.`;
+          }
+          if (bannerAction) {
+            bannerAction.innerHTML = `<span class="text-xs text-muted">Confirm billing country at checkout</span>`;
+          }
+        }
+      }
+
+      function renderPricingCards(catalogData) {
+        const plans = catalogData.plans || [];
+        const freePlan = plans.find(p => p.code === 'FREE');
+        const proMonthlyPlan = plans.find(p => p.code === 'PRO_MONTHLY');
+        const proYearlyPlan = plans.find(p => p.code === 'PRO_YEARLY');
+
+        if (!freePlan || !proMonthlyPlan || !proYearlyPlan) {
+          throw new Error('Incomplete catalog returned by server.');
+        }
+
+        // Format Prices using backend values
+        const freePriceEl = document.getElementById('price-free');
+        const proMonthlyPriceEl = document.getElementById('price-pro-monthly');
+        const proYearlyPriceEl = document.getElementById('price-pro-yearly');
+
+        if (freePriceEl) freePriceEl.textContent = freePlan.formattedPrice || formatCurrency(freePlan.amountMinorUnits, freePlan.currency);
+        if (proMonthlyPriceEl) proMonthlyPriceEl.textContent = proMonthlyPlan.formattedPrice || formatCurrency(proMonthlyPlan.amountMinorUnits, proMonthlyPlan.currency);
+        if (proYearlyPriceEl) proYearlyPriceEl.textContent = proYearlyPlan.formattedPrice || formatCurrency(proYearlyPlan.amountMinorUnits, proYearlyPlan.currency);
+
+        // Savings Calculation (Integer Minor Units Arithmetic)
+        const monthlyUnits = proMonthlyPlan.amountMinorUnits; // e.g. 4900 (INR) or 99 (USD)
+        const yearlyUnits = proYearlyPlan.amountMinorUnits;   // e.g. 50000 (INR) or 999 (USD)
+        const annualizedMonthly = monthlyUnits * 12;         // e.g. 58800 (INR) or 1188 (USD)
+        const savingsUnits = annualizedMonthly - yearlyUnits; // e.g. 8800 (INR) or 189 (USD)
+        const savingsFormatted = formatCurrency(savingsUnits, activeCurrency);
+        const percentSavings = annualizedMonthly > 0 ? Math.round((savingsUnits / annualizedMonthly) * 100) : 15;
+        const effectiveMonthly = (yearlyUnits / 1200).toFixed(2);
+        const effectiveMonthlyFormatted = activeCurrency === 'INR' ? `₹${effectiveMonthly}` : `$${effectiveMonthly}`;
+
+        // Update Savings Elements
+        const toggleBadge = document.getElementById('toggle-savings-badge');
+        if (toggleBadge) toggleBadge.textContent = `Save ~${percentSavings}%`;
+
+        const savingsCallout = document.getElementById('savings-callout-yearly');
+        if (savingsCallout) {
+          savingsCallout.textContent = `Save ${savingsFormatted}/year (Effective ${effectiveMonthlyFormatted}/month)`;
+        }
+
+        const savingsLine = document.getElementById('savings-feature-line');
+        if (savingsLine) {
+          savingsLine.innerHTML = `<strong>Save ${savingsFormatted} per year</strong> compared to monthly billing`;
+        }
+
+        const effectiveLine = document.getElementById('effective-rate-feature-line');
+        if (effectiveLine) {
+          effectiveLine.innerHTML = `<strong>Effective Rate: ${effectiveMonthlyFormatted} / month</strong>`;
+        }
+
+        // Update CTAs if authenticated
+        if (isAuthenticated && userBillingState) {
+          const ctaFree = document.getElementById('cta-free');
+          const ctaMonthly = document.getElementById('cta-pro-monthly');
+          const ctaYearly = document.getElementById('cta-pro-yearly');
+
+          if (userBillingState.status === 'FREE' || !userBillingState.subscription) {
+            if (ctaFree) {
+              ctaFree.textContent = 'Current Plan';
+              ctaFree.classList.add('btn-ghost');
+              ctaFree.classList.remove('btn-secondary');
+              ctaFree.href = 'dashboard.html';
+            }
+          } else if (userBillingState.status === 'ACTIVE') {
+            if (userBillingState.plan === 'PRO_MONTHLY' && ctaMonthly) {
+              ctaMonthly.textContent = 'Current Plan';
+              ctaMonthly.classList.add('btn-ghost');
+              ctaMonthly.classList.remove('btn-secondary');
+            } else if (userBillingState.plan === 'PRO_YEARLY' && ctaYearly) {
+              ctaYearly.textContent = 'Current Plan';
+              ctaYearly.classList.add('btn-ghost');
+              ctaYearly.classList.remove('btn-primary');
+            }
+          }
+        }
+      }
+
+      function formatCurrency(minorUnits, currency) {
+        if (!Number.isInteger(minorUnits) || minorUnits < 0) minorUnits = 0;
+        if (currency === 'INR') {
+          if (minorUnits === 0) return '₹0';
+          if (minorUnits % 100 === 0) return `₹${minorUnits / 100}`;
+          return `₹${(minorUnits / 100).toFixed(2)}`;
+        }
+        if (currency === 'USD') {
+          if (minorUnits === 0) return '$0';
+          return `$${(minorUnits / 100).toFixed(2)}`;
+        }
+        return `${minorUnits / 100} ${currency}`;
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, match => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        })[match]);
+      }
+
+      function initPricingPage() {
+        window.loadPricingCatalog();
+      }
+    })();
+  </script>
 </body>
 </html>

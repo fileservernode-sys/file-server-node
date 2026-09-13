@@ -179,6 +179,18 @@ test('7. Storm Protection & Cooldown Engine', () => {
 });
 
 test('8. Central Notification Service Ingestion & Delivery Separation', async () => {
+  const { prisma } = await import('../src/config/database.js');
+  await prisma.user.upsert({
+    where: { id: 'usr_500' },
+    update: {},
+    create: {
+      id: 'usr_500',
+      email: 'usr_500@example.com',
+      passwordHash: 'dummyhash',
+      status: 'ACTIVE'
+    }
+  });
+
   const service = new CentralNotificationService();
 
   const result = await service.dispatchEvent({
@@ -209,6 +221,10 @@ test('8. Central Notification Service Ingestion & Delivery Separation', async ()
   assert.equal(marked, true);
   const updatedRecord = await service.getNotification(result.notificationId!);
   assert.equal(updatedRecord?.state, NotificationState.READ);
+
+  // Cleanup
+  await prisma.notificationRecord.deleteMany({ where: { userId: 'usr_500' } });
+  await prisma.user.delete({ where: { id: 'usr_500' } }).catch(() => {});
 });
 
 test('9. Retry Policy & Failure Classification', () => {

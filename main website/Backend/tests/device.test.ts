@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { EntitlementService } from '../src/services/billing/entitlement_service.js';
 
 describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Concurrency Tests', () => {
   let app: FastifyInstance;
@@ -30,6 +31,8 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
         }
       });
       userIdA = userA.id;
+      EntitlementService.setTestUserPlan(userA.id, 'PRO_MONTHLY');
+
       const sessionA = await prisma.userSession.create({
         data: {
           userId: userA.id,
@@ -49,6 +52,8 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
         }
       });
       userIdB = userB.id;
+      EntitlementService.setTestUserPlan(userB.id, 'PRO_MONTHLY');
+
       const sessionB = await prisma.userSession.create({
         data: {
           userId: userB.id,
@@ -63,6 +68,7 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
   });
 
   after(async () => {
+    EntitlementService.clearTestUserPlans();
     try {
       await prisma.user.deleteMany({
         where: {
@@ -364,6 +370,7 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
     const userC = await prisma.user.create({
       data: { email: emailC, passwordHash: 'hash', status: 'ACTIVE', emailVerified: true }
     });
+    EntitlementService.setTestUserPlan(userC.id, 'PRO_MONTHLY');
     const sessionC = await prisma.userSession.create({
       data: { userId: userC.id, token: `token-concurrent-${Date.now()}`, expiresAt: new Date(Date.now() + 3600000) }
     });

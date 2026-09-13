@@ -611,7 +611,7 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     try {
       final req = await _httpClient
           .getUrl(Uri.parse('http://127.0.0.1:8080$pathQuery'));
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final res = await req.close().timeout(const Duration(seconds: 10));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
@@ -630,9 +630,11 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     try {
       final req =
           await _httpClient.postUrl(Uri.parse('http://127.0.0.1:8080$path'));
-      req.headers.set('content-type', 'application/json');
-      req.write(jsonEncode(payload));
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final bytes = utf8.encode(jsonEncode(payload));
+      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
+      req.contentLength = bytes.length;
+      req.add(bytes);
+      final res = await req.close().timeout(const Duration(seconds: 10));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
@@ -651,9 +653,11 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     try {
       final req = await _httpClient.openUrl(
           'DELETE', Uri.parse('http://127.0.0.1:8080$path'));
-      req.headers.set('content-type', 'application/json');
-      req.write(jsonEncode(payload));
-      final res = await req.close().timeout(const Duration(seconds: 5));
+      final bytes = utf8.encode(jsonEncode(payload));
+      req.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
+      req.contentLength = bytes.length;
+      req.add(bytes);
+      final res = await req.close().timeout(const Duration(seconds: 10));
       final body = await res.transform(utf8.decoder).join();
       return jsonDecode(body) as Map<String, dynamic>;
     } catch (e) {
@@ -738,7 +742,18 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
       final devId = _lastDeviceId;
       final token = _lastSessionToken;
       if (devId != null && token != null && token.isNotEmpty && !_isExplicitlyDisconnecting) {
-        return await connect(deviceId: devId, sessionToken: token);
+        final res = await connect(deviceId: devId, sessionToken: token);
+        if (!res.isConnected && !_isExplicitlyDisconnecting && currentGen == _connectionGeneration) {
+          // If connect attempt was unsuccessful (e.g. gateway cold start / network blip), schedule continuous retry
+          AppLogger.warning('[RemoteConnection] Reconnect attempt $_reconnectAttempts did not achieve CONNECTED state. Scheduling next retry cycle...');
+          _reconnectTimer?.cancel();
+          _reconnectTimer = Timer(const Duration(milliseconds: 500), () {
+            if (!_isExplicitlyDisconnecting && !_currentInfo.isConnected) {
+              reconnect();
+            }
+          });
+        }
+        return res;
       }
     } finally {
       _isReconnecting = false;
@@ -753,27 +768,40 @@ class HttpRemoteConnectionService implements RemoteConnectionService {
     _pingTimer?.cancel();
     _missedPings = 0;
     _lastPongReceivedAt = DateTime.now();
+    final pingGen = _connectionGeneration;
 
     _pingTimer = Timer.periodic(const Duration(seconds: 15), (_) async {
-      if (_currentInfo.isConnected) {
-        // Silent liveness check: if missed >= 2 pings or last pong older than 35s
-        if (_missedPings >= 2 ||
-            (_lastPongReceivedAt != null &&
-                DateTime.now().difference(_lastPongReceivedAt!).inSeconds > 35)) {
-          AppLogger.warning('[RemoteConnection] Silent heartbeat loss detected (>35s without PONG). Triggering reconnect.');
-          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
-          try {
-            await _transport.disconnect();
-          } catch (_) {}
-          reconnect();
-          return;
-        }
+      if (pingGen != _connectionGeneration || !_currentInfo.isConnected) {
+        _pingTimer?.cancel();
+        _pingTimer = null;
+        return;
+      }
 
+      // Silent liveness check: if missed >= 2 pings or last pong older than 35s
+      if (_missedPings >= 2 ||
+          (_lastPongReceivedAt != null &&
+              DateTime.now().difference(_lastPongReceivedAt!).inSeconds > 35)) {
+        AppLogger.warning('[RemoteConnection] Silent heartbeat loss detected (>35s without PONG). Triggering reconnect.');
+        _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
         try {
-          await _transport.send(const PingMessage().toJson());
-          _missedPings++;
-        } catch (e) {
-          _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
+          await _transport.disconnect();
+        } catch (_) {}
+        if (!_isExplicitlyDisconnecting) {
+          reconnect();
+        }
+        return;
+      }
+
+      try {
+        await _transport.send(const PingMessage().toJson());
+        _missedPings++;
+      } catch (e) {
+        AppLogger.warning('[RemoteConnection] Failed sending PING frame: $e');
+        _updateInfo(const RemoteConnectionInfo(status: RemoteConnectionState.reconnecting));
+        try {
+          await _transport.disconnect();
+        } catch (_) {}
+        if (!_isExplicitlyDisconnecting) {
           reconnect();
         }
       }

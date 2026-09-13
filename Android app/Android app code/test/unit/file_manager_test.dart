@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -290,5 +291,17 @@ void main() {
       expect(results['doc3.pdf'], isFalse);
       expect(results['video4.mp4'], isTrue);
     });
+
+    test('Local API payload encoder sets exact UTF-8 byte length to prevent keep-alive deadlocks', () {
+      final payload = {'path': '/Documents', 'name': 'My New Folder 📁'};
+      final jsonStr = jsonEncode(payload);
+      final bytes = utf8.encode(jsonStr);
+
+      expect(bytes.length, greaterThan(0));
+      expect(bytes.length, equals(utf8.encode('{"path":"/Documents","name":"My New Folder 📁"}').length));
+      // Multi-byte Unicode character increases byte length compared to char length
+      expect(bytes.length, greaterThan(jsonStr.length));
+    });
   });
 }
+

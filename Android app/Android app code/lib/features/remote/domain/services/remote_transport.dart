@@ -69,6 +69,8 @@ abstract class RemoteTransport {
 /// Outbound WebSocket Transport Layer Implementation
 class WebSocketRemoteTransport implements RemoteTransport {
   WebSocket? _socket;
+  StreamSubscription? _socketSubscription;
+  int _socketGeneration = 0;
   final StreamController<Map<String, dynamic>> _controller =
       StreamController<Map<String, dynamic>>.broadcast();
 
@@ -82,6 +84,7 @@ class WebSocketRemoteTransport implements RemoteTransport {
   @override
   Future<void> connect(String url) async {
     await disconnect();
+    final currentSocketGen = ++_socketGeneration;
     final urlsToTry = <String>[
       url,
       'wss://gateway.zdexcloud.com',
@@ -90,15 +93,30 @@ class WebSocketRemoteTransport implements RemoteTransport {
     Object? lastError;
     for (final targetUrl in urlsToTry) {
       try {
-        AppLogger.info('[WebSocketTransport] Attempting connection to: $targetUrl');
+        AppLogger.info('[WebSocketTransport] Attempting connection to: $targetUrl (gen: $currentSocketGen)');
         final client = HttpClient()
           ..badCertificateCallback = (cert, host, port) =>
               AppConfig.current.environment != 'production';
-        _socket = await WebSocket.connect(targetUrl, customClient: client)
+        final socket = await WebSocket.connect(targetUrl, customClient: client)
             .timeout(const Duration(seconds: 12));
-        AppLogger.info('[WebSocketTransport] Connected successfully to: $targetUrl');
-        _socket!.listen(
+
+        if (currentSocketGen != _socketGeneration) {
+          AppLogger.info('[WebSocketTransport] Socket connection superseded by newer generation ($currentSocketGen != $_socketGeneration)');
+          try {
+            await socket.close();
+          } catch (_) {}
+          return;
+        }
+
+        _socket = socket;
+        // Active transport-level ping interval: keep NAT routers, mobile carrier APNs,
+        // and intermediate reverse proxy WebSocket connections alive without silent TCP timeouts
+        _socket!.pingInterval = const Duration(seconds: 10);
+
+        AppLogger.info('[WebSocketTransport] Connected successfully to: $targetUrl (gen: $currentSocketGen)');
+        _socketSubscription = _socket!.listen(
           (data) {
+            if (currentSocketGen != _socketGeneration) return;
             try {
               final json = jsonDecode(data.toString()) as Map<String, dynamic>;
               AppLogger.info('[WebSocketTransport] Inbound message: ${json['type']}');
@@ -106,13 +124,16 @@ class WebSocketRemoteTransport implements RemoteTransport {
             } catch (_) {}
           },
           onError: (err) {
+            if (currentSocketGen != _socketGeneration) return;
             AppLogger.warning('[WebSocketTransport] Socket error from $targetUrl', err);
             _controller.add({'type': 'ERROR', 'message': err.toString()});
           },
           onDone: () {
+            if (currentSocketGen != _socketGeneration) return;
             AppLogger.info('[WebSocketTransport] Socket closed / onDone from $targetUrl');
             _controller.add({'type': 'DISCONNECT'});
           },
+          cancelOnError: false,
         );
         return;
       } catch (e) {
@@ -120,7 +141,9 @@ class WebSocketRemoteTransport implements RemoteTransport {
         lastError = e;
       }
     }
-    _controller.add({'type': 'ERROR', 'message': lastError.toString()});
+    if (currentSocketGen == _socketGeneration) {
+      _controller.add({'type': 'ERROR', 'message': lastError.toString()});
+    }
     throw lastError ?? Exception('WebSocket connection failed');
   }
 
@@ -136,9 +159,18 @@ class WebSocketRemoteTransport implements RemoteTransport {
 
   @override
   Future<void> disconnect() async {
+    _socketGeneration++;
+    if (_socketSubscription != null) {
+      try {
+        await _socketSubscription!.cancel();
+      } catch (_) {}
+      _socketSubscription = null;
+    }
     if (_socket != null) {
       AppLogger.info('[WebSocketTransport] Disconnecting socket');
-      await _socket!.close();
+      try {
+        await _socket!.close();
+      } catch (_) {}
       _socket = null;
     }
   }

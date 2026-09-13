@@ -152,7 +152,12 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
     assert.strictEqual(response.statusCode, 200);
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
-    assert.ok(body.data.endpoint.hostname.includes('remotenode.net') || body.data.endpoint.hostname.includes('viewduration.com'));
+    assert.ok(
+      body.data.endpoint.hostname.includes('remotenode.net') ||
+      body.data.endpoint.hostname.includes('viewduration.com') ||
+      body.data.endpoint.hostname.includes('zdex.cloud') ||
+      body.data.endpoint.hostname.includes('zdexcloud.com')
+    );
   });
 
   test('POST /api/v1/connections/:connectionId/disconnect marks status DISCONNECTED', async () => {

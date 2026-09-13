@@ -55,7 +55,27 @@ export async function buildApp(): Promise<FastifyInstance> {
     bodyLimit: 104857600, // 100 MB body limit for file uploads
     logger: {
       level: config.LOG_LEVEL,
-      redact: ['req.headers.authorization', 'req.headers.cookie', 'body.password', 'body.passwordHash']
+      redact: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'req.headers["x-razorpay-signature"]',
+        'body.password',
+        'body.passwordHash',
+        'body.keySecret',
+        'body.webhookSecret'
+      ]
+    }
+  });
+
+  // Attach Content-Type parser that preserves exact raw payload Buffer on request.rawBody
+  app.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body, done) => {
+    try {
+      (req as any).rawBody = body;
+      const json = body.length === 0 ? {} : JSON.parse(body.toString('utf8'));
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
     }
   });
 

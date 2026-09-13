@@ -100,7 +100,17 @@ const envSchema = z.object({
   NOTIFICATION_RATE_LIMIT_DEVICE_PER_MINUTE: z.coerce.number().default(20),
   NOTIFICATION_RATE_LIMIT_TYPE_PER_MINUTE: z.coerce.number().default(15),
   NOTIFICATION_RATE_LIMIT_PROVIDER_PER_MINUTE: z.coerce.number().default(60),
-  NOTIFICATION_RATE_LIMIT_GLOBAL_PER_MINUTE: z.coerce.number().default(300)
+  NOTIFICATION_RATE_LIMIT_GLOBAL_PER_MINUTE: z.coerce.number().default(300),
+
+  // Razorpay Payment Gateway & Webhook Configuration (Phase 3 - ZC-BILLING-3.2)
+  RAZORPAY_KEY_ID: z.string().default(''),
+  RAZORPAY_KEY_SECRET: z.string().default(''),
+  RAZORPAY_WEBHOOK_SECRET: z.string().default(''),
+  RAZORPAY_BASE_URL: z.string().default('https://api.razorpay.com/v1'),
+  RAZORPAY_REQUEST_TIMEOUT_MS: z.coerce.number().default(10000),
+
+  // Merchant Tax / Legal Entity Configuration (Phase 6.5-Corrective)
+  MERCHANT_GSTIN: z.string().nullable().optional().default(null)
 });
 
 function loadConfig() {

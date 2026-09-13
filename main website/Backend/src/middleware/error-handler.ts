@@ -17,6 +17,12 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', error.message || 'Invalid request payload'));
   }
 
+  // Client Errors with explicit 4xx status code (e.g. malformed JSON in body parser)
+  if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
+    request.log.warn({ err: error, url: request.url }, error.message);
+    return reply.status(error.statusCode).send(createErrorResponse((error as any).code || 'BAD_REQUEST', error.message));
+  }
+
   // All Prisma Database Errors (connection lost, pool timeout, rust panic, unknown)
   const isPrismaError =
     error.name === 'PrismaClientInitializationError' ||
