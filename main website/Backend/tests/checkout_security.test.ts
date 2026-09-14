@@ -79,6 +79,13 @@ describe('ZC-BILLING-4.3 Checkout Security Hardening Test Suite', () => {
 
     assert.ok(proMonthlyInr && proMonthlyUsd && proYearlyInr && proYearlyUsd);
 
+    await prisma.billingProviderPlanMapping.deleteMany({
+      where: {
+        provider: PaymentProvider.RAZORPAY,
+        environment: env
+      }
+    });
+
     await prisma.billingProviderPlanMapping.create({
       data: {
         provider: PaymentProvider.RAZORPAY,

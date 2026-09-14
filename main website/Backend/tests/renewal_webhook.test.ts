@@ -154,6 +154,13 @@ describe('ZC-BILLING-5.2 Recurring Charge & Renewal Foundation Test Suite', () =
     proYearlyInrPrice = proYearlyInr;
     proMonthlyUsdPrice = proMonthlyUsd;
 
+    await prisma.billingProviderPlanMapping.deleteMany({
+      where: {
+        provider: PaymentProvider.RAZORPAY,
+        environment: env
+      }
+    });
+
     await prisma.billingProviderPlanMapping.create({
       data: {
         provider: PaymentProvider.RAZORPAY,

@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "test:6_5": "node --test dist/tests/tax_and_processing_fee.test.js",
     "test:6_6": "node --test dist/tests/billing_reconciliation.test.js",
+    "test:billing": "node scripts/run_billing_suite.cjs",
     "test": "node --test --test-concurrency=1 dist/tests/health.test.js dist/tests/auth.test.js dist/tests/device.test.js dist/tests/connection.test.js dist/tests/gateway.test.js dist/tests/dns_provider.test.js dist/tests/notification_architecture.test.js dist/tests/notification_persistence_fcm.test.js dist/tests/plan_catalog.test.js dist/tests/entitlement.test.js dist/tests/billing_state.test.js dist/tests/country_detection.test.js dist/tests/currency_pricing.test.js dist/tests/billing_country.test.js dist/tests/razorpay_config.test.js dist/tests/razorpay_plan_sync.test.js dist/tests/razorpay_reconciliation.test.js dist/tests/razorpay_checkout.test.js dist/tests/checkout_price_breakdown.test.js dist/tests/checkout_security.test.js"
   },
   "keywords": [

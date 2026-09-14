@@ -989,30 +989,6 @@ describe('ZC-BILLING-6.2 Pro Yearly -> Pro Monthly Downgrade Test Suite', () => 
       { client: mockClient }
     );
 
-    // Create an alternate mapping for testing mismatch
-    const altMapping = await prisma.billingProviderPlanMapping.upsert({
-      where: {
-        provider_environment_providerPlanId: {
-          provider: PaymentProvider.RAZORPAY,
-          environment: PaymentEnvironment.TEST,
-          providerPlanId: 'plan_rzp_unexpected_mismatch_inr'
-        }
-      },
-      update: { isActive: true },
-      create: {
-        provider: PaymentProvider.RAZORPAY,
-        environment: PaymentEnvironment.TEST,
-        planId: proYearlyPlan.id,
-        planPriceId: proYearlyInrPrice.id,
-        providerPlanId: 'plan_rzp_unexpected_mismatch_inr',
-        currency: CurrencyCode.INR,
-        amountMinorUnits: 999900,
-        period: 'yearly',
-        interval: 1,
-        isActive: true
-      }
-    });
-
     const eventId = `evt_wh_mismatch_${uniqueId()}`;
     const nowSec = Math.floor(Date.now() / 1000);
     const webhookPayload = {
@@ -1044,7 +1020,7 @@ describe('ZC-BILLING-6.2 Pro Yearly -> Pro Monthly Downgrade Test Suite', () => 
       webhookPayload
     );
 
-    assert.strictEqual(result.success, true);
+    assert.strictEqual(result.success, false);
 
     const reviewedPlanChange = await prisma.subscriptionPlanChange.findUnique({
       where: { id: schedResult.planChangeId }

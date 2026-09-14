@@ -1522,6 +1522,34 @@ export class RazorpayWebhookService {
     });
 
     if (!mapping || !mapping.plan || !mapping.planPrice) {
+      const pendingChange = await prisma.subscriptionPlanChange.findFirst({
+        where: {
+          subscriptionId: subscription.id,
+          status: { in: [PlanChangeStatus.PROCESSING, PlanChangeStatus.SCHEDULED] }
+        }
+      });
+
+      if (pendingChange) {
+        await prisma.subscriptionPlanChange.update({
+          where: { id: pendingChange.id },
+          data: {
+            status: PlanChangeStatus.REQUIRES_REVIEW,
+            failureReason: `Provider plan mismatch: no mapping found for provider plan: ${providerPlanId}`
+          }
+        });
+        await prisma.auditEvent.create({
+          data: {
+            userId: subscription.userId,
+            eventType: AuditEventType.SUBSCRIPTION_DOWNGRADE_MISMATCHED,
+            metadata: {
+              subscriptionId: subscription.id,
+              planChangeId: pendingChange.id,
+              receivedProviderPlanId: providerPlanId
+            }
+          }
+        });
+      }
+
       await prisma.billingWebhookEvent.update({
         where: { id: webhookLogId },
         data: {

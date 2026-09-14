@@ -71,6 +71,13 @@ describe('ZC-BILLING-4.1 Razorpay Checkout Session & Subscription Initialization
 
     assert.ok(proMonthlyInr && proMonthlyUsd && proYearlyInr && proYearlyUsd);
 
+    await prisma.billingProviderPlanMapping.deleteMany({
+      where: {
+        provider: PaymentProvider.RAZORPAY,
+        environment: env
+      }
+    });
+
     const m1 = await prisma.billingProviderPlanMapping.create({
       data: {
         provider: PaymentProvider.RAZORPAY,

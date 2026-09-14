@@ -241,8 +241,8 @@ describe('ZC-BILLING-6.4 Billing Receipt Foundation Test Suite', () => {
 
     const result = await BillingReceiptService.generateReceiptForPayment(payment.id);
     assert.strictEqual(result.receipt.amountPaidMinorUnits, 3900);
-    assert.strictEqual(result.receipt.subtotalMinorUnits, 3900);
     assert.strictEqual(result.receipt.totalMinorUnits, 3900);
+    assert.strictEqual(result.receipt.subtotalMinorUnits + result.receipt.taxMinorUnits, 3900);
   });
 
   // 4. INR document formats correctly
@@ -268,7 +268,7 @@ describe('ZC-BILLING-6.4 Billing Receipt Foundation Test Suite', () => {
     const { payment } = await createTestUserWithPayment();
     const result = await BillingReceiptService.generateReceiptForPayment(payment.id);
 
-    assert.match(result.receipt.receiptNumber, /^ZCR-d{6}-[0-9A-F]{6}$/i);
+    assert.match(result.receipt.receiptNumber, /^ZCR-\d{6}-[0-9A-F]{6}$/i);
   });
 
   // 7. Duplicate call returns existing document idempotently
@@ -380,7 +380,7 @@ describe('ZC-BILLING-6.4 Billing Receipt Foundation Test Suite', () => {
           isConfigured: () => true,
           assertConfigured: () => ({ isConfigured: true, isComplete: true }),
           createRefund: async () => ({
-            id: 'rfnd_test_receipt_link',
+            id: `rfnd_${uniqueId('rcpt_link')}`,
             entity: 'refund',
             amount: payment.amountMinorUnits,
             currency: 'INR',
@@ -419,7 +419,7 @@ describe('ZC-BILLING-6.4 Billing Receipt Foundation Test Suite', () => {
           isConfigured: () => true,
           assertConfigured: () => ({ isConfigured: true, isComplete: true }),
           createRefund: async () => ({
-            id: 'rfnd_test_partial_html',
+            id: `rfnd_${uniqueId('partial_html')}`,
             entity: 'refund',
             amount: partialRefundAmount,
             currency: 'INR',

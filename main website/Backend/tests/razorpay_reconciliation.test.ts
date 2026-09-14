@@ -76,6 +76,13 @@ describe('ZC-BILLING-3.4 Razorpay Provider Read/Verify & Catalog Reconciliation 
 
     assert.ok(proMonthlyInr && proMonthlyUsd && proYearlyInr && proYearlyUsd);
 
+    await prisma.billingProviderPlanMapping.deleteMany({
+      where: {
+        provider: PaymentProvider.RAZORPAY,
+        environment: env
+      }
+    });
+
     const m1 = await prisma.billingProviderPlanMapping.create({
       data: {
         provider: PaymentProvider.RAZORPAY,

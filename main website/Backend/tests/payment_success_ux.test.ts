@@ -75,6 +75,13 @@ describe('ZC-BILLING-4.4 Payment Success UX Test Suite', () => {
 
     assert.ok(proMonthlyInr && proMonthlyUsd && proYearlyInr && proYearlyUsd);
 
+    await prisma.billingProviderPlanMapping.deleteMany({
+      where: {
+        provider: PaymentProvider.RAZORPAY,
+        environment: env
+      }
+    });
+
     await prisma.billingProviderPlanMapping.create({
       data: {
         provider: PaymentProvider.RAZORPAY,

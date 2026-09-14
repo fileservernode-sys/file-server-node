@@ -345,7 +345,7 @@ describe('ZC-BILLING-5.5 Re-Subscription After Cancellation Test Suite', () => {
           entity: {
             id: newProviderSubId,
             entity: 'subscription',
-            plan_id: 'plan_mock_pro_monthly_inr',
+            plan_id: newSub.providerPlanId,
             status: 'active',
             current_start: nowSec,
             current_end: nowSec + 30 * 86400
@@ -532,7 +532,7 @@ describe('ZC-BILLING-5.5 Re-Subscription After Cancellation Test Suite', () => {
           entity: {
             id: oldSub.providerSubscriptionId,
             entity: 'subscription',
-            plan_id: 'plan_mock_pro_monthly_inr',
+            plan_id: oldSub.providerPlanId || 'plan_mock_pro_monthly_inr',
             status: 'active',
             current_start: nowSec,
             current_end: nowSec + 30 * 86400
