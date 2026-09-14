@@ -1004,12 +1004,6 @@
   <script>
     let isFetchingServers = false;
     let currentServerCount = 0;
-    let currentPage = 1;
-    let totalReceiptsCount = 0;
-    const RECEIPTS_PER_PAGE = 10;
-    let loadedReceiptsList = [];
-    let activeReceiptForViewer = null;
-    let activeReceiptForRefund = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       const user = AuthService.getSavedUser();
@@ -1338,57 +1332,74 @@
     }
 
     // =========================================================================
-    // 2. BILLING HISTORY & RECEIPTS (PHASE 7.2C)
+    // 2. BILLING HISTORY & RECEIPTS LISTING (PHASE 7.2C)
     // =========================================================================
 
+    let currentReceiptFilter = 'ALL';
+    let currentReceiptsPage = 1;
+    let totalReceiptsCount = 0;
+    const RECEIPTS_PER_PAGE = 10;
+    let loadedReceiptsList = [];
+    let activeReceiptForViewer = null;
+    let activeReceiptForRefund = null;
+
     async function loadBillingReceipts(page = 1) {
-      currentPage = page;
+      currentReceiptsPage = page;
       const skeleton = document.getElementById('receipts-skeleton');
       const content = document.getElementById('receipts-content');
-      const emptyBox = document.getElementById('receipts-empty');
-      const errBox = document.getElementById('receipts-error');
+      const empty = document.getElementById('receipts-empty');
+      const error = document.getElementById('receipts-error');
       const paginationBox = document.getElementById('receipts-pagination');
 
       if (skeleton) skeleton.style.display = 'block';
       if (content) content.style.display = 'none';
-      if (emptyBox) emptyBox.style.display = 'none';
-      if (errBox) errBox.style.display = 'none';
+      if (empty) empty.style.display = 'none';
+      if (error) error.style.display = 'none';
       if (paginationBox) paginationBox.style.display = 'none';
 
       try {
         const res = await BillingAPI.getReceipts(page, RECEIPTS_PER_PAGE);
-
         if (skeleton) skeleton.style.display = 'none';
 
-        if (res.ok && res.data && res.data.success) {
-          const receiptsData = res.data.data;
-          loadedReceiptsList = receiptsData.receipts || [];
-          totalReceiptsCount = receiptsData.total || 0;
+        if (res.ok && res.data) {
+          const receipts = res.data.receipts || [];
+          totalReceiptsCount = res.data.total || 0;
+          loadedReceiptsList = receipts;
 
-          if (loadedReceiptsList.length === 0 && page === 1) {
-            if (emptyBox) emptyBox.style.display = 'block';
+          if (receipts.length === 0 && totalReceiptsCount === 0) {
+            if (empty) empty.style.display = 'block';
             return;
           }
 
-          renderReceiptsTable(loadedReceiptsList);
-          renderPaginationControls(totalReceiptsCount, page);
+          filterReceiptsUI();
+          renderPaginationControls(totalReceiptsCount, currentReceiptsPage);
         } else {
-          if (errBox) errBox.style.display = 'block';
+          if (error) {
+            error.textContent = res.error?.message || 'Failed to retrieve billing receipts. Please try again.';
+            error.style.display = 'block';
+          }
         }
       } catch (err) {
         if (skeleton) skeleton.style.display = 'none';
-        if (errBox) errBox.style.display = 'block';
+        if (error) {
+          error.textContent = 'Network communication error while loading billing receipts.';
+          error.style.display = 'block';
+        }
       }
     }
 
     function filterReceiptsUI() {
-      const filterVal = document.getElementById('receipt-filter-status')?.value || 'ALL';
-      if (filterVal === 'ALL') {
-        renderReceiptsTable(loadedReceiptsList);
-      } else {
-        const filtered = loadedReceiptsList.filter(r => r.status === filterVal);
-        renderReceiptsTable(filtered);
+      const select = document.getElementById('receipt-filter-status');
+      currentReceiptFilter = select ? select.value : 'ALL';
+
+      let filtered = [...loadedReceiptsList];
+      if (currentReceiptFilter === 'ISSUED') {
+        filtered = filtered.filter(r => r.status === 'ISSUED');
+      } else if (currentReceiptFilter === 'REFUNDED') {
+        filtered = filtered.filter(r => r.status === 'REFUNDED');
       }
+
+      renderReceiptsTable(filtered);
     }
 
     function renderReceiptsTable(receipts) {
@@ -1397,7 +1408,7 @@
 
       if (receipts.length === 0) {
         content.innerHTML = `
-          <div style="text-align: center; padding: var(--space-xl); color: var(--color-text-muted); font-size: var(--font-size-sm);">
+          <div style="padding: var(--space-xl); text-align: center; color: var(--color-text-secondary); font-size: var(--font-size-sm);">
             No receipts match the selected filter.
           </div>
         `;
@@ -1417,10 +1428,16 @@
           ? '<span class="badge badge-secondary" style="font-size: 11px;">Refunded</span>'
           : '<span class="badge badge-success" style="font-size: 11px;">Paid</span>';
 
-        // Check 7-day self-service refund window
-        const chargedTimestamp = new Date(receipt.chargedAt || receipt.issuedAt).getTime();
-        const nowTimestamp = Date.now();
-        const isEligibleWindow = !isRefunded && (nowTimestamp - chargedTimestamp <= 7 * 86400 * 1000);
+        // Backend Authority Rule (Phase 7.2C-Corrective):
+        // 1. If backend explicitly provides eligibility boolean, respect it directly.
+        // 2. Otherwise allow submitting request for non-refunded receipts, with UI clearly stating
+        //    that final eligibility is verified authoritatively by the backend upon submission.
+        let canRequestRefund = !isRefunded;
+        if (typeof receipt.refundEligible === 'boolean') {
+          canRequestRefund = receipt.refundEligible;
+        } else if (typeof receipt.canRefund === 'boolean') {
+          canRequestRefund = receipt.canRefund;
+        }
 
         let refundActionHtml = '';
         if (isRefunded) {
@@ -1429,9 +1446,9 @@
               Refund Info
             </button>
           `;
-        } else if (isEligibleWindow) {
+        } else if (canRequestRefund) {
           refundActionHtml = `
-            <button type="button" onclick="openRefundModal('${escapeHtml(receipt.id)}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #DC2626;">
+            <button type="button" onclick="openRefundModal('${escapeHtml(receipt.id)}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #DC2626;" title="Submit refund request subject to backend verification">
               Request Refund
             </button>
           `;
@@ -1516,15 +1533,15 @@
     }
 
     function goToPrevReceiptPage() {
-      if (currentPage > 1) {
-        loadBillingReceipts(currentPage - 1);
+      if (currentReceiptsPage > 1) {
+        loadBillingReceipts(currentReceiptsPage - 1);
       }
     }
 
     function goToNextReceiptPage() {
       const totalPages = Math.ceil(totalReceiptsCount / RECEIPTS_PER_PAGE);
-      if (currentPage < totalPages) {
-        loadBillingReceipts(currentPage + 1);
+      if (currentReceiptsPage < totalPages) {
+        loadBillingReceipts(currentReceiptsPage + 1);
       }
     }
 
@@ -1588,8 +1605,67 @@
     }
 
     // =========================================================================
-    // 4. SELF-SERVICE REFUND FLOW (PHASE 7.2C)
+    // 4. SELF-SERVICE REFUND FLOW & STATUS AUTHORITY (PHASE 7.2C-CORRECTIVE)
     // =========================================================================
+
+    /**
+     * Maps backend RefundStatus to user-facing labels, badges, and safe descriptions.
+     * Supported backend statuses: REQUESTED, PROCESSING, PROCESSED, FAILED, REQUIRES_REVIEW.
+     */
+    function getRefundStatusMeta(status) {
+      const s = String(status || '').toUpperCase();
+      switch (s) {
+        case 'PROCESSED':
+          return {
+            label: 'Refund Completed',
+            badgeClass: 'badge-success',
+            badgeStyle: 'background: #DCFCE7; color: #166534; border: 1px solid #86EFAC;',
+            description: 'Refunds are returned to your original payment method. Depending on your bank, it typically takes 5–7 business days to appear on your statement.'
+          };
+        case 'PROCESSING':
+        case 'REQUESTED':
+          return {
+            label: 'Refund Processing',
+            badgeClass: 'badge-warning',
+            badgeStyle: 'background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;',
+            description: 'Your refund request has been received and is currently being processed by the payment provider and banking network.'
+          };
+        case 'REQUIRES_REVIEW':
+          return {
+            label: 'Refund Under Review',
+            badgeClass: 'badge-secondary',
+            badgeStyle: 'background: #EDE9FE; color: #5B21B6; border: 1px solid #C4B5FD;',
+            description: 'Your refund request is currently undergoing review. Our support team will update your account status shortly.'
+          };
+        case 'FAILED':
+          return {
+            label: 'Refund Failed',
+            badgeClass: 'badge-danger',
+            badgeStyle: 'background: #FEE2E2; color: #991B1B; border: 1px solid #F87171;',
+            description: 'The refund request could not be completed. Please contact ZdexCloud support for assistance.'
+          };
+        default:
+          return {
+            label: 'Refund Status Unavailable',
+            badgeClass: 'badge-secondary',
+            badgeStyle: 'background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1;',
+            description: 'Refund status details are currently unavailable. Please check back later.'
+          };
+      }
+    }
+
+    function formatRefundReason(reason) {
+      switch (reason) {
+        case 'CUSTOMER_SATISFACTION': return 'Customer Satisfaction';
+        case 'TECHNICAL_SERVICE_FAILURE': return 'Technical / Service Failure';
+        case 'DUPLICATE_PAYMENT': return 'Duplicate Payment';
+        case 'ERRONEOUS_PAYMENT': return 'Erroneous Payment';
+        case 'ANNUAL_WITHIN_REFUND_WINDOW': return 'Annual Window Exception';
+        case 'ADMIN_APPROVED_EXCEPTION': return 'Admin Approved Exception';
+        case 'OTHER_APPROVED': return 'Other Approved Reason';
+        default: return reason || 'Policy Exception';
+      }
+    }
 
     function openRefundModal(receiptId) {
       const receipt = loadedReceiptsList.find(r => r.id === receiptId);
@@ -1603,7 +1679,7 @@
       const errBox = document.getElementById('refund-modal-error');
 
       if (receiptNumEl) receiptNumEl.textContent = receipt.receiptNumber || 'ZCR-N/A';
-      if (planNameEl) planNameEl.textContent = receipt.planName || 'ZdexCloud Pro Plan';
+      if (planNameEl) planNameEl.textContent = receipt.planName || (receipt.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly');
       if (amountEl) amountEl.textContent = BillingState.formatMinorUnits(receipt.totalMinorUnits || receipt.amountPaidMinorUnits || 0, receipt.currency);
       if (errBox) errBox.style.display = 'none';
 
@@ -1648,14 +1724,43 @@
 
         if (res.ok && res.data && res.data.success) {
           closeRefundModal();
+          
+          // Refresh authoritative backend state and receipts
           await BillingState.refreshBillingState();
-          await loadBillingReceipts(currentPage);
+          await loadBillingReceipts(currentReceiptsPage);
           BillingState.broadcastChangeSignal();
-          alert('Refund request processed successfully. Your account has transitioned to the Free tier.');
+
+          // Authoritative post-refund status feedback mapping
+          const refundData = res.data.data?.refund || res.data.refund || {};
+          const statusMeta = getRefundStatusMeta(refundData.status || 'PROCESSING');
+
+          if (refundData.status === 'PROCESSED') {
+            alert('Refund Completed: Your refund request was processed successfully and your account has transitioned to the Free tier.');
+          } else if (refundData.status === 'PROCESSING' || refundData.status === 'REQUESTED') {
+            alert('Refund Processing: Your refund request has been received. Your subscription state has been updated to Free.');
+          } else if (refundData.status === 'REQUIRES_REVIEW') {
+            alert('Refund Under Review: Your request was submitted and is currently undergoing administrative review.');
+          } else {
+            alert('Refund request submitted: ' + statusMeta.label);
+          }
         } else {
+          // Normalize and present authoritative backend error message
           const norm = BillingState.normalizeBillingError(res);
+          let userMessage = norm.message;
+
+          // Provide user-friendly guidance for specific backend error codes
+          if (norm.code === 'MONTHLY_NON_REFUNDABLE') {
+            userMessage = 'Monthly subscriptions are non-refundable after the billing cycle begins under standard policy.';
+          } else if (norm.code === 'ANNUAL_REFUND_WINDOW_EXPIRED') {
+            userMessage = 'The refund window for this annual subscription has expired.';
+          } else if (norm.code === 'PAYMENT_ALREADY_REFUNDED') {
+            userMessage = 'This payment has already been refunded.';
+          } else if (norm.code === 'REFUND_AMOUNT_EXCEEDS_REFUNDABLE') {
+            userMessage = 'The requested refund amount exceeds the remaining refundable balance.';
+          }
+
           if (errBox) {
-            errBox.textContent = norm.message;
+            errBox.textContent = userMessage;
             errBox.style.display = 'block';
           }
         }
@@ -1672,54 +1777,106 @@
       }
     }
 
+    /**
+     * Authoritative Refund Details Modal
+     * Renders all refund records dynamically with genuine backend status metadata.
+     */
     async function viewRefundDetails(receiptId, paymentId) {
       const modal = document.getElementById('refund-details-modal');
       const content = document.getElementById('refund-details-content');
 
-      if (content) content.innerHTML = '<div class="skeleton-box" style="width: 100%; height: 60px;"></div>';
+      if (content) content.innerHTML = '<div class="skeleton-box" style="width: 100%; height: 80px;"></div>';
       if (modal) modal.style.display = 'flex';
 
       try {
         if (paymentId) {
           const res = await BillingAPI.getPaymentRefunds(paymentId);
           if (res.ok && res.data && res.data.success) {
-            const refunds = res.data.data || [];
+            const refunds = Array.isArray(res.data.data) ? res.data.data : (Array.isArray(res.data) ? res.data : []);
+            
             if (refunds.length > 0) {
-              const r = refunds[0];
-              const dateFormatted = BillingState.formatBillingDate(r.createdAt || r.requestedAt);
-              const amountFormatted = BillingState.formatMinorUnits(r.amountMinorUnits, r.currency || 'INR');
-              if (content) {
-                content.innerHTML = `
-                  <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-md);">
+              const cardsHtml = refunds.map(r => {
+                const meta = getRefundStatusMeta(r.status);
+                const reqDateFormatted = BillingState.formatBillingDate(r.requestedAt || r.createdAt);
+                const procDateFormatted = r.providerProcessedAt ? BillingState.formatBillingDate(r.providerProcessedAt) : null;
+                const amountFormatted = BillingState.formatMinorUnits(r.amountMinorUnits, r.currency || 'INR');
+                const reasonFormatted = formatRefundReason(r.reason);
+
+                let providerRefRow = '';
+                if (r.providerRefundId) {
+                  providerRefRow = `
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                      <span class="text-muted">Refund Status:</span>
-                      <strong class="badge badge-success" style="font-size: 11px;">${escapeHtml(r.status || 'PROCESSED')}</strong>
+                      <span class="text-muted">Refund Reference:</span>
+                      <span class="text-primary" style="font-family: var(--font-family-mono); font-size: 11px;">${escapeHtml(r.providerRefundId)}</span>
+                    </div>
+                  `;
+                }
+
+                let procDateRow = '';
+                if (procDateFormatted) {
+                  procDateRow = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span class="text-muted">Date Settled:</span>
+                      <span class="text-primary">${escapeHtml(procDateFormatted)}</span>
+                    </div>
+                  `;
+                }
+
+                let failureRow = '';
+                if (r.status === 'FAILED' && r.failureReason) {
+                  failureRow = `
+                    <div style="margin-top: var(--space-xs); padding: var(--space-xs) var(--space-sm); background: #FEE2E2; border-radius: var(--radius-sm); color: #991B1B; font-size: 11px;">
+                      <strong>Reason:</strong> ${escapeHtml(r.failureReason)}
+                    </div>
+                  `;
+                }
+
+                return `
+                  <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-md); margin-bottom: var(--space-sm);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                      <span style="font-weight: 600; font-size: var(--font-size-xs); color: var(--color-text-secondary);">Transaction Record</span>
+                      <span class="badge ${meta.badgeClass}" style="${meta.badgeStyle} font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px;">
+                        ${escapeHtml(meta.label)}
+                      </span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                       <span class="text-muted">Refunded Amount:</span>
                       <strong class="text-primary" style="font-family: var(--font-family-mono);">${escapeHtml(amountFormatted)}</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                      <span class="text-muted">Date Processed:</span>
-                      <span class="text-primary">${escapeHtml(dateFormatted)}</span>
+                      <span class="text-muted">Date Requested:</span>
+                      <span class="text-primary">${escapeHtml(reqDateFormatted)}</span>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
-                      <span class="text-muted">Reason Code:</span>
-                      <span class="text-primary" style="font-family: var(--font-family-mono);">${escapeHtml(r.reason || 'CUSTOMER_REQUEST')}</span>
+                    ${procDateRow}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span class="text-muted">Reason:</span>
+                      <span class="text-primary">${escapeHtml(reasonFormatted)}</span>
                     </div>
+                    ${providerRefRow}
+                    ${failureRow}
+                    <p class="text-xs text-muted" style="margin-top: var(--space-sm); margin-bottom: 0; line-height: 1.4;">
+                      ${escapeHtml(meta.description)}
+                    </p>
                   </div>
-                  <p class="text-xs text-muted" style="margin-top: var(--space-sm); margin-bottom: 0;">
-                    Refunds are returned to your original payment method. Depending on your bank, it may take 5–7 business days to appear on your statement.
-                  </p>
                 `;
-              }
+              }).join('');
+
+              if (content) content.innerHTML = cardsHtml;
               return;
             }
           }
         }
-        if (content) content.innerHTML = '<div class="text-xs text-secondary">This transaction was refunded. Plan entitlements were updated accordingly.</div>';
+        if (content) {
+          content.innerHTML = `
+            <div style="padding: var(--space-md); background: var(--color-bg-secondary); border-radius: var(--radius-md); text-align: center;">
+              <p class="text-xs text-secondary" style="margin: 0;">
+                This transaction was refunded and your subscription reverted to Free. Authoritative settlement details are processed via your original payment method.
+              </p>
+            </div>
+          `;
+        }
       } catch (err) {
-        if (content) content.innerHTML = '<div class="text-xs text-secondary">Refund record details could not be loaded.</div>';
+        if (content) content.innerHTML = '<div class="text-xs text-secondary" style="color: #DC2626; padding: var(--space-sm);">Refund record details could not be loaded. Please try again.</div>';
       }
     }
 
