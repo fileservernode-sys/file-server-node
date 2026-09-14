@@ -711,7 +711,7 @@
       </p>
 
       <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
-        <button type="button" id="btn-proceed-checkout" onclick="proceedToRazorpayCheckout()" class="btn btn-primary btn-block" style="min-height: 44px;">Continue to Secure Checkout</button>
+        <button type="button" id="btn-proceed-checkout" onclick="proceedToCheckout()" class="btn btn-primary btn-block" style="min-height: 44px;">Continue to Secure Checkout</button>
         <button type="button" onclick="closeBreakdownModal()" class="btn btn-ghost btn-block" style="min-height: 44px;">Cancel</button>
       </div>
     </div>
@@ -921,9 +921,11 @@
   <script src="../js/motion.js"></script>
   <script src="../js/config.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
   <script src="../js/main.js"></script>
 
-  <!-- PRICING CONTROLLER SCRIPT (ZC-BILLING-2.4, 4.1, 4.2, 4.4) -->
+  <!-- P  <!-- PRICING CONTROLLER SCRIPT (PHASE 7.2D — PRICING STOREFRONT REFACTOR) -->
   <script>
     (function() {
       'use strict';
@@ -937,9 +939,15 @@
       let activeBreakdownPlan = null;
       let lastFocusedElement = null;
 
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', async () => {
         isAuthenticated = typeof AuthService !== 'undefined' && AuthService.isSessionValid();
-        initPricingPage();
+        
+        // Listen for reactive billing state changes
+        if (typeof BillingState !== 'undefined') {
+          BillingState.subscribe(onBillingStateChanged);
+        }
+
+        await initPricingPage();
 
         // Keyboard navigation for accessible modal dismissal
         document.addEventListener('keydown', (e) => {
@@ -948,6 +956,14 @@
           }
         });
       });
+
+      function onBillingStateChanged(newState) {
+        userBillingState = newState;
+        if (currentCatalog) {
+          renderRegionalBanner({ plans: currentCatalog, currency: activeCurrency });
+          renderPricingCards({ plans: currentCatalog, currency: activeCurrency });
+        }
+      }
 
       function closeAllModals() {
         closeBreakdownModal();
@@ -993,7 +1009,7 @@
 
         if (!isAuthenticated) {
           const targetPlan = planCode.toLowerCase();
-          window.location.href = `get-started.html?plan=${targetPlan}`;
+          window.location.href = `get-started.html?plan=${encodeURIComponent(targetPlan)}`;
           return;
         }
 
@@ -1002,18 +1018,20 @@
           return;
         }
 
+        // Check if billing country is confirmed
         if (!userBillingState || !userBillingState.countryConfirmed) {
           window.location.href = 'dashboard.html#billing-region-card';
           return;
         }
 
+        // Active plan check
         if (userBillingState.status === 'ACTIVE' && userBillingState.plan === planCode) {
           window.showNoticeModal('Active Subscription', `You are currently active on the ${planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'} plan.`);
           return;
         }
 
         try {
-          const res = await apiRequest(`/billing/checkout/price-breakdown?planCode=${encodeURIComponent(planCode)}`, 'GET');
+          const res = await BillingAPI.getCheckoutPriceBreakdown(planCode);
 
           if (!res.ok || !res.data || !res.data.success) {
             const errorMsg = res.data?.error?.message || 'Failed to retrieve checkout price breakdown.';
@@ -1022,6 +1040,7 @@
           }
 
           const breakdown = res.data.data;
+          activeBreakdownPlan = planCode;
           activeBreakdownData = breakdown;
           window.openBreakdownModal(breakdown);
         } catch (err) {
@@ -1150,96 +1169,39 @@
         if (lastFocusedElement) lastFocusedElement.focus();
       };
 
-      function showDismissToast() {
-        const toast = document.getElementById('checkout-dismiss-toast');
-        if (!toast) return;
-        toast.style.display = 'block';
-        setTimeout(() => {
-          toast.style.display = 'none';
-        }, 5000);
-      }
-
-      window.proceedToRazorpayCheckout = async function() {
+      window.proceedToCheckout = async function() {
         if (!activeBreakdownPlan) return;
 
         const proceedBtn = document.getElementById('btn-proceed-checkout');
         if (proceedBtn) {
           proceedBtn.disabled = true;
-          proceedBtn.textContent = 'Preparing Secure Checkout...';
+          proceedBtn.textContent = 'Initializing Checkout Session...';
         }
 
         try {
-          const res = await apiRequest('/billing/checkout/session', 'POST', { planCode: activeBreakdownPlan });
+          const res = await BillingAPI.createCheckoutSession(activeBreakdownPlan);
 
           if (!res.ok || !res.data || !res.data.success) {
-            const errorMsg = res.data?.error?.message || 'Failed to initialize checkout session.';
+            const norm = BillingState.normalizeBillingError(res);
             window.closeBreakdownModal();
-            window.showNoticeModal('Checkout Initialization Error', errorMsg);
+            window.showNoticeModal('Checkout Initialization Error', norm.message);
             return;
           }
 
           const session = res.data.data;
           window.closeBreakdownModal();
 
-          const openRazorpayCheckout = () => {
-            if (typeof window.Razorpay === 'undefined') {
-              window.openUncertainModal();
-              return;
-            }
+          // Display success / pending verification confirmation
+          window.openSuccessModal({
+            planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+            formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
+            interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
+            paymentId: session.subscriptionId || 'Submitted'
+          });
 
-            const rzp = new window.Razorpay({
-              key: session.keyId,
-              subscription_id: session.subscriptionId,
-              name: 'ZdexCloud',
-              description: `ZdexCloud ${session.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'} Subscription`,
-              image: '../favicon.ico',
-              handler: function(response) {
-                // Client-side UX callback ONLY.
-                // Billing activation happens authoritatively via backend webhooks (Phase 6).
-                window.openSuccessModal({
-                  planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
-                  formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
-                  interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
-                  paymentId: response.razorpay_payment_id || 'Submitted'
-                });
-              },
-              modal: {
-                ondismiss: function() {
-                  showDismissToast();
-                  if (activeBreakdownData) {
-                    window.openBreakdownModal(activeBreakdownData);
-                  }
-                }
-              },
-              theme: {
-                color: '#2563EB'
-              }
-            });
-
-            // Intercept payment failure event from modal
-            rzp.on('payment.failed', function(failureResponse) {
-              const errDesc = failureResponse?.error?.description || 'The transaction could not be authorized by your payment method.';
-              window.openFailureModal({ reason: errDesc });
-            });
-
-            rzp.open();
-          };
-
-          if (proceedBtn) {
-            proceedBtn.textContent = 'Opening Secure Payment...';
-          }
-
-          if (typeof window.Razorpay === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.onload = openRazorpayCheckout;
-            script.onerror = () => {
-              window.openUncertainModal();
-            };
-            document.head.appendChild(script);
-          } else {
-            openRazorpayCheckout();
-          }
+          // Refresh state and broadcast
+          await BillingState.refreshBillingState();
+          BillingState.broadcastChangeSignal();
         } catch (err) {
           window.closeBreakdownModal();
           window.openUncertainModal();
@@ -1272,24 +1234,32 @@
         if (errorBanner) errorBanner.style.display = 'none';
 
         try {
+          let currencyToRequest = 'INR';
+
           if (isAuthenticated) {
             try {
-              const billingRes = await apiRequest('/billing', 'GET');
-              if (billingRes.ok && billingRes.data && billingRes.data.success) {
-                userBillingState = billingRes.data.data;
+              userBillingState = await BillingState.refreshBillingState();
+              if (userBillingState && userBillingState.countryConfirmed && userBillingState.currency) {
+                currencyToRequest = userBillingState.currency;
               }
             } catch (e) {
               console.warn('Failed to load user billing state', e);
             }
           }
 
-          // 2. Fetch plans from backend (if confirmed currency exists, request specifically for it)
-          let endpoint = '/plans';
-          if (userBillingState && userBillingState.countryConfirmed && userBillingState.currency) {
-            endpoint = `/plans?currency=${encodeURIComponent(userBillingState.currency)}`;
+          // If not authenticated or unconfirmed, detect storefront region
+          if (!userBillingState || !userBillingState.countryConfirmed) {
+            try {
+              const regionRes = await BillingAPI.getStorefrontRegion();
+              if (regionRes.ok && regionRes.data && regionRes.data.success) {
+                currencyToRequest = regionRes.data.data.currency || 'INR';
+              }
+            } catch (e) {
+              console.warn('Failed to load storefront region hint', e);
+            }
           }
 
-          const plansRes = await apiRequest(endpoint, 'GET');
+          const plansRes = await BillingAPI.getPlansCatalog(currencyToRequest);
 
           if (!plansRes.ok || !plansRes.data || !plansRes.data.success) {
             throw new Error(plansRes.data?.error?.message || 'Failed to retrieve pricing catalog');
@@ -1297,7 +1267,7 @@
 
           const catalogData = plansRes.data.data;
           currentCatalog = catalogData.plans;
-          activeCurrency = catalogData.currency || 'INR';
+          activeCurrency = catalogData.currency || currencyToRequest;
 
           renderRegionalBanner(catalogData);
           renderPricingCards(catalogData);
@@ -1354,24 +1324,23 @@
           throw new Error('Incomplete catalog returned by server.');
         }
 
-        // Format Prices using backend values
+        // Format Prices using backend values & BillingState format helper
         const freePriceEl = document.getElementById('price-free');
         const proMonthlyPriceEl = document.getElementById('price-pro-monthly');
         const proYearlyPriceEl = document.getElementById('price-pro-yearly');
 
-        if (freePriceEl) freePriceEl.textContent = freePlan.formattedPrice || formatCurrency(freePlan.amountMinorUnits, freePlan.currency);
-        if (proMonthlyPriceEl) proMonthlyPriceEl.textContent = proMonthlyPlan.formattedPrice || formatCurrency(proMonthlyPlan.amountMinorUnits, proMonthlyPlan.currency);
-        if (proYearlyPriceEl) proYearlyPriceEl.textContent = proYearlyPlan.formattedPrice || formatCurrency(proYearlyPlan.amountMinorUnits, proYearlyPlan.currency);
+        if (freePriceEl) freePriceEl.textContent = freePlan.formattedPrice || BillingState.formatMinorUnits(freePlan.amountMinorUnits, freePlan.currency);
+        if (proMonthlyPriceEl) proMonthlyPriceEl.textContent = proMonthlyPlan.formattedPrice || BillingState.formatMinorUnits(proMonthlyPlan.amountMinorUnits, proMonthlyPlan.currency);
+        if (proYearlyPriceEl) proYearlyPriceEl.textContent = proYearlyPlan.formattedPrice || BillingState.formatMinorUnits(proYearlyPlan.amountMinorUnits, proYearlyPlan.currency);
 
-        // Savings Calculation (Integer Minor Units Arithmetic)
-        const monthlyUnits = proMonthlyPlan.amountMinorUnits; // e.g. 4900 (INR) or 99 (USD)
-        const yearlyUnits = proYearlyPlan.amountMinorUnits;   // e.g. 50000 (INR) or 999 (USD)
-        const annualizedMonthly = monthlyUnits * 12;         // e.g. 58800 (INR) or 1188 (USD)
-        const savingsUnits = annualizedMonthly - yearlyUnits; // e.g. 8800 (INR) or 189 (USD)
-        const savingsFormatted = formatCurrency(savingsUnits, activeCurrency);
+        // Savings Display
+        const monthlyUnits = proMonthlyPlan.amountMinorUnits;
+        const yearlyUnits = proYearlyPlan.amountMinorUnits;
+        const annualizedMonthly = monthlyUnits * 12;
+        const savingsUnits = Math.max(0, annualizedMonthly - yearlyUnits);
+        const savingsFormatted = BillingState.formatMinorUnits(savingsUnits, activeCurrency);
         const percentSavings = annualizedMonthly > 0 ? Math.round((savingsUnits / annualizedMonthly) * 100) : 15;
-        const effectiveMonthly = (yearlyUnits / 1200).toFixed(2);
-        const effectiveMonthlyFormatted = activeCurrency === 'INR' ? `₹${effectiveMonthly}` : `$${effectiveMonthly}`;
+        const effectiveMonthlyFormatted = BillingState.formatMinorUnits(Math.round(yearlyUnits / 12), activeCurrency);
 
         // Update Savings Elements
         const toggleBadge = document.getElementById('toggle-savings-badge');
@@ -1393,44 +1362,73 @@
         }
 
         // Update CTAs if authenticated
-        if (isAuthenticated && userBillingState) {
-          const ctaFree = document.getElementById('cta-free');
-          const ctaMonthly = document.getElementById('cta-pro-monthly');
-          const ctaYearly = document.getElementById('cta-pro-yearly');
+        const ctaFree = document.getElementById('cta-free');
+        const ctaMonthly = document.getElementById('cta-pro-monthly');
+        const ctaYearly = document.getElementById('cta-pro-yearly');
 
-          if (userBillingState.status === 'FREE' || !userBillingState.subscription) {
+        if (isAuthenticated && userBillingState) {
+          const userStatus = userBillingState.status;
+          const userPlan = userBillingState.plan;
+
+          if (userStatus === 'FREE' || !userBillingState.subscription) {
             if (ctaFree) {
               ctaFree.textContent = 'Current Plan';
               ctaFree.classList.add('btn-ghost');
               ctaFree.classList.remove('btn-secondary');
               ctaFree.href = 'dashboard.html';
             }
-          } else if (userBillingState.status === 'ACTIVE') {
-            if (userBillingState.plan === 'PRO_MONTHLY' && ctaMonthly) {
-              ctaMonthly.textContent = 'Current Plan';
-              ctaMonthly.classList.add('btn-ghost');
-              ctaMonthly.classList.remove('btn-secondary');
-            } else if (userBillingState.plan === 'PRO_YEARLY' && ctaYearly) {
-              ctaYearly.textContent = 'Current Plan';
-              ctaYearly.classList.add('btn-ghost');
-              ctaYearly.classList.remove('btn-primary');
+            if (ctaMonthly) {
+              ctaMonthly.textContent = 'Upgrade to Pro';
             }
+            if (ctaYearly) {
+              ctaYearly.textContent = 'Upgrade to Annual';
+            }
+          } else if (userStatus === 'ACTIVE') {
+            if (userPlan === 'PRO_MONTHLY') {
+              if (ctaFree) {
+                ctaFree.textContent = 'Included';
+                ctaFree.classList.add('btn-ghost');
+                ctaFree.classList.remove('btn-secondary');
+                ctaFree.href = 'dashboard.html';
+              }
+              if (ctaMonthly) {
+                ctaMonthly.textContent = 'Current Plan';
+                ctaMonthly.classList.add('btn-ghost');
+                ctaMonthly.classList.remove('btn-secondary');
+              }
+              if (ctaYearly) {
+                ctaYearly.textContent = 'Upgrade to Annual (Save ~15%)';
+                ctaYearly.classList.add('btn-primary');
+              }
+            } else if (userPlan === 'PRO_YEARLY') {
+              if (ctaFree) {
+                ctaFree.textContent = 'Included';
+                ctaFree.classList.add('btn-ghost');
+                ctaFree.classList.remove('btn-secondary');
+                ctaFree.href = 'dashboard.html';
+              }
+              if (ctaMonthly) {
+                ctaMonthly.textContent = 'Switch to Monthly';
+                ctaMonthly.classList.add('btn-secondary');
+                ctaMonthly.classList.remove('btn-ghost');
+              }
+              if (ctaYearly) {
+                ctaYearly.textContent = 'Current Plan';
+                ctaYearly.classList.add('btn-ghost');
+                ctaYearly.classList.remove('btn-primary');
+              }
+            }
+          } else if (userStatus === 'CANCELLING') {
+            if (ctaYearly && userPlan === 'PRO_YEARLY') {
+              ctaYearly.textContent = 'Cancelling at Period End';
+            } else if (ctaMonthly && userPlan === 'PRO_MONTHLY') {
+              ctaMonthly.textContent = 'Cancelling at Period End';
+            }
+          } else if (userStatus === 'EXPIRED' || userStatus === 'REFUNDED') {
+            if (ctaMonthly) ctaMonthly.textContent = 'Reactivate Pro Monthly';
+            if (ctaYearly) ctaYearly.textContent = 'Reactivate Pro Yearly';
           }
         }
-      }
-
-      function formatCurrency(minorUnits, currency) {
-        if (!Number.isInteger(minorUnits) || minorUnits < 0) minorUnits = 0;
-        if (currency === 'INR') {
-          if (minorUnits === 0) return '₹0';
-          if (minorUnits % 100 === 0) return `₹${minorUnits / 100}`;
-          return `₹${(minorUnits / 100).toFixed(2)}`;
-        }
-        if (currency === 'USD') {
-          if (minorUnits === 0) return '$0';
-          return `$${(minorUnits / 100).toFixed(2)}`;
-        }
-        return `${minorUnits / 100} ${currency}`;
       }
 
       function escapeHtml(str) {
@@ -1444,10 +1442,10 @@
         })[match]);
       }
 
-      function initPricingPage() {
-        window.loadPricingCatalog();
+      async function initPricingPage() {
+        await window.loadPricingCatalog();
       }
     })();
   </script>
-</body>
+
 </html>
