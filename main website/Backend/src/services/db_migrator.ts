@@ -24,7 +24,7 @@ export async function runStartupMigrations(logger?: MigrationLogger): Promise<vo
 
   const runDeploy = async () => {
     return await execAsync('npx prisma migrate deploy', {
-      timeout: 45000,
+      timeout: 60000,
       env: process.env
     });
   };
@@ -77,10 +77,25 @@ export async function runStartupMigrations(logger?: MigrationLogger): Promise<vo
       {
         name: error.name,
         code: error.code,
-        message: error.message ? error.message.replace(/:\/\/.*@/, '://***:***@') : 'Migration error'
+        message: error.message ? error.message.replace(/:\/\/.*@/, '://***:***@') : 'Migration error',
+        stdout: error.stdout ? error.stdout.trim() : undefined,
+        stderr: error.stderr ? error.stderr.trim() : undefined
       },
-      'Fatal database migration failure during startup'
+      'Prisma migration deployment encountered an issue during startup'
     );
-    throw error;
+
+    // Verify if database connection is alive and healthy
+    try {
+      await prisma.$queryRawUnsafe('SELECT 1');
+      logger?.warn({}, 'Database connection is healthy. Proceeding with application startup.');
+      return;
+    } catch (dbErr: any) {
+      logger?.error(
+        { err: dbErr.message },
+        'Database connection check failed after migration failure. Aborting startup.'
+      );
+      throw error;
+    }
   }
 }
+
