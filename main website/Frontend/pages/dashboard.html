@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Account Dashboard | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Manage your registered Android file server nodes, connection health, live subdomain status, and control plane settings.">
+  <meta name="description" content="Manage your registered Android file server nodes, connection health, subscription plan, billing history, receipts, and refund activity.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/dashboard.html">
@@ -24,7 +23,7 @@
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/dashboard.html">
   <meta property="og:title" content="Account Dashboard | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Manage your registered Android file server nodes, connection health, live subdomain status, and control plane settings.">
+  <meta property="og:description" content="Manage your registered Android file server nodes, connection health, subscription plan, and billing history.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -34,17 +33,143 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
   <meta name="twitter:title" content="Account Dashboard | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Manage your registered Android file server nodes, connection health, live subdomain status, and control plane settings.">
+  <meta name="twitter:description" content="Manage your registered Android file server nodes, connection health, subscription plan, and billing history.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
 
-  
+  <!-- Canonical Design System Stylesheets -->
   <link rel="stylesheet" href="../css/variables.css">
   <link rel="stylesheet" href="../css/base.css">
   <link rel="stylesheet" href="../css/components.css">
   <link rel="stylesheet" href="../css/layout.css">
   <link rel="stylesheet" href="../css/sections.css">
   <link rel="stylesheet" href="../css/notification-center.css">
+
+  <style>
+    /* Premium Billing Card & Lifecycle Modals Enhancements */
+    .billing-metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+    .billing-metric-item {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+    }
+    .billing-metric-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .billing-metric-value {
+      font-size: var(--font-size-md);
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+    .billing-action-bar {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+    .modal-overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-card-box {
+      background: var(--color-surface);
+      border-radius: var(--radius-xl);
+      max-width: 520px;
+      width: 100%;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--color-border);
+      position: relative;
+    }
+    .modal-card-box--wide {
+      max-width: 780px;
+      padding: var(--space-lg);
+    }
+    .cancellation-reason-radio {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cancellation-reason-radio:hover {
+      background: var(--color-bg-subtle);
+      border-color: var(--color-border-hover);
+    }
+    .cancellation-reason-radio input[type="radio"] {
+      margin-top: 2px;
+    }
+    /* Responsive Billing History Table */
+    .receipt-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      background: var(--color-surface);
+      margin-bottom: var(--space-md);
+    }
+    .receipt-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: var(--font-size-sm);
+    }
+    .receipt-table th {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-muted);
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .receipt-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border-subtle);
+      color: var(--color-text-primary);
+      vertical-align: middle;
+    }
+    .receipt-table tr:last-child td {
+      border-bottom: none;
+    }
+    .receipt-table tr:hover td {
+      background: var(--color-bg-subtle);
+    }
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+    }
+  </style>
 </head>
 <body>
 
@@ -69,6 +194,7 @@
       <nav class="desktop-nav" aria-label="Authenticated Navigation">
         <a href="dashboard.html" class="nav-link active">Dashboard</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="pricing.html" class="nav-link">Pricing</a>
         <a href="faq.html" class="nav-link">Help & FAQ</a>
       </nav>
 
@@ -125,6 +251,7 @@
     <div class="drawer-nav-list">
       <a href="dashboard.html" class="drawer-nav-link active">Dashboard</a>
       <a href="documentation.html" class="drawer-nav-link">Documentation</a>
+      <a href="pricing.html" class="drawer-nav-link">Pricing</a>
       <a href="faq.html" class="drawer-nav-link">Help & FAQ</a>
     </div>
     <div class="drawer-actions">
@@ -183,7 +310,7 @@
           </div>
           <div>
             <div class="stat-card-title">Server Slots</div>
-            <div class="stat-card-value" id="stat-capacity-slots">0 / 5</div>
+            <div class="stat-card-value" id="stat-capacity-slots">0 / 1</div>
           </div>
         </div>
 
@@ -215,8 +342,117 @@
         </div>
       </div>
 
-      
-      <!-- BILLING & REGIONAL SETTINGS CARD (ZC-BILLING-2.3) -->
+      <!-- ===================================================================== -->
+      <!-- 1. SUBSCRIPTION & LIFECYCLE ACTION CENTER (PHASE 7.2B)                -->
+      <!-- ===================================================================== -->
+      <section class="card" id="subscription-overview-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        
+        <!-- Loading Skeleton Placeholder -->
+        <div id="subscription-card-skeleton">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <div class="skeleton-box" style="width: 32px; height: 32px; border-radius: var(--radius-md);"></div>
+              <div class="skeleton-box" style="width: 220px; height: 24px;"></div>
+            </div>
+            <div class="skeleton-box" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg);">
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 140px; height: 40px; border-radius: var(--radius-md);"></div>
+        </div>
+
+        <!-- Real Authoritative Subscription Content Container -->
+        <div id="subscription-card-content" style="display: none;"></div>
+
+        <!-- Temporary Error Fallback State -->
+        <div id="subscription-card-error" style="display: none; text-align: center; padding: var(--space-xl);">
+          <div style="width: 48px; height: 48px; margin: 0 auto var(--space-sm); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-2xs);">Billing Information Temporarily Unavailable</h3>
+          <p class="text-sm text-secondary" style="margin-bottom: var(--space-md);">Could not retrieve authoritative subscription state from the control plane.</p>
+          <button type="button" onclick="initDashboardBilling()" class="btn btn-outline btn-sm">Retry Connection</button>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. BILLING HISTORY & RECEIPTS (PHASE 7.2C)                            -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-history-section" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing History & Receipts</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Your official ZdexCloud tax invoices, payment receipts, and refund activity.
+            </p>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-xs);">
+            <select id="receipt-filter-status" onchange="filterReceiptsUI()" style="height: 36px; padding: 0 10px; font-size: var(--font-size-xs); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); cursor: pointer;">
+              <option value="ALL" selected>All Statuses</option>
+              <option value="ISSUED">Paid / Active</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+            <button type="button" id="btn-refresh-receipts" onclick="loadBillingReceipts(currentPage)" class="btn btn-ghost btn-sm" title="Refresh receipts" style="height: 36px; padding: 0 10px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Receipts Container -->
+        <div id="receipts-container">
+          <!-- Skeleton Rows -->
+          <div id="receipts-skeleton">
+            <div class="skeleton-box" style="width: 100%; height: 48px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 48px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 48px; border-radius: var(--radius-md);"></div>
+          </div>
+
+          <!-- Dynamic Table Content -->
+          <div id="receipts-content" style="display: none;"></div>
+
+          <!-- Empty State (No billing history) -->
+          <div id="receipts-empty" style="display: none; text-align: center; padding: var(--space-2xl) var(--space-md); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-secondary);">
+            <div style="width: 48px; height: 48px; margin: 0 auto var(--space-sm); background: rgba(100, 116, 139, 0.1); color: var(--color-text-muted); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-2xs);">No Billing History Yet</h3>
+            <p class="text-sm text-secondary" style="max-width: 420px; margin: 0 auto var(--space-md);">Your official receipts and payment records will appear here once you subscribe to a commercial plan.</p>
+            <a href="pricing.html" class="btn btn-primary btn-sm">View Pricing Plans</a>
+          </div>
+
+          <!-- Error State -->
+          <div id="receipts-error" style="display: none; text-align: center; padding: var(--space-lg); background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg);">
+            <p class="text-xs" style="color: #991B1B; margin-bottom: var(--space-xs);">Could not load billing receipt records.</p>
+            <button type="button" onclick="loadBillingReceipts(1)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="receipts-pagination" class="pagination-bar" style="display: none;">
+          <span id="pagination-info" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Showing 1 to 10</span>
+          <div style="display: flex; gap: var(--space-xs);">
+            <button type="button" id="btn-prev-page" onclick="goToPrevReceiptPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Previous</button>
+            <button type="button" id="btn-next-page" onclick="goToNextReceiptPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Next</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 3. BILLING & REGIONAL SETTINGS CARD (ZC-BILLING-2.3 & 2.4)            -->
+      <!-- ===================================================================== -->
       <section class="card" id="billing-region-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
           <div>
@@ -330,12 +566,14 @@
         </form>
       </section>
 
-      <!-- SECTION TITLE & CONTROLS -->
+      <!-- ===================================================================== -->
+      <!-- 4. REGISTERED SERVERS GRID                                            -->
+      <!-- ===================================================================== -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-xs);">
         <div>
           <h2 class="section-title" style="font-size: var(--font-size-h4); text-align: left; margin-bottom: var(--space-2xs); display: flex; align-items: center; gap: var(--space-sm);">
             <span>Your Registered Servers</span>
-            <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; vertical-align: middle;">0 / 5 Servers</span>
+            <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; vertical-align: middle;">0 / 1 Servers</span>
           </h2>
           <p class="text-secondary text-sm" style="margin: 0;">Android storage nodes paired to this platform account.</p>
         </div>
@@ -348,13 +586,349 @@
         </div>
       </div>
 
-      <!-- REGISTERED DEVICES GRID (Populated dynamically from database) -->
+      <!-- REGISTERED DEVICES GRID -->
       <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
         <!-- Skeleton loading placeholder rendered immediately by script -->
       </div>
 
     </div>
   </main>
+
+  <!-- ======================================================================= -->
+  <!-- MODALS CONTAINER                                                        -->
+  <!-- ======================================================================= -->
+
+  <!-- 1. UPGRADE CONFIRMATION MODAL (Phase 7.2B) -->
+  <div id="upgrade-subscription-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="upgrade-modal-title" aria-describedby="upgrade-modal-desc">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
+          <h3 id="upgrade-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Upgrade to Pro Yearly</h3>
+        </div>
+        <button type="button" onclick="closeUpgradeModal()" class="btn btn-ghost btn-sm" aria-label="Close upgrade dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <p id="upgrade-modal-desc" class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-md);">
+        Upgrade your active monthly subscription to annual billing to lock in discounted yearly pricing and continuous coverage.
+      </p>
+
+      <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Current Plan:</span>
+          <strong class="text-sm" style="color: var(--color-text-primary);">ZdexCloud Pro Monthly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Target Plan:</span>
+          <strong class="text-sm" style="color: var(--color-brand-primary);">ZdexCloud Pro Yearly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-xs text-muted">Proration Credit:</span>
+          <span class="badge badge-success" style="font-size: 11px;">Automatic Unused Days Credit</span>
+        </div>
+      </div>
+
+      <div class="callout-box" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #1E40AF; line-height: 1.5;">
+        Any unused days remaining on your active monthly billing period are calculated authoritatively by the billing engine and credited directly against the annual invoice.
+      </div>
+
+      <div id="upgrade-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeUpgradeModal()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button type="button" id="btn-confirm-upgrade" onclick="executeSubscriptionUpgrade()" class="btn btn-primary btn-sm" style="min-width: 140px;">
+          <span>Upgrade to Annual</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. DOWNGRADE CONFIRMATION MODAL (Phase 7.2B) -->
+  <div id="downgrade-subscription-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="downgrade-modal-title" aria-describedby="downgrade-modal-desc">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.1); color: #D97706; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          </div>
+          <h3 id="downgrade-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Switch to Monthly Billing</h3>
+        </div>
+        <button type="button" onclick="closeDowngradeModal()" class="btn btn-ghost btn-sm" aria-label="Close downgrade dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <p id="downgrade-modal-desc" class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-md);">
+        Schedule your subscription to switch to Pro Monthly billing at the conclusion of your current annual period.
+      </p>
+
+      <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Current Plan:</span>
+          <strong class="text-sm" style="color: var(--color-text-primary);">ZdexCloud Pro Yearly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Target Plan:</span>
+          <strong class="text-sm" style="color: var(--color-brand-primary);">ZdexCloud Pro Monthly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-xs text-muted">Effective Date:</span>
+          <strong id="downgrade-effective-date" class="text-sm text-primary" style="font-family: var(--font-family-mono);">End of paid annual period</strong>
+        </div>
+      </div>
+
+      <div class="callout-box" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #92400E; line-height: 1.5;">
+        You will retain full Pro Yearly access and 5 server slots until the effective date. No mid-term refund is issued for the current period. Future renewals will bill at the monthly rate.
+      </div>
+
+      <div id="downgrade-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeDowngradeModal()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button type="button" id="btn-confirm-downgrade" onclick="executeSubscriptionDowngrade()" class="btn btn-primary btn-sm" style="min-width: 140px;">
+          <span>Switch to Monthly</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. CANCEL PENDING DOWNGRADE MODAL (Phase 7.2B) -->
+  <div id="cancel-downgrade-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancel-downgrade-title">
+    <div class="modal-card-box">
+      <h3 id="cancel-downgrade-title" style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">Keep Annual Plan</h3>
+      <p class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-lg);">
+        This will cancel your scheduled switch to monthly billing and restore automatic annual renewal for your ZdexCloud Pro Yearly subscription.
+      </p>
+      <div id="cancel-downgrade-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeCancelDowngradeModal()" class="btn btn-secondary btn-sm">Dismiss</button>
+        <button type="button" id="btn-confirm-cancel-downgrade" onclick="executeCancelDowngrade()" class="btn btn-primary btn-sm">
+          <span>Keep Annual Plan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 3-STEP CANCELLATION MODAL (Phase 7.2B) -->
+  <div id="cancel-subscription-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(220, 38, 38, 0.1); color: #DC2626; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          </div>
+          <h3 id="cancel-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Cancel Pro Subscription</h3>
+        </div>
+        <button type="button" onclick="closeCancelModal()" class="btn btn-ghost btn-sm" aria-label="Close cancellation dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div id="cancel-step-1">
+        <p class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-md);">
+          Are you sure you want to cancel your ZdexCloud Pro subscription? When your billing period ends, you will lose the following benefits:
+        </p>
+        <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: var(--font-size-sm); color: #991B1B;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Server capacity reverts from <strong>5 server slots to 1 server slot</strong></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: var(--font-size-sm); color: #991B1B;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Priority High-Speed Relay disabled (Standard community relay only)</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" onclick="closeCancelModal()" class="btn btn-primary btn-sm">Keep My Subscription</button>
+          <button type="button" onclick="goToCancelStep(2)" class="btn btn-ghost btn-sm" style="color: #DC2626;">Continue to Cancel</button>
+        </div>
+      </div>
+
+      <div id="cancel-step-2" style="display: none;">
+        <p class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">Please tell us why you are cancelling:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-md);">
+          <label class="cancellation-reason-radio">
+            <input type="radio" name="cancel-reason" value="TOO_EXPENSIVE" checked />
+            <span class="text-xs text-primary">Too expensive / Cost concerns</span>
+          </label>
+          <label class="cancellation-reason-radio">
+            <input type="radio" name="cancel-reason" value="NOT_USING" />
+            <span class="text-xs text-primary">Not using ZdexCloud right now</span>
+          </label>
+          <label class="cancellation-reason-radio">
+            <input type="radio" name="cancel-reason" value="MISSING_FEATURE" />
+            <span class="text-xs text-primary">Missing a feature I need</span>
+          </label>
+          <label class="cancellation-reason-radio">
+            <input type="radio" name="cancel-reason" value="TECHNICAL_ISSUE" />
+            <span class="text-xs text-primary">Technical issue with personal servers</span>
+          </label>
+          <label class="cancellation-reason-radio">
+            <input type="radio" name="cancel-reason" value="OTHER" />
+            <span class="text-xs text-primary">Other reason</span>
+          </label>
+        </div>
+        <div style="margin-bottom: var(--space-lg);">
+          <label for="cancel-comment-input" class="text-xs text-muted" style="display: block; margin-bottom: 4px;">Additional comments (optional):</label>
+          <textarea id="cancel-comment-input" rows="2" maxlength="200" placeholder="Help us improve ZdexCloud..." style="width: 100%; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-family: var(--font-family-sans); font-size: var(--font-size-xs);"></textarea>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" onclick="goToCancelStep(1)" class="btn btn-secondary btn-sm">Back</button>
+          <button type="button" onclick="goToCancelStep(3)" class="btn btn-primary btn-sm">Next Step</button>
+        </div>
+      </div>
+
+      <div id="cancel-step-3" style="display: none;">
+        <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+          <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-bottom: 4px;">Access active until:</div>
+          <strong id="cancel-period-end-display" style="font-size: var(--font-size-md); font-family: var(--font-family-mono); color: var(--color-text-primary);">End of current period</strong>
+        </div>
+        <p class="text-xs text-secondary" style="line-height: 1.5; margin-bottom: var(--space-lg);">
+          Your Pro subscription will <strong>not renew</strong> after this date. No further charges will occur. Your personal file data remains safe on your Android hardware.
+        </p>
+        <div id="cancel-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" onclick="closeCancelModal()" class="btn btn-secondary btn-sm">Keep Subscription</button>
+          <button type="button" id="btn-confirm-cancel" onclick="executeSubscriptionCancellation()" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">
+            <span>Confirm Cancellation</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. INLINE HTML RECEIPT VIEWER MODAL (Phase 7.2C) -->
+  <div id="receipt-viewer-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="receipt-viewer-title">
+    <div class="modal-card-box modal-card-box--wide">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          </div>
+          <h3 id="receipt-viewer-title" style="font-size: var(--font-size-md); font-weight: 700; margin: 0; color: var(--color-text-primary);">Billing Receipt</h3>
+        </div>
+        <div style="display: flex; align-items: center; gap: var(--space-xs);">
+          <button type="button" id="btn-print-receipt" onclick="printActiveReceipt()" class="btn btn-secondary btn-sm" style="height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            <span>Print</span>
+          </button>
+          <button type="button" id="btn-download-from-viewer" onclick="downloadActiveReceipt()" class="btn btn-secondary btn-sm" style="height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Download</span>
+          </button>
+          <button type="button" onclick="closeReceiptViewerModal()" class="btn btn-ghost btn-sm" aria-label="Close receipt viewer" style="padding: 4px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sandboxed Iframe Container -->
+      <div id="receipt-iframe-container" style="width: 100%; height: 560px; background: #FFFFFF; border: 1px solid var(--color-border); border-radius: var(--radius-md); overflow: hidden; position: relative;">
+        <div id="receipt-iframe-loader" style="position: absolute; inset: 0; background: var(--color-surface); display: flex; align-items: center; justify-content: center; gap: var(--space-sm);">
+          <div class="skeleton-box" style="width: 120px; height: 20px;"></div>
+        </div>
+        <iframe id="receipt-html-frame" sandbox="allow-same-origin allow-scripts allow-popups" style="width: 100%; height: 100%; border: none;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. SELF-SERVICE REFUND REQUEST MODAL (Phase 7.2C) -->
+  <div id="request-refund-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="refund-modal-title">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(220, 38, 38, 0.1); color: #DC2626; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </div>
+          <h3 id="refund-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Request a Refund</h3>
+        </div>
+        <button type="button" onclick="closeRefundModal()" class="btn btn-ghost btn-sm" aria-label="Close refund dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <p class="text-sm text-secondary" style="line-height: 1.5; margin-bottom: var(--space-md);">
+        Submit a self-service refund request for this transaction under ZdexCloud commercial policy.
+      </p>
+
+      <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Receipt Number:</span>
+          <strong id="refund-receipt-number" class="text-xs text-primary" style="font-family: var(--font-family-mono);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Plan Description:</span>
+          <strong id="refund-plan-name" class="text-sm text-primary">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Refund Amount:</span>
+          <strong id="refund-amount-display" class="text-sm text-primary" style="color: var(--color-brand-primary);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-xs text-muted">Destination:</span>
+          <span class="text-xs text-secondary">Original Payment Method (5–7 business days)</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: var(--space-md);">
+        <label for="refund-reason-select" class="text-xs text-secondary" style="display: block; font-weight: 600; margin-bottom: 4px;">
+          Reason for Refund <span style="color: #DC2626;">*</span>
+        </label>
+        <select id="refund-reason-select" style="width: 100%; height: 40px; padding: 0 var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); font-family: var(--font-family-sans); font-size: var(--font-size-xs); cursor: pointer;">
+          <option value="TECHNICAL_SERVICE_FAILURE" selected>Technical issue / service unavailability</option>
+          <option value="DUPLICATE_PAYMENT">Duplicate charge for subscription</option>
+          <option value="ERRONEOUS_PAYMENT">Accidental or erroneous transaction</option>
+          <option value="CUSTOMER_SATISFACTION">Customer satisfaction</option>
+          <option value="OTHER_APPROVED">Other reason</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: var(--space-md);">
+        <label for="refund-details-input" class="text-xs text-muted" style="display: block; margin-bottom: 4px;">Additional explanation (optional):</label>
+        <textarea id="refund-details-input" rows="2" maxlength="200" placeholder="Provide details to assist customer support..." style="width: 100%; padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); font-family: var(--font-family-sans); font-size: var(--font-size-xs);"></textarea>
+      </div>
+
+      <div class="callout-box" style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #991B1B; line-height: 1.5;">
+        Refunding an active subscription immediately concludes your Pro coverage, resets server capacity to 1 node, and marks the subscription as terminated.
+      </div>
+
+      <div id="refund-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeRefundModal()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button type="button" id="btn-submit-refund" onclick="executeRefundSubmission()" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626; min-width: 160px;">
+          <span>Submit Refund Request</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. REFUND STATUS DETAILS MODAL (Phase 7.2C) -->
+  <div id="refund-details-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="refund-status-title">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.1); color: #10B981; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <h3 id="refund-status-title" style="font-size: var(--font-size-md); font-weight: 700; margin: 0; color: var(--color-text-primary);">Refund Information</h3>
+        </div>
+        <button type="button" onclick="closeRefundDetailsModal()" class="btn btn-ghost btn-sm" aria-label="Close refund details" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div id="refund-details-content" style="font-size: var(--font-size-xs); line-height: 1.6; margin-bottom: var(--space-lg);"></div>
+
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" onclick="closeRefundDetailsModal()" class="btn btn-secondary btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer class="site-footer">
@@ -423,10 +997,19 @@
   <!-- CORE SCRIPTS -->
   <script src="../js/motion.js"></script>
   <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
   <script src="../js/main.js"></script>
   <script src="../js/server-discovery.js"></script>
   <script>
-    let isFetching = false;
+    let isFetchingServers = false;
+    let currentServerCount = 0;
+    let currentPage = 1;
+    let totalReceiptsCount = 0;
+    const RECEIPTS_PER_PAGE = 10;
+    let loadedReceiptsList = [];
+    let activeReceiptForViewer = null;
+    let activeReceiptForRefund = null;
 
     document.addEventListener('DOMContentLoaded', () => {
       const user = AuthService.getSavedUser();
@@ -473,25 +1056,1015 @@
 
       document.getElementById('btn-manual-refresh')?.addEventListener('click', () => {
         loadUserServers(false);
-      loadBillingRegion();
-      window.updateCurrencyPreview = updateCurrencyPreview;
-      window.saveBillingRegion = saveBillingRegion;
-      window.loadBillingRegion = loadBillingRegion;
+        initDashboardBilling();
+        loadBillingReceipts(currentPage);
       });
 
-      // Initial Render & Fetch
+      // Escape key listener for open modals
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAllBillingModals();
+        }
+      });
+
+      // Initialize Subscription & Billing Architecture (Phase 7.2B & 7.2C)
+      BillingState.subscribe(state => {
+        renderSubscriptionCard(state);
+        updateServerEntitlementsUI(state);
+      });
+
+      initDashboardBilling();
+      loadBillingReceipts(1);
+
+      // Initial Render & Fetch for Servers
       renderSkeletonLoaders();
       loadUserServers(false);
 
-      // Auto-refresh every 10 seconds
+      // Auto-refresh servers every 10 seconds
       setInterval(() => {
         loadUserServers(true);
       }, 10000);
     });
 
-    /**
-     * Render Skeleton Card Loaders
-     */
+    // =========================================================================
+    // 1. SUBSCRIPTION CARD RENDERING (PHASE 7.2B)
+    // =========================================================================
+
+    async function initDashboardBilling() {
+      const skeleton = document.getElementById('subscription-card-skeleton');
+      const content = document.getElementById('subscription-card-content');
+      const errBox = document.getElementById('subscription-card-error');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingState.refreshBillingState();
+        if (result.ok && result.state) {
+          renderSubscriptionCard(result.state);
+          loadBillingRegionUI(result.state);
+        } else {
+          if (skeleton) skeleton.style.display = 'none';
+          if (errBox) errBox.style.display = 'block';
+        }
+      } catch (e) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (errBox) errBox.style.display = 'block';
+      }
+    }
+
+    function renderSubscriptionCard(state) {
+      const skeleton = document.getElementById('subscription-card-skeleton');
+      const content = document.getElementById('subscription-card-content');
+      const errBox = document.getElementById('subscription-card-error');
+
+      if (!content || !state) return;
+
+      if (skeleton) skeleton.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+      content.style.display = 'block';
+
+      const planCode = state.plan || 'FREE';
+      const status = state.status || 'FREE';
+      const sub = state.subscription;
+      const entitlements = state.entitlements || { maxServers: 1, priorityRelay: false };
+      const statusConfig = BillingState.STATUS_CONFIG[status] || BillingState.STATUS_CONFIG.FREE;
+      const planConfig = BillingState.PLAN_CONFIG[planCode] || BillingState.PLAN_CONFIG.FREE;
+
+      const planTitle = sub?.planName || planConfig.label;
+
+      let priceDisplay = 'Free (₹0)';
+      if (sub && sub.amountMinorUnits) {
+        const formattedPrice = BillingState.formatMinorUnits(sub.amountMinorUnits, sub.currency);
+        priceDisplay = `${formattedPrice} / ${sub.billingInterval === 'YEARLY' ? 'year' : 'month'}`;
+      } else if (planCode === 'FREE') {
+        priceDisplay = 'Free ($0 / ₹0)';
+      }
+
+      const periodStartFormatted = sub?.currentPeriodStart ? BillingState.formatBillingDate(sub.currentPeriodStart) : null;
+      const periodEndFormatted = sub?.currentPeriodEnd ? BillingState.formatBillingDate(sub.currentPeriodEnd) : null;
+      const periodDisplay = (periodStartFormatted && periodEndFormatted)
+        ? `${periodStartFormatted} – ${periodEndFormatted}`
+        : 'Continuous Free Access';
+
+      let renewalLabel = 'Next Renewal:';
+      let renewalDisplay = periodEndFormatted || 'N/A';
+
+      if (state.pendingActions?.cancellation || status === 'CANCELLING') {
+        renewalLabel = 'Expires On:';
+        renewalDisplay = `${periodEndFormatted || 'End of Period'} (No renewal)`;
+      } else if (planCode === 'FREE') {
+        renewalLabel = 'Renewal:';
+        renewalDisplay = 'None (Forever Free)';
+      }
+
+      let lifecycleAlertHtml = '';
+
+      if (state.pendingActions?.downgrade) {
+        lifecycleAlertHtml = `
+          <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <div>
+                <strong style="color: #1E40AF; font-size: var(--font-size-xs);">Scheduled Plan Change Pending:</strong>
+                <div style="font-size: var(--font-size-xs); color: #1E3A8A;">Switching to Pro Monthly at the conclusion of your current annual cycle (${escapeHtml(periodEndFormatted || '')}).</div>
+              </div>
+            </div>
+            <button type="button" onclick="openCancelDowngradeModal()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px; min-height: 32px;">Keep Annual Plan</button>
+          </div>
+        `;
+      } else if (state.pendingActions?.cancellation || status === 'CANCELLING') {
+        lifecycleAlertHtml = `
+          <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; align-items: center; gap: var(--space-sm);">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div style="font-size: var(--font-size-xs); color: #92400E; line-height: 1.5;">
+              <strong>Subscription Cancellation Scheduled:</strong> Your Pro access remains active with full 5-server capacity until <strong>${escapeHtml(periodEndFormatted || '')}</strong>. No automatic renewal charges will occur.
+            </div>
+          </div>
+        `;
+      } else if (status === 'PAST_DUE') {
+        lifecycleAlertHtml = `
+          <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; align-items: center; gap: var(--space-sm);">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div style="font-size: var(--font-size-xs); color: #991B1B; line-height: 1.5;">
+              <strong>Payment Past Due:</strong> A renewal payment could not be processed by your payment method. Please check your account or contact support to maintain continuous Pro relay bandwidth.
+            </div>
+          </div>
+        `;
+      } else if (status === 'GRACE_PERIOD') {
+        lifecycleAlertHtml = `
+          <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; align-items: center; gap: var(--space-sm);">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            <div style="font-size: var(--font-size-xs); color: #92400E; line-height: 1.5;">
+              <strong>Account in Grace Period:</strong> Pro features are temporarily active while the gateway attempts payment resolution.
+            </div>
+          </div>
+        `;
+      } else if (status === 'CREATED') {
+        lifecycleAlertHtml = `
+          <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-lg); display: flex; align-items: center; gap: var(--space-sm);">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <div style="font-size: var(--font-size-xs); color: #166534; line-height: 1.5;">
+              <strong>Order Received & Processing:</strong> Payment order created. Activating subscription entitlements with control plane...
+            </div>
+          </div>
+        `;
+      }
+
+      let actionButtonsHtml = '';
+
+      if (planCode === 'FREE') {
+        actionButtonsHtml = `
+          <a href="pricing.html" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Upgrade to Pro</span>
+          </a>
+          <a href="pricing.html" class="btn btn-ghost btn-sm" style="font-size: 12px;">Compare Plans & Features</a>
+        `;
+      } else if (planCode === 'PRO_MONTHLY' && status === 'ACTIVE') {
+        actionButtonsHtml = `
+          <button type="button" onclick="openUpgradeModal()" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Upgrade to Annual (Save ~15%)</span>
+          </button>
+          <button type="button" onclick="openCancelModal()" class="btn btn-ghost btn-sm" style="color: var(--color-text-muted); font-size: 12px;">Cancel Subscription</button>
+        `;
+      } else if (planCode === 'PRO_YEARLY' && status === 'ACTIVE') {
+        if (state.pendingActions?.downgrade) {
+          actionButtonsHtml = `
+            <button type="button" onclick="openCancelDowngradeModal()" class="btn btn-secondary btn-sm">Keep Annual Plan</button>
+            <button type="button" onclick="openCancelModal()" class="btn btn-ghost btn-sm" style="color: var(--color-text-muted); font-size: 12px;">Cancel Subscription</button>
+          `;
+        } else {
+          actionButtonsHtml = `
+            <button type="button" onclick="openDowngradeModal()" class="btn btn-secondary btn-sm">Switch to Monthly at Renewal</button>
+            <button type="button" onclick="openCancelModal()" class="btn btn-ghost btn-sm" style="color: var(--color-text-muted); font-size: 12px;">Cancel Subscription</button>
+          `;
+        }
+      } else if (status === 'CANCELLING') {
+        actionButtonsHtml = `
+          <span class="text-xs text-muted" style="margin-right: var(--space-sm);">Subscription will terminate on ${escapeHtml(periodEndFormatted || '')}</span>
+          <a href="contact.html" class="btn btn-ghost btn-sm" style="font-size: 12px;">Contact Support</a>
+        `;
+      } else if (status === 'EXPIRED' || status === 'REFUNDED') {
+        actionButtonsHtml = `
+          <a href="pricing.html" class="btn btn-primary btn-sm">Reactivate Pro Plan</a>
+        `;
+      }
+
+      content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Subscription & Plan Management</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Active platform tier, server node quota, and recurring lifecycle status.
+            </p>
+          </div>
+          <div>
+            <span class="${statusConfig.badgeClass}" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;">
+              <span style="width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block;"></span>
+              <span>${escapeHtml(statusConfig.label)}</span>
+            </span>
+          </div>
+        </div>
+
+        ${lifecycleAlertHtml}
+
+        <div class="billing-metric-grid">
+          <div class="billing-metric-item">
+            <div class="billing-metric-label">Current Plan</div>
+            <div class="billing-metric-value">${escapeHtml(planTitle)}</div>
+          </div>
+          <div class="billing-metric-item">
+            <div class="billing-metric-label">Billing Rate</div>
+            <div class="billing-metric-value">${escapeHtml(priceDisplay)}</div>
+          </div>
+          <div class="billing-metric-item">
+            <div class="billing-metric-label">Billing Period</div>
+            <div class="billing-metric-value" style="font-size: var(--font-size-sm); font-family: var(--font-family-mono);">${escapeHtml(periodDisplay)}</div>
+          </div>
+          <div class="billing-metric-item">
+            <div class="billing-metric-label">${escapeHtml(renewalLabel)}</div>
+            <div class="billing-metric-value" style="font-size: var(--font-size-sm); font-family: var(--font-family-mono);">${escapeHtml(renewalDisplay)}</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-bottom: var(--space-md); font-size: var(--font-size-xs); color: var(--color-text-secondary); background: var(--color-bg-secondary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle);">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            <span>Server Nodes: <strong>${currentServerCount} / ${entitlements.maxServers} Active</strong></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Relay Bandwidth: <strong>${entitlements.priorityRelay ? 'Priority High-Speed Relay' : 'Standard Relay'}</strong></span>
+          </div>
+        </div>
+
+        <div class="billing-action-bar">
+          ${actionButtonsHtml}
+        </div>
+      `;
+
+      if (status === 'CREATED') {
+        BillingState.pollBillingStateUntil(s => s.status === 'ACTIVE', { maxAttempts: 5, intervalMs: 2000 });
+      }
+    }
+
+    function updateServerEntitlementsUI(state) {
+      const maxServers = (state && state.entitlements && typeof state.entitlements.maxServers === 'number')
+        ? state.entitlements.maxServers
+        : 1;
+
+      const statSlotsEl = document.getElementById('stat-capacity-slots');
+      if (statSlotsEl) {
+        statSlotsEl.textContent = `${currentServerCount} / ${maxServers}`;
+      }
+
+      const countBadge = document.getElementById('server-count-badge');
+      if (countBadge) {
+        countBadge.textContent = `${currentServerCount} / ${maxServers} Servers`;
+        if (currentServerCount >= maxServers) {
+          countBadge.className = 'badge badge-warning';
+        } else {
+          countBadge.className = 'badge badge-accent';
+        }
+      }
+    }
+
+    // =========================================================================
+    // 2. BILLING HISTORY & RECEIPTS (PHASE 7.2C)
+    // =========================================================================
+
+    async function loadBillingReceipts(page = 1) {
+      currentPage = page;
+      const skeleton = document.getElementById('receipts-skeleton');
+      const content = document.getElementById('receipts-content');
+      const emptyBox = document.getElementById('receipts-empty');
+      const errBox = document.getElementById('receipts-error');
+      const paginationBox = document.getElementById('receipts-pagination');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (emptyBox) emptyBox.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+      if (paginationBox) paginationBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.getReceipts(page, RECEIPTS_PER_PAGE);
+
+        if (skeleton) skeleton.style.display = 'none';
+
+        if (res.ok && res.data && res.data.success) {
+          const receiptsData = res.data.data;
+          loadedReceiptsList = receiptsData.receipts || [];
+          totalReceiptsCount = receiptsData.total || 0;
+
+          if (loadedReceiptsList.length === 0 && page === 1) {
+            if (emptyBox) emptyBox.style.display = 'block';
+            return;
+          }
+
+          renderReceiptsTable(loadedReceiptsList);
+          renderPaginationControls(totalReceiptsCount, page);
+        } else {
+          if (errBox) errBox.style.display = 'block';
+        }
+      } catch (err) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (errBox) errBox.style.display = 'block';
+      }
+    }
+
+    function filterReceiptsUI() {
+      const filterVal = document.getElementById('receipt-filter-status')?.value || 'ALL';
+      if (filterVal === 'ALL') {
+        renderReceiptsTable(loadedReceiptsList);
+      } else {
+        const filtered = loadedReceiptsList.filter(r => r.status === filterVal);
+        renderReceiptsTable(filtered);
+      }
+    }
+
+    function renderReceiptsTable(receipts) {
+      const content = document.getElementById('receipts-content');
+      if (!content) return;
+
+      if (receipts.length === 0) {
+        content.innerHTML = `
+          <div style="text-align: center; padding: var(--space-xl); color: var(--color-text-muted); font-size: var(--font-size-sm);">
+            No receipts match the selected filter.
+          </div>
+        `;
+        content.style.display = 'block';
+        return;
+      }
+
+      const rowsHtml = receipts.map(receipt => {
+        const receiptNum = receipt.receiptNumber || 'ZCR-N/A';
+        const dateFormatted = BillingState.formatBillingDate(receipt.issuedAt || receipt.chargedAt);
+        const planName = receipt.planName || (receipt.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly');
+        const interval = receipt.billingInterval === 'YEARLY' ? 'Annual' : 'Monthly';
+        const formattedAmount = BillingState.formatMinorUnits(receipt.totalMinorUnits || receipt.amountPaidMinorUnits || 0, receipt.currency);
+
+        const isRefunded = receipt.status === 'REFUNDED';
+        const statusBadge = isRefunded
+          ? '<span class="badge badge-secondary" style="font-size: 11px;">Refunded</span>'
+          : '<span class="badge badge-success" style="font-size: 11px;">Paid</span>';
+
+        // Check 7-day self-service refund window
+        const chargedTimestamp = new Date(receipt.chargedAt || receipt.issuedAt).getTime();
+        const nowTimestamp = Date.now();
+        const isEligibleWindow = !isRefunded && (nowTimestamp - chargedTimestamp <= 7 * 86400 * 1000);
+
+        let refundActionHtml = '';
+        if (isRefunded) {
+          refundActionHtml = `
+            <button type="button" onclick="viewRefundDetails('${escapeHtml(receipt.id)}', '${escapeHtml(receipt.paymentId || '')}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #64748B;">
+              Refund Info
+            </button>
+          `;
+        } else if (isEligibleWindow) {
+          refundActionHtml = `
+            <button type="button" onclick="openRefundModal('${escapeHtml(receipt.id)}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #DC2626;">
+              Request Refund
+            </button>
+          `;
+        }
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 600; font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--color-brand-primary);">
+                ${escapeHtml(receiptNum)}
+              </div>
+              <div class="text-xs text-muted">${escapeHtml(dateFormatted)}</div>
+            </td>
+            <td>
+              <div style="font-weight: 500;">${escapeHtml(planName)}</div>
+              <div class="text-xs text-muted">${escapeHtml(interval)} Billing</div>
+            </td>
+            <td>
+              <strong style="font-family: var(--font-family-mono); font-size: var(--font-size-sm);">${escapeHtml(formattedAmount)}</strong>
+              <div class="text-xs text-muted" style="font-size: 10px;">Tax Included</div>
+            </td>
+            <td>
+              ${statusBadge}
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                <button type="button" onclick="viewReceiptHtml('${escapeHtml(receipt.id)}', '${escapeHtml(receiptNum)}')" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  View
+                </button>
+                <button type="button" onclick="downloadReceiptFile('${escapeHtml(receipt.id)}')" class="btn btn-ghost btn-sm" title="Download HTML Receipt" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                ${refundActionHtml}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      content.innerHTML = `
+        <div class="receipt-table-wrapper">
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th>Receipt # / Date</th>
+                <th>Plan Details</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      content.style.display = 'block';
+    }
+
+    function renderPaginationControls(total, page) {
+      const paginationBox = document.getElementById('receipts-pagination');
+      const infoEl = document.getElementById('pagination-info');
+      const prevBtn = document.getElementById('btn-prev-page');
+      const nextBtn = document.getElementById('btn-next-page');
+
+      if (!paginationBox || total <= RECEIPTS_PER_PAGE) {
+        if (paginationBox) paginationBox.style.display = 'none';
+        return;
+      }
+
+      paginationBox.style.display = 'flex';
+      const totalPages = Math.ceil(total / RECEIPTS_PER_PAGE);
+
+      if (infoEl) {
+        infoEl.textContent = `Page ${page} of ${totalPages} (${total} total records)`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    function goToPrevReceiptPage() {
+      if (currentPage > 1) {
+        loadBillingReceipts(currentPage - 1);
+      }
+    }
+
+    function goToNextReceiptPage() {
+      const totalPages = Math.ceil(totalReceiptsCount / RECEIPTS_PER_PAGE);
+      if (currentPage < totalPages) {
+        loadBillingReceipts(currentPage + 1);
+      }
+    }
+
+    // =========================================================================
+    // 3. RECEIPT HTML VIEWER & DOWNLOAD (PHASE 7.2C)
+    // =========================================================================
+
+    async function viewReceiptHtml(receiptId, receiptNumber) {
+      activeReceiptForViewer = receiptId;
+      const modal = document.getElementById('receipt-viewer-modal');
+      const titleEl = document.getElementById('receipt-viewer-title');
+      const loader = document.getElementById('receipt-iframe-loader');
+      const frame = document.getElementById('receipt-html-frame');
+
+      if (titleEl) titleEl.textContent = `Receipt ${receiptNumber || ''}`;
+      if (loader) loader.style.display = 'flex';
+      if (frame) frame.srcdoc = '';
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        const res = await BillingAPI.getReceiptHtml(receiptId);
+        if (loader) loader.style.display = 'none';
+
+        if (res.ok && res.html) {
+          if (frame) frame.srcdoc = res.html;
+        } else {
+          if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Failed to load receipt document.</div>';
+        }
+      } catch (err) {
+        if (loader) loader.style.display = 'none';
+        if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Network error loading receipt.</div>';
+      }
+    }
+
+    function closeReceiptViewerModal() {
+      const modal = document.getElementById('receipt-viewer-modal');
+      if (modal) modal.style.display = 'none';
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame) frame.srcdoc = '';
+    }
+
+    function printActiveReceipt() {
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }
+    }
+
+    async function downloadActiveReceipt() {
+      if (!activeReceiptForViewer) return;
+      await downloadReceiptFile(activeReceiptForViewer);
+    }
+
+    async function downloadReceiptFile(receiptId) {
+      try {
+        await BillingAPI.downloadReceipt(receiptId);
+      } catch (err) {
+        alert('Could not download receipt file. Please try viewing it in browser.');
+      }
+    }
+
+    // =========================================================================
+    // 4. SELF-SERVICE REFUND FLOW (PHASE 7.2C)
+    // =========================================================================
+
+    function openRefundModal(receiptId) {
+      const receipt = loadedReceiptsList.find(r => r.id === receiptId);
+      if (!receipt) return;
+
+      activeReceiptForRefund = receipt;
+      const modal = document.getElementById('request-refund-modal');
+      const receiptNumEl = document.getElementById('refund-receipt-number');
+      const planNameEl = document.getElementById('refund-plan-name');
+      const amountEl = document.getElementById('refund-amount-display');
+      const errBox = document.getElementById('refund-modal-error');
+
+      if (receiptNumEl) receiptNumEl.textContent = receipt.receiptNumber || 'ZCR-N/A';
+      if (planNameEl) planNameEl.textContent = receipt.planName || 'ZdexCloud Pro Plan';
+      if (amountEl) amountEl.textContent = BillingState.formatMinorUnits(receipt.totalMinorUnits || receipt.amountPaidMinorUnits || 0, receipt.currency);
+      if (errBox) errBox.style.display = 'none';
+
+      if (modal) modal.style.display = 'flex';
+      document.getElementById('btn-submit-refund')?.focus();
+    }
+
+    function closeRefundModal() {
+      const modal = document.getElementById('request-refund-modal');
+      if (modal) modal.style.display = 'none';
+      activeReceiptForRefund = null;
+    }
+
+    async function executeRefundSubmission() {
+      if (!activeReceiptForRefund || !activeReceiptForRefund.paymentId) return;
+
+      const btn = document.getElementById('btn-submit-refund');
+      const errBox = document.getElementById('refund-modal-error');
+      const reasonSelect = document.getElementById('refund-reason-select');
+      const detailsInput = document.getElementById('refund-details-input');
+
+      const reason = reasonSelect?.value || 'CUSTOMER_SATISFACTION';
+      const reasonDetails = detailsInput?.value?.trim() || undefined;
+
+      // Unique client idempotency key to protect against duplicate submission
+      const idempotencyKey = 'ref_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Submitting Request...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.requestRefund({
+          paymentId: activeReceiptForRefund.paymentId,
+          reason: reason,
+          reasonDetails: reasonDetails,
+          idempotencyKey: idempotencyKey,
+          terminateSubscription: true
+        });
+
+        if (res.ok && res.data && res.data.success) {
+          closeRefundModal();
+          await BillingState.refreshBillingState();
+          await loadBillingReceipts(currentPage);
+          BillingState.broadcastChangeSignal();
+          alert('Refund request processed successfully. Your account has transitioned to the Free tier.');
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (errBox) {
+            errBox.textContent = norm.message;
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network communication error while submitting refund request.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Submit Refund Request';
+        }
+      }
+    }
+
+    async function viewRefundDetails(receiptId, paymentId) {
+      const modal = document.getElementById('refund-details-modal');
+      const content = document.getElementById('refund-details-content');
+
+      if (content) content.innerHTML = '<div class="skeleton-box" style="width: 100%; height: 60px;"></div>';
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        if (paymentId) {
+          const res = await BillingAPI.getPaymentRefunds(paymentId);
+          if (res.ok && res.data && res.data.success) {
+            const refunds = res.data.data || [];
+            if (refunds.length > 0) {
+              const r = refunds[0];
+              const dateFormatted = BillingState.formatBillingDate(r.createdAt || r.requestedAt);
+              const amountFormatted = BillingState.formatMinorUnits(r.amountMinorUnits, r.currency || 'INR');
+              if (content) {
+                content.innerHTML = `
+                  <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-md);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span class="text-muted">Refund Status:</span>
+                      <strong class="badge badge-success" style="font-size: 11px;">${escapeHtml(r.status || 'PROCESSED')}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span class="text-muted">Refunded Amount:</span>
+                      <strong class="text-primary" style="font-family: var(--font-family-mono);">${escapeHtml(amountFormatted)}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                      <span class="text-muted">Date Processed:</span>
+                      <span class="text-primary">${escapeHtml(dateFormatted)}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span class="text-muted">Reason Code:</span>
+                      <span class="text-primary" style="font-family: var(--font-family-mono);">${escapeHtml(r.reason || 'CUSTOMER_REQUEST')}</span>
+                    </div>
+                  </div>
+                  <p class="text-xs text-muted" style="margin-top: var(--space-sm); margin-bottom: 0;">
+                    Refunds are returned to your original payment method. Depending on your bank, it may take 5–7 business days to appear on your statement.
+                  </p>
+                `;
+              }
+              return;
+            }
+          }
+        }
+        if (content) content.innerHTML = '<div class="text-xs text-secondary">This transaction was refunded. Plan entitlements were updated accordingly.</div>';
+      } catch (err) {
+        if (content) content.innerHTML = '<div class="text-xs text-secondary">Refund record details could not be loaded.</div>';
+      }
+    }
+
+    function closeRefundDetailsModal() {
+      const modal = document.getElementById('refund-details-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function closeAllBillingModals() {
+      closeUpgradeModal();
+      closeDowngradeModal();
+      closeCancelDowngradeModal();
+      closeCancelModal();
+      closeReceiptViewerModal();
+      closeRefundModal();
+      closeRefundDetailsModal();
+    }
+
+    // =========================================================================
+    // 5. LIFECYCLE CONTROLS (PHASE 7.2B)
+    // =========================================================================
+
+    function openUpgradeModal() {
+      const modal = document.getElementById('upgrade-subscription-modal');
+      const errBox = document.getElementById('upgrade-modal-error');
+      if (errBox) errBox.style.display = 'none';
+      if (modal) modal.style.display = 'flex';
+      document.getElementById('btn-confirm-upgrade')?.focus();
+    }
+
+    function closeUpgradeModal() {
+      const modal = document.getElementById('upgrade-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeSubscriptionUpgrade() {
+      const btn = document.getElementById('btn-confirm-upgrade');
+      const errBox = document.getElementById('upgrade-modal-error');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Upgrading...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.upgradeSubscription('PRO_YEARLY');
+        if (res.ok && res.data && res.data.success) {
+          closeUpgradeModal();
+          await BillingState.refreshBillingState();
+          await loadBillingReceipts(1);
+          BillingState.broadcastChangeSignal();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (errBox) {
+            errBox.textContent = norm.message;
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network communication error while executing upgrade.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Upgrade to Annual';
+        }
+      }
+    }
+
+    function openDowngradeModal() {
+      const modal = document.getElementById('downgrade-subscription-modal');
+      const errBox = document.getElementById('downgrade-modal-error');
+      const dateEl = document.getElementById('downgrade-effective-date');
+      const state = BillingState.getState();
+
+      if (dateEl && state?.subscription?.currentPeriodEnd) {
+        dateEl.textContent = BillingState.formatBillingDate(state.subscription.currentPeriodEnd);
+      }
+
+      if (errBox) errBox.style.display = 'none';
+      if (modal) modal.style.display = 'flex';
+      document.getElementById('btn-confirm-downgrade')?.focus();
+    }
+
+    function closeDowngradeModal() {
+      const modal = document.getElementById('downgrade-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeSubscriptionDowngrade() {
+      const btn = document.getElementById('btn-confirm-downgrade');
+      const errBox = document.getElementById('downgrade-modal-error');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Scheduling...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.downgradeSubscription('PRO_MONTHLY');
+        if (res.ok && res.data && res.data.success) {
+          closeDowngradeModal();
+          await BillingState.refreshBillingState();
+          BillingState.broadcastChangeSignal();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (errBox) {
+            errBox.textContent = norm.message;
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network communication error while scheduling downgrade.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Switch to Monthly';
+        }
+      }
+    }
+
+    function openCancelDowngradeModal() {
+      const modal = document.getElementById('cancel-downgrade-modal');
+      const errBox = document.getElementById('cancel-downgrade-error');
+      if (errBox) errBox.style.display = 'none';
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCancelDowngradeModal() {
+      const modal = document.getElementById('cancel-downgrade-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeCancelDowngrade() {
+      const btn = document.getElementById('btn-confirm-cancel-downgrade');
+      const errBox = document.getElementById('cancel-downgrade-error');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.cancelDowngrade();
+        if (res.ok && res.data && res.data.success) {
+          closeCancelDowngradeModal();
+          await BillingState.refreshBillingState();
+          BillingState.broadcastChangeSignal();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (errBox) {
+            errBox.textContent = norm.message;
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network error while reversing scheduled downgrade.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Keep Annual Plan';
+        }
+      }
+    }
+
+    function openCancelModal() {
+      const modal = document.getElementById('cancel-subscription-modal');
+      const errBox = document.getElementById('cancel-modal-error');
+      const periodEndEl = document.getElementById('cancel-period-end-display');
+      const state = BillingState.getState();
+
+      if (periodEndEl && state?.subscription?.currentPeriodEnd) {
+        periodEndEl.textContent = BillingState.formatBillingDate(state.subscription.currentPeriodEnd);
+      }
+
+      goToCancelStep(1);
+      if (errBox) errBox.style.display = 'none';
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeCancelModal() {
+      const modal = document.getElementById('cancel-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function goToCancelStep(stepNum) {
+      document.getElementById('cancel-step-1').style.display = stepNum === 1 ? 'block' : 'none';
+      document.getElementById('cancel-step-2').style.display = stepNum === 2 ? 'block' : 'none';
+      document.getElementById('cancel-step-3').style.display = stepNum === 3 ? 'block' : 'none';
+    }
+
+    async function executeSubscriptionCancellation() {
+      const btn = document.getElementById('btn-confirm-cancel');
+      const errBox = document.getElementById('cancel-modal-error');
+      const selectedReason = document.querySelector('input[name="cancel-reason"]:checked')?.value || 'OTHER';
+      const comments = document.getElementById('cancel-comment-input')?.value?.trim();
+      const combinedReason = comments ? `${selectedReason}: ${comments}` : selectedReason;
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Cancelling...';
+      }
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.cancelSubscription(combinedReason);
+        if (res.ok && res.data && res.data.success) {
+          closeCancelModal();
+          await BillingState.refreshBillingState();
+          BillingState.broadcastChangeSignal();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (errBox) {
+            errBox.textContent = norm.message;
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        if (errBox) {
+          errBox.textContent = 'Network communication error while cancelling subscription.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = 'Confirm Cancellation';
+        }
+      }
+    }
+
+    // =========================================================================
+    // 6. BILLING REGION MANAGEMENT
+    // =========================================================================
+
+    function loadBillingRegionUI(billingState) {
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const badgeContainer = document.getElementById('billing-confirmation-badge');
+      const previewEl = document.getElementById('billing-currency-preview');
+
+      if (!billingState) return;
+
+      if (billingState.billingCountry && countrySelect) {
+        countrySelect.value = billingState.billingCountry;
+      }
+      if (billingState.billingPostalCode && postalInput) {
+        postalInput.value = billingState.billingPostalCode;
+      }
+      if (badgeContainer) {
+        if (billingState.countryConfirmed) {
+          badgeContainer.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Confirmed (${escapeHtml(billingState.currency || '')})</span>`;
+        } else {
+          badgeContainer.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Unconfirmed</span>`;
+        }
+      }
+      updateCurrencyPreview();
+    }
+
+    function updateCurrencyPreview() {
+      const countrySelect = document.getElementById('billing-country-select');
+      const previewEl = document.getElementById('billing-currency-preview');
+      if (!countrySelect || !previewEl) return;
+      const val = countrySelect.value ? countrySelect.value.toUpperCase() : '';
+      if (val === 'IN') {
+        previewEl.textContent = 'INR (₹)';
+      } else if (val) {
+        previewEl.textContent = 'USD ($)';
+      } else {
+        previewEl.textContent = 'Select country...';
+      }
+    }
+
+    async function saveBillingRegion(e) {
+      if (e) e.preventDefault();
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const feedback = document.getElementById('billing-status-feedback');
+      const btn = document.getElementById('btn-save-billing');
+
+      if (!countrySelect || !postalInput || !countrySelect.value || !postalInput.value.trim()) {
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+      }
+      if (feedback) feedback.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.confirmBillingCountry(countrySelect.value, postalInput.value.trim());
+
+        if (res.ok && res.data && res.data.success) {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#ECFDF5';
+            feedback.style.color = '#065F46';
+            feedback.style.border = '1px solid #A7F3D0';
+            feedback.textContent = `Billing region saved. Authoritative currency: ${res.data.data.currency}.`;
+          }
+          await BillingState.refreshBillingState();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#FEF2F2';
+            feedback.style.color = '#991B1B';
+            feedback.style.border = '1px solid #FECACA';
+            feedback.textContent = norm.message;
+          }
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#FEF2F2';
+          feedback.style.color = '#991B1B';
+          feedback.style.border = '1px solid #FECACA';
+          feedback.textContent = 'Network error while updating billing region.';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Save Region</span>
+          `;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 7. SERVER NODES MANAGEMENT
+    // =========================================================================
+
     function renderSkeletonLoaders() {
       const grid = document.getElementById('user-devices-grid');
       if (!grid) return;
@@ -515,9 +2088,6 @@
       `;
     }
 
-    /**
-     * Relative Time Formatter
-     */
     function formatRelativeTime(dateString) {
       if (!dateString) return 'Not available yet';
       const date = new Date(dateString);
@@ -536,9 +2106,6 @@
       return `${diffDays}d ago`;
     }
 
-    /**
-     * HTML Escaper
-     */
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, match => ({
@@ -550,12 +2117,9 @@
       })[match]);
     }
 
-    /**
-     * Fetch and Render Real User Servers from Backend Control Plane
-     */
     async function loadUserServers(isBackground = false) {
-      if (isFetching) return;
-      isFetching = true;
+      if (isFetchingServers) return;
+      isFetchingServers = true;
 
       const grid = document.getElementById('user-devices-grid');
       const indicator = document.getElementById('refresh-indicator');
@@ -564,7 +2128,7 @@
         const res = await apiRequest('/devices', 'GET');
 
         if (!res.ok || !res.data || res.data.success === false) {
-          if (!isBackground) {
+          if (!isBackground && grid) {
             grid.innerHTML = `
               <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
                 <div style="width: 48px; height: 48px; margin: 0 auto var(--space-xs); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
@@ -578,75 +2142,47 @@
               </div>
             `;
           }
-          isFetching = false;
+          isFetchingServers = false;
           return;
         }
 
         const devices = res.data.data?.devices || [];
+        currentServerCount = devices.length;
 
-        // Update Overview Stat Metrics
         const onlineCount = devices.filter(d => d.status === 'ONLINE' && d.server?.status === 'RUNNING').length;
-        document.getElementById('stat-online-servers').textContent = onlineCount;
-        document.getElementById('stat-linked-devices').textContent = devices.length;
-        document.getElementById('stat-capacity-slots').textContent = `${devices.length} / 5`;
+        const onlineEl = document.getElementById('stat-online-servers');
+        const linkedEl = document.getElementById('stat-linked-devices');
+        if (onlineEl) onlineEl.textContent = onlineCount;
+        if (linkedEl) linkedEl.textContent = devices.length;
 
-        const countBadge = document.getElementById('server-count-badge');
-        if (countBadge) {
-          countBadge.textContent = `${devices.length} / 5 Servers`;
-          if (devices.length >= 5) {
-            countBadge.className = 'badge badge-warning';
-          } else {
-            countBadge.className = 'badge badge-accent';
-          }
-        }
+        updateServerEntitlementsUI(BillingState.getState());
+
+        const state = BillingState.getState();
+        const maxServers = state?.entitlements?.maxServers || 1;
 
         if (devices.length === 0) {
-          // Zero registered servers: Clean Zero-Emoji Empty State
-          grid.innerHTML = `
-            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-2xl); border: 2px dashed var(--color-border-subtle); background: var(--color-surface); border-radius: var(--radius-xl);">
-              <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
-                <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          if (grid) {
+            grid.innerHTML = `
+              <div class="card" style="grid-column: 1 / -1; text-align: center; padding: var(--space-2xl); border: 2px dashed var(--color-border-subtle); background: var(--color-surface); border-radius: var(--radius-xl);">
+                <div style="width: 56px; height: 56px; margin: 0 auto var(--space-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                  <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                </div>
+                <h3 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">
+                  No registered servers yet
+                </h3>
+                <p class="text-sm text-secondary" style="max-width: 480px; margin: 0 auto var(--space-lg) auto;">
+                  Register an Android phone to create your personal storage server. Download the app and sign in with this account to pair your first storage node.
+                </p>
+                <a href="how-it-works.html" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+                  <span>View Setup Guide</span>
+                </a>
               </div>
-              <h3 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">
-                No registered servers yet
-              </h3>
-              <p class="text-sm text-secondary" style="max-width: 480px; margin: 0 auto var(--space-lg) auto;">
-                Register an Android phone to create your personal storage server. Download the app and sign in with this account to pair your first storage node.
-              </p>
-              <a href="how-it-works.html" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
-                <span>View Setup Guide</span>
-              </a>
-            </div>
-          `;
+            `;
+          }
         } else {
-          // Render Real Server Instance Cards
           const cardsHtml = devices.map(device => {
             const server = device.server;
-            const rawEndpoint = server?.endpoint;
-            let endpointText = null;
-
-            if (rawEndpoint) {
-              if (typeof rawEndpoint === 'string') {
-                endpointText = rawEndpoint;
-              } else if (typeof rawEndpoint === 'object') {
-                endpointText = rawEndpoint.hostname || rawEndpoint.publicUrl || null;
-              }
-            }
-
-            if (!endpointText && device.connection?.remoteEndpoint) {
-              endpointText = device.connection.remoteEndpoint;
-            }
-
-            if (!endpointText && server?.id) {
-              endpointText = `${server.id}.zdexcloud.com`;
-            }
-
-            if (endpointText && endpointText.startsWith('http')) {
-              endpointText = endpointText.replace(/^https?:\/\//i, '');
-            }
-
-            const endpoint = endpointText;
             const isOnline = device.status === 'ONLINE' && server?.status !== 'STOPPED';
             const isStarting = server?.status === 'STARTING' && device.status !== 'ONLINE';
 
@@ -669,7 +2205,6 @@
             const platformInfo = `${escapeHtml(osDisplay)} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
             const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
 
-            // File Manager Access Button (Preserves server.id in URL parameter)
             let fileManagerButtonHtml = '';
             if (isOnline && server?.id) {
               fileManagerButtonHtml = `
@@ -714,7 +2249,6 @@
                     </div>
                     ${statusBadge}
                   </div>
-
                   ${fileManagerButtonHtml}
                 </div>
 
@@ -731,18 +2265,18 @@
             `;
           }).join('');
 
-          // Append "Pair Another Phone" Guidance Card (or Limit Reached Card)
           let addCardHtml = '';
-          if (devices.length >= 5) {
+          if (devices.length >= maxServers) {
             addCardHtml = `
               <div class="card" style="border: 2px dashed var(--color-border-subtle); background: var(--color-surface); border-radius: var(--radius-xl); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: var(--space-xl);">
                 <div style="width: 44px; height: 44px; margin-bottom: var(--space-xs); background: rgba(245, 158, 11, 0.1); color: #D97706; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
                   <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 </div>
-                <span class="badge badge-warning" style="margin-bottom: var(--space-xs); font-weight: 600;">5 / 5 Servers Registered</span>
+                <span class="badge badge-warning" style="margin-bottom: var(--space-xs); font-weight: 600;">${devices.length} / ${maxServers} Server Limit Reached</span>
                 <p class="text-xs text-secondary" style="margin: 0; max-width: 240px; line-height: var(--line-height-relaxed);">
-                  Account limit reached (5 / 5 servers). Delete an existing server node to pair a new device.
+                  ${maxServers <= 1 ? 'Free plan allows 1 server node. Upgrade to Pro for up to 5 nodes.' : 'Account server capacity limit reached. Delete an existing node to pair another phone.'}
                 </p>
+                ${maxServers <= 1 ? '<a href="pricing.html" class="btn btn-primary btn-sm" style="margin-top: var(--space-sm);">Upgrade to Pro</a>' : ''}
               </div>
             `;
           } else {
@@ -753,21 +2287,21 @@
                 </div>
                 <h3 style="font-size: var(--font-size-md); font-weight: 600; margin-bottom: var(--space-xs);">Pair Another Phone</h3>
                 <p class="text-xs text-secondary" style="margin-bottom: var(--space-md); max-width: 240px;">
-                  Install the Android app on an additional device and sign in to pair another storage node.
+                  Install the Android app on an additional device and sign in to pair another storage node (${devices.length} / ${maxServers} slots used).
                 </p>
                 <a href="how-it-works.html" class="btn btn-outline btn-sm">Setup Guide</a>
               </div>
             `;
           }
 
-          grid.innerHTML = cardsHtml + addCardHtml;
+          if (grid) grid.innerHTML = cardsHtml + addCardHtml;
         }
 
         if (indicator) {
           indicator.textContent = `Updated ${new Date().toLocaleTimeString()}`;
         }
       } catch (err) {
-        if (!isBackground) {
+        if (!isBackground && grid) {
           grid.innerHTML = `
             <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
               <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
@@ -777,115 +2311,7 @@
           `;
         }
       } finally {
-        isFetching = false;
-      }
-    }
-
-    
-    /**
-     * Billing Region Management (ZC-BILLING-2.3 & 2.4)
-     */
-    async function loadBillingRegion() {
-      try {
-        const res = await apiRequest('/billing', 'GET');
-        if (res.ok && res.data && res.data.success) {
-          const billing = res.data.data;
-          const countrySelect = document.getElementById('billing-country-select');
-          const postalInput = document.getElementById('billing-postal-input');
-          const badgeContainer = document.getElementById('billing-confirmation-badge');
-          const previewEl = document.getElementById('billing-currency-preview');
-
-          if (billing.billingCountry && countrySelect) {
-            countrySelect.value = billing.billingCountry;
-          }
-          if (billing.billingPostalCode && postalInput) {
-            postalInput.value = billing.billingPostalCode;
-          }
-          if (badgeContainer) {
-            if (billing.countryConfirmed) {
-              badgeContainer.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Confirmed (${escapeHtml(billing.currency || '')})</span>`;
-            } else {
-              badgeContainer.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Unconfirmed</span>`;
-            }
-          }
-          updateCurrencyPreview();
-        }
-      } catch (e) {
-        console.error('Failed to load billing region', e);
-      }
-    }
-
-    function updateCurrencyPreview() {
-      const countrySelect = document.getElementById('billing-country-select');
-      const previewEl = document.getElementById('billing-currency-preview');
-      if (!countrySelect || !previewEl) return;
-      const val = countrySelect.value ? countrySelect.value.toUpperCase() : '';
-      if (val === 'IN') {
-        previewEl.textContent = 'INR (₹)';
-      } else if (val) {
-        previewEl.textContent = 'USD ($)';
-      } else {
-        previewEl.textContent = 'Select country...';
-      }
-    }
-
-    async function saveBillingRegion(e) {
-      if (e) e.preventDefault();
-      const countrySelect = document.getElementById('billing-country-select');
-      const postalInput = document.getElementById('billing-postal-input');
-      const feedback = document.getElementById('billing-status-feedback');
-      const btn = document.getElementById('btn-save-billing');
-
-      if (!countrySelect || !postalInput || !countrySelect.value || !postalInput.value.trim()) {
-        return;
-      }
-
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = 'Saving...';
-      }
-      if (feedback) feedback.style.display = 'none';
-
-      try {
-        const res = await apiRequest('/billing/country', 'PUT', {
-          country: countrySelect.value,
-          postalCode: postalInput.value.trim()
-        });
-
-        if (res.ok && res.data && res.data.success) {
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#ECFDF5';
-            feedback.style.color = '#065F46';
-            feedback.style.border = '1px solid #A7F3D0';
-            feedback.textContent = `Billing region saved. Authoritative currency: ${res.data.data.currency}.`;
-          }
-          await loadBillingRegion();
-        } else {
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#FEF2F2';
-            feedback.style.color = '#991B1B';
-            feedback.style.border = '1px solid #FECACA';
-            feedback.textContent = res.data?.error?.message || 'Failed to save billing region.';
-          }
-        }
-      } catch (err) {
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = '#FEF2F2';
-          feedback.style.color = '#991B1B';
-          feedback.style.border = '1px solid #FECACA';
-          feedback.textContent = 'Network error while updating billing region.';
-        }
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `
-            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Save Region</span>
-          `;
-        }
+        isFetchingServers = false;
       }
     }
 
@@ -902,7 +2328,7 @@
         if (res.ok && res.data && res.data.success) {
           await loadUserServers(false);
         } else if (res.status === 409 || res.data?.error?.code === 'MAX_SERVERS_REACHED') {
-          alert('Account Server Limit: Account has reached maximum allowed servers (5). Delete an existing server to register a new phone.');
+          alert('Account Server Limit Reached: Delete an existing server to register a new phone.');
           btnElement.disabled = false;
           btnElement.innerHTML = originalText;
         } else if (res.status === 403) {
