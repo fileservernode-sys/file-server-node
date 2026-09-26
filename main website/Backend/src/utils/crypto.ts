@@ -71,3 +71,10 @@ export function generateSessionToken(): string {
 export function generateOtpCode(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
+
+/**
+ * Computes SHA-256 hash of a session token for secure database persistence
+ */
+export function hashSessionToken(token: string): string {
+  return crypto.createHash('sha256').update(token.trim()).digest('hex');
+}

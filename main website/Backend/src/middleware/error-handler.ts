@@ -11,6 +11,12 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     return reply.status(error.statusCode).send(createErrorResponse(error.errorCode, error.message));
   }
 
+  // Rate Limiting Errors
+  if ((error as any).statusCode === 429 || (error as any).code === 'FST_ERR_RATE_LIMIT' || (error as any).error?.code === 'TOO_MANY_REQUESTS') {
+    request.log.warn({ err: error, url: request.url }, 'Rate limit exceeded');
+    return reply.status(429).send(createErrorResponse('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded. Please try again later.'));
+  }
+
   // Fastify Schema Validation Error
   if (error.validation) {
     request.log.warn({ validation: error.validation, url: request.url }, 'Request validation failed');

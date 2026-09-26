@@ -1263,6 +1263,181 @@ model BillingReconciliationDiscrepancy {
   @@index([status], map: "billing_recon_disc_status_idx")
 }
 
+// -----------------------------------------------------------------------------
+// ADMIN CONTROL PLANE FOUNDATION ENUMS & MODELS
+// -----------------------------------------------------------------------------
 
+enum AdminStatus {
+  ACTIVE
+  DISABLED
+}
 
+enum AdminAuditAction {
+  ADMIN_LOGIN_SUCCESS
+  ADMIN_LOGIN_FAILURE
+  ADMIN_LOGOUT
+  ADMIN_SESSION_REVOKED
+  ADMIN_SESSION_EXPIRED
+  ADMIN_AUTH_BLOCKED
+  ADMIN_OTP_SENT
+  ADMIN_OTP_VERIFIED
+  ADMIN_OTP_FAILED
+  ADMIN_ROLE_CREATED
+  ADMIN_ROLE_UPDATED
+  ADMIN_ROLE_ASSIGNED
+  ADMIN_ROLE_REMOVED
+  ADMIN_PERMISSION_ASSIGNED
+  ADMIN_PERMISSION_REMOVED
+  ADMIN_AUTHZ_DENIED
+}
+
+enum AdminOtpPurpose {
+  ADMIN_LOGIN_2FA
+}
+
+/// Dedicated Administrator Account Model
+model AdminUser {
+  id           String          @id @default(uuid())
+  email        String          @unique
+  passwordHash String
+  name         String
+  status       AdminStatus     @default(ACTIVE)
+  isSuperAdmin Boolean         @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  sessions     AdminSession[]
+  otps         AdminEmailOtp[]
+  auditLogs    AdminAuditLog[]
+  userRoles    AdminUserRole[]
+
+  @@map("admin_users")
+}
+
+/// Dedicated Administrator Session Model (SHA-256 Hashed Tokens)
+model AdminSession {
+  id               String      @id @default(uuid())
+  adminId          String
+  sessionTokenHash String      @unique
+  expiresAt        DateTime
+  lastActivityAt   DateTime    @default(now())
+  ipAddress        String?
+  userAgent        String?     @db.VarChar(512)
+  revokedAt        DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  admin            AdminUser   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([sessionTokenHash])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("admin_sessions")
+}
+
+/// Dedicated Administrator Second-Factor Email OTP
+model AdminEmailOtp {
+  id        String          @id @default(uuid())
+  adminId   String
+  email     String
+  otpHash   String
+  purpose   AdminOtpPurpose @default(ADMIN_LOGIN_2FA)
+  expiresAt DateTime
+  isUsed    Boolean         @default(false)
+  attempts  Int             @default(0)
+  createdAt DateTime        @default(now())
+
+  admin     AdminUser       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("admin_email_otps")
+}
+
+/// Administrator Audit Event Log
+model AdminAuditLog {
+  id        String           @id @default(uuid())
+  adminId   String?
+  action    AdminAuditAction
+  status    String           @default("SUCCESS")
+  ipAddress String?
+  userAgent String?          @db.VarChar(512)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  admin     AdminUser?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+/// Administrator Role Model
+model AdminRole {
+  id           String                @id @default(uuid())
+  name         String
+  slug         String                @unique
+  description  String?
+  isSystemRole Boolean               @default(false)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  userRoles    AdminUserRole[]
+  permissions  AdminRolePermission[]
+
+  @@map("admin_roles")
+}
+
+/// Administrator Permission Model
+model AdminPermission {
+  id          String                @id @default(uuid())
+  name        String
+  slug        String                @unique
+  description String?
+  resource    String
+  action      String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  roles       AdminRolePermission[]
+
+  @@index([resource, action])
+  @@map("admin_permissions")
+}
+
+/// Join Table: AdminUser <-> AdminRole
+model AdminUserRole {
+  id        String    @id @default(uuid())
+  adminId   String
+  roleId    String
+  createdAt DateTime  @default(now())
+
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  role      AdminRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([adminId, roleId])
+  @@index([adminId])
+  @@index([roleId])
+  @@map("admin_user_roles")
+}
+
+/// Join Table: AdminRole <-> AdminPermission
+model AdminRolePermission {
+  id           String          @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime        @default(now())
+
+  role         AdminRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   AdminPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("admin_role_permissions")
+}
 

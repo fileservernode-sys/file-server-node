@@ -43,7 +43,7 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token']
   });
 
   // 3. Rate Limiting Foundation (Prevents abuse / DOS)
