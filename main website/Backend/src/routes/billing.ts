@@ -1,4 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import {
+  ReconciliationStatus,
+  ReconciliationRunStatus,
+  ReconciliationEntityType,
+  ReconciliationDiscrepancyType,
+  WebhookEventStatus,
+  AuditEventType
+} from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { UnauthorizedError, ForbiddenError, ValidationError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
@@ -501,6 +509,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/billing/operations/reconcile
    * Internal/Admin operational endpoint to trigger drift reconciliation for the account or specified subscription.
    * Enforces administrative authorization (normal customer access blocked with 403).
+   * Safe server-side bounds on lookback range (max 90 days).
    */
   app.post('/billing/operations/reconcile', async (request: FastifyRequest, reply: FastifyReply) => {
     const operator = await getAuthOperator(request);
@@ -510,6 +519,34 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     const autoRepair = body?.autoRepair !== undefined ? Boolean(body.autoRepair) : true;
     const providerSubscriptionData = body?.providerSubscriptionData as any;
     const targetUserId = body?.userId ? String(body.userId) : (operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined);
+
+    if (body?.lookbackDays !== undefined) {
+      const lookback = Number(body.lookbackDays);
+      if (isNaN(lookback) || lookback < 1) {
+        throw new ValidationError('lookbackDays must be a positive integer');
+      }
+      if (lookback > 90) {
+        throw new ValidationError('lookbackDays cannot exceed 90 days to prevent unbounded provider API calls');
+      }
+    }
+
+    try {
+      await prisma.auditEvent.create({
+        data: {
+          userId: operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined,
+          eventType: AuditEventType.BILLING_RECONCILIATION_STARTED,
+          metadata: {
+            triggeredBy: operator.id,
+            autoRepair,
+            subscriptionId,
+            targetUserId,
+            lookbackDays: body?.lookbackDays ? Number(body.lookbackDays) : 3
+          }
+        }
+      });
+    } catch {
+      // Non-blocking
+    }
 
     const result = await billingReconciliationService.reconcileSubscriptionDrift({
       userId: targetUserId,
@@ -554,6 +591,120 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * GET /api/v1/billing/operations/runs
+   * Internal/Admin operational endpoint to list paginated reconciliation runs with status & date filters.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/runs', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+    const query = request.query as Record<string, unknown> | undefined;
+
+    const page = query?.page ? Number(query.page) : 1;
+    const limit = query?.limit ? Number(query.limit) : 20;
+    const status = query?.status as ReconciliationRunStatus | undefined;
+    const startDate = query?.startDate ? new Date(String(query.startDate)) : undefined;
+    const endDate = query?.endDate ? new Date(String(query.endDate)) : undefined;
+
+    const result = await billingReconciliationService.getReconciliationRuns({
+      page,
+      limit,
+      status,
+      startDate,
+      endDate
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/discrepancies
+   * Internal/Admin operational endpoint to list paginated reconciliation discrepancies with granular filters.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/discrepancies', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+    const query = request.query as Record<string, unknown> | undefined;
+
+    const page = query?.page ? Number(query.page) : 1;
+    const limit = query?.limit ? Number(query.limit) : 20;
+    const status = query?.status as ReconciliationStatus | undefined;
+    const entityType = query?.entityType as ReconciliationEntityType | undefined;
+    const discrepancyType = query?.discrepancyType as ReconciliationDiscrepancyType | undefined;
+    const runId = query?.runId ? String(query.runId) : undefined;
+
+    const result = await billingReconciliationService.getDiscrepancies({
+      page,
+      limit,
+      status,
+      entityType,
+      discrepancyType,
+      runId
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/discrepancies/:id
+   * Internal/Admin operational endpoint to inspect a single reconciliation discrepancy in detail.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/discrepancies/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+    const { id } = request.params as { id: string };
+
+    const result = await billingReconciliationService.getDiscrepancyById(id);
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * PATCH /api/v1/billing/operations/discrepancies/:id
+   * Internal/Admin operational endpoint to resolve or dismiss a discrepancy record with audit trail.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.patch('/billing/operations/discrepancies/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    const operator = await getAuthOperator(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as Record<string, unknown> | undefined;
+
+    if (!body || !body.status || !body.resolutionReason) {
+      throw new ValidationError('Both status and resolutionReason are required');
+    }
+
+    const result = await billingReconciliationService.updateDiscrepancyStatus(id, {
+      status: body.status as ReconciliationStatus,
+      resolutionReason: String(body.resolutionReason),
+      operatorUserId: operator.id
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/webhooks
+   * Internal/Admin operational endpoint to inspect paginated webhook event ledger for stuck/failed event diagnosis.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/webhooks', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+    const query = request.query as Record<string, unknown> | undefined;
+
+    const page = query?.page ? Number(query.page) : 1;
+    const limit = query?.limit ? Number(query.limit) : 20;
+    const status = query?.status as WebhookEventStatus | undefined;
+    const eventType = query?.eventType ? String(query.eventType) : undefined;
+
+    const result = await billingReconciliationService.getWebhookEvents({
+      page,
+      limit,
+      status,
+      eventType
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
    * GET /api/v1/billing/operations/webhooks/health
    * Internal/Admin operational endpoint to check webhook pipeline health, stuck events, and processing latency.
    * Enforces administrative authorization (normal customer access blocked with 403).
@@ -586,6 +737,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     return createSuccessResponse(result);
   });
 }
+
 
 
 

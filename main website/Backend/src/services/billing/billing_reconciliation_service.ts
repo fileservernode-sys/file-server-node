@@ -11,6 +11,7 @@ import {
   ProcessingFeeStatus,
   ProcessingFeeSource,
   CurrencyCode,
+  WebhookEventStatus,
   Prisma
 } from '@prisma/client';
 import { prisma as defaultPrisma } from '../../config/database.js';
@@ -2088,6 +2089,378 @@ export class BillingReconciliationService {
       lastRunAt: lastRun?.startedAt || null
     };
   }
+
+  /**
+   * Retrieves paginated reconciliation run history with operational filtering.
+   * Safe, sanitised output without secrets or unnecessary customer PII.
+   */
+  public async getReconciliationRuns(
+    params: {
+      page?: number;
+      limit?: number;
+      status?: ReconciliationRunStatus;
+      startDate?: Date;
+      endDate?: Date;
+    },
+    tx?: any
+  ): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    runs: Array<{
+      id: string;
+      provider: PaymentProvider;
+      environment: PaymentEnvironment;
+      periodStart: Date;
+      periodEnd: Date;
+      status: ReconciliationRunStatus;
+      totalRecords: number;
+      paymentRecords: number;
+      refundRecords: number;
+      matchedCount: number;
+      mismatchCount: number;
+      reviewCount: number;
+      duplicateCount: number;
+      failureCount: number;
+      durationMs: number | null;
+      correlationId: string | null;
+      startedAt: Date;
+      completedAt: Date | null;
+    }>;
+  }> {
+    const client = tx || this.db;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BillingReconciliationRunWhereInput = {};
+    if (params.status) {
+      where.status = params.status;
+    }
+    if (params.startDate || params.endDate) {
+      where.startedAt = {};
+      if (params.startDate) where.startedAt.gte = params.startDate;
+      if (params.endDate) where.startedAt.lte = params.endDate;
+    }
+
+    const [total, records] = await Promise.all([
+      client.billingReconciliationRun.count({ where }),
+      client.billingReconciliationRun.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { startedAt: 'desc' },
+        select: {
+          id: true,
+          provider: true,
+          environment: true,
+          periodStart: true,
+          periodEnd: true,
+          status: true,
+          totalRecords: true,
+          paymentRecords: true,
+          refundRecords: true,
+          matchedCount: true,
+          mismatchCount: true,
+          reviewCount: true,
+          duplicateCount: true,
+          failureCount: true,
+          durationMs: true,
+          correlationId: true,
+          startedAt: true,
+          completedAt: true
+        }
+      })
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      runs: records
+    };
+  }
+
+  /**
+   * Retrieves paginated reconciliation discrepancies with filters and metadata sanitisation.
+   */
+  public async getDiscrepancies(
+    params: {
+      page?: number;
+      limit?: number;
+      status?: ReconciliationStatus;
+      severity?: string;
+      entityType?: ReconciliationEntityType;
+      discrepancyType?: ReconciliationDiscrepancyType;
+      runId?: string;
+    },
+    tx?: any
+  ): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    discrepancies: Array<any>;
+  }> {
+    const client = tx || this.db;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BillingReconciliationDiscrepancyWhereInput = {};
+    if (params.status) where.status = params.status;
+    if (params.entityType) where.entityType = params.entityType;
+    if (params.discrepancyType) where.discrepancyType = params.discrepancyType;
+    if (params.runId) where.runId = params.runId;
+
+    const [total, rawRecords] = await Promise.all([
+      client.billingReconciliationDiscrepancy.count({ where }),
+      client.billingReconciliationDiscrepancy.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          runId: true,
+          reconciliationRecordId: true,
+          provider: true,
+          entityType: true,
+          providerEntityId: true,
+          internalEntityId: true,
+          discrepancyType: true,
+          status: true,
+          expectedValue: true,
+          actualValue: true,
+          resolutionReason: true,
+          resolvedBy: true,
+          resolvedAt: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      })
+    ]);
+
+    const sanitized = rawRecords.map((d: any) => ({
+      ...d,
+      metadata: sanitizeOperationalMetadata(d.metadata)
+    }));
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      discrepancies: sanitized
+    };
+  }
+
+  /**
+   * Retrieves single discrepancy details by ID with sanitized metadata.
+   */
+  public async getDiscrepancyById(id: string, tx?: any): Promise<any> {
+    const client = tx || this.db;
+    const record = await client.billingReconciliationDiscrepancy.findUnique({
+      where: { id },
+      include: {
+        run: {
+          select: {
+            id: true,
+            status: true,
+            startedAt: true,
+            completedAt: true
+          }
+        },
+        reconciliationRecord: {
+          select: {
+            id: true,
+            amountMinorUnits: true,
+            currency: true,
+            status: true
+          }
+        }
+      }
+    });
+
+    if (!record) {
+      throw new NotFoundError(`Reconciliation discrepancy '${id}' not found`);
+    }
+
+    return {
+      ...record,
+      metadata: sanitizeOperationalMetadata(record.metadata)
+    };
+  }
+
+  /**
+   * Safely updates discrepancy status (manual review resolution / dismissal) with audit trail.
+   */
+  public async updateDiscrepancyStatus(
+    id: string,
+    params: {
+      status: ReconciliationStatus;
+      resolutionReason: string;
+      operatorUserId: string;
+    },
+    tx?: any
+  ): Promise<any> {
+    const client = tx || this.db;
+    const existing = await client.billingReconciliationDiscrepancy.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      throw new NotFoundError(`Reconciliation discrepancy '${id}' not found`);
+    }
+
+    const validTargetStatuses: ReconciliationStatus[] = [
+      ReconciliationStatus.RESOLVED,
+      ReconciliationStatus.IGNORED,
+      ReconciliationStatus.REQUIRES_REVIEW
+    ];
+    if (!validTargetStatuses.includes(params.status)) {
+      throw new ValidationError(`Invalid target status '${params.status}' for manual review resolution`);
+    }
+
+    if (!params.resolutionReason || typeof params.resolutionReason !== 'string' || params.resolutionReason.trim().length === 0) {
+      throw new ValidationError('A non-empty resolutionReason is required when updating discrepancy status');
+    }
+
+    const updated = await client.billingReconciliationDiscrepancy.update({
+      where: { id },
+      data: {
+        status: params.status,
+        resolutionReason: params.resolutionReason.trim(),
+        resolvedBy: params.operatorUserId,
+        resolvedAt: params.status === ReconciliationStatus.RESOLVED || params.status === ReconciliationStatus.IGNORED ? new Date() : null
+      }
+    });
+
+    try {
+      await client.auditEvent.create({
+        data: {
+          userId: params.operatorUserId !== 'SYSTEM_OPERATOR' ? params.operatorUserId : undefined,
+          eventType: AuditEventType.BILLING_RECONCILIATION_DISCREPANCY_RESOLVED,
+          metadata: {
+            discrepancyId: id,
+            providerEntityId: updated.providerEntityId,
+            discrepancyType: updated.discrepancyType,
+            previousStatus: existing.status,
+            newStatus: params.status,
+            resolutionReason: params.resolutionReason.trim(),
+            resolvedBy: params.operatorUserId
+          }
+        }
+      });
+    } catch {
+      // Non-blocking audit failure
+    }
+
+    return {
+      ...updated,
+      metadata: sanitizeOperationalMetadata(updated.metadata)
+    };
+  }
+
+  /**
+   * Retrieves paginated webhook events for stuck/failed webhook diagnostics.
+   */
+  public async getWebhookEvents(
+    params: {
+      page?: number;
+      limit?: number;
+      status?: WebhookEventStatus;
+      eventType?: string;
+    },
+    tx?: any
+  ): Promise<{
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    events: Array<{
+      id: string;
+      provider: PaymentProvider;
+      environment: PaymentEnvironment;
+      providerEventId: string;
+      eventType: string;
+      status: WebhookEventStatus;
+      receivedAt: Date;
+      processedAt: Date | null;
+      failureReason: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  }> {
+    const client = tx || this.db;
+    const page = Math.max(1, Number(params.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(params.limit) || 20));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.BillingWebhookEventWhereInput = {};
+    if (params.status) where.status = params.status;
+    if (params.eventType) where.eventType = params.eventType;
+
+    const [total, records] = await Promise.all([
+      client.billingWebhookEvent.count({ where }),
+      client.billingWebhookEvent.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { receivedAt: 'desc' },
+        select: {
+          id: true,
+          provider: true,
+          environment: true,
+          providerEventId: true,
+          eventType: true,
+          status: true,
+          receivedAt: true,
+          processedAt: true,
+          failureReason: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      })
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+      events: records
+    };
+  }
+}
+
+function sanitizeOperationalMetadata(obj: any): any {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeOperationalMetadata);
+  const copy: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const lower = key.toLowerCase();
+    if (
+      lower.includes('secret') ||
+      lower.includes('password') ||
+      lower.includes('token') ||
+      lower.includes('key') ||
+      lower.includes('auth') ||
+      lower.includes('card') ||
+      lower.includes('cvv') ||
+      lower.includes('pan')
+    ) {
+      copy[key] = '[REDACTED]';
+    } else if (value && typeof value === 'object') {
+      copy[key] = sanitizeOperationalMetadata(value);
+    } else {
+      copy[key] = value;
+    }
+  }
+  return copy;
 }
 
 export const billingReconciliationService = new BillingReconciliationService();

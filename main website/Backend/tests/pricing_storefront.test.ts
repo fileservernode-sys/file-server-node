@@ -21,7 +21,10 @@ describe('ZC-BILLING-2.4 Pricing Page & Regional Storefront Test Suite', () => {
 
   before(async () => {
     app = await buildApp();
-    await app.ready();
+    await prisma.plan.updateMany({
+      where: { code: { notIn: ['FREE', 'PRO_MONTHLY', 'PRO_YEARLY', 'BUSINESS_MONTHLY', 'BUSINESS_YEARLY'] } },
+      data: { isActive: false }
+    });
     await PlanService.seedInitialCatalog();
 
     // 1. Confirmed India User
