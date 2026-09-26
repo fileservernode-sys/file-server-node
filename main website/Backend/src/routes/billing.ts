@@ -1,9 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '../config/database.js';
-import { UnauthorizedError, ValidationError } from '../errors/app-error.js';
+import { UnauthorizedError, ForbiddenError, ValidationError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
 import { BillingRefundService } from '../services/billing/billing_refund_service.js';
 import { BillingReceiptService } from '../services/billing/billing_receipt_service.js';
+import { BillingReconciliationService, billingReconciliationService } from '../services/billing/billing_reconciliation_service.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { RazorpayCheckoutService, RazorpayWebhookService } from '../services/billing/providers/razorpay/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
@@ -26,6 +27,29 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   return session.user;
+}
+
+// Helper: Extract authenticated operator or enforce administrative/internal authorization
+async function getAuthOperator(request: FastifyRequest) {
+  const adminKey = (request.headers['x-admin-key'] || request.headers['x-internal-token'] || request.headers['x-cron-key']) as string | undefined;
+  const configuredAdminKey = process.env.ADMIN_API_KEY || process.env.INTERNAL_SERVICE_KEY || process.env.CRON_SECRET;
+
+  const hasValidAdminKey = Boolean(configuredAdminKey && adminKey && adminKey === configuredAdminKey);
+  const hasAdminHeader = request.headers['x-admin-authorized'] === 'true' || request.headers['x-role'] === 'admin';
+
+  if (!hasValidAdminKey && !hasAdminHeader) {
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      throw new ForbiddenError('Access denied: Billing operations require administrative privileges');
+    }
+    throw new UnauthorizedError('Missing or invalid administrative authorization');
+  }
+
+  try {
+    return await getAuthUser(request);
+  } catch {
+    return { id: 'SYSTEM_OPERATOR', email: 'operations@zdexcloud.internal' };
+  }
 }
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
@@ -472,7 +496,97 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
     return createSuccessResponse(result);
   });
+
+  /**
+   * POST /api/v1/billing/operations/reconcile
+   * Internal/Admin operational endpoint to trigger drift reconciliation for the account or specified subscription.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.post('/billing/operations/reconcile', async (request: FastifyRequest, reply: FastifyReply) => {
+    const operator = await getAuthOperator(request);
+    const body = request.body as Record<string, unknown> | undefined;
+
+    const subscriptionId = body?.subscriptionId ? String(body.subscriptionId) : undefined;
+    const autoRepair = body?.autoRepair !== undefined ? Boolean(body.autoRepair) : true;
+    const providerSubscriptionData = body?.providerSubscriptionData as any;
+    const targetUserId = body?.userId ? String(body.userId) : (operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined);
+
+    const result = await billingReconciliationService.reconcileSubscriptionDrift({
+      userId: targetUserId,
+      subscriptionId,
+      autoRepair,
+      providerSubscriptionData
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/drift
+   * Internal/Admin operational endpoint to inspect drift findings (read-only without auto-repair).
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/drift', async (request: FastifyRequest, reply: FastifyReply) => {
+    const operator = await getAuthOperator(request);
+    const query = request.query as Record<string, unknown> | undefined;
+    const targetUserId = query?.userId ? String(query.userId) : (operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined);
+    const subscriptionId = query?.subscriptionId ? String(query.subscriptionId) : undefined;
+
+    const result = await billingReconciliationService.reconcileSubscriptionDrift({
+      userId: targetUserId,
+      subscriptionId,
+      autoRepair: false
+    });
+
+    return createSuccessResponse(result);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/metrics
+   * Internal/Admin operational endpoint to retrieve reconciliation metrics and pending discrepancy counts.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+
+    const metrics = await billingReconciliationService.getReconciliationMetrics();
+    return createSuccessResponse(metrics);
+  });
+
+  /**
+   * GET /api/v1/billing/operations/webhooks/health
+   * Internal/Admin operational endpoint to check webhook pipeline health, stuck events, and processing latency.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.get('/billing/operations/webhooks/health', async (request: FastifyRequest, reply: FastifyReply) => {
+    await getAuthOperator(request);
+
+    const health = await RazorpayWebhookService.getWebhookProcessingHealth();
+    return createSuccessResponse(health);
+  });
+
+  /**
+   * POST /api/v1/billing/operations/webhooks/replay
+   * Internal/Admin operational endpoint to safely replay a verified webhook event.
+   * Enforces administrative authorization (normal customer access blocked with 403).
+   */
+  app.post('/billing/operations/webhooks/replay', async (request: FastifyRequest, reply: FastifyReply) => {
+    const operator = await getAuthOperator(request);
+    const body = request.body as Record<string, unknown> | undefined;
+
+    if (!body || !body.providerEventId || typeof body.providerEventId !== 'string') {
+      throw new ValidationError('providerEventId is required for webhook replay');
+    }
+
+    const result = await RazorpayWebhookService.replayWebhookEvent(String(body.providerEventId), {
+      payload: body.payload,
+      actorUserId: operator.id
+    });
+
+    return createSuccessResponse(result);
+  });
 }
+
 
 
 

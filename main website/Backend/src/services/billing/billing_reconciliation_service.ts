@@ -2,6 +2,7 @@ import {
   PrismaClient,
   PaymentProvider,
   PaymentEnvironment,
+  BillingStatus,
   ReconciliationStatus,
   ReconciliationDiscrepancyType,
   ReconciliationRunStatus,
@@ -18,6 +19,72 @@ import {
   NormalizedReconRecord,
   NormalizedSettlementData
 } from './providers/razorpay/razorpay_reconciliation_adapter.js';
+import { BillingStateService } from './billing_state_service.js';
+import { EntitlementService } from './entitlement_service.js';
+
+export enum ReconciliationDriftCategory {
+  CUSTOMER_LINK_MISMATCH = 'CUSTOMER_LINK_MISMATCH',
+  SUBSCRIPTION_STATUS_MISMATCH = 'SUBSCRIPTION_STATUS_MISMATCH',
+  PLAN_MAPPING_MISMATCH = 'PLAN_MAPPING_MISMATCH',
+  PRICE_MAPPING_MISMATCH = 'PRICE_MAPPING_MISMATCH',
+  PERIOD_DATE_MISMATCH = 'PERIOD_DATE_MISMATCH',
+  CANCELLATION_STATE_MISMATCH = 'CANCELLATION_STATE_MISMATCH',
+  REFUND_STATE_MISMATCH = 'REFUND_STATE_MISMATCH',
+  ENTITLEMENT_MISMATCH = 'ENTITLEMENT_MISMATCH',
+  MISSING_PROVIDER_OBJECT = 'MISSING_PROVIDER_OBJECT',
+  MISSING_LOCAL_OBJECT = 'MISSING_LOCAL_OBJECT',
+  STALE_LOCAL_STATE = 'STALE_LOCAL_STATE',
+  UNKNOWN_PROVIDER_STATE = 'UNKNOWN_PROVIDER_STATE',
+  WEBHOOK_PROCESSING_GAP = 'WEBHOOK_PROCESSING_GAP',
+  EXISTING_RESOURCE_OVER_CAPACITY = 'EXISTING_RESOURCE_OVER_CAPACITY'
+}
+
+export enum ReconciliationSeverity {
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  CRITICAL = 'CRITICAL'
+}
+
+export interface StateDriftFinding {
+  category: ReconciliationDriftCategory;
+  severity: ReconciliationSeverity;
+  provider: PaymentProvider;
+  userId?: string | null;
+  subscriptionId?: string | null;
+  providerEntityId?: string | null;
+  expectedValue: string;
+  actualValue: string;
+  localStateSummary: Record<string, any>;
+  providerStateSummary: Record<string, any>;
+  detectedAt: Date;
+  status: ReconciliationStatus;
+  repaired: boolean;
+  repairAction?: string | null;
+  errorInfo?: string | null;
+  discrepancyId?: string;
+}
+
+export interface ReconcileSubscriptionDriftParams {
+  userId?: string;
+  subscriptionId?: string;
+  providerSubscriptionId?: string;
+  providerSubscriptionData?: Record<string, any> | null;
+  autoRepair?: boolean;
+  runId?: string | null;
+}
+
+export interface ReconcileSubscriptionDriftResult {
+  userId: string;
+  subscriptionId?: string | null;
+  hasDrift: boolean;
+  findings: StateDriftFinding[];
+  repairsApplied: number;
+  criticalCount: number;
+  warningCount: number;
+  infoCount: number;
+  effectivePlan: string;
+  effectiveEntitlements: Record<string, any>;
+}
 
 export interface StartReconciliationRunParams {
   provider?: PaymentProvider;
@@ -899,6 +966,34 @@ export class BillingReconciliationService {
       }
     }
 
+    // Deduplicate against existing open/unresolved discrepancy for the same entity and type
+    const existingOpenDiscrepancy = await client.billingReconciliationDiscrepancy.findFirst({
+      where: {
+        providerEntityId: params.providerEntityId,
+        entityType: params.entityType,
+        discrepancyType: params.discrepancyType,
+        status: { in: [ReconciliationStatus.REQUIRES_REVIEW, ReconciliationStatus.PENDING, ReconciliationStatus.MISMATCHED] }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (existingOpenDiscrepancy) {
+      const updatedDiscrepancy = await client.billingReconciliationDiscrepancy.update({
+        where: { id: existingOpenDiscrepancy.id },
+        data: {
+          runId: runId || existingOpenDiscrepancy.runId,
+          reconciliationRecordId: params.reconciliationRecordId || existingOpenDiscrepancy.reconciliationRecordId,
+          internalEntityId: params.internalEntityId || existingOpenDiscrepancy.internalEntityId,
+          status: params.status || existingOpenDiscrepancy.status,
+          expectedValue: params.expectedValue !== undefined ? params.expectedValue : existingOpenDiscrepancy.expectedValue,
+          actualValue: params.actualValue !== undefined ? params.actualValue : existingOpenDiscrepancy.actualValue,
+          resolutionReason: params.resolutionReason !== undefined ? params.resolutionReason : existingOpenDiscrepancy.resolutionReason,
+          metadata: params.metadata ? (params.metadata as Prisma.InputJsonValue) : existingOpenDiscrepancy.metadata
+        }
+      });
+      return updatedDiscrepancy;
+    }
+
     const discrepancy = await client.billingReconciliationDiscrepancy.create({
       data: {
         runId,
@@ -1188,6 +1283,812 @@ export class BillingReconciliationService {
       skip: params?.offset || 0
     });
   }
+  /**
+   * Reconciles subscription state and entitlement drift between provider and local database.
+   * Classifies drift, determines severity, applies safe deterministic projections where eligible,
+   * leaves ambiguous financial cases as REQUIRES_REVIEW, and preserves existing resources safely.
+   */
+  public async reconcileSubscriptionDrift(
+    params: ReconcileSubscriptionDriftParams,
+    tx?: any
+  ): Promise<ReconcileSubscriptionDriftResult> {
+    const client = tx || this.db;
+    const provider = PaymentProvider.RAZORPAY;
+    const autoRepair = params.autoRepair ?? true;
+    const runId = params.runId || null;
+
+    // 1. Resolve local user and subscription
+    let targetUserId = params.userId || null;
+    let localSub: any = null;
+
+    if (params.subscriptionId) {
+      localSub = await client.subscription.findUnique({
+        where: { id: params.subscriptionId },
+        include: { plan: true, planPrice: true, user: true }
+      });
+      if (localSub) {
+        targetUserId = localSub.userId;
+      }
+    } else if (params.providerSubscriptionId) {
+      localSub = await client.subscription.findUnique({
+        where: { providerSubscriptionId: params.providerSubscriptionId },
+        include: { plan: true, planPrice: true, user: true }
+      });
+      if (localSub) {
+        targetUserId = localSub.userId;
+      }
+    } else if (targetUserId) {
+      const activeState = await client.accountBillingState.findUnique({
+        where: { userId: targetUserId },
+        include: {
+          activeSubscription: {
+            include: { plan: true, planPrice: true, user: true }
+          }
+        }
+      });
+      if (activeState?.activeSubscription) {
+        localSub = activeState.activeSubscription;
+      } else {
+        localSub = await client.subscription.findFirst({
+          where: { userId: targetUserId },
+          orderBy: { createdAt: 'desc' },
+          include: { plan: true, planPrice: true, user: true }
+        });
+      }
+    }
+
+    const findings: StateDriftFinding[] = [];
+    let repairsApplied = 0;
+
+    // Case: Missing local object when provider data exists
+    if (!localSub && !targetUserId && params.providerSubscriptionData) {
+      const disc = await this.recordDiscrepancy(
+        {
+          runId,
+          provider,
+          entityType: ReconciliationEntityType.PAYMENT,
+          providerEntityId: String(params.providerSubscriptionData.id || params.providerSubscriptionId || 'unknown'),
+          internalEntityId: null,
+          discrepancyType: ReconciliationDiscrepancyType.INTERNAL_PAYMENT_NOT_FOUND,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          expectedValue: 'Local Subscription & User contract',
+          actualValue: `Provider subscription ${params.providerSubscriptionData.id} has no matching local account`,
+          metadata: {
+            category: ReconciliationDriftCategory.MISSING_LOCAL_OBJECT,
+            severity: ReconciliationSeverity.CRITICAL,
+            providerData: params.providerSubscriptionData
+          }
+        },
+        client
+      );
+
+      findings.push({
+        category: ReconciliationDriftCategory.MISSING_LOCAL_OBJECT,
+        severity: ReconciliationSeverity.CRITICAL,
+        provider,
+        userId: null,
+        subscriptionId: null,
+        providerEntityId: String(params.providerSubscriptionData.id || params.providerSubscriptionId || ''),
+        expectedValue: 'Local Subscription & User contract',
+        actualValue: 'No matching local account found',
+        localStateSummary: {},
+        providerStateSummary: params.providerSubscriptionData,
+        detectedAt: new Date(),
+        status: ReconciliationStatus.REQUIRES_REVIEW,
+        repaired: false,
+        discrepancyId: disc.id
+      });
+
+      return {
+        userId: '',
+        subscriptionId: null,
+        hasDrift: true,
+        findings,
+        repairsApplied: 0,
+        criticalCount: 1,
+        warningCount: 0,
+        infoCount: 0,
+        effectivePlan: 'FREE',
+        effectiveEntitlements: { maxServers: 1, priorityRelay: false }
+      };
+    }
+
+    if (!targetUserId && localSub) {
+      targetUserId = localSub.userId;
+    }
+
+    if (!targetUserId) {
+      throw new ValidationError('userId or valid subscription is required for drift reconciliation');
+    }
+
+    const providerData = params.providerSubscriptionData;
+    const now = new Date();
+
+    // Case: Missing provider object when local subscription has external provider ID
+    if (localSub?.providerSubscriptionId && providerData === null && params.providerSubscriptionData !== undefined) {
+      const disc = await this.recordDiscrepancy(
+        {
+          runId,
+          provider,
+          entityType: ReconciliationEntityType.PAYMENT,
+          providerEntityId: localSub.providerSubscriptionId,
+          internalEntityId: localSub.id,
+          discrepancyType: ReconciliationDiscrepancyType.PROVIDER_PAYMENT_NOT_FOUND,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          expectedValue: `Provider subscription entity ${localSub.providerSubscriptionId}`,
+          actualValue: 'Provider returned 404 or missing object',
+          metadata: {
+            category: ReconciliationDriftCategory.MISSING_PROVIDER_OBJECT,
+            severity: ReconciliationSeverity.CRITICAL,
+            userId: targetUserId,
+            subscriptionId: localSub.id
+          }
+        },
+        client
+      );
+
+      findings.push({
+        category: ReconciliationDriftCategory.MISSING_PROVIDER_OBJECT,
+        severity: ReconciliationSeverity.CRITICAL,
+        provider,
+        userId: targetUserId,
+        subscriptionId: localSub.id,
+        providerEntityId: localSub.providerSubscriptionId,
+        expectedValue: `Provider subscription entity ${localSub.providerSubscriptionId}`,
+        actualValue: 'Missing in provider records',
+        localStateSummary: { status: localSub.status, planCode: localSub.plan?.code },
+        providerStateSummary: {},
+        detectedAt: now,
+        status: ReconciliationStatus.REQUIRES_REVIEW,
+        repaired: false,
+        discrepancyId: disc.id
+      });
+    }
+
+    // 2. Compare provider subscription against local subscription if both exist
+    if (localSub && providerData && typeof providerData === 'object') {
+      const providerStatus = String(providerData.status || '').toLowerCase();
+      const localStatus = String(localSub.status || '');
+      const providerPlanId = providerData.plan_id ? String(providerData.plan_id) : null;
+      const providerCurrentStart = providerData.current_start ? new Date(providerData.current_start * 1000) : null;
+      const providerCurrentEnd = providerData.current_end ? new Date(providerData.current_end * 1000) : null;
+      const providerEndedAt = providerData.ended_at ? new Date(providerData.ended_at * 1000) : null;
+      const providerCancelAtEnd = Boolean(providerData.cancel_at_cycle_end === 1 || providerData.cancel_at_cycle_end === true);
+
+      // A. Status Drift Comparison
+      const isProviderActive = providerStatus === 'active';
+      const isProviderEnded = providerStatus === 'cancelled' || providerStatus === 'completed' || providerStatus === 'expired' || (providerEndedAt && providerEndedAt <= now);
+      const isLocalActive = localStatus === 'ACTIVE';
+      const isLocalExpired = localStatus === 'EXPIRED';
+
+      if (isProviderActive && isLocalExpired) {
+        // Provider says ACTIVE, local says EXPIRED -> CRITICAL
+        let repaired = false;
+        let repairAction: string | null = null;
+
+        if (autoRepair) {
+          // Safe deterministic projection: re-activate local subscription
+          await client.subscription.update({
+            where: { id: localSub.id },
+            data: {
+              status: BillingStatus.ACTIVE,
+              currentPeriodStart: providerCurrentStart || localSub.currentPeriodStart,
+              currentPeriodEnd: providerCurrentEnd || localSub.currentPeriodEnd,
+              expiredAt: null,
+              updatedAt: now
+            }
+          });
+
+          await client.accountBillingState.upsert({
+            where: { userId: targetUserId },
+            update: {
+              status: BillingStatus.ACTIVE,
+              activeSubscriptionId: localSub.id,
+              currency: localSub.currency,
+              updatedAt: now
+            },
+            create: {
+              userId: targetUserId,
+              status: BillingStatus.ACTIVE,
+              activeSubscriptionId: localSub.id,
+              currency: localSub.currency
+            }
+          });
+
+          try {
+            await client.auditEvent.create({
+              data: {
+                userId: targetUserId,
+                eventType: AuditEventType.BILLING_RECONCILIATION_DISCREPANCY_RESOLVED,
+                metadata: {
+                  action: 'AUTO_REPAIR_STATUS_ACTIVE',
+                  category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+                  subscriptionId: localSub.id,
+                  providerSubscriptionId: localSub.providerSubscriptionId,
+                  previousStatus: localStatus,
+                  newStatus: 'ACTIVE'
+                }
+              }
+            });
+          } catch {}
+
+          repaired = true;
+          repairAction = 'RESTORED_LOCAL_ACTIVE_STATE';
+          repairsApplied++;
+        }
+
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.PAYMENT,
+            providerEntityId: localSub.providerSubscriptionId || localSub.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+            status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+            expectedValue: 'ACTIVE (matching provider)',
+            actualValue: 'EXPIRED (local database)',
+            resolutionReason: repairAction,
+            metadata: {
+              category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+              severity: ReconciliationSeverity.CRITICAL,
+              repaired
+            }
+          },
+          client
+        );
+
+        findings.push({
+          category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+          severity: ReconciliationSeverity.CRITICAL,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: localSub.providerSubscriptionId,
+          expectedValue: 'ACTIVE',
+          actualValue: 'EXPIRED',
+          localStateSummary: { status: localStatus },
+          providerStateSummary: { status: providerStatus },
+          detectedAt: now,
+          status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+          repaired,
+          repairAction,
+          discrepancyId: disc.id
+        });
+      } else if (isProviderEnded && isLocalActive) {
+        // Provider has ended/cancelled, local still ACTIVE -> CRITICAL
+        let repaired = false;
+        let repairAction: string | null = null;
+
+        if (autoRepair) {
+          // Safe deterministic projection: expire local subscription without deleting any server resources
+          await client.subscription.update({
+            where: { id: localSub.id },
+            data: {
+              status: BillingStatus.EXPIRED,
+              expiredAt: providerEndedAt || now,
+              updatedAt: now
+            }
+          });
+
+          await client.accountBillingState.update({
+            where: { userId: targetUserId },
+            data: {
+              status: BillingStatus.EXPIRED,
+              activeSubscriptionId: null,
+              updatedAt: now
+            }
+          });
+
+          try {
+            await client.auditEvent.create({
+              data: {
+                userId: targetUserId,
+                eventType: AuditEventType.BILLING_RECONCILIATION_DISCREPANCY_RESOLVED,
+                metadata: {
+                  action: 'AUTO_REPAIR_STATUS_EXPIRED',
+                  category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+                  subscriptionId: localSub.id,
+                  providerSubscriptionId: localSub.providerSubscriptionId,
+                  previousStatus: localStatus,
+                  newStatus: 'EXPIRED',
+                  serverResourcesPreserved: true
+                }
+              }
+            });
+          } catch {}
+
+          repaired = true;
+          repairAction = 'EXPIRED_LOCAL_SUBSCRIPTION_PRESERVED_RESOURCES';
+          repairsApplied++;
+        }
+
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.PAYMENT,
+            providerEntityId: localSub.providerSubscriptionId || localSub.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+            status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+            expectedValue: 'EXPIRED (matching provider cancellation/completion)',
+            actualValue: 'ACTIVE (local database)',
+            resolutionReason: repairAction,
+            metadata: {
+              category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+              severity: ReconciliationSeverity.CRITICAL,
+              repaired
+            }
+          },
+          client
+        );
+
+        findings.push({
+          category: ReconciliationDriftCategory.SUBSCRIPTION_STATUS_MISMATCH,
+          severity: ReconciliationSeverity.CRITICAL,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: localSub.providerSubscriptionId,
+          expectedValue: 'EXPIRED',
+          actualValue: 'ACTIVE',
+          localStateSummary: { status: localStatus },
+          providerStateSummary: { status: providerStatus, endedAt: providerEndedAt },
+          detectedAt: now,
+          status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+          repaired,
+          repairAction,
+          discrepancyId: disc.id
+        });
+      }
+
+      // B. Plan Mapping Drift Comparison
+      if (providerPlanId && localSub.providerPlanId && providerPlanId !== localSub.providerPlanId) {
+        const mapping = await client.billingProviderPlanMapping.findFirst({
+          where: { providerPlanId }
+        });
+
+        const isUnknownPlan = !mapping;
+        const severity = isUnknownPlan ? ReconciliationSeverity.CRITICAL : ReconciliationSeverity.WARNING;
+        const category = isUnknownPlan ? ReconciliationDriftCategory.UNKNOWN_PROVIDER_STATE : ReconciliationDriftCategory.PLAN_MAPPING_MISMATCH;
+
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.PAYMENT,
+            providerEntityId: localSub.providerSubscriptionId || localSub.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+            status: ReconciliationStatus.REQUIRES_REVIEW, // Ambiguous plan change requires review; never auto-grant Pro
+            expectedValue: localSub.providerPlanId,
+            actualValue: providerPlanId,
+            metadata: { category, severity, isUnknownPlan }
+          },
+          client
+        );
+
+        findings.push({
+          category,
+          severity,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: localSub.providerSubscriptionId,
+          expectedValue: localSub.providerPlanId,
+          actualValue: providerPlanId,
+          localStateSummary: { providerPlanId: localSub.providerPlanId, planCode: localSub.plan?.code },
+          providerStateSummary: { plan_id: providerPlanId },
+          detectedAt: now,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          repaired: false,
+          errorInfo: isUnknownPlan ? 'Unknown provider plan ID not mapped in catalog' : 'Provider plan differs from contracted plan',
+          discrepancyId: disc.id
+        });
+      }
+
+      // C. Price Mapping Drift Comparison
+      if (providerData.item?.amount !== undefined || providerData.amount !== undefined) {
+        const providerAmount = typeof providerData.item?.amount === 'number' ? providerData.item.amount : providerData.amount;
+        if (typeof providerAmount === 'number' && providerAmount !== localSub.amountMinorUnits) {
+          const disc = await this.recordDiscrepancy(
+            {
+              runId,
+              provider,
+              entityType: ReconciliationEntityType.PAYMENT,
+              providerEntityId: localSub.providerSubscriptionId || localSub.id,
+              internalEntityId: localSub.id,
+              discrepancyType: ReconciliationDiscrepancyType.PAYMENT_AMOUNT_MISMATCH,
+              status: ReconciliationStatus.REQUIRES_REVIEW, // Ambiguous financial difference requires review
+              expectedValue: String(localSub.amountMinorUnits),
+              actualValue: String(providerAmount),
+              metadata: {
+                category: ReconciliationDriftCategory.PRICE_MAPPING_MISMATCH,
+                severity: ReconciliationSeverity.CRITICAL
+              }
+            },
+            client
+          );
+
+          findings.push({
+            category: ReconciliationDriftCategory.PRICE_MAPPING_MISMATCH,
+            severity: ReconciliationSeverity.CRITICAL,
+            provider,
+            userId: targetUserId,
+            subscriptionId: localSub.id,
+            providerEntityId: localSub.providerSubscriptionId,
+            expectedValue: String(localSub.amountMinorUnits),
+            actualValue: String(providerAmount),
+            localStateSummary: { amountMinorUnits: localSub.amountMinorUnits, currency: localSub.currency },
+            providerStateSummary: { amountMinorUnits: providerAmount },
+            detectedAt: now,
+            status: ReconciliationStatus.REQUIRES_REVIEW,
+            repaired: false,
+            discrepancyId: disc.id
+          });
+        }
+      }
+
+      // D. Period Date Drift Comparison
+      if (providerCurrentEnd && Math.abs(providerCurrentEnd.getTime() - localSub.currentPeriodEnd.getTime()) > 60000) {
+        let repaired = false;
+        let repairAction: string | null = null;
+
+        if (autoRepair && providerCurrentEnd > localSub.currentPeriodStart) {
+          // Safe deterministic projection: synchronize period dates to authoritative provider timestamps
+          await client.subscription.update({
+            where: { id: localSub.id },
+            data: {
+              currentPeriodStart: providerCurrentStart || localSub.currentPeriodStart,
+              currentPeriodEnd: providerCurrentEnd,
+              updatedAt: now
+            }
+          });
+
+          try {
+            await client.auditEvent.create({
+              data: {
+                userId: targetUserId,
+                eventType: AuditEventType.BILLING_RECONCILIATION_DISCREPANCY_RESOLVED,
+                metadata: {
+                  action: 'AUTO_REPAIR_PERIOD_DATES',
+                  category: ReconciliationDriftCategory.PERIOD_DATE_MISMATCH,
+                  subscriptionId: localSub.id,
+                  previousPeriodEnd: localSub.currentPeriodEnd.toISOString(),
+                  newPeriodEnd: providerCurrentEnd.toISOString()
+                }
+              }
+            });
+          } catch {}
+
+          repaired = true;
+          repairAction = 'SYNCHRONIZED_PERIOD_DATES';
+          repairsApplied++;
+        }
+
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.PAYMENT,
+            providerEntityId: localSub.providerSubscriptionId || localSub.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+            status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+            expectedValue: localSub.currentPeriodEnd.toISOString(),
+            actualValue: providerCurrentEnd.toISOString(),
+            resolutionReason: repairAction,
+            metadata: {
+              category: ReconciliationDriftCategory.PERIOD_DATE_MISMATCH,
+              severity: ReconciliationSeverity.WARNING,
+              repaired
+            }
+          },
+          client
+        );
+
+        findings.push({
+          category: ReconciliationDriftCategory.PERIOD_DATE_MISMATCH,
+          severity: ReconciliationSeverity.WARNING,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: localSub.providerSubscriptionId,
+          expectedValue: localSub.currentPeriodEnd.toISOString(),
+          actualValue: providerCurrentEnd.toISOString(),
+          localStateSummary: { currentPeriodEnd: localSub.currentPeriodEnd },
+          providerStateSummary: { current_end: providerCurrentEnd },
+          detectedAt: now,
+          status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+          repaired,
+          repairAction,
+          discrepancyId: disc.id
+        });
+      }
+
+      // E. Cancellation State Drift Comparison
+      if (providerCancelAtEnd !== localSub.cancelAtPeriodEnd) {
+        let repaired = false;
+        let repairAction: string | null = null;
+
+        if (autoRepair) {
+          await client.subscription.update({
+            where: { id: localSub.id },
+            data: {
+              cancelAtPeriodEnd: providerCancelAtEnd,
+              status: providerCancelAtEnd && localSub.status === BillingStatus.ACTIVE ? BillingStatus.CANCELLING : localSub.status,
+              cancelledAt: providerCancelAtEnd ? (localSub.cancelledAt || now) : null,
+              updatedAt: now
+            }
+          });
+
+          try {
+            await client.auditEvent.create({
+              data: {
+                userId: targetUserId,
+                eventType: AuditEventType.BILLING_RECONCILIATION_DISCREPANCY_RESOLVED,
+                metadata: {
+                  action: 'AUTO_REPAIR_CANCELLATION_STATE',
+                  category: ReconciliationDriftCategory.CANCELLATION_STATE_MISMATCH,
+                  subscriptionId: localSub.id,
+                  cancelAtPeriodEnd: providerCancelAtEnd
+                }
+              }
+            });
+          } catch {}
+
+          repaired = true;
+          repairAction = 'SYNCHRONIZED_CANCELLATION_STATE';
+          repairsApplied++;
+        }
+
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.PAYMENT,
+            providerEntityId: localSub.providerSubscriptionId || localSub.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+            status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+            expectedValue: String(localSub.cancelAtPeriodEnd),
+            actualValue: String(providerCancelAtEnd),
+            resolutionReason: repairAction,
+            metadata: {
+              category: ReconciliationDriftCategory.CANCELLATION_STATE_MISMATCH,
+              severity: ReconciliationSeverity.WARNING,
+              repaired
+            }
+          },
+          client
+        );
+
+        findings.push({
+          category: ReconciliationDriftCategory.CANCELLATION_STATE_MISMATCH,
+          severity: ReconciliationSeverity.WARNING,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: localSub.providerSubscriptionId,
+          expectedValue: String(localSub.cancelAtPeriodEnd),
+          actualValue: String(providerCancelAtEnd),
+          localStateSummary: { cancelAtPeriodEnd: localSub.cancelAtPeriodEnd },
+          providerStateSummary: { cancel_at_cycle_end: providerCancelAtEnd },
+          detectedAt: now,
+          status: repaired ? ReconciliationStatus.RESOLVED : ReconciliationStatus.REQUIRES_REVIEW,
+          repaired,
+          repairAction,
+          discrepancyId: disc.id
+        });
+      }
+    }
+
+    // 3. Check Refund State Drift (e.g. processed refund on subscription while status is still active)
+    if (localSub) {
+      const processedRefund = await client.billingRefund.findFirst({
+        where: {
+          subscriptionId: localSub.id,
+          status: 'PROCESSED'
+        }
+      });
+
+      if (processedRefund && localSub.status === BillingStatus.ACTIVE && !localSub.refundedAt) {
+        const disc = await this.recordDiscrepancy(
+          {
+            runId,
+            provider,
+            entityType: ReconciliationEntityType.REFUND,
+            providerEntityId: processedRefund.providerRefundId || processedRefund.id,
+            internalEntityId: localSub.id,
+            discrepancyType: ReconciliationDiscrepancyType.REFUND_STATE_MISMATCH,
+            status: ReconciliationStatus.REQUIRES_REVIEW,
+            expectedValue: 'REFUNDED status on Subscription',
+            actualValue: `ACTIVE subscription with processed refund ${processedRefund.id}`,
+            metadata: {
+              category: ReconciliationDriftCategory.REFUND_STATE_MISMATCH,
+              severity: ReconciliationSeverity.CRITICAL,
+              refundId: processedRefund.id
+            }
+          },
+          client
+        );
+
+        findings.push({
+          category: ReconciliationDriftCategory.REFUND_STATE_MISMATCH,
+          severity: ReconciliationSeverity.CRITICAL,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub.id,
+          providerEntityId: processedRefund.providerRefundId,
+          expectedValue: 'REFUNDED',
+          actualValue: 'ACTIVE with processed refund',
+          localStateSummary: { subscriptionStatus: localSub.status, refundId: processedRefund.id },
+          providerStateSummary: {},
+          detectedAt: now,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          repaired: false,
+          discrepancyId: disc.id
+        });
+      }
+    }
+
+    // 4. Entitlement Drift & Resource Safety
+    // Authoritatively resolve effective plan and entitlements via BillingStateService and EntitlementService
+    const effectivePlanResult = await BillingStateService.getEffectivePlan(targetUserId);
+    const expectedEntitlements = await EntitlementService.resolvePlanEntitlements(effectivePlanResult.planCode);
+    const userEntitlements = await EntitlementService.resolveUserEntitlements(targetUserId);
+
+    // Verify expected vs effective technical capabilities
+    if (
+      userEntitlements.maxServers !== expectedEntitlements.maxServers ||
+      userEntitlements.priorityRelay !== expectedEntitlements.priorityRelay
+    ) {
+      const disc = await this.recordDiscrepancy(
+        {
+          runId,
+          provider,
+          entityType: ReconciliationEntityType.PAYMENT,
+          providerEntityId: localSub?.providerSubscriptionId || targetUserId,
+          internalEntityId: targetUserId,
+          discrepancyType: ReconciliationDiscrepancyType.PAYMENT_STATE_MISMATCH,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          expectedValue: `maxServers=${expectedEntitlements.maxServers}, priorityRelay=${expectedEntitlements.priorityRelay}`,
+          actualValue: `maxServers=${userEntitlements.maxServers}, priorityRelay=${userEntitlements.priorityRelay}`,
+          metadata: {
+            category: ReconciliationDriftCategory.ENTITLEMENT_MISMATCH,
+            severity: ReconciliationSeverity.CRITICAL
+          }
+        },
+        client
+      );
+
+      findings.push({
+        category: ReconciliationDriftCategory.ENTITLEMENT_MISMATCH,
+        severity: ReconciliationSeverity.CRITICAL,
+        provider,
+        userId: targetUserId,
+        subscriptionId: localSub?.id || null,
+        providerEntityId: localSub?.providerSubscriptionId || null,
+        expectedValue: `maxServers=${expectedEntitlements.maxServers}, priorityRelay=${expectedEntitlements.priorityRelay}`,
+        actualValue: `maxServers=${userEntitlements.maxServers}, priorityRelay=${userEntitlements.priorityRelay}`,
+        localStateSummary: { effectivePlan: effectivePlanResult.planCode, userEntitlements },
+        providerStateSummary: {},
+        detectedAt: now,
+        status: ReconciliationStatus.REQUIRES_REVIEW,
+        repaired: false,
+        discrepancyId: disc.id
+      });
+    }
+
+    // Resource safety check: check if user has more existing server instances than effective maxServers
+    try {
+      const serverCount = await client.serverInstance.count({
+        where: {
+          device: {
+            userId: targetUserId
+          }
+        }
+      });
+
+      if (serverCount > expectedEntitlements.maxServers) {
+        // DO NOT delete servers! Record resource over-capacity finding (INFO/WARNING)
+        findings.push({
+          category: ReconciliationDriftCategory.EXISTING_RESOURCE_OVER_CAPACITY,
+          severity: ReconciliationSeverity.INFO,
+          provider,
+          userId: targetUserId,
+          subscriptionId: localSub?.id || null,
+          providerEntityId: localSub?.providerSubscriptionId || null,
+          expectedValue: `Allowed maxServers=${expectedEntitlements.maxServers}`,
+          actualValue: `Existing servers=${serverCount}`,
+          localStateSummary: { serverCount, maxServers: expectedEntitlements.maxServers },
+          providerStateSummary: {},
+          detectedAt: now,
+          status: ReconciliationStatus.REQUIRES_REVIEW,
+          repaired: false,
+          repairAction: 'EXISTING_RESOURCES_PRESERVED_CREATION_BLOCKED'
+        });
+      }
+    } catch {
+      // Non-blocking
+    }
+
+    const criticalCount = findings.filter((f) => f.severity === ReconciliationSeverity.CRITICAL).length;
+    const warningCount = findings.filter((f) => f.severity === ReconciliationSeverity.WARNING).length;
+    const infoCount = findings.filter((f) => f.severity === ReconciliationSeverity.INFO).length;
+
+    return {
+      userId: targetUserId,
+      subscriptionId: localSub?.id || null,
+      hasDrift: findings.length > 0,
+      findings,
+      repairsApplied,
+      criticalCount,
+      warningCount,
+      infoCount,
+      effectivePlan: effectivePlanResult.planCode,
+      effectiveEntitlements: {
+        maxServers: expectedEntitlements.maxServers,
+        priorityRelay: expectedEntitlements.priorityRelay
+      }
+    };
+  }
+
+  /**
+   * Retrieves high-level operational metrics and reconciliation health statistics.
+   * Exposes counts, latencies, critical findings, and pending review queue without secrets.
+   */
+  public async getReconciliationMetrics(tx?: any): Promise<{
+    totalRuns: number;
+    completedRuns: number;
+    failedRuns: number;
+    pendingDiscrepancies: number;
+    criticalDiscrepancies: number;
+    resolvedDiscrepancies: number;
+    lastRunAt: Date | null;
+  }> {
+    const client = tx || this.db;
+
+    const [totalRuns, completedRuns, failedRuns, lastRun] = await Promise.all([
+      client.billingReconciliationRun.count(),
+      client.billingReconciliationRun.count({ where: { status: ReconciliationRunStatus.COMPLETED } }),
+      client.billingReconciliationRun.count({ where: { status: ReconciliationRunStatus.FAILED } }),
+      client.billingReconciliationRun.findFirst({ orderBy: { startedAt: 'desc' }, select: { startedAt: true } })
+    ]);
+
+    const [pendingDiscrepancies, resolvedDiscrepancies, allDiscrepancies] = await Promise.all([
+      client.billingReconciliationDiscrepancy.count({
+        where: { status: { in: [ReconciliationStatus.REQUIRES_REVIEW, ReconciliationStatus.MISMATCHED, ReconciliationStatus.PENDING] } }
+      }),
+      client.billingReconciliationDiscrepancy.count({
+        where: { status: ReconciliationStatus.RESOLVED }
+      }),
+      client.billingReconciliationDiscrepancy.findMany({
+        where: { status: { in: [ReconciliationStatus.REQUIRES_REVIEW, ReconciliationStatus.MISMATCHED] } },
+        select: { metadata: true }
+      })
+    ]);
+
+    let criticalDiscrepancies = 0;
+    for (const disc of allDiscrepancies) {
+      const meta = disc.metadata as any;
+      if (meta?.severity === ReconciliationSeverity.CRITICAL || meta?.severity === 'CRITICAL') {
+        criticalDiscrepancies++;
+      }
+    }
+
+    return {
+      totalRuns,
+      completedRuns,
+      failedRuns,
+      pendingDiscrepancies,
+      criticalDiscrepancies,
+      resolvedDiscrepancies,
+      lastRunAt: lastRun?.startedAt || null
+    };
+  }
 }
 
 export const billingReconciliationService = new BillingReconciliationService();
+

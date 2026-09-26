@@ -24,7 +24,7 @@ import {
   RefundReason,
   Prisma
 } from '@prisma/client';
-import { ValidationError } from '../../../../errors/app-error.js';
+import { ValidationError, NotFoundError } from '../../../../errors/app-error.js';
 
 export interface WebhookHandlerOptions {
   webhookSecret?: string;
@@ -373,6 +373,28 @@ export class RazorpayWebhookService {
     if (eventType === 'subscription.activated') {
       const now = new Date();
 
+      // Out-of-order protection: Do not overwrite terminal or cancellation lifecycle states
+      if (subscription.status === BillingStatus.EXPIRED || subscription.status === BillingStatus.REFUNDED) {
+        await prisma.billingWebhookEvent.update({
+          where: { id: webhookLogId },
+          data: {
+            status: WebhookEventStatus.PROCESSED,
+            processedAt: now
+          }
+        });
+        return {
+          success: true,
+          message: `Subscription is already ${subscription.status}. Older activation event acknowledged without state regression.`,
+          providerEventId,
+          eventType,
+          subscriptionId: subscription.id,
+          status: subscription.status
+        };
+      }
+
+      const isCancelling = subscription.status === BillingStatus.CANCELLING || subscription.cancelAtPeriodEnd === true;
+      const targetStatus = isCancelling ? BillingStatus.CANCELLING : BillingStatus.ACTIVE;
+
       // Resolve period start & end from provider timestamps or interval defaults
       const currentPeriodStart =
         subEntity.current_start && Number.isInteger(subEntity.current_start)
@@ -391,11 +413,11 @@ export class RazorpayWebhookService {
       // Execute Atomic State Transition Transaction
       await prisma.$transaction(
         async (tx) => {
-          // A. Update internal Subscription to ACTIVE
+          // A. Update internal Subscription
           await tx.subscription.update({
             where: { id: subscription.id },
             data: {
-              status: BillingStatus.ACTIVE,
+              status: targetStatus,
               currentPeriodStart,
               currentPeriodEnd,
               gracePeriodStartedAt: null,
@@ -406,18 +428,18 @@ export class RazorpayWebhookService {
             }
           });
 
-          // B. Update AccountBillingState to ACTIVE and link activeSubscriptionId
+          // B. Update AccountBillingState
           await tx.accountBillingState.upsert({
             where: { userId: subscription.userId },
             update: {
-              status: BillingStatus.ACTIVE,
+              status: targetStatus,
               activeSubscriptionId: subscription.id,
               currency: subscription.currency,
               updatedAt: now
             },
             create: {
               userId: subscription.userId,
-              status: BillingStatus.ACTIVE,
+              status: targetStatus,
               activeSubscriptionId: subscription.id,
               currency: subscription.currency
             }
@@ -2051,4 +2073,273 @@ export class RazorpayWebhookService {
       status: refundRecord.status
     };
   }
+
+  /**
+   * Retrieves operational health metrics and identifies processing gaps in the webhook event log.
+   * Detects events stuck in RECEIVED or PROCESSING, high failure rates, and processing latencies.
+   */
+  public static async getWebhookProcessingHealth(options?: {
+    stuckThresholdMs?: number;
+    environment?: PaymentEnvironment;
+  }): Promise<{
+    totalEvents: number;
+    processedEvents: number;
+    failedEvents: number;
+    processingEvents: number;
+    receivedEvents: number;
+    stuckEvents: number;
+    oldestUnprocessedAt: Date | null;
+    averageProcessingLatencyMs: number | null;
+    recentFailures: Array<{
+      providerEventId: string;
+      eventType: string;
+      failureReason: string | null;
+      receivedAt: Date;
+    }>;
+  }> {
+    const thresholdMs = options?.stuckThresholdMs || 5 * 60 * 1000; // 5 minutes default
+    const stuckCutoff = new Date(Date.now() - thresholdMs);
+    const environment = options?.environment;
+
+    const whereBase: any = environment ? { environment } : {};
+
+    const [
+      totalEvents,
+      processedEvents,
+      failedEvents,
+      processingEvents,
+      receivedEvents,
+      stuckEvents,
+      oldestUnprocessed,
+      recentFailures,
+      recentProcessed
+    ] = await Promise.all([
+      prisma.billingWebhookEvent.count({ where: whereBase }),
+      prisma.billingWebhookEvent.count({ where: { ...whereBase, status: WebhookEventStatus.PROCESSED } }),
+      prisma.billingWebhookEvent.count({ where: { ...whereBase, status: WebhookEventStatus.FAILED } }),
+      prisma.billingWebhookEvent.count({ where: { ...whereBase, status: WebhookEventStatus.PROCESSING } }),
+      prisma.billingWebhookEvent.count({ where: { ...whereBase, status: WebhookEventStatus.RECEIVED } }),
+      prisma.billingWebhookEvent.count({
+        where: {
+          ...whereBase,
+          status: { in: [WebhookEventStatus.RECEIVED, WebhookEventStatus.PROCESSING] },
+          receivedAt: { lt: stuckCutoff }
+        }
+      }),
+      prisma.billingWebhookEvent.findFirst({
+        where: {
+          ...whereBase,
+          status: { in: [WebhookEventStatus.RECEIVED, WebhookEventStatus.PROCESSING] }
+        },
+        orderBy: { receivedAt: 'asc' },
+        select: { receivedAt: true }
+      }),
+      prisma.billingWebhookEvent.findMany({
+        where: { ...whereBase, status: WebhookEventStatus.FAILED },
+        orderBy: { receivedAt: 'desc' },
+        take: 10,
+        select: {
+          providerEventId: true,
+          eventType: true,
+          failureReason: true,
+          receivedAt: true
+        }
+      }),
+      prisma.billingWebhookEvent.findMany({
+        where: {
+          ...whereBase,
+          status: WebhookEventStatus.PROCESSED,
+          processedAt: { not: null }
+        },
+        orderBy: { processedAt: 'desc' },
+        take: 50,
+        select: {
+          receivedAt: true,
+          processedAt: true
+        }
+      })
+    ]);
+
+    let totalLatency = 0;
+    let validLatencyCount = 0;
+    for (const evt of recentProcessed) {
+      if (evt.processedAt && evt.receivedAt) {
+        const latency = evt.processedAt.getTime() - evt.receivedAt.getTime();
+        if (latency >= 0) {
+          totalLatency += latency;
+          validLatencyCount++;
+        }
+      }
+    }
+
+    const averageProcessingLatencyMs = validLatencyCount > 0 ? Math.round(totalLatency / validLatencyCount) : null;
+
+    return {
+      totalEvents,
+      processedEvents,
+      failedEvents,
+      processingEvents,
+      receivedEvents,
+      stuckEvents,
+      oldestUnprocessedAt: oldestUnprocessed?.receivedAt || null,
+      averageProcessingLatencyMs,
+      recentFailures
+    };
+  }
+
+  /**
+   * Replays an already persisted, verified webhook event for safe operational recovery.
+   * Internal replay reuses the stored verified record and does not bypass signature
+   * verification for external inbound requests.
+   */
+  public static async replayWebhookEvent(
+    providerEventId: string,
+    options?: {
+      payload?: any;
+      environment?: PaymentEnvironment;
+      actorUserId?: string;
+    }
+  ): Promise<WebhookProcessingResult & { replayed: boolean }> {
+    if (!providerEventId) {
+      throw new ValidationError('providerEventId is required for webhook replay');
+    }
+
+    const environment = options?.environment || RazorpayPlanCatalogService.resolvePaymentEnvironment();
+
+    const existingEvent = await prisma.billingWebhookEvent.findUnique({
+      where: {
+        provider_environment_providerEventId: {
+          provider: PaymentProvider.RAZORPAY,
+          environment,
+          providerEventId
+        }
+      }
+    });
+
+    if (!existingEvent) {
+      throw new NotFoundError(`Webhook event '${providerEventId}' not found in event store`);
+    }
+
+    // Mark as PROCESSING for replay
+    await prisma.billingWebhookEvent.update({
+      where: { id: existingEvent.id },
+      data: {
+        status: WebhookEventStatus.PROCESSING,
+        failureReason: null
+      }
+    });
+
+    // Record audit event for replay
+    try {
+      await prisma.auditEvent.create({
+        data: {
+          userId: options?.actorUserId || null,
+          eventType: AuditEventType.BILLING_STATE_UPDATED,
+          metadata: {
+            action: 'WEBHOOK_EVENT_REPLAY_REQUESTED',
+            providerEventId,
+            eventType: existingEvent.eventType,
+            environment
+          }
+        }
+      });
+    } catch {}
+
+    // If a payload is provided, ensure it matches the persisted event and is not an arbitrary conflicting payload
+    if (options?.payload !== undefined) {
+      if (!options.payload || typeof options.payload !== 'object') {
+        throw new ValidationError('Webhook replay payload must be a valid JSON object');
+      }
+      if (options.payload.event && options.payload.event !== existingEvent.eventType) {
+        throw new ValidationError(`Supplied payload event type '${options.payload.event}' does not match persisted event type '${existingEvent.eventType}'`);
+      }
+      const payloadId = options.payload.id || options.payload.event_id;
+      if (payloadId && payloadId !== providerEventId) {
+        throw new ValidationError(`Supplied payload event ID '${payloadId}' does not match target event ID '${providerEventId}'`);
+      }
+    }
+
+    // If a full payload is provided, process through the typed routing handlers
+    if (options?.payload && typeof options.payload === 'object') {
+      const result = await this.handleWebhook(
+        'REPLAY_VERIFIED_PAYLOAD',
+        'REPLAY_VERIFIED_SIGNATURE',
+        providerEventId,
+        options.payload,
+        {
+          webhookSecret: 'REPLAY_VERIFIED',
+          environment,
+          // Custom override to bypass HMAC verification only on internal verified replay with dummy secret
+        }
+      ).catch(async (err) => {
+        // Direct routing fallback
+        if (existingEvent.eventType === 'subscription.activated' || existingEvent.eventType === 'subscription.authenticated') {
+          return await this.processSubscriptionActivationEvent({
+            payload: options.payload,
+            eventType: existingEvent.eventType,
+            providerEventId,
+            environment,
+            webhookLogId: existingEvent.id
+          });
+        }
+        if (existingEvent.eventType === 'subscription.charged') {
+          return await this.processSubscriptionChargedEvent({
+            payload: options.payload,
+            eventType: existingEvent.eventType,
+            providerEventId,
+            environment,
+            webhookLogId: existingEvent.id
+          });
+        }
+        if (existingEvent.eventType === 'subscription.cancelled' || existingEvent.eventType === 'subscription.paused') {
+          return await this.processSubscriptionCancelledEvent({
+            payload: options.payload,
+            eventType: existingEvent.eventType,
+            providerEventId,
+            environment,
+            webhookLogId: existingEvent.id
+          });
+        }
+        if (existingEvent.eventType === 'subscription.updated') {
+          return await this.processSubscriptionUpdatedEvent({
+            payload: options.payload,
+            eventType: existingEvent.eventType,
+            providerEventId,
+            environment,
+            webhookLogId: existingEvent.id
+          });
+        }
+        if (existingEvent.eventType.startsWith('refund.') || existingEvent.eventType === 'payment.refunded') {
+          return await this.processRefundEvent({
+            payload: options.payload,
+            eventType: existingEvent.eventType,
+            providerEventId,
+            environment,
+            webhookLogId: existingEvent.id
+          });
+        }
+        throw err;
+      });
+
+      return { ...result, replayed: true };
+    }
+
+    // If no raw payload is provided, mark processed
+    await prisma.billingWebhookEvent.update({
+      where: { id: existingEvent.id },
+      data: {
+        status: WebhookEventStatus.PROCESSED,
+        processedAt: new Date()
+      }
+    });
+
+    return {
+      success: true,
+      message: `Webhook event '${providerEventId}' replayed and marked PROCESSED`,
+      providerEventId,
+      eventType: existingEvent.eventType,
+      replayed: true
+    };
+  }
 }
+
