@@ -917,6 +917,9 @@
     </div>
   </footer>
 
+  <!-- RAZORPAY CHECKOUT SDK (OFFICIAL CDN) -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <!-- CORE SCRIPTS -->
   <script src="../js/motion.js"></script>
   <script src="../js/config.js"></script>
@@ -925,7 +928,7 @@
   <script src="../js/billing-state.js"></script>
   <script src="../js/main.js"></script>
 
-  <!-- P  <!-- PRICING CONTROLLER SCRIPT (PHASE 7.2D — PRICING STOREFRONT REFACTOR) -->
+  <!-- PRICING CONTROLLER SCRIPT (PHASE 7.2D / UX-C) -->
   <script>
     (function() {
       'use strict';
@@ -1175,7 +1178,7 @@
         const proceedBtn = document.getElementById('btn-proceed-checkout');
         if (proceedBtn) {
           proceedBtn.disabled = true;
-          proceedBtn.textContent = 'Initializing Checkout Session...';
+          proceedBtn.textContent = 'Preparing Secure Checkout...';
         }
 
         try {
@@ -1189,19 +1192,82 @@
           }
 
           const session = res.data.data;
-          window.closeBreakdownModal();
 
-          // Display success / pending verification confirmation
-          window.openSuccessModal({
-            planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
-            formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
-            interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
-            paymentId: session.subscriptionId || 'Submitted'
-          });
+          if (proceedBtn) {
+            proceedBtn.textContent = 'Opening Secure Payment...';
+          }
 
-          // Refresh state and broadcast
-          await BillingState.refreshBillingState();
-          BillingState.broadcastChangeSignal();
+          // Check if Razorpay SDK is available
+          const RazorpayConstructor = window.Razorpay || window.RazorpayCheckout;
+          if (typeof RazorpayConstructor === 'function' && session.keyId && session.subscriptionId) {
+            const options = {
+              key: session.keyId,
+              subscription_id: session.subscriptionId,
+              name: 'ZdexCloud',
+              description: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+              theme: {
+                color: '#2563EB'
+              },
+              modal: {
+                ondismiss: function() {
+                  // User closed Razorpay modal without completing
+                  if (proceedBtn) {
+                    proceedBtn.disabled = false;
+                    proceedBtn.textContent = 'Continue to Secure Checkout';
+                  }
+                  const dismissToast = document.getElementById('checkout-dismiss-toast');
+                  if (dismissToast) {
+                    dismissToast.style.display = 'block';
+                    setTimeout(() => {
+                      dismissToast.style.display = 'none';
+                    }, 5000);
+                  }
+                }
+              },
+              handler: async function(response) {
+                // Payment authorization submitted to gateway
+                window.closeBreakdownModal();
+                window.openSuccessModal({
+                  planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+                  formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
+                  interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
+                  paymentId: response.razorpay_payment_id || session.subscriptionId || 'Submitted'
+                });
+
+                // Boundedly poll authoritative backend for async activation
+                if (typeof BillingState !== 'undefined' && BillingState.pollBillingStateUntil) {
+                  try {
+                    await BillingState.pollBillingStateUntil((state) => state && state.status === 'ACTIVE', 30000, 2000);
+                    BillingState.broadcastChangeSignal();
+                  } catch (e) {
+                    // Polling timeout is non-fatal while waiting for webhook confirmation
+                  }
+                }
+              }
+            };
+
+            const rzp = new RazorpayConstructor(options);
+            rzp.on('payment.failed', function(response) {
+              window.closeBreakdownModal();
+              window.openFailureModal({
+                reason: response.error?.description || response.error?.reason || 'Payment was declined or interrupted by the issuer.'
+              });
+            });
+
+            rzp.open();
+          } else {
+            // Fallback for direct testing or mock environments
+            window.closeBreakdownModal();
+            window.openSuccessModal({
+              planName: activeBreakdownData?.planName || (session.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+              formattedTotal: session.formattedAmount || activeBreakdownData?.formattedTotal,
+              interval: session.planCode === 'PRO_YEARLY' ? 'Annual' : 'Monthly',
+              paymentId: session.subscriptionId || 'Submitted'
+            });
+
+            await BillingState.refreshBillingState();
+            BillingState.broadcastChangeSignal();
+          }
         } catch (err) {
           window.closeBreakdownModal();
           window.openUncertainModal();

@@ -754,6 +754,9 @@ export class BillingStateService {
   static async cancelAtPeriodEnd(subscriptionId: string): Promise<Subscription> {
     const sub = await prisma.subscription.findUnique({ where: { id: subscriptionId } });
     if (!sub) throw new NotFoundError('Subscription not found');
+    if (sub.status === BillingStatus.EXPIRED || sub.status === BillingStatus.REFUNDED) {
+      throw new ConflictError(`Cannot cancel subscription in status '${sub.status}'`);
+    }
     return await this.requestSubscriptionCancellation(sub.userId);
   }
 
