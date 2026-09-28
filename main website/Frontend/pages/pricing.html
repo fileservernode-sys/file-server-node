@@ -1021,9 +1021,9 @@
           return;
         }
 
-        // Check if billing country is confirmed
+        // Check if billing country is confirmed -> Navigate to dedicated checkout page
         if (!userBillingState || !userBillingState.countryConfirmed) {
-          window.location.href = 'dashboard.html#billing-region-card';
+          window.location.href = `checkout.html?plan=${encodeURIComponent(planCode)}`;
           return;
         }
 
