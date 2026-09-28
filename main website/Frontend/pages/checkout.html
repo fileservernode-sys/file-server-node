@@ -308,8 +308,8 @@
         
         // 1. Enforce Authentication
         if (typeof AuthService === 'undefined' || !AuthService.isSessionValid()) {
-          const redirectUrl = encodeURIComponent(`checkout.html?plan=${activePlanCode}`);
-          window.location.href = `login.html?redirect=${redirectUrl}`;
+          const redirectTarget = `checkout.html?plan=${encodeURIComponent(activePlanCode)}`;
+          window.location.href = `login.html?redirect=${encodeURIComponent(redirectTarget)}&plan=${encodeURIComponent(activePlanCode)}`;
           return;
         }
 

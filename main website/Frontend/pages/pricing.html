@@ -1010,45 +1010,20 @@
       window.handlePlanSelection = async function(planCode) {
         lastFocusedElement = document.activeElement;
 
-        if (!isAuthenticated) {
-          const targetPlan = planCode.toLowerCase();
-          window.location.href = `get-started.html?plan=${encodeURIComponent(targetPlan)}`;
-          return;
-        }
-
         if (planCode === 'FREE') {
-          window.location.href = 'dashboard.html';
+          window.location.href = isAuthenticated ? 'dashboard.html' : 'get-started.html';
           return;
         }
 
-        // Check if billing country is confirmed -> Navigate to dedicated checkout page
-        if (!userBillingState || !userBillingState.countryConfirmed) {
-          window.location.href = `checkout.html?plan=${encodeURIComponent(planCode)}`;
+        // If not logged in -> Redirect to login page with checkout return target
+        if (!isAuthenticated || (typeof AuthService !== 'undefined' && !AuthService.isSessionValid())) {
+          const redirectUrl = `checkout.html?plan=${encodeURIComponent(planCode)}`;
+          window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl)}&plan=${encodeURIComponent(planCode)}`;
           return;
         }
 
-        // Active plan check
-        if (userBillingState.status === 'ACTIVE' && userBillingState.plan === planCode) {
-          window.showNoticeModal('Active Subscription', `You are currently active on the ${planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'} plan.`);
-          return;
-        }
-
-        try {
-          const res = await BillingAPI.getCheckoutPriceBreakdown(planCode);
-
-          if (!res.ok || !res.data || !res.data.success) {
-            const errorMsg = res.data?.error?.message || 'Failed to retrieve checkout price breakdown.';
-            window.showNoticeModal('Price Calculation Error', errorMsg);
-            return;
-          }
-
-          const breakdown = res.data.data;
-          activeBreakdownPlan = planCode;
-          activeBreakdownData = breakdown;
-          window.openBreakdownModal(breakdown);
-        } catch (err) {
-          window.openUncertainModal();
-        }
+        // If logged in -> Redirect directly to dedicated checkout page
+        window.location.href = `checkout.html?plan=${encodeURIComponent(planCode)}`;
       };
 
       window.openBreakdownModal = function(breakdown) {
