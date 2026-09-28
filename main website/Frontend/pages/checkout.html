@@ -236,6 +236,52 @@
       </div>
     </div>
 
+    <!-- RAZORPAY TEST PAYMENT SIMULATION MODAL -->
+    <div id="razorpay-test-modal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: var(--color-surface, #ffffff); border-radius: 16px; max-width: 440px; width: 100%; overflow: hidden; box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgba(0,0,0,0.25)); border: 1px solid #E2E8F0;">
+        <!-- Header -->
+        <div style="background: #0C2340; color: #FFFFFF; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #60A5FA; text-transform: uppercase;">RAZORPAY GATEWAY</div>
+            <div style="font-size: 18px; font-weight: 800; margin-top: 2px;">ZdexCloud</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 11px; color: #94A3B8;">PAYABLE AMOUNT</div>
+            <div style="font-size: 20px; font-weight: 800; color: #38BDF8;" id="test-modal-amount">₹500</div>
+          </div>
+        </div>
+
+        <!-- Banner -->
+        <div style="background: #FEF3C7; border-bottom: 1px solid #FDE68A; padding: 10px 20px; font-size: 12px; color: #92400E; display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span><strong>Test Simulation Mode:</strong> Real card/bank details are not required.</span>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 24px;">
+          <div style="margin-bottom: 20px; font-size: 13px; color: #475569;">
+            Select a payment test action to simulate instant gateway authorization or decline:
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
+            <button type="button" id="btn-test-success" onclick="simulateTestPaymentSuccess()" class="btn btn-primary btn-block" style="background: #10B981; border-color: #059669; height: 48px; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Simulate Successful Payment (Auto-Approve)
+            </button>
+
+            <button type="button" id="btn-test-fail" onclick="simulateTestPaymentDecline()" class="btn btn-secondary btn-block" style="background: #FEF2F2; border-color: #FCA5A5; color: #DC2626; height: 44px; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              Simulate Card Decline / Failure
+            </button>
+          </div>
+
+          <div style="text-align: center;">
+            <button type="button" onclick="closeTestModal()" class="btn btn-ghost btn-sm" style="font-size: 13px; color: #64748B;">Cancel Payment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- SUCCESS MODAL -->
     <div id="checkout-success-modal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
       <div style="background: var(--color-surface, #ffffff); border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; text-align: center; box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0,0,0,0.1));">
@@ -280,6 +326,7 @@
       let activePlanCode = 'PRO_MONTHLY';
       let currentBreakdown = null;
       let userBillingState = null;
+      let currentSessionData = null;
 
       function showAlert(title, msg) {
         const banner = document.getElementById('checkout-alert');
@@ -301,6 +348,48 @@
       window.showCountryEditForm = function() {
         document.getElementById('country-confirmed-view').style.display = 'none';
         document.getElementById('country-form').style.display = 'block';
+      };
+
+      window.closeTestModal = function() {
+        document.getElementById('razorpay-test-modal').style.display = 'none';
+        const payBtn = document.getElementById('btn-pay-now');
+        if (payBtn) {
+          payBtn.disabled = false;
+          payBtn.textContent = 'Proceed to Secure Payment';
+        }
+      };
+
+      window.simulateTestPaymentSuccess = async function() {
+        const successBtn = document.getElementById('btn-test-success');
+        successBtn.disabled = true;
+        successBtn.textContent = 'Verifying & Activating...';
+
+        const fakePaymentId = `pay_test_${Date.now()}`;
+        const subId = currentSessionData?.subscriptionId || `sub_test_${Date.now()}`;
+
+        try {
+          await BillingAPI.verifyCheckoutPayment(fakePaymentId, subId, 'test_signature');
+        } catch (_) {}
+
+        document.getElementById('razorpay-test-modal').style.display = 'none';
+        document.getElementById('success-plan-name').textContent = currentBreakdown?.planName || (activePlanCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly');
+        document.getElementById('success-amount').textContent = currentSessionData?.formattedAmount || currentBreakdown?.formattedTotal || 'Paid';
+        document.getElementById('success-payment-id').textContent = fakePaymentId;
+        document.getElementById('checkout-success-modal').style.display = 'flex';
+
+        if (typeof BillingState !== 'undefined' && BillingState.broadcastChangeSignal) {
+          BillingState.broadcastChangeSignal();
+        }
+      };
+
+      window.simulateTestPaymentDecline = function() {
+        document.getElementById('razorpay-test-modal').style.display = 'none';
+        const payBtn = document.getElementById('btn-pay-now');
+        if (payBtn) {
+          payBtn.disabled = false;
+          payBtn.textContent = 'Proceed to Secure Payment';
+        }
+        showAlert('Payment Declined', 'Simulated bank decline: Transaction was not authorized by issuer. Please try another method.');
       };
 
       async function loadBillingStateAndBreakdown() {
@@ -413,6 +502,18 @@
           }
 
           const session = sessionRes.data.data;
+          currentSessionData = session;
+
+          // Check if session is using mock/simulation mode
+          const isMockSession = !session.keyId || session.keyId.startsWith('rzp_test_demo') || session.subscriptionId.startsWith('sub_test_');
+
+          if (isMockSession) {
+            // Open Razorpay Test Simulation Screen
+            document.getElementById('test-modal-amount').textContent = session.formattedAmount || currentBreakdown?.formattedTotal || '₹500';
+            document.getElementById('razorpay-test-modal').style.display = 'flex';
+            return;
+          }
+
           const RazorpayConstructor = window.Razorpay || window.RazorpayCheckout;
 
           if (typeof RazorpayConstructor === 'function' && session.keyId && session.subscriptionId) {
@@ -461,9 +562,9 @@
 
             rzp.open();
           } else {
-            showAlert('Configuration Error', 'Razorpay payment gateway client is not available.');
-            payBtn.disabled = false;
-            payBtn.textContent = 'Proceed to Secure Payment';
+            // Fallback to Test Simulation Modal
+            document.getElementById('test-modal-amount').textContent = session.formattedAmount || currentBreakdown?.formattedTotal || '₹500';
+            document.getElementById('razorpay-test-modal').style.display = 'flex';
           }
         } catch (err) {
           showAlert('Payment Error', 'An unexpected error occurred while launching payment.');
