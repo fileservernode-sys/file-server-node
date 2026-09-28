@@ -1,10 +1,12 @@
 import { prisma } from '../../../../config/database.js';
+import { getRazorpayConfig } from '../../../../config/razorpay.js';
 import {
   BillingStatus,
   BillingInterval,
   CurrencyCode,
   PaymentProvider,
   PaymentEnvironment,
+  PaymentStatus,
   AuditEventType,
   Plan,
   PlanPrice,
@@ -13,13 +15,32 @@ import {
 import { RazorpayClient, RazorpaySubscriptionResponse } from './razorpay_client.js';
 import { RazorpayPlanCatalogService } from './razorpay_plan_catalog_service.js';
 import { RazorpayProviderError } from './razorpay_error.js';
+import { verifyRazorpaySubscriptionPaymentSignature } from './webhook_crypto.js';
 import { BillingStateService, PAID_ENTITLED_STATUSES } from '../../billing_state_service.js';
 import { BillingCountryService } from '../../billing_country_service.js';
+import { BillingReceiptService } from '../../billing_receipt_service.js';
 import { PriceFormatter } from '../../pricing_catalog_service.js';
 import { ValidationError, NotFoundError, ConflictError } from '../../../../errors/app-error.js';
 
 export interface CreateCheckoutSessionParams {
   planCode: string;
+}
+
+export interface VerifyCheckoutPaymentParams {
+  paymentId: string;
+  subscriptionId: string;
+  signature: string;
+}
+
+export interface VerifyCheckoutPaymentResult {
+  verified: boolean;
+  status: BillingStatus;
+  planCode: string;
+  planName: string;
+  subscriptionId: string;
+  paymentId: string;
+  receiptNumber?: string;
+  receiptId?: string;
 }
 
 export interface CheckoutPriceBreakdownTax {
@@ -540,5 +561,166 @@ export class RazorpayCheckoutService {
         billingCountry: billingState.billingCountry
       };
     });
+  }
+
+  /**
+   * Verifies Razorpay checkout subscription payment signature on completion.
+   * Performs HMAC-SHA256 signature verification, activates subscription and billing state if not yet activated,
+   * generates receipt, and returns verified status.
+   */
+  public static async verifyCheckoutPayment(
+    userId: string,
+    params: VerifyCheckoutPaymentParams,
+    options?: { keySecret?: string }
+  ): Promise<VerifyCheckoutPaymentResult> {
+    if (!userId) {
+      throw new ValidationError('userId is required');
+    }
+
+    if (!params || !params.paymentId || !params.subscriptionId || !params.signature) {
+      throw new ValidationError('paymentId, subscriptionId, and signature are required');
+    }
+
+    const { paymentId, subscriptionId, signature } = params;
+
+    // 1. Verify user exists
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundError('User account not found');
+    }
+
+    // 2. Resolve subscription record belonging to this user
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId,
+        provider: PaymentProvider.RAZORPAY,
+        providerSubscriptionId: subscriptionId
+      },
+      include: {
+        plan: true,
+        planPrice: true
+      }
+    });
+
+    if (!subscription) {
+      throw new NotFoundError(`Subscription with providerSubscriptionId '${subscriptionId}' not found for this account`);
+    }
+
+    // 3. Verify HMAC-SHA256 signature
+    const rzpConfig = getRazorpayConfig();
+    const keySecret = options?.keySecret || rzpConfig.keySecret || process.env.RAZORPAY_KEY_SECRET || '';
+
+    const isValid = verifyRazorpaySubscriptionPaymentSignature(paymentId, subscriptionId, signature, keySecret);
+    if (!isValid) {
+      throw new RazorpayProviderError(
+        'INVALID_SIGNATURE',
+        'Invalid Razorpay subscription payment signature'
+      );
+    }
+
+    // 4. If already activated by webhook, return current active state
+    if (PAID_ENTITLED_STATUSES.has(subscription.status)) {
+      const existingReceipt = await prisma.billingReceipt.findFirst({
+        where: { subscriptionId: subscription.id },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      return {
+        verified: true,
+        status: subscription.status,
+        planCode: subscription.plan.code,
+        planName: subscription.plan.name,
+        subscriptionId: subscription.providerSubscriptionId || subscription.id,
+        paymentId,
+        receiptNumber: existingReceipt?.receiptNumber,
+        receiptId: existingReceipt?.id
+      };
+    }
+
+    // 5. Upsert BillingPayment record
+    let payment = await prisma.billingPayment.findFirst({
+      where: {
+        providerPaymentId: paymentId
+      }
+    });
+
+    if (!payment) {
+      payment = await prisma.billingPayment.create({
+        data: {
+          userId,
+          subscriptionId: subscription.id,
+          provider: PaymentProvider.RAZORPAY,
+          environment: subscription.providerEnvironment,
+          providerPaymentId: paymentId,
+          providerSubscriptionId: subscription.providerSubscriptionId,
+          amountMinorUnits: subscription.amountMinorUnits,
+          currency: subscription.currency,
+          status: PaymentStatus.SUCCESS,
+          chargedAt: new Date()
+        }
+      });
+    }
+
+    // 6. Activate Subscription & AccountBillingState
+    const updatedSub = await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: {
+        status: BillingStatus.ACTIVE
+      },
+      include: {
+        plan: true
+      }
+    });
+
+    await prisma.accountBillingState.upsert({
+      where: { userId },
+      create: {
+        userId,
+        status: BillingStatus.ACTIVE,
+        activeSubscriptionId: subscription.id,
+        currency: subscription.currency
+      },
+      update: {
+        status: BillingStatus.ACTIVE,
+        activeSubscriptionId: subscription.id,
+        currency: subscription.currency
+      }
+    });
+
+    // 7. Idempotently generate receipt
+    let receipt: any = null;
+    try {
+      const receiptRes = await BillingReceiptService.generateReceiptForPayment(payment.id);
+      receipt = receiptRes.receipt;
+    } catch {
+      // Non-blocking
+    }
+
+    // 8. Log Audit Event
+    await prisma.auditEvent.create({
+      data: {
+        userId,
+        eventType: AuditEventType.SUBSCRIPTION_ACTIVATED,
+        metadata: {
+          action: 'CHECKOUT_PAYMENT_VERIFIED',
+          subscriptionId: subscription.id,
+          providerSubscriptionId: subscription.providerSubscriptionId,
+          paymentId: payment.id,
+          providerPaymentId: paymentId,
+          planCode: subscription.plan.code
+        }
+      }
+    });
+
+    return {
+      verified: true,
+      status: updatedSub.status,
+      planCode: updatedSub.plan.code,
+      planName: updatedSub.plan.name,
+      subscriptionId: updatedSub.providerSubscriptionId || updatedSub.id,
+      paymentId,
+      receiptNumber: receipt?.receiptNumber,
+      receiptId: receipt?.id
+    };
   }
 }

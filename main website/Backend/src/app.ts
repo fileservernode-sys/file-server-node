@@ -7,6 +7,7 @@ import { globalErrorHandler } from './middleware/error-handler.js';
 import { createErrorResponse } from './schemas/response.js';
 import { apiV1Routes } from './routes/index.js';
 import { defaultGatewayService } from './gateway/gateway_service.js';
+import { getAdminCspHeader } from './utils/security.js';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -82,19 +83,30 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 1. Security & CORS
   await registerSecurityPlugins(app);
 
-  // 2. Global Error Handler
+  // 2. Attach Content-Security-Policy & Frame Protection Hook for Admin Routes (/admin/* and /api/v1/admin/*)
+  app.addHook('onSend', async (request, reply) => {
+    const rawUrl = request.raw.url || request.url || '';
+    const urlPath = rawUrl.split('?')[0];
+
+    if (urlPath === '/admin' || urlPath.startsWith('/admin/') || urlPath.startsWith('/api/v1/admin/')) {
+      reply.header('Content-Security-Policy', getAdminCspHeader());
+      reply.header('X-Frame-Options', 'DENY');
+    }
+  });
+
+  // 3. Global Error Handler
   app.setErrorHandler(globalErrorHandler);
 
-  // 3. API Versioning Router (/api/v1)
+  // 4. API Versioning Router (/api/v1)
   await app.register(apiV1Routes, { prefix: '/api/v1' });
 
-  // 4. Subdomain File Manager & Frontend Static File Serving Router
+  // 5. Subdomain File Manager & Frontend Static File Serving Router
   app.setNotFoundHandler(async (request, reply) => {
     const rawUrl = request.raw.url || request.url || '';
     const urlPath = rawUrl.split('?')[0];
 
-    // If it's a non-existent /api/v1/ route, return standard 404 JSON
-    if (urlPath.startsWith('/api/v1/')) {
+    // If it's a non-existent /api/ route, return standard 404 JSON
+    if (urlPath.startsWith('/api/')) {
       return reply.status(404).send(createErrorResponse('NOT_FOUND', `Route ${request.method}:${request.url} not found`));
     }
 
@@ -142,25 +154,49 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
 
     let filePath = path.normalize(path.join(baseDir, relativePath));
+    const isAdminRoute = urlPath === '/admin' || urlPath.startsWith('/admin/');
+
+    const applyCacheHeaders = (isHtml: boolean, isAsset: boolean) => {
+      if (isHtml) {
+        if (isAdminRoute || filePath.includes(`${path.sep}admin`)) {
+          reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+          reply.header('Pragma', 'no-cache');
+          reply.header('Expires', '0');
+        } else {
+          reply.header('Cache-Control', 'no-cache, must-revalidate');
+        }
+      } else if (isAsset) {
+        if (isAdminRoute || filePath.includes(`${path.sep}admin`)) {
+          reply.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+        } else {
+          reply.header('Cache-Control', 'public, max-age=86400');
+        }
+      }
+    };
 
     // 1. Direct file match
     if (filePath.startsWith(baseDir) && fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+      const isHtml = ext === '.html';
+      const isAsset = ext === '.css' || ext === '.js' || ext === '.svg' || ext === '.png' || ext === '.jpg' || ext === '.woff' || ext === '.woff2' || ext === '.ico';
+      applyCacheHeaders(isHtml, isAsset);
       reply.type(contentType);
       return reply.send(fs.createReadStream(filePath));
     }
 
-    // 2. Clean SEO slug match (e.g. /product -> /product.html or /pages/product.html)
+    // 2. Clean SEO slug match (e.g. /product -> /product.html or /pages/product.html or /admin/login -> /admin/login.html)
     if (!path.extname(relativePath)) {
       const candidates = [
         path.normalize(path.join(baseDir, `${relativePath}.html`)),
+        path.normalize(path.join(baseDir, relativePath, 'index.html')),
         path.normalize(path.join(baseDir, 'pages', `${relativePath}.html`)),
         path.normalize(path.join(baseDir, 'pages', relativePath))
       ];
 
       for (const candidate of candidates) {
         if (candidate.startsWith(baseDir) && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+          applyCacheHeaders(true, false);
           reply.type('text/html; charset=utf-8');
           return reply.send(fs.createReadStream(candidate));
         }
@@ -171,16 +207,27 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (relativePath.startsWith('/pages/')) {
       const pageFile = path.normalize(path.join(baseDir, relativePath));
       if (pageFile.startsWith(baseDir) && fs.existsSync(pageFile) && fs.statSync(pageFile).isFile()) {
+        applyCacheHeaders(true, false);
         reply.type('text/html; charset=utf-8');
         return reply.send(fs.createReadStream(pageFile));
       }
     }
 
-    // 4. Fallback to index.html for SPA routes
-    const indexPath = path.join(baseDir, 'index.html');
-    if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+    // 4. Fallback to index.html for SPA routes (non-admin root)
+    if (!isAdminRoute) {
+      const indexPath = path.join(baseDir, 'index.html');
+      if (fs.existsSync(indexPath) && fs.statSync(indexPath).isFile()) {
+        applyCacheHeaders(true, false);
+        reply.type('text/html; charset=utf-8');
+        return reply.send(fs.createReadStream(indexPath));
+      }
+    }
+
+    // Fallback 404
+    const acceptsHtml = String(request.headers.accept || '').includes('text/html');
+    if (acceptsHtml) {
       reply.type('text/html; charset=utf-8');
-      return reply.send(fs.createReadStream(indexPath));
+      return reply.status(404).send('<!DOCTYPE html><html><head><meta charset="utf-8"><title>404 Not Found - ZdexCloud</title><style>body{font-family:sans-serif;background:#0B0F19;color:#F9FAFB;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}</style></head><body><div style="text-align:center;"><h1>404</h1><p>Resource not found</p><a href="/" style="color:#3B82F6;">Return Home</a></div></body></html>');
     }
 
     return reply.status(404).send(createErrorResponse('NOT_FOUND', `Resource not found`));
@@ -188,5 +235,3 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   return app;
 }
-
-

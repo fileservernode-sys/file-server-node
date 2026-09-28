@@ -14,20 +14,36 @@ declare module 'fastify' {
 }
 
 /**
- * Extracts raw admin token from request headers
+ * Extracts raw admin token from request headers with strict dual-header standardization.
+ * If both 'x-admin-session-token' and 'Authorization: Bearer' are supplied:
+ * - If identical: returns the token deterministically.
+ * - If conflicting: fails closed by throwing UnauthorizedError.
  */
 export function extractAdminToken(request: FastifyRequest): string | null {
+  let customToken: string | null = null;
   const customHeader = (request.headers['x-admin-session-token'] || request.headers['X-Admin-Session-Token']) as string | undefined;
   if (customHeader && typeof customHeader === 'string' && customHeader.trim().length > 0) {
-    return customHeader.trim();
+    customToken = customHeader.trim();
   }
 
+  let bearerToken: string | null = null;
   const authHeader = request.headers.authorization;
   if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7).trim();
+    const raw = authHeader.substring(7).trim();
+    if (raw.length > 0) {
+      bearerToken = raw;
+    }
   }
 
-  return null;
+  // Conflict Detection: fail closed if conflicting credentials are provided
+  if (customToken && bearerToken) {
+    if (customToken !== bearerToken) {
+      throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided');
+    }
+    return customToken;
+  }
+
+  return customToken || bearerToken || null;
 }
 
 /**

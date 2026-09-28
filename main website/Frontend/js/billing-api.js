@@ -202,6 +202,25 @@
       return executeRequest('/billing/checkout/session', 'POST', { planCode }, true);
     },
 
+    /**
+     * Verifies payment signature returned by Razorpay Checkout modal and confirms subscription activation.
+     * Route: POST /api/v1/billing/checkout/verify
+     * @param {string} paymentId - Razorpay payment ID (e.g. 'pay_...')
+     * @param {string} subscriptionId - Razorpay subscription ID (e.g. 'sub_...')
+     * @param {string} signature - HMAC-SHA256 signature
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async verifyCheckoutPayment(paymentId, subscriptionId, signature) {
+      if (!paymentId || !subscriptionId || !signature) {
+        return {
+          ok: false,
+          status: 400,
+          data: { success: false, error: { code: 'VALIDATION_ERROR', message: 'paymentId, subscriptionId, and signature are required' } }
+        };
+      }
+      return executeRequest('/billing/checkout/verify', 'POST', { paymentId, subscriptionId, signature }, true);
+    },
+
     // =========================================================================
     // SUBSCRIPTION LIFECYCLE MUTATIONS
     // =========================================================================

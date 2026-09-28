@@ -228,6 +228,52 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   );
 
   /**
+   * POST /api/v1/billing/checkout/verify
+   * Authenticated endpoint to verify Razorpay checkout payment signature and confirm subscription activation.
+   */
+  app.post(
+    '/billing/checkout/verify',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute'
+        }
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const body = request.body as Record<string, unknown> | undefined;
+
+      if (!body || typeof body !== 'object') {
+        throw new ValidationError('Request body is required');
+      }
+
+      const { paymentId, subscriptionId, signature } = body;
+
+      if (!paymentId || typeof paymentId !== 'string') {
+        throw new ValidationError('paymentId is required');
+      }
+
+      if (!subscriptionId || typeof subscriptionId !== 'string') {
+        throw new ValidationError('subscriptionId is required');
+      }
+
+      if (!signature || typeof signature !== 'string') {
+        throw new ValidationError('signature is required');
+      }
+
+      const result = await RazorpayCheckoutService.verifyCheckoutPayment(user.id, {
+        paymentId: String(paymentId),
+        subscriptionId: String(subscriptionId),
+        signature: String(signature)
+      });
+
+      return createSuccessResponse(result);
+    }
+  );
+
+  /**
    * POST /api/v1/billing/webhooks/razorpay
    * Unauthenticated webhook receiver for Razorpay subscription events.
    * Authentication is enforced via raw-body HMAC-SHA256 signature verification.

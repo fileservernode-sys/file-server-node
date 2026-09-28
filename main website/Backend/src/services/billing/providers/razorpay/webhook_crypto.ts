@@ -59,3 +59,45 @@ export function assertValidRazorpayWebhook(
     );
   }
 }
+
+/**
+ * Cryptographically verifies Razorpay Subscription checkout payment signature.
+ * Format: HMAC_SHA256(razorpay_payment_id + "|" + razorpay_subscription_id, key_secret)
+ */
+export function verifyRazorpaySubscriptionPaymentSignature(
+  paymentId: string | undefined | null,
+  subscriptionId: string | undefined | null,
+  signature: string | undefined | null,
+  secret: string
+): boolean {
+  if (!paymentId || !subscriptionId || !signature || !secret) {
+    return false;
+  }
+
+  try {
+    const cleanPaymentId = paymentId.trim();
+    const cleanSubscriptionId = subscriptionId.trim();
+    const cleanSignature = signature.trim();
+
+    if (!cleanPaymentId || !cleanSubscriptionId || !cleanSignature) {
+      return false;
+    }
+
+    const payload = `${cleanPaymentId}|${cleanSubscriptionId}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(payload, 'utf8')
+      .digest('hex');
+
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    const actualBuffer = Buffer.from(cleanSignature, 'utf8');
+
+    if (expectedBuffer.length !== actualBuffer.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+  } catch (err) {
+    return false;
+  }
+}

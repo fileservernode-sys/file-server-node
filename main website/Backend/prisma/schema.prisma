@@ -1289,6 +1289,13 @@ enum AdminAuditAction {
   ADMIN_PERMISSION_ASSIGNED
   ADMIN_PERMISSION_REMOVED
   ADMIN_AUTHZ_DENIED
+  ADMIN_SESSION_BOOTSTRAP
+  ADMIN_AUDIT_QUERY
+  ADMIN_AUDIT_EXPORT
+  ADMIN_AUDIT_INTEGRITY_VERIFIED
+  ADMIN_LOCKOUT_TRIGGERED
+  ADMIN_PASSWORD_UPDATED
+  ADMIN_STATUS_UPDATED
 }
 
 enum AdminOtpPurpose {
@@ -1357,23 +1364,41 @@ model AdminEmailOtp {
   @@map("admin_email_otps")
 }
 
-/// Administrator Audit Event Log
+/// Administrator Audit Event Log (Cryptographically Chained & Tamper-Evident)
 model AdminAuditLog {
-  id        String           @id @default(uuid())
-  adminId   String?
-  action    AdminAuditAction
-  status    String           @default("SUCCESS")
-  ipAddress String?
-  userAgent String?          @db.VarChar(512)
-  metadata  Json?
-  createdAt DateTime         @default(now())
+  id            String           @id @default(uuid())
+  adminId       String?
+  action        AdminAuditAction
+  status        String           @default("SUCCESS")
+  ipAddress     String?
+  userAgent     String?          @db.VarChar(512)
+  metadata      Json?
+  previousHash  String?          @db.VarChar(64)
+  integrityHash String?          @db.VarChar(64)
+  sequence      Int?
+  createdAt     DateTime         @default(now())
 
-  admin     AdminUser?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  admin         AdminUser?       @relation(fields: [adminId], references: [id], onDelete: SetNull)
 
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
+  @@index([integrityHash])
   @@map("admin_audit_logs")
+}
+
+/// Administrator Distributed Lockout & Brute-Force Rate Limiting
+model AdminLockout {
+  id             String    @id @default(uuid())
+  key            String    @unique @db.VarChar(255)
+  failedAttempts Int       @default(0)
+  lockedUntil    DateTime?
+  lastAttemptAt  DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([lockedUntil])
+  @@map("admin_lockouts")
 }
 
 /// Administrator Role Model

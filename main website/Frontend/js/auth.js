@@ -308,7 +308,13 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
 async function registerUser(email, password, fullName) {
   const result = await apiRequest('/auth/register', 'POST', { email, password, fullName });
   if (result.ok && result.data && result.data.success && result.data.data && result.data.data.requiresOtp) {
-    window.location.href = `verify-otp.html?email=${encodeURIComponent(email)}&action=registration`;
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    const redirect = urlParams.get('redirect');
+    let target = `verify-otp.html?email=${encodeURIComponent(email)}&action=registration`;
+    if (plan) target += `&plan=${encodeURIComponent(plan)}`;
+    if (redirect) target += `&redirect=${encodeURIComponent(redirect)}`;
+    window.location.href = target;
     return { success: true };
   }
   return { success: false, error: result.data?.error?.message || 'Registration failed' };
@@ -318,7 +324,13 @@ async function registerUser(email, password, fullName) {
 async function loginUser(email, password) {
   const result = await apiRequest('/auth/login', 'POST', { email, password });
   if (result.ok && result.data && result.data.success && result.data.data && result.data.data.requiresOtp) {
-    window.location.href = `verify-otp.html?email=${encodeURIComponent(email)}&action=login`;
+    const urlParams = new URLSearchParams(window.location.search);
+    const plan = urlParams.get('plan');
+    const redirect = urlParams.get('redirect');
+    let target = `verify-otp.html?email=${encodeURIComponent(email)}&action=login`;
+    if (plan) target += `&plan=${encodeURIComponent(plan)}`;
+    if (redirect) target += `&redirect=${encodeURIComponent(redirect)}`;
+    window.location.href = target;
     return { success: true };
   }
   return { success: false, error: result.data?.error?.message || 'Invalid email or password' };
@@ -335,11 +347,14 @@ async function verifyOtp(email, code) {
       saveSession(token, user, expiresAt);
     }
 
-    // Return to redirect target if present
+    // Return to redirect target or plan if present
     const urlParams = new URLSearchParams(window.location.search);
     const redirectUrl = urlParams.get('redirect');
+    const planParam = urlParams.get('plan');
     if (redirectUrl && !redirectUrl.startsWith('http') && !redirectUrl.startsWith('//')) {
       window.location.href = redirectUrl;
+    } else if (planParam) {
+      window.location.href = `pricing.html?plan=${encodeURIComponent(planParam)}`;
     } else {
       window.location.href = 'dashboard.html';
     }

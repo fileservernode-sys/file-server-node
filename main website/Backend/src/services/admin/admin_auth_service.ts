@@ -12,59 +12,28 @@ import {
   hashSessionToken
 } from '../../utils/crypto.js';
 import { emailService } from '../email.js';
-import { UnauthorizedError, ValidationError, AppError } from '../../errors/app-error.js';
+import { UnauthorizedError, ValidationError, ForbiddenError, NotFoundError, AppError } from '../../errors/app-error.js';
+import { AdminLockoutService, DEFAULT_MAX_FAILED_ATTEMPTS, DEFAULT_LOCKOUT_DURATION_MS } from './admin_lockout_service.js';
+import { AdminAuditService } from './admin_audit_service.js';
 
 // Configuration constants for Admin Security
 export const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 export const ADMIN_SESSION_ABSOLUTE_LIFETIME_MS = 24 * 60 * 60 * 1000; // 24 hours
 export const ADMIN_OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
-export const MAX_FAILED_ATTEMPTS = 5;
-export const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+export const MAX_FAILED_ATTEMPTS = DEFAULT_MAX_FAILED_ATTEMPTS;
+export const LOCKOUT_DURATION_MS = DEFAULT_LOCKOUT_DURATION_MS;
 
-interface FailedAttemptRecord {
-  count: number;
-  lockedUntil: number | null;
-  lastAttempt: number;
+// Backward-compatible delegates to distributed AdminLockoutService
+export async function checkBruteForceLock(ip: string, email: string): Promise<void> {
+  return await AdminLockoutService.checkLockout(ip, email);
 }
 
-// In-memory rate limiting & brute-force tracking
-const failedAttemptsMap: Map<string, FailedAttemptRecord> = new Map();
-
-function getRateLimitKey(ip: string, email: string): string {
-  return `${ip.trim()}_${email.trim().toLowerCase()}`;
+export async function recordFailedAttempt(ip: string, email: string): Promise<void> {
+  await AdminLockoutService.recordFailure(ip, email);
 }
 
-export function checkBruteForceLock(ip: string, email: string): void {
-  const key = getRateLimitKey(ip, email);
-  const record = failedAttemptsMap.get(key);
-  if (!record) return;
-
-  const now = Date.now();
-  if (record.lockedUntil && record.lockedUntil > now) {
-    const remainingSec = Math.ceil((record.lockedUntil - now) / 1000);
-    const err = new AppError(`Too many failed login attempts. Account locked for ${remainingSec} seconds.`, 429, 'RATE_LIMIT_EXCEEDED');
-    throw err;
-  }
-}
-
-export function recordFailedAttempt(ip: string, email: string): void {
-  const key = getRateLimitKey(ip, email);
-  const now = Date.now();
-  const record = failedAttemptsMap.get(key) || { count: 0, lockedUntil: null, lastAttempt: now };
-
-  record.count += 1;
-  record.lastAttempt = now;
-
-  if (record.count >= MAX_FAILED_ATTEMPTS) {
-    record.lockedUntil = now + LOCKOUT_DURATION_MS;
-  }
-
-  failedAttemptsMap.set(key, record);
-}
-
-export function clearFailedAttempts(ip: string, email: string): void {
-  const key = getRateLimitKey(ip, email);
-  failedAttemptsMap.delete(key);
+export async function clearFailedAttempts(ip: string, email: string): Promise<void> {
+  await AdminLockoutService.clearLockout(ip, email);
 }
 
 export interface AdminUserSanitized {
@@ -143,8 +112,8 @@ export class AdminAuthService {
     const normalizedEmail = email.trim().toLowerCase();
     const clientIp = ipAddress || '127.0.0.1';
 
-    // 1. Check Brute-Force Lockout
-    checkBruteForceLock(clientIp, normalizedEmail);
+    // 1. Check Distributed Brute-Force Lockout
+    await AdminLockoutService.checkLockout(clientIp, normalizedEmail);
 
     // 2. Locate AdminUser
     const admin = await prisma.adminUser.findUnique({
@@ -156,16 +125,19 @@ export class AdminAuthService {
     const isPasswordValid = admin ? verifyPassword(password, admin.passwordHash) : verifyPassword(password, dummyHash);
 
     if (!admin || !isPasswordValid) {
-      recordFailedAttempt(clientIp, normalizedEmail);
+      const lockResult = await AdminLockoutService.recordFailure(clientIp, normalizedEmail);
 
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin?.id || null,
-          action: AdminAuditAction.ADMIN_LOGIN_FAILURE,
-          status: 'FAILED',
-          ipAddress: clientIp,
-          userAgent: userAgent || null,
-          metadata: { email: normalizedEmail, reason: 'INVALID_CREDENTIALS' }
+      await AdminAuditService.logEvent({
+        adminId: admin?.id || null,
+        action: lockResult.locked ? AdminAuditAction.ADMIN_LOCKOUT_TRIGGERED : AdminAuditAction.ADMIN_LOGIN_FAILURE,
+        status: 'FAILED',
+        ipAddress: clientIp,
+        userAgent: userAgent || null,
+        metadata: {
+          email: normalizedEmail,
+          reason: 'INVALID_CREDENTIALS',
+          attempts: lockResult.attempts,
+          locked: lockResult.locked
         }
       });
 
@@ -174,19 +146,20 @@ export class AdminAuthService {
 
     // 3. Verify Admin Status
     if (admin.status !== AdminStatus.ACTIVE) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_AUTH_BLOCKED,
-          status: 'BLOCKED',
-          ipAddress: clientIp,
-          userAgent: userAgent || null,
-          metadata: { email: normalizedEmail, status: admin.status, reason: 'ACCOUNT_DISABLED' }
-        }
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: AdminAuditAction.ADMIN_AUTH_BLOCKED,
+        status: 'BLOCKED',
+        ipAddress: clientIp,
+        userAgent: userAgent || null,
+        metadata: { email: normalizedEmail, status: admin.status, reason: 'ACCOUNT_DISABLED' }
       });
 
       throw new UnauthorizedError('Admin account is disabled');
     }
+
+    // Clear failed password attempts on successful primary authentication
+    await AdminLockoutService.clearLockout(clientIp, normalizedEmail);
 
     // 4. If direct OTP was provided, verify it directly
     if (otp && otp.trim().length === 6) {
@@ -229,15 +202,13 @@ export class AdminAuthService {
       // Allow delivery fallback without leaking secret
     }
 
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: admin.id,
-        action: AdminAuditAction.ADMIN_OTP_SENT,
-        status: 'SUCCESS',
-        ipAddress: clientIp,
-        userAgent: userAgent || null,
-        metadata: { email: normalizedEmail }
-      }
+    await AdminAuditService.logEvent({
+      adminId: admin.id,
+      action: AdminAuditAction.ADMIN_OTP_SENT,
+      status: 'SUCCESS',
+      ipAddress: clientIp,
+      userAgent: userAgent || null,
+      metadata: { email: normalizedEmail }
     });
 
     const challengeToken = this.generateChallengeToken(admin.id, normalizedEmail);
@@ -263,7 +234,7 @@ export class AdminAuthService {
 
     const { adminId, email } = this.verifyChallengeToken(challengeToken);
 
-    checkBruteForceLock(clientIp, email);
+    await AdminLockoutService.checkLockout(clientIp, email);
 
     const admin = await prisma.adminUser.findUnique({
       where: { id: adminId }
@@ -304,15 +275,13 @@ export class AdminAuthService {
     });
 
     if (!activeOtp) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_OTP_FAILED,
-          status: 'FAILED',
-          ipAddress,
-          userAgent: userAgent || null,
-          metadata: { reason: 'NO_ACTIVE_OTP' }
-        }
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: AdminAuditAction.ADMIN_OTP_FAILED,
+        status: 'FAILED',
+        ipAddress,
+        userAgent: userAgent || null,
+        metadata: { reason: 'NO_ACTIVE_OTP' }
       });
       throw new UnauthorizedError('Invalid or expired verification code');
     }
@@ -323,7 +292,7 @@ export class AdminAuthService {
         where: { id: activeOtp.id },
         data: { isUsed: true }
       });
-      recordFailedAttempt(ipAddress, admin.email);
+      await AdminLockoutService.recordFailure(ipAddress, admin.email);
       throw new UnauthorizedError('Too many failed verification attempts. Please log in again.');
     }
 
@@ -335,17 +304,15 @@ export class AdminAuthService {
         data: { attempts: activeOtp.attempts + 1 }
       });
 
-      recordFailedAttempt(ipAddress, admin.email);
+      const lockResult = await AdminLockoutService.recordFailure(ipAddress, admin.email);
 
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_OTP_FAILED,
-          status: 'FAILED',
-          ipAddress,
-          userAgent: userAgent || null,
-          metadata: { attempt: activeOtp.attempts + 1 }
-        }
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: lockResult.locked ? AdminAuditAction.ADMIN_LOCKOUT_TRIGGERED : AdminAuditAction.ADMIN_OTP_FAILED,
+        status: 'FAILED',
+        ipAddress,
+        userAgent: userAgent || null,
+        metadata: { attempt: activeOtp.attempts + 1, locked: lockResult.locked }
       });
 
       throw new UnauthorizedError('Invalid verification code');
@@ -357,18 +324,16 @@ export class AdminAuthService {
       data: { isUsed: true }
     });
 
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: admin.id,
-        action: AdminAuditAction.ADMIN_OTP_VERIFIED,
-        status: 'SUCCESS',
-        ipAddress,
-        userAgent: userAgent || null
-      }
+    await AdminAuditService.logEvent({
+      adminId: admin.id,
+      action: AdminAuditAction.ADMIN_OTP_VERIFIED,
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent: userAgent || null
     });
 
     // Clear failed attempts upon successful authentication
-    clearFailedAttempts(ipAddress, admin.email);
+    await AdminLockoutService.clearLockout(ipAddress, admin.email);
 
     // Create AdminSession with SHA-256 token hashing
     const rawToken = generateSessionToken();
@@ -394,15 +359,13 @@ export class AdminAuthService {
     });
 
     // Log Successful Login
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: admin.id,
-        action: AdminAuditAction.ADMIN_LOGIN_SUCCESS,
-        status: 'SUCCESS',
-        ipAddress,
-        userAgent: userAgent || null,
-        metadata: { sessionId: session.id }
-      }
+    await AdminAuditService.logEvent({
+      adminId: admin.id,
+      action: AdminAuditAction.ADMIN_LOGIN_SUCCESS,
+      status: 'SUCCESS',
+      ipAddress,
+      userAgent: userAgent || null,
+      metadata: { sessionId: session.id }
     });
 
     const sanitizedAdmin: AdminUserSanitized = {
@@ -448,42 +411,36 @@ export class AdminAuthService {
 
     // Check absolute expiration
     if (session.expiresAt.getTime() <= now) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: session.adminId,
-          action: AdminAuditAction.ADMIN_SESSION_EXPIRED,
-          status: 'EXPIRED',
-          ipAddress: ipAddress || null,
-          metadata: { reason: 'ABSOLUTE_EXPIRATION' }
-        }
+      await AdminAuditService.logEvent({
+        adminId: session.adminId,
+        action: AdminAuditAction.ADMIN_SESSION_EXPIRED,
+        status: 'EXPIRED',
+        ipAddress: ipAddress || null,
+        metadata: { reason: 'ABSOLUTE_EXPIRATION' }
       });
       return null;
     }
 
     // Check 15-minute idle timeout
     if (now - session.lastActivityAt.getTime() > ADMIN_IDLE_TIMEOUT_MS) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: session.adminId,
-          action: AdminAuditAction.ADMIN_SESSION_EXPIRED,
-          status: 'EXPIRED',
-          ipAddress: ipAddress || null,
-          metadata: { reason: 'IDLE_TIMEOUT', lastActivityAt: session.lastActivityAt.toISOString() }
-        }
+      await AdminAuditService.logEvent({
+        adminId: session.adminId,
+        action: AdminAuditAction.ADMIN_SESSION_EXPIRED,
+        status: 'EXPIRED',
+        ipAddress: ipAddress || null,
+        metadata: { reason: 'IDLE_TIMEOUT', lastActivityAt: session.lastActivityAt.toISOString() }
       });
       return null;
     }
 
     // Check Admin status
     if (session.admin.status !== AdminStatus.ACTIVE) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: session.adminId,
-          action: AdminAuditAction.ADMIN_AUTH_BLOCKED,
-          status: 'BLOCKED',
-          ipAddress: ipAddress || null,
-          metadata: { reason: 'ADMIN_DISABLED' }
-        }
+      await AdminAuditService.logEvent({
+        adminId: session.adminId,
+        action: AdminAuditAction.ADMIN_AUTH_BLOCKED,
+        status: 'BLOCKED',
+        ipAddress: ipAddress || null,
+        metadata: { reason: 'ADMIN_DISABLED' }
       });
       return null;
     }
@@ -511,6 +468,178 @@ export class AdminAuthService {
   }
 
   /**
+   * Bulk revokes all active sessions for a target Admin user.
+   */
+  static async revokeAllAdminSessions(params: {
+    adminId: string;
+    reason?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<{ revokedCount: number }> {
+    const { adminId, reason = 'BULK_REVOCATION', ipAddress, userAgent } = params;
+
+    const now = new Date();
+    const updateResult = await prisma.adminSession.updateMany({
+      where: {
+        adminId,
+        revokedAt: null
+      },
+      data: {
+        revokedAt: now
+      }
+    });
+
+    if (updateResult.count > 0) {
+      await AdminAuditService.logEvent({
+        adminId,
+        action: AdminAuditAction.ADMIN_SESSION_REVOKED,
+        status: 'SUCCESS',
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        metadata: {
+          reason,
+          revokedCount: updateResult.count,
+          revokedAt: now.toISOString()
+        }
+      });
+    }
+
+    return { revokedCount: updateResult.count };
+  }
+
+  /**
+   * Updates an Admin user's password and invalidates all existing active sessions for that admin.
+   */
+  static async updatePassword(params: {
+    adminId: string;
+    newPassword: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<{ success: boolean; message: string }> {
+    const { adminId, newPassword, ipAddress, userAgent } = params;
+
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      throw new ValidationError('New password must be at least 8 characters in length');
+    }
+
+    const admin = await prisma.adminUser.findUnique({
+      where: { id: adminId }
+    });
+
+    if (!admin) {
+      throw new UnauthorizedError('Admin user not found');
+    }
+
+    const passwordHash = hashPassword(newPassword);
+
+    await prisma.adminUser.update({
+      where: { id: adminId },
+      data: { passwordHash }
+    });
+
+    await AdminAuditService.logEvent({
+      adminId,
+      action: AdminAuditAction.ADMIN_PASSWORD_UPDATED,
+      status: 'SUCCESS',
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+      metadata: { reason: 'PASSWORD_CHANGE' }
+    });
+
+    // Invalidate all active sessions for this admin
+    await this.revokeAllAdminSessions({
+      adminId,
+      reason: 'PASSWORD_MUTATION',
+      ipAddress,
+      userAgent
+    });
+
+    return {
+      success: true,
+      message: 'Admin password updated successfully. All existing sessions have been revoked.'
+    };
+  }
+
+  /**
+   * Updates an Admin user's status. If disabled, revokes all active sessions.
+   */
+  static async updateAdminStatus(params: {
+    actor: { id: string; email: string; isSuperAdmin: boolean; status: AdminStatus };
+    targetAdminId: string;
+    newStatus: AdminStatus;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<{ success: boolean; message: string; admin: AdminUserSanitized }> {
+    const { actor, targetAdminId, newStatus, ipAddress, userAgent } = params;
+
+    if (actor.status !== AdminStatus.ACTIVE) {
+      throw new ForbiddenError('Inactive admin cannot update admin status');
+    }
+
+    const targetAdmin = await prisma.adminUser.findUnique({
+      where: { id: targetAdminId }
+    });
+
+    if (!targetAdmin) {
+      throw new NotFoundError('Target admin user not found');
+    }
+
+    // Anti-escalation: Non-SuperAdmin cannot disable/enable a SuperAdmin
+    if (targetAdmin.isSuperAdmin && !actor.isSuperAdmin) {
+      throw new ForbiddenError('Only Super Administrators can modify SuperAdmin account status');
+    }
+
+    // Anti-self-modification: Non-SuperAdmin cannot disable themselves
+    if (actor.id === targetAdminId && !actor.isSuperAdmin && newStatus !== AdminStatus.ACTIVE) {
+      throw new ForbiddenError('Administrators cannot disable their own account');
+    }
+
+    const updatedAdmin = await prisma.adminUser.update({
+      where: { id: targetAdminId },
+      data: { status: newStatus }
+    });
+
+    await AdminAuditService.logEvent({
+      adminId: actor.id,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+      status: 'SUCCESS',
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+      metadata: {
+        targetAdminId,
+        previousStatus: targetAdmin.status,
+        newStatus
+      }
+    });
+
+    // If status is transitioning to non-ACTIVE (e.g. DISABLED), revoke all active sessions immediately
+    if (newStatus !== AdminStatus.ACTIVE) {
+      await this.revokeAllAdminSessions({
+        adminId: targetAdminId,
+        reason: 'ACCOUNT_DISABLED',
+        ipAddress,
+        userAgent
+      });
+    }
+
+    const sanitized: AdminUserSanitized = {
+      id: updatedAdmin.id,
+      email: updatedAdmin.email,
+      name: updatedAdmin.name,
+      status: updatedAdmin.status,
+      isSuperAdmin: updatedAdmin.isSuperAdmin,
+      lastLoginAt: updatedAdmin.lastLoginAt,
+      createdAt: updatedAdmin.createdAt
+    };
+
+    return {
+      success: true,
+      message: `Admin status updated to ${newStatus}`,
+      admin: sanitized
+    };
+  }
+
+  /**
    * Revokes an active AdminSession
    */
   static async logout(rawToken: string, ipAddress?: string, userAgent?: string): Promise<boolean> {
@@ -527,15 +656,13 @@ export class AdminAuthService {
         data: { revokedAt: new Date() }
       });
 
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: session.adminId,
-          action: AdminAuditAction.ADMIN_LOGOUT,
-          status: 'SUCCESS',
-          ipAddress: ipAddress || null,
-          userAgent: userAgent || null,
-          metadata: { sessionId: session.id }
-        }
+      await AdminAuditService.logEvent({
+        adminId: session.adminId,
+        action: AdminAuditAction.ADMIN_LOGOUT,
+        status: 'SUCCESS',
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        metadata: { sessionId: session.id }
       });
     }
 

@@ -13,6 +13,7 @@ import { billingRoutes } from './billing.js';
 import { storefrontRoutes } from './storefront.js';
 import { adminAuthRoutes } from './admin/auth.js';
 import { adminRbacRoutes } from './admin/rbac.js';
+import { adminAuditRoutes } from './admin/audit.js';
 import { pushTokenRoutes, preferenceRoutes, notificationRoutes } from '../notifications/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
 
@@ -32,6 +33,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(authRoutes);
   await app.register(adminAuthRoutes);
   await app.register(adminRbacRoutes);
+  await app.register(adminAuditRoutes);
   await app.register(deviceRoutes);
   await app.register(serverRoutes);
   await app.register(gatewayRoutes);

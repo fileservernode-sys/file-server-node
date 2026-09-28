@@ -3,47 +3,38 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { config } from '../config/env.js';
+import { isOriginAllowed } from '../utils/security.js';
 
 export async function registerSecurityPlugins(app: FastifyInstance): Promise<void> {
-  // 1. Security Headers (HSTS, Content-Security-Policy, Frameguard)
+  // 1. Security Headers (HSTS, Content-Type-Options, Frameguard, etc.)
   await app.register(helmet, {
-    contentSecurityPolicy: false, // Allow API consumption across frontend subdomains
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
+    contentSecurityPolicy: false, // Managed granularly per route context (e.g. /admin/* has dedicated strict CSP hook)
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    xContentTypeOptions: true,
+    hsts: config.NODE_ENV === 'production' ? {
+      maxAge: 15552000,
+      includeSubDomains: true
+    } : false
   });
 
-  // 2. CORS Configuration (Supports web frontends, staging domains, and mobile apps)
+  // 2. CORS Configuration (Strict Whitelist with Fail-Closed Behavior)
   const allowedOrigins = config.CORS_ORIGIN.split(',').map(origin => origin.trim().toLowerCase());
   const baseDomain = config.REMOTENODE_BASE_DOMAIN.toLowerCase();
 
   await app.register(cors, {
     origin: (origin, cb) => {
-      // Allow requests with no origin (e.g. mobile apps, server-to-server, curl)
-      if (!origin) {
-        return cb(null, true);
-      }
-
-      const lowerOrigin = origin.toLowerCase();
-      const isAllowed = 
-        config.NODE_ENV === 'development' ||
-        allowedOrigins.includes(lowerOrigin) ||
-        lowerOrigin.includes('localhost') ||
-        lowerOrigin.includes('127.0.0.1') ||
-        lowerOrigin.endsWith(`.${baseDomain}`) ||
-        lowerOrigin === `https://${baseDomain}` ||
-        lowerOrigin === `http://${baseDomain}` ||
-        lowerOrigin.endsWith('.zdexcloud.com') || lowerOrigin === 'https://zdexcloud.com' || lowerOrigin.endsWith('.viewduration.com') ||
-        lowerOrigin.endsWith('.onrender.com');
-
-      if (isAllowed) {
+      const allowed = isOriginAllowed(origin, config.NODE_ENV, allowedOrigins, baseDomain);
+      if (allowed) {
         cb(null, true);
       } else {
-        // Fallback: allow to avoid blocking staging frontends while logging notice
-        cb(null, true);
+        // Fail-closed in both development and production for unauthorized external origins
+        cb(null, false);
       }
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token'],
+    exposedHeaders: ['x-admin-session-token', 'content-disposition']
   });
 
   // 3. Rate Limiting Foundation (Prevents abuse / DOS)

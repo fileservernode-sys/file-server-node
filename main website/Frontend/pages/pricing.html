@@ -1234,6 +1234,19 @@
                   paymentId: response.razorpay_payment_id || session.subscriptionId || 'Submitted'
                 });
 
+                // Immediately verify payment signature with backend
+                if (response.razorpay_payment_id && response.razorpay_subscription_id && response.razorpay_signature) {
+                  try {
+                    await BillingAPI.verifyCheckoutPayment(
+                      response.razorpay_payment_id,
+                      response.razorpay_subscription_id,
+                      response.razorpay_signature
+                    );
+                  } catch (vErr) {
+                    // Non-blocking, fallback to polling/webhook
+                  }
+                }
+
                 // Boundedly poll authoritative backend for async activation
                 if (typeof BillingState !== 'undefined' && BillingState.pollBillingStateUntil) {
                   try {
@@ -1510,6 +1523,20 @@
 
       async function initPricingPage() {
         await window.loadPricingCatalog();
+
+        // Check if plan parameter was provided via navigation/redirect
+        const urlParams = new URLSearchParams(window.location.search);
+        const planParam = urlParams.get('plan');
+        if (planParam) {
+          const normalized = planParam.toUpperCase();
+          if (normalized === 'PRO_MONTHLY' || normalized === 'PRO_YEARLY' || normalized === 'FREE') {
+            setTimeout(() => {
+              if (typeof window.handlePlanSelection === 'function') {
+                window.handlePlanSelection(normalized);
+              }
+            }, 300);
+          }
+        }
       }
     })();
   </script>

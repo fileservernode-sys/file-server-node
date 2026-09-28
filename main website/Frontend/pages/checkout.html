@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete your secure upgrade to ZdexCloud Pro. Instant activation, 256-bit SSL encrypted checkout, cancel anytime.">
+  <title>Secure Checkout | ZdexCloud — Personal File Server</title>
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Modular Design System Stylesheets -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+
+  <style>
+    .checkout-container {
+      max-width: 960px;
+      margin: 40px auto 80px auto;
+      padding: 0 20px;
+    }
+    .checkout-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+    @media (min-width: 768px) {
+      .checkout-grid {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+    }
+    .checkout-card {
+      background: var(--color-surface, #ffffff);
+      border: 1px solid var(--color-border, #e2e8f0);
+      border-radius: var(--radius-lg, 16px);
+      padding: var(--space-xl, 32px);
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.05));
+    }
+    .plan-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: var(--font-size-xs, 12px);
+      font-weight: 700;
+      background: rgba(37, 99, 235, 0.1);
+      color: #2563EB;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .order-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
+      font-size: var(--font-size-sm, 14px);
+    }
+    .order-line.total {
+      border-bottom: none;
+      border-top: 2px solid var(--color-border, #e2e8f0);
+      padding-top: 16px;
+      font-size: var(--font-size-lg, 18px);
+      font-weight: 700;
+    }
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--font-size-xs, 12px);
+      color: var(--color-text-secondary, #64748b);
+    }
+  </style>
+</head>
+<body class="bg-subtle text-primary">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="header sticky-header" role="banner">
+    <div class="container header-container" style="display: flex; justify-content: space-between; align-items: center; height: 72px;">
+      <a href="../index.html" class="brand-logo" aria-label="ZdexCloud Home" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#2563EB"/>
+          <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--color-text-primary);">ZdexCloud</span>
+      </a>
+
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span class="trust-badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; padding: 6px 12px; border-radius: 9999px; font-weight: 600;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          256-Bit SSL Encrypted
+        </span>
+        <a href="pricing.html" class="btn btn-ghost btn-sm">Cancel</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="checkout-container" role="main">
+    <div style="margin-bottom: 32px; text-align: center;">
+      <h1 style="font-size: var(--font-size-3xl, 32px); font-weight: 800; margin-bottom: 8px;">Checkout & Order Summary</h1>
+      <p style="color: var(--color-text-secondary, #64748b); font-size: var(--font-size-base, 15px);">Complete your payment to activate Pro capabilities instantly.</p>
+    </div>
+
+    <!-- ERROR / NOTICE BANNER -->
+    <div id="checkout-alert" style="display: none; margin-bottom: 24px; padding: 16px; border-radius: var(--radius-md, 8px); background: #FEF2F2; border: 1px solid #F87171; color: #991B1B;" role="alert">
+      <div style="font-weight: 600;" id="checkout-alert-title">Notice</div>
+      <div id="checkout-alert-msg" style="font-size: 14px; margin-top: 4px;"></div>
+    </div>
+
+    <div class="checkout-grid">
+      <!-- LEFT COLUMN: BILLING COUNTRY CONFIRMATION & ENTITLEMENTS -->
+      <div>
+        <!-- COUNTRY & REGIONAL DETAILS CARD -->
+        <div class="checkout-card" id="region-card" style="margin-bottom: 24px;">
+          <h2 style="font-size: var(--font-size-lg, 18px); font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            Billing Region & Currency
+          </h2>
+          
+          <div id="country-confirmed-view" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--color-bg-subtle, #f8fafc); padding: 12px 16px; border-radius: var(--radius-md, 8px); border: 1px solid var(--color-border, #e2e8f0);">
+              <div>
+                <div style="font-weight: 600; font-size: 14px;" id="confirmed-country-text">India (INR ₹)</div>
+                <div style="font-size: 12px; color: var(--color-text-secondary, #64748b);" id="confirmed-postal-text">Postal Code: 400001</div>
+              </div>
+              <button type="button" onclick="showCountryEditForm()" class="btn btn-ghost btn-sm" style="font-size: 12px; height: 32px; padding: 0 10px;">Change</button>
+            </div>
+          </div>
+
+          <form id="country-form" style="display: block;">
+            <p style="font-size: 13px; color: var(--color-text-secondary, #64748b); margin-bottom: 16px;">
+              Your billing country determines the authoritative currency and applicable taxes for all invoices.
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+              <div>
+                <label for="input-country" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Country</label>
+                <select id="input-country" class="input-field" style="width: 100%; height: 42px; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); padding: 0 10px; font-size: 14px;">
+                  <option value="IN">India (₹ INR)</option>
+                  <option value="US">United States ($ USD)</option>
+                  <option value="GB">United Kingdom ($ USD)</option>
+                  <option value="CA">Canada ($ USD)</option>
+                  <option value="AU">Australia ($ USD)</option>
+                  <option value="DE">Germany ($ USD)</option>
+                  <option value="FR">France ($ USD)</option>
+                  <option value="SG">Singapore ($ USD)</option>
+                  <option value="AE">United Arab Emirates ($ USD)</option>
+                </select>
+              </div>
+              <div>
+                <label for="input-postal" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Postal / ZIP Code</label>
+                <input type="text" id="input-postal" placeholder="e.g. 400001 or 94103" class="input-field" style="width: 100%; height: 42px; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); padding: 0 10px; font-size: 14px;" required />
+              </div>
+            </div>
+            <button type="submit" id="btn-save-country" class="btn btn-secondary btn-block" style="height: 40px; font-size: 13px; font-weight: 600;">Confirm Billing Country</button>
+          </form>
+        </div>
+
+        <!-- PLAN FEATURES & ENTITLEMENTS SUMMARY -->
+        <div class="checkout-card">
+          <h2 style="font-size: var(--font-size-lg, 18px); font-weight: 700; margin-bottom: 16px;">Included with Pro Tier</h2>
+          <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+            <li style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Manage up to 5 Android servers</strong> simultaneously</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Priority Relay Gateway:</strong> Fast routing even on CGNAT/restrictive networks</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Zero Cloud Storage Fees:</strong> 100% capacity on your own phone hardware</span>
+            </li>
+            <li style="display: flex; align-items: center; gap: 10px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span><strong>Instant Invoices & Receipts:</strong> Delivered automatically to your verified email</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: ORDER SUMMARY & PAYMENT TRIGGER -->
+      <div>
+        <div class="checkout-card" style="position: sticky; top: 96px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <span class="plan-badge" id="summary-plan-badge">Pro Monthly</span>
+            <span style="font-size: 13px; color: var(--color-text-secondary, #64748b);" id="summary-interval-badge">Billed Monthly</span>
+          </div>
+
+          <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 4px;" id="summary-plan-title">ZdexCloud Pro</h2>
+          <div style="font-size: 13px; color: var(--color-text-secondary, #64748b); margin-bottom: 20px;" id="summary-renewal-text">Auto-renews until cancelled.</div>
+
+          <div style="border-top: 1px solid var(--color-border, #e2e8f0); padding-top: 16px;">
+            <div class="order-line">
+              <span style="color: var(--color-text-secondary, #64748b);">Base Subscription</span>
+              <span style="font-weight: 600;" id="summary-base-price">Loading...</span>
+            </div>
+
+            <div class="order-line" id="summary-savings-row" style="display: none; color: #059669;">
+              <span>Annual Value Discount</span>
+              <span style="font-weight: 600;" id="summary-savings-amount">-</span>
+            </div>
+
+            <div class="order-line">
+              <span style="color: var(--color-text-secondary, #64748b);">Applicable Taxes</span>
+              <span style="font-weight: 600;" id="summary-tax">Included in price</span>
+            </div>
+
+            <div class="order-line">
+              <span style="color: var(--color-text-secondary, #64748b);">Gateway & Processing Fee</span>
+              <span style="font-weight: 600; color: #059669;">Free (₹0 / $0)</span>
+            </div>
+
+            <div class="order-line total">
+              <span>Total Due Today</span>
+              <span style="color: #2563EB; font-size: 24px;" id="summary-total">...</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <button type="button" id="btn-pay-now" onclick="initiatePayment()" class="btn btn-primary btn-block btn-lg" style="height: 52px; font-size: 16px; font-weight: 700; width: 100%; border-radius: 8px;">
+              Proceed to Secure Payment
+            </button>
+            <div style="margin-top: 12px; text-align: center; font-size: 12px; color: var(--color-text-secondary, #64748b);">
+              🔒 Protected by Razorpay 256-bit encryption. Cancel anytime in your dashboard.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUCCESS MODAL -->
+    <div id="checkout-success-modal" role="dialog" aria-modal="true" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+      <div style="background: var(--color-surface, #ffffff); border-radius: 16px; padding: 32px; max-width: 480px; width: 100%; text-align: center; box-shadow: var(--shadow-xl, 0 20px 25px -5px rgba(0,0,0,0.1));">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #DCFCE7; color: #16A34A; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 8px;">Payment Successful!</h2>
+        <p style="color: var(--color-text-secondary, #64748b); font-size: 14px; margin-bottom: 20px;">Your subscription is active and your account entitlements have been upgraded.</p>
+        
+        <div style="background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border, #e2e8f0); border-radius: 8px; padding: 16px; text-align: left; font-size: 13px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #64748b;">Plan:</span>
+            <span style="font-weight: 600;" id="success-plan-name">Pro Tier</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="color: #64748b;">Amount Paid:</span>
+            <span style="font-weight: 600;" id="success-amount">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b;">Payment ID:</span>
+            <span style="font-family: monospace; font-size: 12px;" id="success-payment-id">-</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <a href="dashboard.html" class="btn btn-primary btn-block" style="height: 44px; text-decoration: none; display: flex; align-items: center; justify-content: center;">Open Dashboard</a>
+          <a href="pricing.html" class="btn btn-secondary btn-block" style="height: 44px; text-decoration: none; display: flex; align-items: center; justify-content: center;">Done</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SCRIPTS -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      let activePlanCode = 'PRO_MONTHLY';
+      let currentBreakdown = null;
+      let userBillingState = null;
+
+      function showAlert(title, msg) {
+        const banner = document.getElementById('checkout-alert');
+        const titleEl = document.getElementById('checkout-alert-title');
+        const msgEl = document.getElementById('checkout-alert-msg');
+        if (banner && titleEl && msgEl) {
+          titleEl.textContent = title;
+          msgEl.textContent = msg;
+          banner.style.display = 'block';
+          banner.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+
+      function hideAlert() {
+        const banner = document.getElementById('checkout-alert');
+        if (banner) banner.style.display = 'none';
+      }
+
+      window.showCountryEditForm = function() {
+        document.getElementById('country-confirmed-view').style.display = 'none';
+        document.getElementById('country-form').style.display = 'block';
+      };
+
+      async function loadBillingStateAndBreakdown() {
+        hideAlert();
+        
+        // 1. Enforce Authentication
+        if (typeof AuthService === 'undefined' || !AuthService.isSessionValid()) {
+          const redirectUrl = encodeURIComponent(`checkout.html?plan=${activePlanCode}`);
+          window.location.href = `login.html?redirect=${redirectUrl}`;
+          return;
+        }
+
+        try {
+          // 2. Fetch User Billing State
+          const stateRes = await BillingAPI.getBillingState();
+          if (stateRes.ok && stateRes.data && stateRes.data.success) {
+            userBillingState = stateRes.data.data;
+            if (userBillingState.countryConfirmed && userBillingState.billingCountry) {
+              document.getElementById('country-form').style.display = 'none';
+              document.getElementById('country-confirmed-view').style.display = 'block';
+              document.getElementById('confirmed-country-text').textContent = `${userBillingState.billingCountry} (${userBillingState.currency || 'INR'})`;
+              document.getElementById('confirmed-postal-text').textContent = `Postal Code: ${userBillingState.billingPostalCode || 'Confirmed'}`;
+            } else {
+              document.getElementById('country-confirmed-view').style.display = 'none';
+              document.getElementById('country-form').style.display = 'block';
+            }
+          }
+
+          // 3. Fetch Checkout Price Breakdown
+          if (userBillingState && userBillingState.countryConfirmed) {
+            const breakdownRes = await BillingAPI.getCheckoutPriceBreakdown(activePlanCode);
+            if (breakdownRes.ok && breakdownRes.data && breakdownRes.data.success) {
+              currentBreakdown = breakdownRes.data.data;
+              renderSummary(currentBreakdown);
+            } else {
+              const msg = breakdownRes.data?.error?.message || 'Unable to calculate checkout prices.';
+              showAlert('Price Calculation', msg);
+            }
+          }
+        } catch (err) {
+          showAlert('Communication Error', 'Failed to communicate with control plane.');
+        }
+      }
+
+      function renderSummary(data) {
+        document.getElementById('summary-plan-badge').textContent = data.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly';
+        document.getElementById('summary-interval-badge').textContent = data.interval === 'YEARLY' ? 'Billed Annually' : 'Billed Monthly';
+        document.getElementById('summary-plan-title').textContent = data.planName || (data.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly');
+        document.getElementById('summary-base-price').textContent = data.formattedAmount;
+        document.getElementById('summary-total').textContent = data.formattedTotal;
+        document.getElementById('summary-tax').textContent = data.tax?.formattedAmount || 'Included in price';
+        document.getElementById('summary-renewal-text').textContent = data.renewal?.notice || `Renews at ${data.formattedTotal}. Cancel anytime in dashboard.`;
+
+        const savingsRow = document.getElementById('summary-savings-row');
+        const savingsAmount = document.getElementById('summary-savings-amount');
+        if (data.savings && data.savings.amountMinorUnits > 0) {
+          savingsRow.style.display = 'flex';
+          savingsAmount.textContent = `Save ${data.savings.formattedAmount}/yr (~${data.savings.percentage}% off)`;
+        } else {
+          savingsRow.style.display = 'none';
+        }
+      }
+
+      // Handle Country Form Submission
+      document.getElementById('country-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideAlert();
+        const country = document.getElementById('input-country').value;
+        const postalCode = document.getElementById('input-postal').value.trim();
+        const btn = document.getElementById('btn-save-country');
+
+        btn.disabled = true;
+        btn.textContent = 'Confirming...';
+
+        try {
+          const res = await BillingAPI.confirmBillingCountry(country, postalCode);
+          if (res.ok && res.data && res.data.success) {
+            await loadBillingStateAndBreakdown();
+          } else {
+            showAlert('Validation Error', res.data?.error?.message || 'Failed to update billing country.');
+          }
+        } catch (err) {
+          showAlert('Network Error', 'Could not save billing details.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Confirm Billing Country';
+        }
+      });
+
+      // Initiate Razorpay Checkout Payment
+      window.initiatePayment = async function() {
+        hideAlert();
+        if (!userBillingState || !userBillingState.countryConfirmed) {
+          showAlert('Billing Region Required', 'Please confirm your billing country and postal code before proceeding.');
+          window.showCountryEditForm();
+          return;
+        }
+
+        const payBtn = document.getElementById('btn-pay-now');
+        payBtn.disabled = true;
+        payBtn.textContent = 'Preparing Payment...';
+
+        try {
+          const sessionRes = await BillingAPI.createCheckoutSession(activePlanCode);
+          if (!sessionRes.ok || !sessionRes.data || !sessionRes.data.success) {
+            showAlert('Checkout Error', sessionRes.data?.error?.message || 'Could not initialize payment session.');
+            payBtn.disabled = false;
+            payBtn.textContent = 'Proceed to Secure Payment';
+            return;
+          }
+
+          const session = sessionRes.data.data;
+          const RazorpayConstructor = window.Razorpay || window.RazorpayCheckout;
+
+          if (typeof RazorpayConstructor === 'function' && session.keyId && session.subscriptionId) {
+            const options = {
+              key: session.keyId,
+              subscription_id: session.subscriptionId,
+              name: 'ZdexCloud',
+              description: currentBreakdown?.planName || (activePlanCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
+              theme: { color: '#2563EB' },
+              modal: {
+                ondismiss: function() {
+                  payBtn.disabled = false;
+                  payBtn.textContent = 'Proceed to Secure Payment';
+                }
+              },
+              handler: async function(response) {
+                // Verify signature with backend
+                if (response.razorpay_payment_id && response.razorpay_subscription_id && response.razorpay_signature) {
+                  try {
+                    await BillingAPI.verifyCheckoutPayment(
+                      response.razorpay_payment_id,
+                      response.razorpay_subscription_id,
+                      response.razorpay_signature
+                    );
+                  } catch (_) {}
+                }
+
+                // Show Success Modal
+                document.getElementById('success-plan-name').textContent = currentBreakdown?.planName || (activePlanCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly');
+                document.getElementById('success-amount').textContent = session.formattedAmount || currentBreakdown?.formattedTotal;
+                document.getElementById('success-payment-id').textContent = response.razorpay_payment_id || session.subscriptionId;
+                document.getElementById('checkout-success-modal').style.display = 'flex';
+
+                if (typeof BillingState !== 'undefined' && BillingState.broadcastChangeSignal) {
+                  BillingState.broadcastChangeSignal();
+                }
+              }
+            };
+
+            const rzp = new RazorpayConstructor(options);
+            rzp.on('payment.failed', function(response) {
+              payBtn.disabled = false;
+              payBtn.textContent = 'Proceed to Secure Payment';
+              showAlert('Payment Failed', response.error?.description || 'Your payment was declined. Please try another card or method.');
+            });
+
+            rzp.open();
+          } else {
+            showAlert('Configuration Error', 'Razorpay payment gateway client is not available.');
+            payBtn.disabled = false;
+            payBtn.textContent = 'Proceed to Secure Payment';
+          }
+        } catch (err) {
+          showAlert('Payment Error', 'An unexpected error occurred while launching payment.');
+          payBtn.disabled = false;
+          payBtn.textContent = 'Proceed to Secure Payment';
+        }
+      };
+
+      // Initialization on DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const planParam = urlParams.get('plan');
+        if (planParam) {
+          const upper = planParam.toUpperCase();
+          if (upper === 'PRO_YEARLY' || upper === 'PRO_MONTHLY') {
+            activePlanCode = upper;
+          }
+        }
+
+        loadBillingStateAndBreakdown();
+      });
+    })();
+  </script>
+</body>
+</html>

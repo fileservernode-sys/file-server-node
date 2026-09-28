@@ -6,9 +6,18 @@ import { AdminRbacService } from '../../services/admin/admin_rbac_service.js';
 import { createSuccessResponse } from '../../schemas/response.js';
 import { ValidationError } from '../../errors/app-error.js';
 
-const assignRoleSchema = z.object({
-  roleSlug: z.string().min(1, 'roleSlug is required')
+const adminIdParamSchema = z.object({
+  adminId: z.string().trim().min(1, 'adminId cannot be empty').max(64, 'adminId too long')
 });
+
+const adminRoleParamSchema = z.object({
+  adminId: z.string().trim().min(1, 'adminId cannot be empty').max(64, 'adminId too long'),
+  roleSlug: z.string().trim().min(1, 'roleSlug cannot be empty').max(64, 'roleSlug too long').regex(/^[a-zA-Z0-9_-]+$/, 'Invalid roleSlug format')
+});
+
+const assignRoleSchema = z.object({
+  roleSlug: z.string().trim().min(1, 'roleSlug is required').max(64, 'roleSlug too long').regex(/^[a-zA-Z0-9_-]+$/, 'Invalid roleSlug format')
+}).strict();
 
 export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -70,8 +79,12 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [adminAuthenticate, requirePermission('admin_roles.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { adminId: string };
-      const { adminId } = params;
+      const paramParsed = adminIdParamSchema.safeParse(request.params);
+      if (!paramParsed.success) {
+        throw new ValidationError(paramParsed.error.errors[0]?.message || 'Invalid adminId parameter');
+      }
+
+      const { adminId } = paramParsed.data;
 
       const [roles, permissions] = await Promise.all([
         AdminRbacService.resolveAdminRoles(adminId),
@@ -93,11 +106,24 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/admin/rbac/admins/:adminId/roles',
     {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const adminId = (req as any).admin?.id || 'anonymous';
+            const ip = req.ip || '127.0.0.1';
+            return `rbac_mutation_${adminId}_${ip}`;
+          }
+        }
+      },
       preHandler: [adminAuthenticate, requirePermission('admin_roles.write')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { adminId: string };
-      const { adminId } = params;
+      const paramParsed = adminIdParamSchema.safeParse(request.params);
+      if (!paramParsed.success) {
+        throw new ValidationError(paramParsed.error.errors[0]?.message || 'Invalid adminId parameter');
+      }
 
       const parsed = assignRoleSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -106,7 +132,7 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
 
       const result = await AdminRbacService.assignRoleToAdmin({
         actor: request.admin!,
-        targetAdminId: adminId,
+        targetAdminId: paramParsed.data.adminId,
         roleSlug: parsed.data.roleSlug,
         ipAddress: request.ip,
         userAgent: request.headers['user-agent'] as string
@@ -123,11 +149,26 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
   app.delete(
     '/admin/rbac/admins/:adminId/roles/:roleSlug',
     {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const adminId = (req as any).admin?.id || 'anonymous';
+            const ip = req.ip || '127.0.0.1';
+            return `rbac_mutation_${adminId}_${ip}`;
+          }
+        }
+      },
       preHandler: [adminAuthenticate, requirePermission('admin_roles.write')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { adminId: string; roleSlug: string };
-      const { adminId, roleSlug } = params;
+      const paramParsed = adminRoleParamSchema.safeParse(request.params);
+      if (!paramParsed.success) {
+        throw new ValidationError(paramParsed.error.errors[0]?.message || 'Invalid parameters for role removal');
+      }
+
+      const { adminId, roleSlug } = paramParsed.data;
 
       const result = await AdminRbacService.removeRoleFromAdmin({
         actor: request.admin!,
