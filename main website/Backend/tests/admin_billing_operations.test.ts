@@ -9,10 +9,12 @@ import {
   AdminDiscrepancyListQuerySchema,
   AdminPlanListQuerySchema,
   AdminCancelSubscriptionSchema,
-  AdminExecuteRefundSchema
+  AdminExecuteRefundSchema,
+  AdminStartReconciliationRunSchema,
+  AdminResolveDiscrepancySchema
 } from '../src/routes/admin/operations/billing/schemas.js';
 
-describe('Admin Billing Operations Baseline (Phase 9.1, 9.2 & 9.3 Deferred Tests)', () => {
+describe('Admin Billing Operations Baseline (Phase 9.1, 9.2, 9.3 & 9.4 Deferred Tests)', () => {
   describe('Validation Schemas', () => {
     test('should validate subscription list query defaults and constraints', () => {
       const parsed = AdminSubscriptionListQuerySchema.parse({
@@ -119,6 +121,44 @@ describe('Admin Billing Operations Baseline (Phase 9.1, 9.2 & 9.3 Deferred Tests
         AdminExecuteRefundSchema.parse({ amountMinorUnits: 0 });
       });
     });
+
+    test('should validate admin reconciliation run schema (Phase 9.4)', () => {
+      const defaultRun = AdminStartReconciliationRunSchema.parse({});
+      assert.strictEqual(defaultRun.scope, 'FULL_BILLING');
+
+      const dateRangeRun = AdminStartReconciliationRunSchema.parse({
+        scope: 'DATE_RANGE',
+        startDate: '2026-09-01T00:00:00.000Z',
+        endDate: '2026-09-29T23:59:59.999Z',
+        notes: 'Monthly close run'
+      });
+      assert.strictEqual(dateRangeRun.scope, 'DATE_RANGE');
+      assert.strictEqual(dateRangeRun.startDate, '2026-09-01T00:00:00.000Z');
+      assert.strictEqual(dateRangeRun.endDate, '2026-09-29T23:59:59.999Z');
+      assert.strictEqual(dateRangeRun.notes, 'Monthly close run');
+    });
+
+    test('should validate admin resolve discrepancy schema (Phase 9.4)', () => {
+      const resolveInput = AdminResolveDiscrepancySchema.parse({
+        action: 'MARK_RESOLVED',
+        notes: 'Manually confirmed in Razorpay dashboard, variance within tolerance.'
+      });
+      assert.strictEqual(resolveInput.action, 'MARK_RESOLVED');
+      assert.strictEqual(resolveInput.notes, 'Manually confirmed in Razorpay dashboard, variance within tolerance.');
+
+      assert.throws(() => {
+        AdminResolveDiscrepancySchema.parse({
+          action: 'INVALID_ACTION',
+          notes: 'Test'
+        });
+      });
+      assert.throws(() => {
+        AdminResolveDiscrepancySchema.parse({
+          action: 'MARK_RESOLVED',
+          notes: ''
+        });
+      });
+    });
   });
 
   describe('Safe Projections & DTO Invariants', () => {
@@ -137,7 +177,11 @@ describe('Admin Billing Operations Baseline (Phase 9.1, 9.2 & 9.3 Deferred Tests
       assert.strictEqual(typeof AdminBillingService.getRefundDetail, 'function');
       assert.strictEqual(typeof AdminBillingService.inspectProviderRefund, 'function');
       assert.strictEqual(typeof AdminBillingService.listReconciliationRuns, 'function');
+      assert.strictEqual(typeof AdminBillingService.getReconciliationRunDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.startReconciliationRun, 'function');
       assert.strictEqual(typeof AdminBillingService.listDiscrepancies, 'function');
+      assert.strictEqual(typeof AdminBillingService.getDiscrepancyDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.resolveDiscrepancy, 'function');
       assert.strictEqual(typeof AdminBillingService.listPlans, 'function');
     });
   });

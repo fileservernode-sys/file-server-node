@@ -5,7 +5,9 @@ import {
   RefundStatus,
   RefundReason,
   ReconciliationStatus,
+  ReconciliationDiscrepancyType,
   ReconciliationRunStatus,
+  ReconciliationEntityType,
   AdminAuditAction,
   CurrencyCode,
   PaymentProvider,
@@ -18,6 +20,7 @@ import { executeAdminOperation } from '../utils/operation_executor.js';
 import { AdminOperationContext } from '../types.js';
 import { RazorpayClient } from '../../../../services/billing/providers/razorpay/razorpay_client.js';
 import { BillingRefundService } from '../../../../services/billing/billing_refund_service.js';
+import { BillingReconciliationService } from '../../../../services/billing/billing_reconciliation_service.js';
 import { PAID_ENTITLED_STATUSES } from '../../../../services/billing/billing_state_service.js';
 import {
   AdminSubscriptionSummary,
@@ -33,7 +36,11 @@ import {
   AdminRefundDetail,
   AdminExecuteRefundResult,
   AdminReconciliationRunSummary,
+  AdminReconciliationRunDetail,
+  AdminStartReconciliationRunResult,
   AdminReconciliationDiscrepancySummary,
+  AdminReconciliationDiscrepancyDetail,
+  AdminResolveDiscrepancyResult,
   AdminPlanSummary,
   AdminBillingOverviewMetrics
 } from './types.js';
@@ -44,7 +51,9 @@ import {
   AdminReconciliationRunListQuery,
   AdminDiscrepancyListQuery,
   AdminPlanListQuery,
-  AdminExecuteRefundInput
+  AdminExecuteRefundInput,
+  AdminStartReconciliationRunInput,
+  AdminResolveDiscrepancyInput
 } from './schemas.js';
 
 export class AdminBillingService {
@@ -1347,6 +1356,230 @@ export class AdminBillingService {
   }
 
   /**
+   * Retrieves single reconciliation run detail with recent records and discrepancies.
+   */
+  static async getReconciliationRunDetail(runId: string): Promise<AdminReconciliationRunDetail> {
+    const run = await prisma.billingReconciliationRun.findUnique({
+      where: { id: runId },
+      include: {
+        records: {
+          take: 20,
+          orderBy: { createdAt: 'desc' }
+        },
+        discrepancies: {
+          take: 20,
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!run) {
+      throw new NotFoundError(`Reconciliation run with ID '${runId}' not found`);
+    }
+
+    return {
+      id: run.id,
+      provider: run.provider,
+      environment: run.environment,
+      periodStart: run.periodStart.toISOString(),
+      periodEnd: run.periodEnd.toISOString(),
+      status: run.status,
+      totalRecords: run.totalRecords,
+      paymentRecords: run.paymentRecords,
+      refundRecords: run.refundRecords,
+      transferRecords: run.transferRecords,
+      adjustmentRecords: run.adjustmentRecords,
+      matchedCount: run.matchedCount,
+      mismatchCount: run.mismatchCount,
+      reviewCount: run.reviewCount,
+      duplicateCount: run.duplicateCount,
+      failureCount: run.failureCount,
+      durationMs: run.durationMs,
+      startedAt: run.startedAt.toISOString(),
+      completedAt: run.completedAt ? run.completedAt.toISOString() : null,
+      createdAt: run.createdAt.toISOString(),
+      recentRecords: run.records.map(r => ({
+        id: r.id,
+        providerEntityId: r.providerEntityId,
+        entityType: r.entityType,
+        amountMinorUnits: r.amountMinorUnits,
+        currency: r.currency,
+        status: r.status,
+        settled: r.settled,
+        settledAt: r.settledAt ? r.settledAt.toISOString() : null
+      })),
+      recentDiscrepancies: run.discrepancies.map(d => ({
+        id: d.id,
+        entityType: d.entityType,
+        providerEntityId: d.providerEntityId,
+        discrepancyType: d.discrepancyType,
+        status: d.status,
+        expectedValue: d.expectedValue,
+        actualValue: d.actualValue
+      })),
+      metadata: run.metadata as Record<string, unknown> | null
+    };
+  }
+
+  /**
+   * Initiates an administrative reconciliation run across bounded date ranges and scopes.
+   * Enforces concurrency protection, idempotency, bounded provider requests, and SHA-256 audit logging.
+   */
+  static async startReconciliationRun(
+    input: AdminStartReconciliationRunInput,
+    context: AdminOperationContext
+  ): Promise<AdminStartReconciliationRunResult> {
+    const defaultEnd = new Date();
+    const defaultStart = new Date(defaultEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const start = input.startDate ? new Date(input.startDate) : defaultStart;
+    const end = input.endDate ? new Date(input.endDate) : defaultEnd;
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new ValidationError('Valid startDate and endDate in ISO 8601 format are required');
+    }
+
+    if (start > end) {
+      throw new ValidationError('startDate cannot be after endDate');
+    }
+
+    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+    if (end.getTime() - start.getTime() > ninetyDaysMs) {
+      throw new ValidationError('Reconciliation window cannot exceed 90 days');
+    }
+
+    const provider = input.provider || PaymentProvider.RAZORPAY;
+    const environment = input.environment || PaymentEnvironment.TEST;
+
+    // 1. Check for concurrent active run
+    const activeRun = await prisma.billingReconciliationRun.findFirst({
+      where: {
+        provider,
+        environment,
+        status: { in: [ReconciliationRunStatus.STARTED, ReconciliationRunStatus.IN_PROGRESS] },
+        startedAt: { gte: new Date(Date.now() - 15 * 60 * 1000) }
+      }
+    });
+
+    if (activeRun) {
+      throw new ConflictError(`Another reconciliation run (${activeRun.id}) is currently processing for provider ${provider}. Please wait for completion.`);
+    }
+
+    // 2. Execute via AdminOperationExecutor
+    return executeAdminOperation({
+      operationName: 'admin_start_reconciliation_run',
+      targetResourceType: 'billing_reconciliation_run',
+      targetResourceId: 'new',
+      context,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+      metadata: {
+        scope: input.scope,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        provider,
+        environment,
+        dryRun: input.dryRun,
+        idempotencyKey: input.idempotencyKey
+      },
+      execute: async (_tx) => {
+        const reconService = new BillingReconciliationService(prisma);
+        const run = await reconService.startReconciliationRun({
+          provider,
+          environment,
+          periodStart: start,
+          periodEnd: end,
+          metadata: {
+            scope: input.scope,
+            initiatedByAdminId: context.adminId,
+            idempotencyKey: input.idempotencyKey,
+            dryRun: input.dryRun
+          }
+        });
+
+        // Query Razorpay provider if configured
+        try {
+          const client = new RazorpayClient();
+          if (client.isConfigured() && !input.dryRun) {
+            const fromTimestamp = Math.floor(start.getTime() / 1000);
+            const toTimestamp = Math.floor(end.getTime() / 1000);
+
+            let providerRecords: any[] = [];
+            let settlements: any[] = [];
+
+            if (input.scope === 'SETTLEMENTS' || input.scope === 'FULL_BILLING') {
+              try {
+                const setlRes = await client.fetchSettlements({ from: fromTimestamp, to: toTimestamp, count: 50 });
+                settlements = (setlRes.items || []).map(s => ({
+                  settlementId: s.id,
+                  utr: s.utr || null,
+                  amountMinorUnits: s.amount || 0,
+                  feeMinorUnits: s.fees || 0,
+                  taxMinorUnits: s.tax || 0,
+                  status: s.status || 'processed',
+                  settledAt: s.created_at ? new Date(s.created_at * 1000) : new Date(),
+                  raw: s
+                }));
+              } catch (e: any) {
+                console.warn('[AdminBillingService] fetchSettlements notice:', e.message);
+              }
+            }
+
+            if (input.scope === 'PAYMENTS' || input.scope === 'REFUNDS' || input.scope === 'DATE_RANGE' || input.scope === 'FULL_BILLING') {
+              try {
+                const reconRes = await client.fetchCombinedReconRecords({ from: fromTimestamp, to: toTimestamp, count: 50 });
+                providerRecords = (reconRes.items || []).map(r => ({
+                  entityId: r.id || r.entity_id || r.payment_id,
+                  entityType: r.entity === 'refund' ? ReconciliationEntityType.REFUND : (r.entity === 'settlement' ? ReconciliationEntityType.SETTLEMENT : ReconciliationEntityType.PAYMENT),
+                  paymentId: r.payment_id || null,
+                  refundId: r.refund_id || null,
+                  settlementId: r.settlement_id || null,
+                  amountMinorUnits: r.amount || 0,
+                  currency: (r.currency || 'INR').toUpperCase() as CurrencyCode,
+                  feeMinorUnits: r.fee || r.fees || 0,
+                  taxMinorUnits: r.tax || 0,
+                  settled: Boolean(r.settled || r.settlement_id),
+                  settledAt: r.settled_at ? new Date(r.settled_at * 1000) : null,
+                  orderId: r.order_id || null,
+                  raw: r
+                }));
+              } catch (e: any) {
+                console.warn('[AdminBillingService] fetchCombinedReconRecords notice:', e.message);
+              }
+            }
+
+            await reconService.executeReconciliationBatch({
+              provider,
+              environment,
+              periodStart: start,
+              periodEnd: end,
+              providerRecords,
+              settlements,
+              metadata: { runId: run.id, scope: input.scope }
+            });
+          } else {
+            await reconService.executeReconciliationBatch({
+              provider,
+              environment,
+              periodStart: start,
+              periodEnd: end,
+              providerRecords: [],
+              settlements: [],
+              metadata: { runId: run.id, scope: input.scope, dryRun: input.dryRun }
+            });
+          }
+        } catch (batchErr: any) {
+          console.warn('[AdminBillingService] Reconciliation batch run execution error:', batchErr.message);
+        }
+
+        const updatedRun = await this.getReconciliationRunDetail(run.id);
+        return {
+          run: updatedRun,
+          idempotent: false
+        };
+      }
+    });
+  }
+
+  /**
    * Lists reconciliation discrepancies with filters.
    */
   static async listDiscrepancies(query: AdminDiscrepancyListQuery): Promise<PaginatedResult<AdminReconciliationDiscrepancySummary>> {
@@ -1391,6 +1624,213 @@ export class AdminBillingService {
     }));
 
     return createPaginatedResponse(projected, total, page, pageSize);
+  }
+
+  /**
+   * Retrieves detailed single reconciliation discrepancy information with linked payment / refund.
+   */
+  static async getDiscrepancyDetail(discrepancyId: string): Promise<AdminReconciliationDiscrepancyDetail> {
+    const disc = await prisma.billingReconciliationDiscrepancy.findUnique({
+      where: { id: discrepancyId },
+      include: {
+        run: {
+          select: {
+            id: true,
+            periodStart: true,
+            periodEnd: true,
+            status: true
+          }
+        },
+        reconciliationRecord: {
+          select: {
+            id: true,
+            providerPaymentId: true,
+            providerRefundId: true,
+            amountMinorUnits: true,
+            currency: true,
+            status: true
+          }
+        }
+      }
+    });
+
+    if (!disc) {
+      throw new NotFoundError(`Discrepancy with ID '${discrepancyId}' not found`);
+    }
+
+    let linkedPayment: AdminReconciliationDiscrepancyDetail['linkedPayment'] = null;
+    let linkedRefund: AdminReconciliationDiscrepancyDetail['linkedRefund'] = null;
+
+    if (disc.entityType === ReconciliationEntityType.PAYMENT) {
+      const p = await prisma.billingPayment.findFirst({
+        where: {
+          OR: [
+            { id: disc.internalEntityId || undefined },
+            { providerPaymentId: disc.providerEntityId }
+          ]
+        },
+        include: { user: { select: { email: true } } }
+      });
+      if (p) {
+        linkedPayment = {
+          id: p.id,
+          userId: p.userId,
+          userEmail: p.user?.email,
+          amountMinorUnits: p.amountMinorUnits,
+          currency: p.currency,
+          status: p.status,
+          chargedAt: p.chargedAt.toISOString()
+        };
+      }
+    } else if (disc.entityType === ReconciliationEntityType.REFUND) {
+      const r = await prisma.billingRefund.findFirst({
+        where: {
+          OR: [
+            { id: disc.internalEntityId || undefined },
+            { providerRefundId: disc.providerEntityId }
+          ]
+        },
+        include: { user: { select: { email: true } } }
+      });
+      if (r) {
+        linkedRefund = {
+          id: r.id,
+          userId: r.userId,
+          userEmail: r.user?.email,
+          amountMinorUnits: r.amountMinorUnits,
+          currency: r.currency,
+          status: r.status,
+          requestedAt: r.requestedAt.toISOString()
+        };
+      }
+    }
+
+    return {
+      id: disc.id,
+      runId: disc.runId,
+      provider: disc.provider,
+      entityType: disc.entityType,
+      providerEntityId: disc.providerEntityId,
+      internalEntityId: disc.internalEntityId,
+      discrepancyType: disc.discrepancyType,
+      status: disc.status,
+      expectedValue: disc.expectedValue,
+      actualValue: disc.actualValue,
+      resolutionReason: disc.resolutionReason,
+      resolvedBy: disc.resolvedBy,
+      resolvedAt: disc.resolvedAt ? disc.resolvedAt.toISOString() : null,
+      createdAt: disc.createdAt.toISOString(),
+      updatedAt: disc.updatedAt.toISOString(),
+      run: disc.run ? {
+        id: disc.run.id,
+        periodStart: disc.run.periodStart.toISOString(),
+        periodEnd: disc.run.periodEnd.toISOString(),
+        status: disc.run.status
+      } : null,
+      reconciliationRecord: disc.reconciliationRecord ? {
+        id: disc.reconciliationRecord.id,
+        providerPaymentId: disc.reconciliationRecord.providerPaymentId,
+        providerRefundId: disc.reconciliationRecord.providerRefundId,
+        amountMinorUnits: disc.reconciliationRecord.amountMinorUnits,
+        currency: disc.reconciliationRecord.currency,
+        status: disc.reconciliationRecord.status
+      } : null,
+      linkedPayment,
+      linkedRefund
+    };
+  }
+
+  /**
+   * Resolves an administrative reconciliation discrepancy with reason tracking and SHA-256 audit logging.
+   */
+  static async resolveDiscrepancy(
+    discrepancyId: string,
+    context: AdminOperationContext,
+    input: AdminResolveDiscrepancyInput
+  ): Promise<AdminResolveDiscrepancyResult> {
+    const disc = await prisma.billingReconciliationDiscrepancy.findUnique({
+      where: { id: discrepancyId }
+    });
+
+    if (!disc) {
+      throw new NotFoundError(`Discrepancy with ID '${discrepancyId}' not found`);
+    }
+
+    if (disc.status === ReconciliationStatus.RESOLVED && disc.resolutionReason === input.resolutionReason) {
+      const detail = await this.getDiscrepancyDetail(disc.id);
+      return {
+        success: true,
+        discrepancy: detail,
+        actionApplied: input.action,
+        idempotent: true
+      };
+    }
+
+    return executeAdminOperation({
+      operationName: 'admin_resolve_reconciliation_discrepancy',
+      targetResourceType: 'billing_reconciliation_discrepancy',
+      targetResourceId: discrepancyId,
+      context,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+      metadata: {
+        discrepancyId,
+        action: input.action,
+        resolutionReason: input.resolutionReason,
+        previousStatus: disc.status,
+        providerEntityId: disc.providerEntityId,
+        discrepancyType: disc.discrepancyType
+      },
+      execute: async (tx) => {
+        let newStatus: ReconciliationStatus = disc.status;
+        const now = new Date();
+
+        if (input.action === 'MARK_RESOLVED') {
+          newStatus = ReconciliationStatus.RESOLVED;
+        } else if (input.action === 'ACKNOWLEDGE') {
+          newStatus = ReconciliationStatus.REQUIRES_REVIEW;
+        } else if (input.action === 'RETRY_PROVIDER_LOOKUP') {
+          const client = new RazorpayClient();
+          if (client.isConfigured() && disc.providerEntityId) {
+            try {
+              if (disc.entityType === ReconciliationEntityType.PAYMENT) {
+                const p = await client.fetchPayment(disc.providerEntityId);
+                if (p && (p.status === 'captured' || p.status === 'refunded')) {
+                  newStatus = ReconciliationStatus.RESOLVED;
+                }
+              } else if (disc.entityType === ReconciliationEntityType.REFUND) {
+                const r = await client.fetchRefund(disc.providerEntityId);
+                if (r && r.status === 'processed') {
+                  newStatus = ReconciliationStatus.RESOLVED;
+                }
+              }
+            } catch (err: any) {
+              console.warn('[AdminBillingService] Retry provider lookup notice:', err.message);
+            }
+          }
+        } else if (input.action === 'SYNC_PROVIDER_REFERENCE') {
+          newStatus = ReconciliationStatus.RESOLVED;
+        }
+
+        const updated = await tx.billingReconciliationDiscrepancy.update({
+          where: { id: discrepancyId },
+          data: {
+            status: newStatus,
+            resolutionReason: input.resolutionReason,
+            resolvedBy: context.adminId,
+            resolvedAt: now,
+            updatedAt: now
+          }
+        });
+
+        const detail = await this.getDiscrepancyDetail(updated.id);
+        return {
+          success: true,
+          discrepancy: detail,
+          actionApplied: input.action,
+          idempotent: false
+        };
+      }
+    });
   }
 
   /**

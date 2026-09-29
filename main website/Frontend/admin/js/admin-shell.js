@@ -67,6 +67,12 @@
           label: 'Refunds & Returns',
           icon: 'rotate-ccw',
           permission: 'billing.read'
+        },
+        {
+          id: 'reconciliation',
+          label: 'Billing Reconciliation & Drift',
+          icon: 'git-compare',
+          permission: 'billing.read'
         }
       ]
     },
@@ -90,6 +96,7 @@
   ];
 
   const ICONS = {
+    'git-compare': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>',
     'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
     'dollar-sign': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     'rotate-ccw': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
@@ -128,6 +135,8 @@
       this.subscriptionState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', planCode: '' };
       this.paymentState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', currency: '' };
       this.refundState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', reason: '' };
+      this.reconciliationState = { page: 1, pageSize: 20, total: 0, items: [], status: '', activeTab: 'runs' };
+      this.discrepancyState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', discrepancyType: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -308,6 +317,7 @@
       if (rawHash === 'billing' || rawHash === 'billing-subscriptions') hash = 'subscriptions';
       if (rawHash === 'billing-payments') hash = 'payments';
       if (rawHash === 'billing-refunds') hash = 'refunds';
+      if (rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') hash = 'reconciliation';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -320,7 +330,8 @@
           (rawHash === 'roles' && itemId === 'admin-roles') ||
           ((rawHash === 'billing' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions') ||
           (rawHash === 'billing-payments' && itemId === 'payments') ||
-          (rawHash === 'billing-refunds' && itemId === 'refunds')
+          (rawHash === 'billing-refunds' && itemId === 'refunds') ||
+          ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation')
         ) {
           el.classList.add('active');
         } else {
@@ -348,7 +359,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : 'Dashboard'))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : 'Dashboard')))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -392,6 +403,11 @@
         case 'refunds':
         case 'billing-refunds':
           this._renderRefundsView(container);
+          break;
+        case 'reconciliation':
+        case 'recon':
+        case 'billing-reconciliation':
+          this._renderReconciliationView(container);
           break;
         case 'admin-roles':
         case 'roles':
@@ -3158,6 +3174,745 @@
       } catch (err) {
         this.toast(err.message || 'Provider refund sync check failed', 'danger');
       }
+    }
+
+    /* =========================================================================
+       6E. BILLING RECONCILIATION & DISCREPANCY MANAGEMENT VIEW (Phase 9 - Batch 9.4)
+       ========================================================================= */
+    _renderReconciliationView(container) {
+      const canReconcile = window.AdminAuth.hasPermission('billing.reconcile');
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Billing Reconciliation & Provider Drift Control</h1>
+            <p class="admin-view-subtitle">Audit Razorpay ledger consistency, track financial discrepancy drift, reconcile settlements, and execute resolutions.</p>
+          </div>
+          <div class="admin-view-actions">
+            ${canReconcile ? `
+              <button class="admin-btn admin-btn-primary admin-btn-sm" id="startReconRunBtn">
+                ${ICONS.play} Trigger Reconciliation Run
+              </button>
+            ` : ''}
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshReconBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-tab-nav" style="margin-bottom:1.5rem;display:flex;gap:0.5rem;border-bottom:1px solid var(--admin-border);">
+          <button class="admin-btn ${this.reconciliationState.activeTab === 'runs' ? 'admin-btn-primary' : 'admin-btn-secondary'} admin-btn-sm" id="reconTabRunsBtn">
+            Reconciliation Runs
+          </button>
+          <button class="admin-btn ${this.reconciliationState.activeTab === 'discrepancies' ? 'admin-btn-primary' : 'admin-btn-secondary'} admin-btn-sm" id="reconTabDiscrepanciesBtn">
+            Discrepancies & Drift
+          </button>
+        </div>
+
+        <div id="reconRunsTabContent" style="display:${this.reconciliationState.activeTab === 'runs' ? 'block' : 'none'};">
+          <div class="admin-filter-bar">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <select id="reconRunStatusSelect" class="admin-select">
+                <option value="" ${!this.reconciliationState.status ? 'selected' : ''}>All Run Statuses</option>
+                <option value="COMPLETED" ${this.reconciliationState.status === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+                <option value="RUNNING" ${this.reconciliationState.status === 'RUNNING' ? 'selected' : ''}>RUNNING</option>
+                <option value="FAILED" ${this.reconciliationState.status === 'FAILED' ? 'selected' : ''}>FAILED</option>
+                <option value="CANCELLED" ${this.reconciliationState.status === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="admin-table-card">
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Run ID / Scope</th>
+                    <th>Date Window</th>
+                    <th>Processed / Matched</th>
+                    <th>Discrepancies</th>
+                    <th>Settlements Matched</th>
+                    <th>Status</th>
+                    <th>Started At & By</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="reconRunTableBody">
+                  <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading reconciliation runs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="reconRunPaginationBar" class="admin-pagination-bar"></div>
+          </div>
+        </div>
+
+        <div id="reconDiscrepanciesTabContent" style="display:${this.reconciliationState.activeTab === 'discrepancies' ? 'block' : 'none'};">
+          <div class="admin-filter-bar">
+            <div class="admin-search-wrap">
+              ${ICONS.search}
+              <input type="text" id="discrepancySearchInput" class="admin-search-input" placeholder="Search by discrepancy ID, payment ID, or provider reference..." value="${this._escape(this.discrepancyState.search)}">
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <select id="discrepancyStatusSelect" class="admin-select">
+                <option value="" ${!this.discrepancyState.status ? 'selected' : ''}>All Statuses</option>
+                <option value="OPEN" ${this.discrepancyState.status === 'OPEN' ? 'selected' : ''}>OPEN</option>
+                <option value="ACKNOWLEDGED" ${this.discrepancyState.status === 'ACKNOWLEDGED' ? 'selected' : ''}>ACKNOWLEDGED</option>
+                <option value="RESOLVED" ${this.discrepancyState.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+                <option value="IGNORED" ${this.discrepancyState.status === 'IGNORED' ? 'selected' : ''}>IGNORED</option>
+              </select>
+              <select id="discrepancyTypeSelect" class="admin-select">
+                <option value="" ${!this.discrepancyState.discrepancyType ? 'selected' : ''}>All Discrepancy Types</option>
+                <option value="AMOUNT_MISMATCH" ${this.discrepancyState.discrepancyType === 'AMOUNT_MISMATCH' ? 'selected' : ''}>AMOUNT_MISMATCH</option>
+                <option value="STATUS_MISMATCH" ${this.discrepancyState.discrepancyType === 'STATUS_MISMATCH' ? 'selected' : ''}>STATUS_MISMATCH</option>
+                <option value="MISSING_IN_LOCAL" ${this.discrepancyState.discrepancyType === 'MISSING_IN_LOCAL' ? 'selected' : ''}>MISSING_IN_LOCAL</option>
+                <option value="MISSING_IN_PROVIDER" ${this.discrepancyState.discrepancyType === 'MISSING_IN_PROVIDER' ? 'selected' : ''}>MISSING_IN_PROVIDER</option>
+                <option value="SETTLEMENT_MISMATCH" ${this.discrepancyState.discrepancyType === 'SETTLEMENT_MISMATCH' ? 'selected' : ''}>SETTLEMENT_MISMATCH</option>
+                <option value="FEE_MISMATCH" ${this.discrepancyState.discrepancyType === 'FEE_MISMATCH' ? 'selected' : ''}>FEE_MISMATCH</option>
+                <option value="REFUND_MISMATCH" ${this.discrepancyState.discrepancyType === 'REFUND_MISMATCH' ? 'selected' : ''}>REFUND_MISMATCH</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="admin-table-card">
+            <div class="admin-table-wrap">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Discrepancy / Type</th>
+                    <th>Severity</th>
+                    <th>Entity Reference</th>
+                    <th>Local vs Provider Detail</th>
+                    <th>Lifecycle Status</th>
+                    <th>Discovered At</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="discrepancyTableBody">
+                  <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading discrepancies...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="discrepancyPaginationBar" class="admin-pagination-bar"></div>
+          </div>
+        </div>
+      `;
+
+      const startRunBtn = document.getElementById('startReconRunBtn');
+      const refreshBtn = document.getElementById('refreshReconBtn');
+      const tabRunsBtn = document.getElementById('reconTabRunsBtn');
+      const tabDiscrepanciesBtn = document.getElementById('reconTabDiscrepanciesBtn');
+      const runsContent = document.getElementById('reconRunsTabContent');
+      const discrepanciesContent = document.getElementById('reconDiscrepanciesTabContent');
+
+      if (startRunBtn) {
+        startRunBtn.addEventListener('click', () => this.showStartReconciliationModal());
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          if (this.reconciliationState.activeTab === 'runs') {
+            this.loadReconciliationRuns();
+          } else {
+            this.loadDiscrepancies();
+          }
+        });
+      }
+
+      if (tabRunsBtn && tabDiscrepanciesBtn) {
+        tabRunsBtn.addEventListener('click', () => {
+          this.reconciliationState.activeTab = 'runs';
+          tabRunsBtn.className = 'admin-btn admin-btn-primary admin-btn-sm';
+          tabDiscrepanciesBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+          runsContent.style.display = 'block';
+          discrepanciesContent.style.display = 'none';
+          this.loadReconciliationRuns();
+        });
+
+        tabDiscrepanciesBtn.addEventListener('click', () => {
+          this.reconciliationState.activeTab = 'discrepancies';
+          tabDiscrepanciesBtn.className = 'admin-btn admin-btn-primary admin-btn-sm';
+          tabRunsBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+          discrepanciesContent.style.display = 'block';
+          runsContent.style.display = 'none';
+          this.loadDiscrepancies();
+        });
+      }
+
+      const runStatusSelect = document.getElementById('reconRunStatusSelect');
+      if (runStatusSelect) {
+        runStatusSelect.addEventListener('change', (e) => {
+          this.reconciliationState.status = e.target.value;
+          this.reconciliationState.page = 1;
+          this.loadReconciliationRuns();
+        });
+      }
+
+      const discSearchInput = document.getElementById('discrepancySearchInput');
+      const discStatusSelect = document.getElementById('discrepancyStatusSelect');
+      const discTypeSelect = document.getElementById('discrepancyTypeSelect');
+
+      let discDebounce = null;
+      if (discSearchInput) {
+        discSearchInput.addEventListener('input', (e) => {
+          clearTimeout(discDebounce);
+          discDebounce = setTimeout(() => {
+            this.discrepancyState.search = e.target.value.trim();
+            this.discrepancyState.page = 1;
+            this.loadDiscrepancies();
+          }, 300);
+        });
+      }
+
+      if (discStatusSelect) {
+        discStatusSelect.addEventListener('change', (e) => {
+          this.discrepancyState.status = e.target.value;
+          this.discrepancyState.page = 1;
+          this.loadDiscrepancies();
+        });
+      }
+
+      if (discTypeSelect) {
+        discTypeSelect.addEventListener('change', (e) => {
+          this.discrepancyState.discrepancyType = e.target.value;
+          this.discrepancyState.page = 1;
+          this.loadDiscrepancies();
+        });
+      }
+
+      if (this.reconciliationState.activeTab === 'runs') {
+        this.loadReconciliationRuns();
+      } else {
+        this.loadDiscrepancies();
+      }
+    }
+
+    async loadReconciliationRuns() {
+      const tbody = document.getElementById('reconRunTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading reconciliation runs...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: this.reconciliationState.page.toString(),
+          pageSize: this.reconciliationState.pageSize.toString()
+        });
+        if (this.reconciliationState.status) queryParams.set('status', this.reconciliationState.status);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/reconciliation/runs?${queryParams.toString()}`);
+        const data = res.data;
+        this.reconciliationState.items = data.items || [];
+        this.reconciliationState.total = data.total || 0;
+
+        if (this.reconciliationState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8">
+                <div class="admin-empty-box">
+                  ${ICONS['git-compare']}
+                  <div class="admin-empty-title">No reconciliation runs found</div>
+                  <div class="admin-empty-desc">Trigger a batch reconciliation run to verify payment/refund ledger integrity against Razorpay.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('reconRunPaginationBar', this.reconciliationState, (p) => { this.reconciliationState.page = p; this.loadReconciliationRuns(); });
+          return;
+        }
+
+        tbody.innerHTML = this.reconciliationState.items.map(run => {
+          const windowStart = run.windowStart ? new Date(run.windowStart).toLocaleDateString() : (run.startDate ? new Date(run.startDate).toLocaleDateString() : '—');
+          const windowEnd = run.windowEnd ? new Date(run.windowEnd).toLocaleDateString() : (run.endDate ? new Date(run.endDate).toLocaleDateString() : '—');
+          const discCount = run.discrepancyCount ?? (run._count ? run._count.discrepancies : 0);
+          const discBadge = discCount > 0
+            ? `<span class="admin-badge admin-badge-warning">${discCount} Drifts</span>`
+            : `<span class="admin-badge admin-badge-success">0 Drifts</span>`;
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);"><code class="admin-code-pill">${this._escape(run.id.substring(0, 10))}...</code></strong>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(run.scope || 'FULL_BILLING')}</div>
+              </td>
+              <td style="font-size:0.8125rem;">${windowStart} &rarr; ${windowEnd}</td>
+              <td style="font-size:0.8125rem;">
+                <strong>${run.totalProcessed ?? run.recordsProcessed ?? 0}</strong> processed
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">${run.matchedCount ?? 0} exact matches</div>
+              </td>
+              <td>${discBadge}</td>
+              <td style="font-size:0.8125rem;">
+                <strong>${run.settlementsMatched ?? 0}</strong> matched
+              </td>
+              <td>${this._renderStatusBadge(run.status)}</td>
+              <td style="font-size:0.8125rem;">
+                <div>${this._escape(run.startedBy || 'SYSTEM')}</div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">${run.createdAt ? new Date(run.createdAt).toLocaleString() : '—'}</div>
+              </td>
+              <td style="text-align:right;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectReconciliationRun('${run.id}')" title="Inspect run results & discrepancies">
+                  ${ICONS.eye} Inspect
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('reconRunPaginationBar', this.reconciliationState, (p) => { this.reconciliationState.page = p; this.loadReconciliationRuns(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load reconciliation runs')}</td></tr>`;
+      }
+    }
+
+    async inspectReconciliationRun(runId) {
+      try {
+        const res = await window.AdminApi.get(`/admin/operations/billing/reconciliation/runs/${runId}`);
+        const run = res.data;
+
+        const windowStart = run.windowStart ? new Date(run.windowStart).toLocaleString() : (run.startDate ? new Date(run.startDate).toLocaleString() : '—');
+        const windowEnd = run.windowEnd ? new Date(run.windowEnd).toLocaleString() : (run.endDate ? new Date(run.endDate).toLocaleString() : '—');
+        const durationSec = run.completedAt && run.createdAt ? Math.round((new Date(run.completedAt).getTime() - new Date(run.createdAt).getTime()) / 1000) : null;
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Reconciliation Run Telemetry</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Run ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(run.id)}</code></span>
+              <span class="admin-property-label">Scope:</span>
+              <span class="admin-property-value"><strong>${this._escape(run.scope || 'FULL_BILLING')}</strong></span>
+              <span class="admin-property-label">Execution Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(run.status)}</span>
+              <span class="admin-property-label">Time Window:</span>
+              <span class="admin-property-value">${windowStart} &rarr; ${windowEnd}</span>
+              <span class="admin-property-label">Records Processed:</span>
+              <span class="admin-property-value"><strong>${run.totalProcessed ?? run.recordsProcessed ?? 0}</strong></span>
+              <span class="admin-property-label">Matched Cleanly:</span>
+              <span class="admin-property-value"><strong style="color:var(--admin-success);">${run.matchedCount ?? 0}</strong></span>
+              <span class="admin-property-label">Discrepancies Flagged:</span>
+              <span class="admin-property-value"><strong style="color:${(run.discrepancyCount || 0) > 0 ? 'var(--admin-warning)' : 'var(--admin-success)'};">${run.discrepancyCount ?? 0}</strong></span>
+              <span class="admin-property-label">Settlements Reconciled:</span>
+              <span class="admin-property-value"><strong>${run.settlementsMatched ?? 0}</strong></span>
+              <span class="admin-property-label">Execution Duration:</span>
+              <span class="admin-property-value">${durationSec !== null ? durationSec + ' seconds' : 'In Progress / N/A'}</span>
+              <span class="admin-property-label">Triggered By:</span>
+              <span class="admin-property-value">${this._escape(run.startedBy || 'SYSTEM')}</span>
+            </div>
+          </div>
+
+          ${run.discrepancies && run.discrepancies.length > 0 ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Detected Drift / Discrepancies (${run.discrepancies.length})</div>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                ${run.discrepancies.map(d => `
+                  <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                      <div style="font-size:0.875rem;font-weight:600;">${this._escape(d.discrepancyType || d.type)} &bull; <span style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(d.id.substring(0, 8))}...</span></div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">${this._escape(d.details || d.description || 'Drift detected')}</div>
+                    </div>
+                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectDiscrepancy('${d.id}')">
+                      ${ICONS.eye} Inspect
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : `
+            <div class="admin-drawer-section">
+              <div style="background:var(--admin-success-subtle);border-left:3px solid var(--admin-success);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-size:0.8125rem;color:var(--admin-success);">
+                <strong>Audit Result:</strong> Zero discrepancies or financial drift identified for this run window.
+              </div>
+            </div>
+          `}
+        `;
+
+        this._showDrawer(`Reconciliation Run: ${run.id.substring(0, 12)}...`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect reconciliation run', 'danger');
+      }
+    }
+
+    showStartReconciliationModal() {
+      const existing = document.getElementById('adminConfirmModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminConfirmModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      // Default start date = 7 days ago, end date = now
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const defaultStart = sevenDaysAgo.toISOString().split('T')[0];
+      const defaultEnd = now.toISOString().split('T')[0];
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" style="max-width:540px;">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Trigger Administrative Reconciliation Run</h3>
+            <button class="admin-btn-icon" id="adminModalCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <p style="margin-bottom:1rem;font-size:0.875rem;">
+              Execute batch audit comparing local customer billing ledgers against upstream Razorpay provider settlements and transactions.
+            </p>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Reconciliation Scope:
+              </label>
+              <select id="adminReconScopeSelect" class="admin-select" style="width:100%;">
+                <option value="FULL_BILLING">FULL_BILLING (All Payments, Refunds & Settlements)</option>
+                <option value="DATE_RANGE">DATE_RANGE (Bounded Time Window)</option>
+                <option value="PAYMENTS">PAYMENTS (Payment Transactions Only)</option>
+                <option value="REFUNDS">REFUNDS (Refund Transactions Only)</option>
+                <option value="SETTLEMENTS">SETTLEMENTS (Provider Settlement Matching)</option>
+              </select>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;">
+              <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                  Window Start:
+                </label>
+                <input type="date" id="adminReconStartDateInput" class="admin-search-input" value="${defaultStart}" style="padding-left:0.875rem;">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                  Window End:
+                </label>
+                <input type="date" id="adminReconEndDateInput" class="admin-search-input" value="${defaultEnd}" style="padding-left:0.875rem;">
+              </div>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Administrative Notes / Audit Reason:
+              </label>
+              <input type="text" id="adminReconNotesInput" class="admin-search-input" maxlength="255" placeholder="e.g. Monthly close reconciliation, audit check..." style="padding-left:0.875rem;">
+            </div>
+
+            <div style="background:var(--admin-warning-subtle);border-left:3px solid var(--admin-warning);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-size:0.8125rem;color:var(--admin-warning);">
+              <strong>Notice:</strong> Reconciliation runs query upstream provider APIs and are concurrency-locked. Maximum allowed query window is 90 days.
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminModalCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="adminModalConfirmStartBtn">Start Reconciliation</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminModalCloseBtn');
+      const cancelBtn = document.getElementById('adminModalCancelBtn');
+      const confirmBtn = document.getElementById('adminModalConfirmStartBtn');
+      const scopeSelect = document.getElementById('adminReconScopeSelect');
+      const startInput = document.getElementById('adminReconStartDateInput');
+      const endInput = document.getElementById('adminReconEndDateInput');
+      const notesInput = document.getElementById('adminReconNotesInput');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          const scope = scopeSelect.value;
+          const startDate = startInput.value ? new Date(startInput.value).toISOString() : undefined;
+          const endDate = endInput.value ? new Date(endInput.value + 'T23:59:59.999Z').toISOString() : undefined;
+          const reason = notesInput ? notesInput.value.trim() : '';
+
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Triggering Run...';
+
+          try {
+            await window.AdminApi.post('/admin/operations/billing/reconciliation/runs', {
+              scope,
+              startDate,
+              endDate,
+              notes: reason || undefined
+            });
+
+            this.toast('Reconciliation run started successfully.', 'success');
+            closeModal();
+            this.loadReconciliationRuns();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Start Reconciliation';
+            this.toast(err.message || 'Failed to start reconciliation run', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    async loadDiscrepancies() {
+      const tbody = document.getElementById('discrepancyTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading discrepancies...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: this.discrepancyState.page.toString(),
+          pageSize: this.discrepancyState.pageSize.toString()
+        });
+        if (this.discrepancyState.search) queryParams.set('search', this.discrepancyState.search);
+        if (this.discrepancyState.status) queryParams.set('status', this.discrepancyState.status);
+        if (this.discrepancyState.discrepancyType) queryParams.set('discrepancyType', this.discrepancyState.discrepancyType);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/reconciliation/discrepancies?${queryParams.toString()}`);
+        const data = res.data;
+        this.discrepancyState.items = data.items || [];
+        this.discrepancyState.total = data.total || 0;
+
+        if (this.discrepancyState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="admin-empty-box">
+                  ${ICONS['git-compare']}
+                  <div class="admin-empty-title">No discrepancies found</div>
+                  <div class="admin-empty-desc">No local-vs-provider financial drift matches your filter criteria.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('discrepancyPaginationBar', this.discrepancyState, (p) => { this.discrepancyState.page = p; this.loadDiscrepancies(); });
+          return;
+        }
+
+        tbody.innerHTML = this.discrepancyState.items.map(d => {
+          const type = d.discrepancyType || d.type || 'UNKNOWN';
+          const severity = d.severity || 'MEDIUM';
+          let sevBadge = `<span class="admin-badge admin-badge-neutral">${severity}</span>`;
+          if (severity === 'CRITICAL' || severity === 'HIGH') sevBadge = `<span class="admin-badge admin-badge-danger">${severity}</span>`;
+          if (severity === 'MEDIUM') sevBadge = `<span class="admin-badge admin-badge-warning">${severity}</span>`;
+          if (severity === 'LOW') sevBadge = `<span class="admin-badge admin-badge-info">${severity}</span>`;
+
+          const entityRef = d.paymentId ? `Pay: ${d.paymentId.substring(0, 8)}...` : (d.providerPaymentId ? `Prov: ${d.providerPaymentId.substring(0, 10)}...` : (d.providerSubscriptionId ? `Sub: ${d.providerSubscriptionId.substring(0, 10)}...` : 'N/A'));
+          const userEmail = d.payment && d.payment.user ? d.payment.user.email : (d.userEmail || '');
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);">${this._escape(type)}</strong>
+                <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(d.id.substring(0, 12))}...</div>
+              </td>
+              <td>${sevBadge}</td>
+              <td style="font-size:0.8125rem;">
+                <div>${this._escape(entityRef)}</div>
+                ${userEmail ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(userEmail)}</div>` : ''}
+              </td>
+              <td style="font-size:0.8125rem;max-width:260px;">
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${this._escape(d.details || d.description || '')}">
+                  ${this._escape(d.details || d.description || 'Drift detected')}
+                </div>
+              </td>
+              <td>${this._renderStatusBadge(d.status)}</td>
+              <td style="font-size:0.8125rem;">
+                <div>${d.createdAt ? new Date(d.createdAt).toLocaleDateString() : '—'}</div>
+              </td>
+              <td style="text-align:right;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectDiscrepancy('${d.id}')" title="Inspect discrepancy details">
+                  ${ICONS.eye} Inspect
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('discrepancyPaginationBar', this.discrepancyState, (p) => { this.discrepancyState.page = p; this.loadDiscrepancies(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load discrepancies')}</td></tr>`;
+      }
+    }
+
+    async inspectDiscrepancy(discId) {
+      try {
+        const res = await window.AdminApi.get(`/admin/operations/billing/reconciliation/discrepancies/${discId}`);
+        const d = res.data;
+        const canReconcile = window.AdminAuth.hasPermission('billing.reconcile');
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Discrepancy Inspection</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Discrepancy ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(d.id)}</code></span>
+              <span class="admin-property-label">Discrepancy Type:</span>
+              <span class="admin-property-value"><strong>${this._escape(d.discrepancyType || d.type)}</strong></span>
+              <span class="admin-property-label">Severity Level:</span>
+              <span class="admin-property-value"><strong>${this._escape(d.severity || 'MEDIUM')}</strong></span>
+              <span class="admin-property-label">Lifecycle Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(d.status)}</span>
+              <span class="admin-property-label">Discovered At:</span>
+              <span class="admin-property-value">${d.createdAt ? new Date(d.createdAt).toLocaleString() : '—'}</span>
+              <span class="admin-property-label">Resolved At:</span>
+              <span class="admin-property-value">${d.resolvedAt ? new Date(d.resolvedAt).toLocaleString() : 'Open / Unresolved'}</span>
+              <span class="admin-property-label">Resolved By:</span>
+              <span class="admin-property-value">${this._escape(d.resolvedBy || 'None')}</span>
+              <span class="admin-property-label">Resolution Notes:</span>
+              <span class="admin-property-value">${this._escape(d.resolutionNotes || d.notes || 'None recorded')}</span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Drift Comparison</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Local Amount:</span>
+              <span class="admin-property-value"><strong>${d.localAmountMinorUnits !== null && d.localAmountMinorUnits !== undefined ? (d.localAmountMinorUnits / 100).toFixed(2) : '—'}</strong></span>
+              <span class="admin-property-label">Provider Amount:</span>
+              <span class="admin-property-value"><strong>${d.providerAmountMinorUnits !== null && d.providerAmountMinorUnits !== undefined ? (d.providerAmountMinorUnits / 100).toFixed(2) : '—'}</strong></span>
+              <span class="admin-property-label">Local Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(d.localStatus)}</span>
+              <span class="admin-property-label">Provider Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(d.providerStatus)}</span>
+            </div>
+            <div style="margin-top:0.75rem;">
+              <span style="font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);display:block;margin-bottom:0.25rem;">Drift Details:</span>
+              <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);font-size:0.8125rem;">
+                ${this._escape(d.details || d.description || 'No additional narrative.')}
+              </div>
+            </div>
+          </div>
+
+          ${d.payment ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Associated Local Payment</div>
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Payment ID:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(d.payment.id)}</code></span>
+                <span class="admin-property-label">Customer Email:</span>
+                <span class="admin-property-value"><strong>${this._escape(d.payment.userEmail || (d.payment.user ? d.payment.user.email : 'N/A'))}</strong></span>
+                <span class="admin-property-label">Recorded Amount:</span>
+                <span class="admin-property-value">${(d.payment.amountMinorUnits / 100).toFixed(2)} ${this._escape(d.payment.currency || 'INR')}</span>
+                <span class="admin-property-label">Provider Ref:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(d.payment.providerPaymentId || 'None')}</code></span>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            ${canReconcile && d.status !== 'RESOLVED' ? `
+              <button class="admin-btn admin-btn-primary" onclick="AdminShell.showResolveDiscrepancyModal('${d.id}')">
+                Resolve Discrepancy
+              </button>
+            ` : ''}
+          </div>
+        `;
+
+        this._showDrawer(`Discrepancy: ${d.discrepancyType || d.type} (${d.id.substring(0, 10)}...)`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect discrepancy', 'danger');
+      }
+    }
+
+    showResolveDiscrepancyModal(discrepancyId) {
+      const existing = document.getElementById('adminConfirmModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminConfirmModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" style="max-width:540px;">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Resolve Billing Discrepancy</h3>
+            <button class="admin-btn-icon" id="adminModalCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <p style="margin-bottom:1rem;font-size:0.875rem;">
+              Select an administrative resolution strategy for discrepancy <code>${this._escape(discrepancyId)}</code>.
+            </p>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Resolution Action:
+              </label>
+              <select id="adminResolveActionSelect" class="admin-select" style="width:100%;">
+                <option value="MARK_RESOLVED">MARK_RESOLVED (Acknowledge & Mark Resolved in Audit Chain)</option>
+                <option value="ACKNOWLEDGE">ACKNOWLEDGE (Acknowledge Drift Under Investigation)</option>
+                <option value="RETRY_PROVIDER_LOOKUP">RETRY_PROVIDER_LOOKUP (Re-query Razorpay Upstream API)</option>
+                <option value="SYNC_PROVIDER_REFERENCE">SYNC_PROVIDER_REFERENCE (Update Local Payment Provider Ref)</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Resolution Notes / Explanation:
+              </label>
+              <textarea id="adminResolveNotesInput" class="admin-search-input" rows="3" placeholder="Provide justification for resolution (e.g. Razorpay payment ID verified, fee variance accepted...)" style="padding:0.5rem 0.875rem;height:auto;resize:vertical;"></textarea>
+            </div>
+
+            <div style="background:var(--admin-warning-subtle);border-left:3px solid var(--admin-warning);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-size:0.8125rem;color:var(--admin-warning);">
+              <strong>Notice:</strong> Resolving a discrepancy creates an immutable, SHA-256 chained entry in the security audit logs.
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminModalCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="adminModalConfirmResolveBtn">Apply Resolution</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminModalCloseBtn');
+      const cancelBtn = document.getElementById('adminModalCancelBtn');
+      const confirmBtn = document.getElementById('adminModalConfirmResolveBtn');
+      const actionSelect = document.getElementById('adminResolveActionSelect');
+      const notesInput = document.getElementById('adminResolveNotesInput');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          const action = actionSelect.value;
+          const notes = notesInput ? notesInput.value.trim() : '';
+
+          if (!notes) {
+            this.toast('Resolution notes are required.', 'danger');
+            return;
+          }
+
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Applying...';
+
+          try {
+            await window.AdminApi.post(`/admin/operations/billing/reconciliation/discrepancies/${discrepancyId}/resolve`, {
+              action,
+              notes
+            });
+
+            this.toast('Discrepancy resolved successfully.', 'success');
+            closeModal();
+            this._closeDrawer();
+            this.loadDiscrepancies();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Apply Resolution';
+            this.toast(err.message || 'Failed to resolve discrepancy', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
     }
 
     _renderForbiddenView(item) {

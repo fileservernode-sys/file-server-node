@@ -511,3 +511,90 @@ export interface AdminExecuteRefundResult {
   idempotent?: boolean;
 }
 
+export interface AdminReconciliationRunDetail extends AdminReconciliationRunSummary {
+  recentRecords: Array<{
+    id: string;
+    providerEntityId: string;
+    entityType: ReconciliationEntityType;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: ReconciliationStatus;
+    settled: boolean;
+    settledAt: string | null;
+  }>;
+  recentDiscrepancies: Array<{
+    id: string;
+    entityType: ReconciliationEntityType;
+    providerEntityId: string;
+    discrepancyType: ReconciliationDiscrepancyType;
+    status: ReconciliationStatus;
+    expectedValue: string | null;
+    actualValue: string | null;
+  }>;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface AdminStartReconciliationRunBody {
+  scope?: 'DATE_RANGE' | 'PAYMENTS' | 'REFUNDS' | 'SETTLEMENTS' | 'FULL_BILLING';
+  startDate: string;
+  endDate: string;
+  provider?: PaymentProvider;
+  environment?: PaymentEnvironment;
+  idempotencyKey?: string;
+  dryRun?: boolean;
+}
+
+export interface AdminStartReconciliationRunResult {
+  run: AdminReconciliationRunSummary | AdminReconciliationRunDetail;
+  idempotent?: boolean;
+  activeRunDetected?: boolean;
+}
+
+export interface AdminReconciliationDiscrepancyDetail extends AdminReconciliationDiscrepancySummary {
+  run: {
+    id: string;
+    periodStart: string;
+    periodEnd: string;
+    status: ReconciliationRunStatus;
+  } | null;
+  reconciliationRecord: {
+    id: string;
+    providerPaymentId: string | null;
+    providerRefundId: string | null;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: ReconciliationStatus;
+  } | null;
+  linkedPayment: {
+    id: string;
+    userId: string;
+    userEmail?: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: PaymentStatus;
+    chargedAt: string;
+  } | null;
+  linkedRefund: {
+    id: string;
+    userId: string;
+    userEmail?: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: RefundStatus;
+    requestedAt: string;
+  } | null;
+}
+
+export interface AdminResolveDiscrepancyBody {
+  action: 'ACKNOWLEDGE' | 'RETRY_PROVIDER_LOOKUP' | 'MARK_RESOLVED' | 'SYNC_PROVIDER_REFERENCE';
+  resolutionReason: string;
+  idempotencyKey?: string;
+}
+
+export interface AdminResolveDiscrepancyResult {
+  success: boolean;
+  discrepancy: AdminReconciliationDiscrepancyDetail | AdminReconciliationDiscrepancySummary;
+  actionApplied: string;
+  idempotent?: boolean;
+}
+

@@ -12,7 +12,9 @@ import {
   AdminDiscrepancyListQuerySchema,
   AdminPlanListQuerySchema,
   AdminCancelSubscriptionSchema,
-  AdminExecuteRefundSchema
+  AdminExecuteRefundSchema,
+  AdminStartReconciliationRunSchema,
+  AdminResolveDiscrepancySchema
 } from './schemas.js';
 
 export * from './types.js';
@@ -334,12 +336,12 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
   /**
    * GET /api/v1/admin/operations/billing/reconciliation/runs
    * Lists batch reconciliation runs with filters and pagination.
-   * Permission required: 'billing.reconcile'
+   * Permission required: 'billing.read'
    */
   app.get(
     '/admin/operations/billing/reconciliation/runs',
     {
-      preHandler: [adminAuthenticate, requireOperationPermission('billing.reconcile')]
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const parsed = AdminReconciliationRunListQuerySchema.safeParse(request.query);
@@ -353,14 +355,57 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
   );
 
   /**
+   * GET /api/v1/admin/operations/billing/reconciliation/runs/:id
+   * Inspects detailed state of a reconciliation run, records summary, and detected discrepancies.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/reconciliation/runs/:id',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Run ID is required');
+      }
+
+      const result = await AdminBillingService.getReconciliationRunDetail(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/billing/reconciliation/runs
+   * Triggers a new administrative billing reconciliation run.
+   * Permission required: 'billing.reconcile'
+   */
+  app.post(
+    '/admin/operations/billing/reconciliation/runs',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = AdminStartReconciliationRunSchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid reconciliation run parameters');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.startReconciliationRun(parsed.data, context);
+      return reply.status(201).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
    * GET /api/v1/admin/operations/billing/reconciliation/discrepancies
    * Lists identified reconciliation discrepancies with granular filters.
-   * Permission required: 'billing.reconcile'
+   * Permission required: 'billing.read'
    */
   app.get(
     '/admin/operations/billing/reconciliation/discrepancies',
     {
-      preHandler: [adminAuthenticate, requireOperationPermission('billing.reconcile')]
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const parsed = AdminDiscrepancyListQuerySchema.safeParse(request.query);
@@ -369,6 +414,54 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
       }
 
       const result = await AdminBillingService.listDiscrepancies(parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/reconciliation/discrepancies/:id
+   * Inspects detailed state of a reconciliation discrepancy with contextual payment/refund details.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/reconciliation/discrepancies/:id',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Discrepancy ID is required');
+      }
+
+      const result = await AdminBillingService.getDiscrepancyDetail(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/billing/reconciliation/discrepancies/:id/resolve
+   * Safely resolves or updates an identified reconciliation discrepancy with complete audit trail.
+   * Permission required: 'billing.reconcile'
+   */
+  app.post(
+    '/admin/operations/billing/reconciliation/discrepancies/:id/resolve',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Discrepancy ID is required');
+      }
+
+      const parsed = AdminResolveDiscrepancySchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid discrepancy resolution parameters');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.resolveDiscrepancy(id, context, parsed.data);
       return reply.status(200).send(createSuccessResponse(result));
     }
   );

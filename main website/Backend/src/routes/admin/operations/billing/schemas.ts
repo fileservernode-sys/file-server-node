@@ -112,4 +112,30 @@ export const AdminExecuteRefundSchema = z.object({
 
 export type AdminExecuteRefundInput = z.infer<typeof AdminExecuteRefundSchema>;
 
+export const AdminStartReconciliationRunSchema = z.object({
+  scope: z.enum(['DATE_RANGE', 'PAYMENTS', 'REFUNDS', 'SETTLEMENTS', 'FULL_BILLING']).default('FULL_BILLING'),
+  startDate: z.string().trim().datetime({ offset: true }).or(z.string().datetime()).optional(),
+  endDate: z.string().trim().datetime({ offset: true }).or(z.string().datetime()).optional(),
+  provider: z.nativeEnum(PaymentProvider).default(PaymentProvider.RAZORPAY),
+  environment: z.nativeEnum(PaymentEnvironment).optional(),
+  idempotencyKey: z.string().trim().min(5).max(128).optional(),
+  dryRun: z.boolean().optional(),
+  notes: z.string().trim().max(500).optional()
+});
+
+export type AdminStartReconciliationRunInput = z.infer<typeof AdminStartReconciliationRunSchema>;
+
+export const AdminResolveDiscrepancySchema = z.object({
+  action: z.enum(['ACKNOWLEDGE', 'RETRY_PROVIDER_LOOKUP', 'MARK_RESOLVED', 'SYNC_PROVIDER_REFERENCE']),
+  resolutionReason: z.string().trim().min(3, 'Resolution reason must be at least 3 characters').max(500, 'Resolution reason cannot exceed 500 characters').optional(),
+  notes: z.string().trim().min(3).max(500).optional(),
+  idempotencyKey: z.string().trim().min(5).max(128).optional()
+}).refine(data => !!(data.resolutionReason || data.notes), {
+  message: 'Either resolutionReason or notes must be provided (min 3 characters)',
+  path: ['notes']
+});
+
+export type AdminResolveDiscrepancyInput = z.infer<typeof AdminResolveDiscrepancySchema>;
+
+
 
