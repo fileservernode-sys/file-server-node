@@ -48,6 +48,17 @@
       ]
     },
     {
+      group: 'Commercial & Billing',
+      items: [
+        {
+          id: 'subscriptions',
+          label: 'Subscriptions & Dunning',
+          icon: 'credit-card',
+          permission: 'billing.read'
+        }
+      ]
+    },
+    {
       group: 'Security & Access',
       items: [
         {
@@ -67,6 +78,7 @@
   ];
 
   const ICONS = {
+    'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>',
@@ -99,6 +111,7 @@
       this.serverState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.gatewayState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.connectionsState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
+      this.subscriptionState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', planCode: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -276,12 +289,13 @@
       if (rawHash === 'customers') hash = 'users';
       if (rawHash === 'audit') hash = 'audit-logs';
       if (rawHash === 'roles') hash = 'admin-roles';
+      if (rawHash === 'billing' || rawHash === 'billing-subscriptions') hash = 'subscriptions';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
       navItems.forEach(el => {
         const itemId = el.getAttribute('data-id');
-        if (itemId === hash || (rawHash === 'customers' && itemId === 'users') || (rawHash === 'audit' && itemId === 'audit-logs') || (rawHash === 'roles' && itemId === 'admin-roles')) {
+        if (itemId === hash || (rawHash === 'customers' && itemId === 'users') || (rawHash === 'audit' && itemId === 'audit-logs') || (rawHash === 'roles' && itemId === 'admin-roles') || ((rawHash === 'billing' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions')) {
           el.classList.add('active');
         } else {
           el.classList.remove('active');
@@ -306,7 +320,7 @@
       const breadcrumbItem = document.getElementById('adminBreadcrumbCurrent');
       if (breadcrumbGroup && breadcrumbItem) {
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
-        breadcrumbItem.textContent = currentItem ? currentItem.label : (hash === 'users' ? 'Customer Accounts' : 'Dashboard');
+        breadcrumbItem.textContent = currentItem ? currentItem.label : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : 'Dashboard'));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -337,6 +351,11 @@
           break;
         case 'gateway':
           this._renderGatewayView(container);
+          break;
+        case 'subscriptions':
+        case 'billing':
+        case 'billing-subscriptions':
+          this._renderSubscriptionsView(container);
           break;
         case 'admin-roles':
         case 'roles':
@@ -1915,6 +1934,439 @@
         this.toast('Audit export downloaded successfully.', 'success');
       } catch (err) {
         this.toast(err.message || 'Audit export failed', 'danger');
+      }
+    }
+
+    /* =========================================================================
+       6B. SUBSCRIPTIONS & DUNNING MANAGEMENT VIEW (Phase 9 - Batch 9.2)
+       ========================================================================= */
+    _renderSubscriptionsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Subscriptions & Dunning Operations</h1>
+            <p class="admin-view-subtitle">Inspect subscription lifecycles, monitor dunning grace periods, diagnose provider sync, and execute safe lifecycle actions.</p>
+          </div>
+          <div class="admin-view-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshSubscriptionsBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-filter-bar">
+          <div class="admin-search-wrap">
+            ${ICONS.search}
+            <input type="text" id="subscriptionSearchInput" class="admin-search-input" placeholder="Search by email, subscription ID, or customer ID..." value="${this._escape(this.subscriptionState.search)}">
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <select id="subscriptionPlanSelect" class="admin-select">
+              <option value="" ${!this.subscriptionState.planCode ? 'selected' : ''}>All Plans</option>
+              <option value="FREE" ${this.subscriptionState.planCode === 'FREE' ? 'selected' : ''}>FREE</option>
+              <option value="PRO_MONTHLY" ${this.subscriptionState.planCode === 'PRO_MONTHLY' ? 'selected' : ''}>PRO_MONTHLY</option>
+              <option value="PRO_YEARLY" ${this.subscriptionState.planCode === 'PRO_YEARLY' ? 'selected' : ''}>PRO_YEARLY</option>
+            </select>
+            <select id="subscriptionStatusSelect" class="admin-select">
+              <option value="" ${!this.subscriptionState.status ? 'selected' : ''}>All Statuses</option>
+              <option value="ACTIVE" ${this.subscriptionState.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+              <option value="PAST_DUE" ${this.subscriptionState.status === 'PAST_DUE' ? 'selected' : ''}>PAST_DUE</option>
+              <option value="GRACE_PERIOD" ${this.subscriptionState.status === 'GRACE_PERIOD' ? 'selected' : ''}>GRACE_PERIOD</option>
+              <option value="CANCELLING" ${this.subscriptionState.status === 'CANCELLING' ? 'selected' : ''}>CANCELLING</option>
+              <option value="EXPIRED" ${this.subscriptionState.status === 'EXPIRED' ? 'selected' : ''}>EXPIRED</option>
+              <option value="UNPAID" ${this.subscriptionState.status === 'UNPAID' ? 'selected' : ''}>UNPAID</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Customer / ID</th>
+                  <th>Plan & Price</th>
+                  <th>Interval</th>
+                  <th>Lifecycle Status</th>
+                  <th>Dunning & Grace</th>
+                  <th>Period End</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="subscriptionTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading subscriptions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="subscriptionPaginationBar" class="admin-pagination-bar"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('subscriptionSearchInput');
+      const planSelect = document.getElementById('subscriptionPlanSelect');
+      const statusSelect = document.getElementById('subscriptionStatusSelect');
+      const refreshBtn = document.getElementById('refreshSubscriptionsBtn');
+
+      let debounceTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.subscriptionState.search = e.target.value.trim();
+            this.subscriptionState.page = 1;
+            this.loadSubscriptions();
+          }, 300);
+        });
+      }
+
+      if (planSelect) {
+        planSelect.addEventListener('change', (e) => {
+          this.subscriptionState.planCode = e.target.value;
+          this.subscriptionState.page = 1;
+          this.loadSubscriptions();
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.subscriptionState.status = e.target.value;
+          this.subscriptionState.page = 1;
+          this.loadSubscriptions();
+        });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => this.loadSubscriptions());
+      }
+
+      this.loadSubscriptions();
+    }
+
+    async loadSubscriptions() {
+      const tbody = document.getElementById('subscriptionTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading subscriptions...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: this.subscriptionState.page.toString(),
+          pageSize: this.subscriptionState.pageSize.toString()
+        });
+        if (this.subscriptionState.search) queryParams.set('search', this.subscriptionState.search);
+        if (this.subscriptionState.status) queryParams.set('status', this.subscriptionState.status);
+        if (this.subscriptionState.planCode) queryParams.set('planCode', this.subscriptionState.planCode);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/subscriptions?${queryParams.toString()}`);
+        const data = res.data;
+        this.subscriptionState.items = data.items || [];
+        this.subscriptionState.total = data.total || 0;
+
+        if (this.subscriptionState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="admin-empty-box">
+                  ${ICONS['credit-card']}
+                  <div class="admin-empty-title">No subscriptions found</div>
+                  <div class="admin-empty-desc">No customer subscriptions matched your query and filter criteria.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('subscriptionPaginationBar', this.subscriptionState, (p) => { this.subscriptionState.page = p; this.loadSubscriptions(); });
+          return;
+        }
+
+        const canCancel = window.AdminAuth.hasPermission('billing.write');
+
+        tbody.innerHTML = this.subscriptionState.items.map(s => {
+          const isDunning = s.dunningState && s.dunningState.isDunning;
+          const graceDays = s.dunningState ? s.dunningState.gracePeriodDaysRemaining : null;
+          let dunningBadge = '<span class="admin-badge admin-badge-neutral">Clean</span>';
+          if (isDunning) {
+            dunningBadge = `<span class="admin-badge admin-badge-warning" title="Dunning Grace Period Active">Grace (${graceDays !== null ? graceDays + 'd' : 'Active'})</span>`;
+          } else if (s.status === 'PAST_DUE' || s.status === 'UNPAID') {
+            dunningBadge = `<span class="admin-badge admin-badge-danger">Past Due</span>`;
+          }
+
+          const priceFormatted = s.price ? `${(s.price / 100).toFixed(2)} ${s.currency}` : '0.00 USD';
+          const isCancelActive = s.status === 'ACTIVE' || s.status === 'PAST_DUE' || s.status === 'GRACE_PERIOD';
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);">${this._escape(s.userEmail)}</strong>
+                <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(s.id)}</div>
+              </td>
+              <td>
+                <strong>${this._escape(s.planCode)}</strong>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">${priceFormatted}</div>
+              </td>
+              <td style="font-size:0.8125rem;">${this._escape(s.billingInterval || 'MONTHLY')}</td>
+              <td>
+                ${this._renderStatusBadge(s.status)}
+                ${s.cancelAtPeriodEnd ? '<div style="font-size:0.6875rem;color:var(--admin-warning);margin-top:2px;">Cancels at term</div>' : ''}
+              </td>
+              <td>${dunningBadge}</td>
+              <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${s.periodEnd ? new Date(s.periodEnd).toLocaleDateString() : '—'}</td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex;gap:4px;">
+                  <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectSubscription('${s.id}')" title="Inspect subscription & dunning lifecycle">
+                    ${ICONS.eye} Inspect
+                  </button>
+                  ${canCancel && isCancelActive ? `
+                    <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.showCancelSubscriptionModal('${s.id}', '${this._escape(s.userEmail)}', '${this._escape(s.planCode)}')" title="Cancel subscription">
+                      Cancel
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('subscriptionPaginationBar', this.subscriptionState, (p) => { this.subscriptionState.page = p; this.loadSubscriptions(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load subscriptions')}</td></tr>`;
+      }
+    }
+
+    async inspectSubscription(subId) {
+      try {
+        const [subRes, dunningRes, syncRes] = await Promise.all([
+          window.AdminApi.get(`/admin/operations/billing/subscriptions/${subId}`),
+          window.AdminApi.get(`/admin/operations/billing/subscriptions/${subId}/dunning`).catch(() => ({ data: { dunning: null } })),
+          window.AdminApi.get(`/admin/operations/billing/subscriptions/${subId}/provider-sync`).catch(() => ({ data: { sync: null } }))
+        ]);
+
+        const sub = subRes.data.subscription;
+        const entitlements = subRes.data.localEntitlements || {};
+        const dunning = dunningRes.data.dunning;
+        const sync = syncRes.data.sync;
+
+        const priceDisplay = sub.price ? `${(sub.price / 100).toFixed(2)} ${sub.currency}` : '0.00';
+        const canCancel = window.AdminAuth.hasPermission('billing.write') && (sub.status === 'ACTIVE' || sub.status === 'PAST_DUE' || sub.status === 'GRACE_PERIOD');
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Subscription Overview</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Subscription ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(sub.id)}</code></span>
+              <span class="admin-property-label">Customer Email:</span>
+              <span class="admin-property-value"><strong>${this._escape(sub.userEmail || (sub.user ? sub.user.email : '—'))}</strong></span>
+              <span class="admin-property-label">Customer ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(sub.userId)}</code></span>
+              <span class="admin-property-label">Plan Code:</span>
+              <span class="admin-property-value"><strong>${this._escape(sub.planCode)}</strong></span>
+              <span class="admin-property-label">Lifecycle Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(sub.status)}</span>
+              <span class="admin-property-label">Price & Interval:</span>
+              <span class="admin-property-value">${priceDisplay} / ${this._escape(sub.billingInterval)}</span>
+              <span class="admin-property-label">Current Period:</span>
+              <span class="admin-property-value">${sub.periodStart ? new Date(sub.periodStart).toLocaleDateString() : '—'} &rarr; ${sub.periodEnd ? new Date(sub.periodEnd).toLocaleDateString() : '—'}</span>
+              <span class="admin-property-label">Auto Renewal:</span>
+              <span class="admin-property-value">${sub.cancelAtPeriodEnd ? '<span style="color:var(--admin-warning);font-weight:600;">Canceling at period end</span>' : '<span style="color:var(--admin-success);font-weight:600;">Active Auto-Renew</span>'}</span>
+              <span class="admin-property-label">Created At:</span>
+              <span class="admin-property-value">${new Date(sub.createdAt).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Effective Entitlements Matrix</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Plan Tier:</span>
+              <span class="admin-property-value"><strong>${this._escape(entitlements.planCode || sub.planCode)}</strong></span>
+              <span class="admin-property-label">Max Active Devices:</span>
+              <span class="admin-property-value"><strong>${this._escape(entitlements.maxDevices ?? '—')}</strong></span>
+              <span class="admin-property-label">Max Storage Quota:</span>
+              <span class="admin-property-value"><strong>${this._escape(entitlements.maxStorageGB ? entitlements.maxStorageGB + ' GB' : '—')}</strong></span>
+              <span class="admin-property-label">High-Speed Relay:</span>
+              <span class="admin-property-value">${entitlements.highSpeedRelay ? '<span class="admin-badge admin-badge-success">Enabled</span>' : '<span class="admin-badge admin-badge-neutral">Standard</span>'}</span>
+              <span class="admin-property-label">Priority Support:</span>
+              <span class="admin-property-value">${entitlements.prioritySupport ? '<span class="admin-badge admin-badge-success">Yes</span>' : '<span class="admin-badge admin-badge-neutral">Standard</span>'}</span>
+            </div>
+          </div>
+
+          ${dunning ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Dunning & Grace Period Lifecycle</div>
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Dunning Active:</span>
+                <span class="admin-property-value">${dunning.isDunning ? '<span class="admin-badge admin-badge-warning">Active Grace Period</span>' : '<span class="admin-badge admin-badge-success">Healthy / None</span>'}</span>
+                <span class="admin-property-label">Grace Days Remaining:</span>
+                <span class="admin-property-value"><strong>${dunning.gracePeriodDaysRemaining !== null ? dunning.gracePeriodDaysRemaining + ' days' : 'N/A'}</strong></span>
+                <span class="admin-property-label">Grace Expiry Date:</span>
+                <span class="admin-property-value">${dunning.gracePeriodExpiry ? new Date(dunning.gracePeriodExpiry).toLocaleString() : 'N/A'}</span>
+                <span class="admin-property-label">Failed Invoices:</span>
+                <span class="admin-property-value"><strong>${dunning.failedPaymentCount}</strong></span>
+                <span class="admin-property-label">Entitlement Impact:</span>
+                <span class="admin-property-value" style="font-size:0.8125rem;">${this._escape(dunning.entitlementConsequence)}</span>
+                <span class="admin-property-label">Recommended Triage:</span>
+                <span class="admin-property-value" style="font-size:0.8125rem;color:var(--admin-warning);"><strong>${this._escape(dunning.recommendedAction)}</strong></span>
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Payment Provider (Razorpay) State</div>
+            ${sync ? `
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Provider Sub ID:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(sync.providerSubscriptionId || 'None')}</code></span>
+                <span class="admin-property-label">Provider Status:</span>
+                <span class="admin-property-value">${this._escape(sync.providerStatus || 'UNKNOWN')}</span>
+                <span class="admin-property-label">State Consistency:</span>
+                <span class="admin-property-value">${sync.synced ? '<span class="admin-badge admin-badge-success">In Sync</span>' : '<span class="admin-badge admin-badge-danger">State Mismatch</span>'}</span>
+                ${sync.mismatches && sync.mismatches.length > 0 ? `
+                  <span class="admin-property-label">Mismatches:</span>
+                  <span class="admin-property-value" style="color:var(--admin-danger);font-size:0.8125rem;">${this._escape(sync.mismatches.join('; '))}</span>
+                ` : ''}
+              </div>
+              ${sync.livePayload ? `
+                <div style="margin-top:0.75rem;">
+                  <span style="font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);display:block;margin-bottom:0.25rem;">Provider Metadata (Sanitized):</span>
+                  <pre style="background:var(--admin-bg-base);padding:0.5rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);font-size:0.75rem;max-height:120px;overflow:auto;margin:0;"><code>${this._escape(JSON.stringify(sync.livePayload, null, 2))}</code></pre>
+                </div>
+              ` : ''}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.8125rem;">No external payment provider record attached to this subscription.</p>'}
+          </div>
+
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            ${canCancel ? `
+              <button class="admin-btn admin-btn-danger" onclick="AdminShell.showCancelSubscriptionModal('${sub.id}', '${this._escape(sub.userEmail || (sub.user ? sub.user.email : ''))}', '${this._escape(sub.planCode)}')">
+                Cancel Subscription
+              </button>
+            ` : ''}
+            <button class="admin-btn admin-btn-secondary" onclick="AdminShell.syncProviderSubscription('${sub.id}')">
+              ${ICONS['refresh-cw']} Re-check Provider Sync
+            </button>
+          </div>
+        `;
+
+        this._showDrawer(`Subscription: ${sub.planCode} (${sub.id.substring(0, 12)}...)`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect subscription', 'danger');
+      }
+    }
+
+    showCancelSubscriptionModal(subId, userEmail, currentPlan) {
+      const existing = document.getElementById('adminConfirmModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminConfirmModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" style="max-width:520px;">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Administrative Subscription Cancellation</h3>
+            <button class="admin-btn-icon" id="adminModalCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <p style="margin-bottom:1rem;font-size:0.875rem;">
+              You are initiating an administrative cancellation for account <strong>${this._escape(userEmail)}</strong> (${this._escape(currentPlan)}).
+            </p>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.5rem;color:var(--admin-text-secondary);">
+                Cancellation Enforcement Mode:
+              </label>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.8125rem;cursor:pointer;padding:0.5rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);background:var(--admin-bg-base);">
+                  <input type="radio" name="cancelModeRadio" value="PERIOD_END" checked style="margin-top:3px;">
+                  <div>
+                    <strong>End of Billing Period (Recommended)</strong>
+                    <div style="color:var(--admin-text-muted);font-size:0.75rem;">Customer retains entitlements until their paid cycle expires. Auto-renewal is canceled.</div>
+                  </div>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:0.5rem;font-size:0.8125rem;cursor:pointer;padding:0.5rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);background:var(--admin-bg-base);">
+                  <input type="radio" name="cancelModeRadio" value="IMMEDIATE" style="margin-top:3px;">
+                  <div>
+                    <strong style="color:var(--admin-danger);">Immediate Revocation</strong>
+                    <div style="color:var(--admin-text-muted);font-size:0.75rem;">Cancels subscription instantly, revokes premium quota, and downgrades account to FREE tier.</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div style="background:var(--admin-warning-subtle);border-left:3px solid var(--admin-warning);padding:0.75rem 1rem;border-radius:var(--radius-xs);margin-bottom:1rem;font-size:0.8125rem;color:var(--admin-warning);">
+              <strong>Notice:</strong> This action is recorded in the immutable SHA-256 administrative audit log chain.
+            </div>
+
+            <div>
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Administrative Reason:
+              </label>
+              <input type="text" id="adminCancelReasonInput" class="admin-search-input" maxlength="255" placeholder="e.g. Customer support request, billing dispute, fraud..." style="padding-left:0.875rem;">
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminModalCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-danger" id="adminModalConfirmCancelBtn">Confirm Cancellation</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminModalCloseBtn');
+      const cancelBtn = document.getElementById('adminModalCancelBtn');
+      const confirmBtn = document.getElementById('adminModalConfirmCancelBtn');
+      const reasonInput = document.getElementById('adminCancelReasonInput');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          const selectedMode = document.querySelector('input[name="cancelModeRadio"]:checked')?.value || 'PERIOD_END';
+          const reason = reasonInput ? reasonInput.value.trim() : '';
+
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Cancelling...';
+
+          try {
+            await window.AdminApi.post(`/admin/operations/billing/subscriptions/${subId}/cancel`, {
+              mode: selectedMode,
+              reason: reason || undefined
+            });
+
+            this.toast(`Subscription canceled (${selectedMode}) successfully.`, 'success');
+            closeModal();
+            this._closeDrawer();
+            this.loadSubscriptions();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Cancellation';
+            this.toast(err.message || 'Failed to cancel subscription', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    async syncProviderSubscription(subId) {
+      try {
+        this.toast('Querying live provider synchronization state...', 'info');
+        const res = await window.AdminApi.get(`/admin/operations/billing/subscriptions/${subId}/provider-sync`);
+        const sync = res.data.sync;
+        if (sync.synced) {
+          this.toast(`Subscription is in sync with provider (${sync.providerStatus}).`, 'success');
+        } else {
+          this.toast(`Mismatch detected: ${sync.mismatches ? sync.mismatches.join(', ') : 'Check details'}`, 'warning');
+        }
+        this.inspectSubscription(subId);
+      } catch (err) {
+        this.toast(err.message || 'Provider sync check failed', 'danger');
       }
     }
 

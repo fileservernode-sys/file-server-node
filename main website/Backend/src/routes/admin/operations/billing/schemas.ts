@@ -93,3 +93,11 @@ export const AdminPlanListQuerySchema = paginationQuerySchema.extend({
 });
 
 export type AdminPlanListQuery = z.infer<typeof AdminPlanListQuerySchema>;
+
+export const AdminCancelSubscriptionSchema = z.object({
+  mode: z.enum(['PERIOD_END', 'IMMEDIATE']).default('PERIOD_END'),
+  reason: z.string().trim().min(3, 'Reason must be at least 3 characters').max(255, 'Reason cannot exceed 255 characters').optional()
+});
+
+export type AdminCancelSubscriptionInput = z.infer<typeof AdminCancelSubscriptionSchema>;
+

@@ -7,10 +7,11 @@ import {
   AdminRefundListQuerySchema,
   AdminReconciliationRunListQuerySchema,
   AdminDiscrepancyListQuerySchema,
-  AdminPlanListQuerySchema
+  AdminPlanListQuerySchema,
+  AdminCancelSubscriptionSchema
 } from '../src/routes/admin/operations/billing/schemas.js';
 
-describe('Admin Billing Operations Baseline (Phase 9.1 Deferred Tests)', () => {
+describe('Admin Billing Operations Baseline (Phase 9.1 & 9.2 Deferred Tests)', () => {
   describe('Validation Schemas', () => {
     test('should validate subscription list query defaults and constraints', () => {
       const parsed = AdminSubscriptionListQuerySchema.parse({
@@ -70,6 +71,25 @@ describe('Admin Billing Operations Baseline (Phase 9.1 Deferred Tests)', () => {
       assert.strictEqual(parsed.isActive, true);
       assert.strictEqual(parsed.currency, 'INR');
     });
+
+    test('should validate admin subscription cancellation schema (Phase 9.2)', () => {
+      const periodEnd = AdminCancelSubscriptionSchema.parse({
+        mode: 'PERIOD_END',
+        reason: 'Requested by user via support ticket #1234'
+      });
+      assert.strictEqual(periodEnd.mode, 'PERIOD_END');
+      assert.strictEqual(periodEnd.reason, 'Requested by user via support ticket #1234');
+
+      const immediate = AdminCancelSubscriptionSchema.parse({
+        mode: 'IMMEDIATE'
+      });
+      assert.strictEqual(immediate.mode, 'IMMEDIATE');
+      assert.strictEqual(immediate.reason, undefined);
+
+      assert.throws(() => {
+        AdminCancelSubscriptionSchema.parse({ mode: 'INVALID_MODE' });
+      });
+    });
   });
 
   describe('Safe Projections & DTO Invariants', () => {
@@ -77,6 +97,9 @@ describe('Admin Billing Operations Baseline (Phase 9.1 Deferred Tests)', () => {
       assert.strictEqual(typeof AdminBillingService.getBillingOverview, 'function');
       assert.strictEqual(typeof AdminBillingService.listSubscriptions, 'function');
       assert.strictEqual(typeof AdminBillingService.getSubscriptionDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.getSubscriptionDunningState, 'function');
+      assert.strictEqual(typeof AdminBillingService.cancelSubscription, 'function');
+      assert.strictEqual(typeof AdminBillingService.inspectProviderSubscription, 'function');
       assert.strictEqual(typeof AdminBillingService.listPayments, 'function');
       assert.strictEqual(typeof AdminBillingService.getPaymentDetail, 'function');
       assert.strictEqual(typeof AdminBillingService.listRefunds, 'function');

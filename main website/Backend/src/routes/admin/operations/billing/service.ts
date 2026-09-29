@@ -1,10 +1,28 @@
-import { Prisma, BillingStatus, PaymentStatus, RefundStatus, ReconciliationStatus, ReconciliationRunStatus } from '@prisma/client';
+import {
+  Prisma,
+  BillingStatus,
+  PaymentStatus,
+  RefundStatus,
+  ReconciliationStatus,
+  ReconciliationRunStatus,
+  AdminAuditAction,
+  CurrencyCode,
+  PaymentProvider,
+  PaymentEnvironment
+} from '@prisma/client';
 import { prisma } from '../../../../config/database.js';
-import { NotFoundError } from '../../../../errors/app-error.js';
+import { NotFoundError, ConflictError, ValidationError } from '../../../../errors/app-error.js';
 import { createPaginatedResponse, PaginatedResult } from '../utils/pagination.js';
+import { executeAdminOperation } from '../utils/operation_executor.js';
+import { AdminOperationContext } from '../types.js';
+import { RazorpayClient } from '../../../../services/billing/providers/razorpay/razorpay_client.js';
+import { PAID_ENTITLED_STATUSES } from '../../../../services/billing/billing_state_service.js';
 import {
   AdminSubscriptionSummary,
   AdminSubscriptionDetail,
+  AdminSubscriptionDunningDetail,
+  AdminCancelSubscriptionResult,
+  AdminProviderSubscriptionInspectionResult,
   AdminPaymentSummary,
   AdminPaymentDetail,
   AdminRefundSummary,
@@ -306,6 +324,290 @@ export class AdminBillingService {
         resolvedAt: ur.resolvedAt ? ur.resolvedAt.toISOString() : null,
         mismatchReason: ur.mismatchReason
       }))
+    };
+  }
+
+  /**
+   * Retrieves dunning operational triage information for a subscription.
+   */
+  static async getSubscriptionDunningState(subscriptionId: string): Promise<AdminSubscriptionDunningDetail> {
+    const sub = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: {
+        user: { select: { id: true, email: true } },
+        plan: { select: { code: true, name: true } },
+        payments: {
+          where: { status: PaymentStatus.FAILED },
+          orderBy: { chargedAt: 'desc' },
+          take: 5
+        }
+      }
+    });
+
+    if (!sub) {
+      throw new NotFoundError(`Subscription with ID '${subscriptionId}' not found`);
+    }
+
+    const isInDunning = sub.status === BillingStatus.PAST_DUE || sub.status === BillingStatus.GRACE_PERIOD;
+    const now = new Date();
+
+    let gracePeriodDaysRemaining: number | null = null;
+    if (sub.gracePeriodEndsAt) {
+      const diffMs = sub.gracePeriodEndsAt.getTime() - now.getTime();
+      gracePeriodDaysRemaining = Math.max(0, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+    }
+
+    let milestones: number[] = [];
+    if (Array.isArray(sub.dunningMilestones)) {
+      milestones = (sub.dunningMilestones as any[]).map(m => Number(m));
+    }
+
+    const latestMilestone = milestones.length > 0 ? Math.max(...milestones) : null;
+
+    let recommendedAction = 'Subscription is healthy and active.';
+    if (sub.status === BillingStatus.GRACE_PERIOD) {
+      recommendedAction = `Grace period active (${gracePeriodDaysRemaining ?? 0} days remaining). Automated retries scheduled. If unrecovered, subscription will expire on ${sub.gracePeriodEndsAt ? sub.gracePeriodEndsAt.toLocaleDateString('en-US') : 'period end'}.`;
+    } else if (sub.status === BillingStatus.PAST_DUE) {
+      recommendedAction = 'Renewal charge failed. Awaiting grace period trigger or manual customer retry.';
+    } else if (sub.status === BillingStatus.CANCELLING) {
+      recommendedAction = `Scheduled to cancel on ${sub.currentPeriodEnd.toLocaleDateString('en-US')}. Entitlements active until period end.`;
+    } else if (sub.status === BillingStatus.EXPIRED) {
+      recommendedAction = 'Subscription expired. Account reverted to Free tier.';
+    }
+
+    return {
+      subscriptionId: sub.id,
+      userId: sub.userId,
+      userEmail: sub.user.email,
+      status: sub.status,
+      isInDunning,
+      gracePeriodStartedAt: sub.gracePeriodStartedAt ? sub.gracePeriodStartedAt.toISOString() : null,
+      gracePeriodEndsAt: sub.gracePeriodEndsAt ? sub.gracePeriodEndsAt.toISOString() : null,
+      gracePeriodDaysTotal: 5,
+      gracePeriodDaysRemaining,
+      dunningMilestones: milestones,
+      latestMilestone,
+      dunningLastEvaluatedAt: sub.dunningLastEvaluatedAt ? sub.dunningLastEvaluatedAt.toISOString() : null,
+      failedPaymentCount: sub.payments.length,
+      recentFailedPayments: sub.payments.map(p => ({
+        id: p.id,
+        amountMinorUnits: p.amountMinorUnits,
+        currency: p.currency,
+        status: p.status,
+        chargedAt: p.chargedAt.toISOString(),
+        providerPaymentId: p.providerPaymentId
+      })),
+      entitlementConsequence: {
+        currentEntitled: PAID_ENTITLED_STATUSES.has(sub.status),
+        willExpireAt: sub.gracePeriodEndsAt ? sub.gracePeriodEndsAt.toISOString() : (sub.cancelAtPeriodEnd ? sub.currentPeriodEnd.toISOString() : null),
+        afterExpirationPlan: 'FREE'
+      },
+      recommendedAction
+    };
+  }
+
+  /**
+   * Executes administrative subscription cancellation (either at period end or immediate).
+   */
+  static async cancelSubscription(
+    subscriptionId: string,
+    context: AdminOperationContext,
+    options?: { mode?: 'PERIOD_END' | 'IMMEDIATE'; reason?: string }
+  ): Promise<AdminCancelSubscriptionResult> {
+    const sub = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { plan: true }
+    });
+
+    if (!sub) {
+      throw new NotFoundError(`Subscription with ID '${subscriptionId}' not found`);
+    }
+
+    const mode = options?.mode || 'PERIOD_END';
+    const reason = options?.reason && options.reason.trim().length > 0 ? options.reason.trim() : 'Administrative cancellation';
+
+    if (sub.status === BillingStatus.EXPIRED || sub.status === BillingStatus.REFUNDED) {
+      throw new ConflictError(`Cannot cancel subscription in terminal status '${sub.status}'`);
+    }
+
+    if (mode === 'PERIOD_END' && sub.status === BillingStatus.CANCELLING && sub.cancelAtPeriodEnd) {
+      return {
+        id: sub.id,
+        userId: sub.userId,
+        previousStatus: sub.status,
+        newStatus: sub.status,
+        cancelAtPeriodEnd: true,
+        cancelledAt: (sub.cancelledAt || new Date()).toISOString(),
+        currentPeriodEnd: sub.currentPeriodEnd.toISOString(),
+        mode,
+        reason
+      };
+    }
+
+    // Call Razorpay API cancellation if provider ID present and client configured
+    if (sub.provider === PaymentProvider.RAZORPAY && sub.providerSubscriptionId) {
+      const client = new RazorpayClient();
+      if (client.isConfigured()) {
+        try {
+          const cancelAtCycleEnd = mode === 'PERIOD_END' ? 1 : 0;
+          await client.cancelSubscription(sub.providerSubscriptionId, { cancel_at_cycle_end: cancelAtCycleEnd });
+        } catch (providerErr: any) {
+          console.warn('[AdminBillingService] Razorpay subscription cancel notice:', providerErr.message);
+          if (!providerErr.message?.toLowerCase()?.includes('cancelled')) {
+            throw providerErr;
+          }
+        }
+      }
+    }
+
+    const now = new Date();
+    const newStatus = mode === 'IMMEDIATE' ? BillingStatus.EXPIRED : BillingStatus.CANCELLING;
+    const cancelAtPeriodEnd = mode === 'PERIOD_END';
+
+    return executeAdminOperation({
+      operationName: 'admin_subscription_cancel',
+      targetResourceType: 'subscription',
+      targetResourceId: subscriptionId,
+      context,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+      metadata: {
+        subscriptionId,
+        userId: sub.userId,
+        previousStatus: sub.status,
+        newStatus,
+        mode,
+        reason
+      },
+      execute: async (tx) => {
+        const updated = await tx.subscription.update({
+          where: { id: subscriptionId },
+          data: {
+            status: newStatus,
+            cancelAtPeriodEnd,
+            cancelledAt: now,
+            expiredAt: mode === 'IMMEDIATE' ? now : undefined,
+            updatedAt: now
+          }
+        });
+
+        await tx.accountBillingState.update({
+          where: { userId: sub.userId },
+          data: {
+            status: newStatus === BillingStatus.EXPIRED ? BillingStatus.FREE : BillingStatus.CANCELLING,
+            activeSubscriptionId: newStatus === BillingStatus.EXPIRED ? null : undefined,
+            updatedAt: now
+          }
+        });
+
+        return {
+          id: updated.id,
+          userId: updated.userId,
+          previousStatus: sub.status,
+          newStatus: updated.status,
+          cancelAtPeriodEnd: updated.cancelAtPeriodEnd,
+          cancelledAt: (updated.cancelledAt || now).toISOString(),
+          currentPeriodEnd: updated.currentPeriodEnd.toISOString(),
+          mode,
+          reason
+        };
+      }
+    });
+  }
+
+  /**
+   * Inspects live subscription state directly on payment provider (Razorpay).
+   */
+  static async inspectProviderSubscription(
+    subscriptionId: string,
+    context: AdminOperationContext
+  ): Promise<AdminProviderSubscriptionInspectionResult> {
+    const sub = await prisma.subscription.findUnique({
+      where: { id: subscriptionId },
+      include: { plan: true }
+    });
+
+    if (!sub) {
+      throw new NotFoundError(`Subscription with ID '${subscriptionId}' not found`);
+    }
+
+    const client = new RazorpayClient();
+    const isConfigured = client.isConfigured();
+
+    let providerData: any = null;
+    const mismatches: string[] = [];
+    let isMatched = true;
+    let statusMatches = true;
+    let periodMatches = true;
+
+    if (isConfigured && sub.providerSubscriptionId) {
+      try {
+        providerData = await client.fetchSubscription(sub.providerSubscriptionId);
+
+        if (providerData) {
+          const provStatus = String(providerData.status || '').toUpperCase();
+          const localStatus = String(sub.status).toUpperCase();
+
+          if (provStatus === 'ACTIVE' && localStatus !== 'ACTIVE' && localStatus !== 'CANCELLING') {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${localStatus}' but Provider is '${provStatus}'`);
+          } else if (provStatus === 'CANCELLED' && localStatus !== 'CANCELLING' && localStatus !== 'EXPIRED') {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${localStatus}' but Provider is '${provStatus}'`);
+          }
+
+          if (providerData.current_end) {
+            const provEndDate = new Date(providerData.current_end * 1000);
+            const diffDays = Math.abs((provEndDate.getTime() - sub.currentPeriodEnd.getTime()) / (24 * 60 * 60 * 1000));
+            if (diffDays > 2) {
+              periodMatches = false;
+              mismatches.push(`Period end drift: Local ends ${sub.currentPeriodEnd.toISOString()} vs Provider ends ${provEndDate.toISOString()}`);
+            }
+          }
+        }
+      } catch (err: any) {
+        mismatches.push(`Provider fetch error: ${err.message}`);
+        isMatched = false;
+      }
+    } else if (!sub.providerSubscriptionId) {
+      mismatches.push('No external providerSubscriptionId associated with this subscription');
+    }
+
+    isMatched = mismatches.length === 0;
+
+    return {
+      subscriptionId: sub.id,
+      userId: sub.userId,
+      provider: sub.provider,
+      providerEnvironment: sub.providerEnvironment,
+      providerSubscriptionId: sub.providerSubscriptionId,
+      isConfigured,
+      localState: {
+        status: sub.status,
+        planCode: sub.plan.code,
+        currency: sub.currency,
+        amountMinorUnits: sub.amountMinorUnits,
+        currentPeriodStart: sub.currentPeriodStart.toISOString(),
+        currentPeriodEnd: sub.currentPeriodEnd.toISOString(),
+        cancelAtPeriodEnd: sub.cancelAtPeriodEnd
+      },
+      providerState: providerData ? {
+        status: providerData.status,
+        planId: providerData.plan_id,
+        currentEnd: providerData.current_end ? new Date(providerData.current_end * 1000).toISOString() : null,
+        endedAt: providerData.ended_at ? new Date(providerData.ended_at * 1000).toISOString() : null,
+        chargeAt: providerData.charge_at ? new Date(providerData.charge_at * 1000).toISOString() : null,
+        totalCount: providerData.total_count,
+        paidCount: providerData.paid_count,
+        remainingCount: providerData.remaining_count,
+        shortUrl: providerData.short_url
+      } : null,
+      comparison: {
+        isMatched,
+        statusMatches,
+        periodMatches,
+        mismatches
+      },
+      inspectedAt: new Date().toISOString()
     };
   }
 

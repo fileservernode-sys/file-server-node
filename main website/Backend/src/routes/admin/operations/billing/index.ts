@@ -10,7 +10,8 @@ import {
   AdminRefundListQuerySchema,
   AdminReconciliationRunListQuerySchema,
   AdminDiscrepancyListQuerySchema,
-  AdminPlanListQuerySchema
+  AdminPlanListQuerySchema,
+  AdminCancelSubscriptionSchema
 } from './schemas.js';
 
 export * from './types.js';
@@ -72,6 +73,76 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
       }
 
       const result = await AdminBillingService.getSubscriptionDetail(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/subscriptions/:id/dunning
+   * Retrieves dunning operational triage metrics, grace period countdown, and failed payment details.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/subscriptions/:id/dunning',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Subscription ID is required');
+      }
+
+      const result = await AdminBillingService.getSubscriptionDunningState(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/subscriptions/:id/provider-sync
+   * Inspects live payment provider (Razorpay) subscription state and reports drift against local DB.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/subscriptions/:id/provider-sync',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Subscription ID is required');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.inspectProviderSubscription(id, context);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/billing/subscriptions/:id/cancel
+   * Executes administrative subscription cancellation (either at period end or immediate).
+   * Permission required: 'billing.write'
+   */
+  app.post(
+    '/admin/operations/billing/subscriptions/:id/cancel',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.write')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Subscription ID is required');
+      }
+
+      const parsed = AdminCancelSubscriptionSchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid cancellation parameters');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.cancelSubscription(id, context, parsed.data);
       return reply.status(200).send(createSuccessResponse(result));
     }
   );

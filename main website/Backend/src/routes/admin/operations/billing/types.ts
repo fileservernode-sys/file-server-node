@@ -311,3 +311,87 @@ export interface AdminBillingOverviewMetrics {
     mismatchCount: number;
   } | null;
 }
+
+export interface AdminSubscriptionDunningDetail {
+  subscriptionId: string;
+  userId: string;
+  userEmail: string;
+  status: BillingStatus;
+  isInDunning: boolean;
+  gracePeriodStartedAt: string | null;
+  gracePeriodEndsAt: string | null;
+  gracePeriodDaysTotal: number;
+  gracePeriodDaysRemaining: number | null;
+  dunningMilestones: number[];
+  latestMilestone: number | null;
+  dunningLastEvaluatedAt: string | null;
+  failedPaymentCount: number;
+  recentFailedPayments: Array<{
+    id: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: PaymentStatus;
+    chargedAt: string;
+    providerPaymentId: string | null;
+  }>;
+  entitlementConsequence: {
+    currentEntitled: boolean;
+    willExpireAt: string | null;
+    afterExpirationPlan: string;
+  };
+  recommendedAction: string;
+}
+
+export interface AdminCancelSubscriptionBody {
+  mode?: 'PERIOD_END' | 'IMMEDIATE';
+  reason?: string;
+}
+
+export interface AdminCancelSubscriptionResult {
+  id: string;
+  userId: string;
+  previousStatus: BillingStatus;
+  newStatus: BillingStatus;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: string;
+  currentPeriodEnd: string;
+  mode: 'PERIOD_END' | 'IMMEDIATE';
+  reason: string;
+}
+
+export interface AdminProviderSubscriptionInspectionResult {
+  subscriptionId: string;
+  userId: string;
+  provider: PaymentProvider;
+  providerEnvironment: PaymentEnvironment;
+  providerSubscriptionId: string | null;
+  isConfigured: boolean;
+  localState: {
+    status: BillingStatus;
+    planCode: string;
+    currency: CurrencyCode;
+    amountMinorUnits: number;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    cancelAtPeriodEnd: boolean;
+  };
+  providerState: {
+    status?: string;
+    planId?: string;
+    currentEnd?: string | null;
+    endedAt?: string | null;
+    chargeAt?: string | null;
+    totalCount?: number;
+    paidCount?: number;
+    remainingCount?: number;
+    shortUrl?: string;
+  } | null;
+  comparison: {
+    isMatched: boolean;
+    statusMatches: boolean;
+    periodMatches: boolean;
+    mismatches: string[];
+  };
+  inspectedAt: string;
+}
+
