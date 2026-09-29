@@ -99,6 +99,7 @@
       this.serverState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.gatewayState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.connectionsState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
+      this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
     async init() {
@@ -270,12 +271,17 @@
     }
 
     _handleHashRoute() {
-      const hash = window.location.hash.replace('#', '').trim() || 'dashboard';
+      const rawHash = window.location.hash.replace('#', '').trim() || 'dashboard';
+      let hash = rawHash;
+      if (rawHash === 'customers') hash = 'users';
+      if (rawHash === 'audit') hash = 'audit-logs';
+      if (rawHash === 'roles') hash = 'admin-roles';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
       navItems.forEach(el => {
-        if (el.getAttribute('data-id') === hash) {
+        const itemId = el.getAttribute('data-id');
+        if (itemId === hash || (rawHash === 'customers' && itemId === 'users') || (rawHash === 'audit' && itemId === 'audit-logs') || (rawHash === 'roles' && itemId === 'admin-roles')) {
           el.classList.add('active');
         } else {
           el.classList.remove('active');
@@ -287,7 +293,7 @@
 
       for (const group of NAV_SCHEMA) {
         for (const item of group.items) {
-          if (item.id === hash) {
+          if (item.id === hash || item.id === rawHash) {
             currentItem = item;
             currentGroup = group;
             break;
@@ -300,7 +306,7 @@
       const breadcrumbItem = document.getElementById('adminBreadcrumbCurrent');
       if (breadcrumbGroup && breadcrumbItem) {
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
-        breadcrumbItem.textContent = currentItem ? currentItem.label : 'Dashboard';
+        breadcrumbItem.textContent = currentItem ? currentItem.label : (hash === 'users' ? 'Customer Accounts' : 'Dashboard');
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -319,6 +325,7 @@
         case 'dashboard':
           this._renderDashboardView(container);
           break;
+        case 'customers':
         case 'users':
           this._renderUsersView(container);
           break;
@@ -332,7 +339,12 @@
           this._renderGatewayView(container);
           break;
         case 'admin-roles':
+        case 'roles':
           this._renderRolesView(container);
+          break;
+        case 'audit-logs':
+        case 'audit':
+          this._renderAuditLogsView(container);
           break;
         default:
           this._renderDashboardView(container);
@@ -1570,15 +1582,20 @@
           <div class="admin-card">
             <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">Assigned Administrative Roles</h3>
             <div style="display:flex;flex-direction:column;gap:0.75rem;">
-              ${roles.map(r => `
-                <div style="background:var(--admin-bg-base);padding:0.875rem 1rem;border:1px solid var(--admin-border);border-radius:var(--border-radius-md);">
+              ${roles.map(r => {
+                const roleName = typeof r === 'string' ? r : (r.name || r.slug || 'ADMIN');
+                const roleDesc = typeof r === 'string' ? (r === 'SUPER_ADMIN' ? 'Full administrative authority with unrestricted wildcard access' : 'System administrative role') : (r.description || 'System administrative role');
+                const isSuperRole = roleName === 'SUPER_ADMIN' || isSuper;
+                return `
+                <div style="background:var(--admin-bg-base);padding:0.875rem 1rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.25rem;">
-                    <strong style="font-size:0.9375rem;color:var(--admin-text-primary);">${this._escape(r.name)}</strong>
-                    <span class="admin-role-badge ${r.name === 'SUPER_ADMIN' ? 'super-admin' : ''}">${this._escape(r.name)}</span>
+                    <strong style="font-size:0.9375rem;color:var(--admin-text-primary);">${this._escape(roleName)}</strong>
+                    <span class="admin-role-badge ${isSuperRole ? 'super-admin' : ''}">${this._escape(roleName)}</span>
                   </div>
-                  <p style="font-size:0.8125rem;color:var(--admin-text-secondary);">${this._escape(r.description || 'System administrative role')}</p>
+                  <p style="font-size:0.8125rem;color:var(--admin-text-secondary);">${this._escape(roleDesc)}</p>
                 </div>
-              `).join('') || '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No explicit roles assigned.</p>'}
+              `;
+              }).join('') || '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No explicit roles assigned.</p>'}
             </div>
           </div>
 
@@ -1596,6 +1613,309 @@
           </div>
         </div>
       `;
+    }
+
+    /* =========================================================================
+       7. SECURITY AUDIT LOGS VIEW
+       ========================================================================= */
+    async _renderAuditLogsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>Security Audit Logs</h1>
+            <p>Tamper-evident, cryptographically chained event log records and integrity verification.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="verifyChainBtn" onclick="AdminShell.verifyAuditIntegrity()">
+              ${ICONS.shield} Verify Integrity Chain
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.exportAuditLogs('csv')">
+              ${ICONS['file-text']} Export CSV
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadAuditLogs()">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div id="auditIntegrityBanner" style="display:none;margin-bottom:var(--space-md);"></div>
+
+        <div class="admin-toolbar">
+          <div class="admin-toolbar-left">
+            <div class="admin-search-wrap">
+              ${ICONS.search}
+              <input type="text" id="auditSearchInput" class="admin-search-input" placeholder="Search by actor, IP, or metadata..." value="${this._escape(this.auditState.search)}">
+            </div>
+            <select id="auditActionSelect" class="admin-select">
+              <option value="" ${this.auditState.action === '' ? 'selected' : ''}>All Actions</option>
+              <option value="USER_LOGIN" ${this.auditState.action === 'USER_LOGIN' ? 'selected' : ''}>USER_LOGIN</option>
+              <option value="ADMIN_LOGIN" ${this.auditState.action === 'ADMIN_LOGIN' ? 'selected' : ''}>ADMIN_LOGIN</option>
+              <option value="USER_SUSPEND" ${this.auditState.action === 'USER_SUSPEND' ? 'selected' : ''}>USER_SUSPEND</option>
+              <option value="USER_ACTIVATE" ${this.auditState.action === 'USER_ACTIVATE' ? 'selected' : ''}>USER_ACTIVATE</option>
+              <option value="DEVICE_DEACTIVATE" ${this.auditState.action === 'DEVICE_DEACTIVATE' ? 'selected' : ''}>DEVICE_DEACTIVATE</option>
+              <option value="DEVICE_DELETE" ${this.auditState.action === 'DEVICE_DELETE' ? 'selected' : ''}>DEVICE_DELETE</option>
+              <option value="SERVER_RESTART" ${this.auditState.action === 'SERVER_RESTART' ? 'selected' : ''}>SERVER_RESTART</option>
+              <option value="SERVER_STOP" ${this.auditState.action === 'SERVER_STOP' ? 'selected' : ''}>SERVER_STOP</option>
+              <option value="GATEWAY_DRAIN" ${this.auditState.action === 'GATEWAY_DRAIN' ? 'selected' : ''}>GATEWAY_DRAIN</option>
+              <option value="GATEWAY_UNDRAIN" ${this.auditState.action === 'GATEWAY_UNDRAIN' ? 'selected' : ''}>GATEWAY_UNDRAIN</option>
+              <option value="GATEWAY_SESSION_TERMINATE" ${this.auditState.action === 'GATEWAY_SESSION_TERMINATE' ? 'selected' : ''}>GATEWAY_SESSION_TERMINATE</option>
+            </select>
+            <select id="auditStatusSelect" class="admin-select">
+              <option value="" ${this.auditState.status === '' ? 'selected' : ''}>All Statuses</option>
+              <option value="SUCCESS" ${this.auditState.status === 'SUCCESS' ? 'selected' : ''}>SUCCESS</option>
+              <option value="FAILED" ${this.auditState.status === 'FAILED' ? 'selected' : ''}>FAILED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Actor / Administrator</th>
+                  <th>Action</th>
+                  <th>Status</th>
+                  <th>IP Address</th>
+                  <th>SHA-256 Integrity</th>
+                  <th style="text-align:right;">Details</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody">
+                <tr><td colspan="7" class="admin-table-loading">Loading security audit records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-pagination" id="auditPagination"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('auditSearchInput');
+      const actionSelect = document.getElementById('auditActionSelect');
+      const statusSelect = document.getElementById('auditStatusSelect');
+
+      let debounceTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.auditState.search = e.target.value.trim();
+            this.auditState.page = 1;
+            this.loadAuditLogs();
+          }, 350);
+        });
+      }
+
+      if (actionSelect) {
+        actionSelect.addEventListener('change', (e) => {
+          this.auditState.action = e.target.value;
+          this.auditState.page = 1;
+          this.loadAuditLogs();
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.auditState.status = e.target.value;
+          this.auditState.page = 1;
+          this.loadAuditLogs();
+        });
+      }
+
+      await this.loadAuditLogs();
+    }
+
+    async loadAuditLogs() {
+      const tbody = document.getElementById('auditTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" class="admin-table-loading">Querying immutable audit records...</td></tr>`;
+
+      try {
+        const params = new URLSearchParams({
+          page: this.auditState.page,
+          limit: this.auditState.limit
+        });
+
+        if (this.auditState.search) params.append('search', this.auditState.search);
+        if (this.auditState.action) params.append('action', this.auditState.action);
+        if (this.auditState.status) params.append('status', this.auditState.status);
+
+        const res = await window.AdminApi.get(`/admin/audit-logs?${params.toString()}`);
+        const data = res.data || {};
+        const records = data.records || [];
+        this.auditState.total = data.total || records.length;
+        this.auditState.items = records;
+
+        if (records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" class="admin-table-empty">No security audit records match the current filters.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = records.map(item => {
+          const dateStr = new Date(item.createdAt).toLocaleString();
+          const actorDisplay = item.admin ? (item.admin.email || item.admin.name || item.admin.id) : (item.adminId || 'System / Anonymous');
+          const shortHash = item.hash ? `${item.hash.substring(0, 8)}...${item.hash.substring(item.hash.length - 6)}` : 'GENESIS';
+          const isSuccess = item.status === 'SUCCESS';
+
+          return `
+            <tr>
+              <td style="font-size:0.8125rem;color:var(--admin-text-secondary);">${this._escape(dateStr)}</td>
+              <td>
+                <div style="font-weight:600;font-size:0.875rem;">${this._escape(actorDisplay)}</div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);font-family:var(--font-mono);">${this._escape(item.adminId || 'SYSTEM')}</div>
+              </td>
+              <td><span class="admin-badge admin-badge-info" style="font-family:var(--font-mono);font-size:0.75rem;">${this._escape(item.action)}</span></td>
+              <td><span class="admin-badge ${isSuccess ? 'admin-badge-success' : 'admin-badge-danger'}">${this._escape(item.status || 'UNKNOWN')}</span></td>
+              <td style="font-family:var(--font-mono);font-size:0.8125rem;">${this._escape(item.ipAddress || '—')}</td>
+              <td>
+                <span class="admin-badge admin-badge-neutral" style="font-family:var(--font-mono);font-size:0.75rem;" title="${this._escape(item.hash || '')}">
+                  ${item.isGenesis ? '🌟 GENESIS' : this._escape(shortHash)}
+                </span>
+              </td>
+              <td style="text-align:right;">
+                <button class="admin-btn-icon" onclick="AdminShell.inspectAuditRecord('${this._escape(item.id)}')" title="Inspect Record Payload">
+                  ${ICONS.eye}
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('auditPagination', {
+          total: this.auditState.total,
+          page: this.auditState.page,
+          pageSize: this.auditState.limit
+        }, (newPage) => {
+          this.auditState.page = newPage;
+          this.loadAuditLogs();
+        });
+
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load audit records')}</td></tr>`;
+      }
+    }
+
+    inspectAuditRecord(id) {
+      const item = this.auditState.items.find(x => x.id === id);
+      if (!item) return;
+
+      const dateStr = new Date(item.createdAt).toUTCString();
+      const metaPretty = item.metadata ? JSON.stringify(item.metadata, null, 2) : 'No structured metadata recorded.';
+
+      const content = `
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:0.75rem;border-bottom:1px solid var(--admin-border-subtle);">
+            <div>
+              <span class="admin-badge admin-badge-info" style="font-family:var(--font-mono);">${this._escape(item.action)}</span>
+              <span class="admin-badge ${item.status === 'SUCCESS' ? 'admin-badge-success' : 'admin-badge-danger'}" style="margin-left:0.5rem;">${this._escape(item.status)}</span>
+            </div>
+            <span style="font-size:0.8125rem;color:var(--admin-text-secondary);">${this._escape(dateStr)}</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:0.5rem;font-size:0.875rem;">
+            <strong style="color:var(--admin-text-secondary);">Record ID:</strong>
+            <span style="font-family:var(--font-mono);">${this._escape(item.id)}</span>
+
+            <strong style="color:var(--admin-text-secondary);">Actor Email:</strong>
+            <span>${this._escape(item.admin?.email || item.adminId || 'System')}</span>
+
+            <strong style="color:var(--admin-text-secondary);">IP Address:</strong>
+            <span style="font-family:var(--font-mono);">${this._escape(item.ipAddress || '—')}</span>
+
+            <strong style="color:var(--admin-text-secondary);">User Agent:</strong>
+            <span style="font-size:0.8125rem;color:var(--admin-text-muted);">${this._escape(item.userAgent || '—')}</span>
+
+            <strong style="color:var(--admin-text-secondary);">Previous Hash:</strong>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;word-break:break-all;">${this._escape(item.previousHash || 'GENESIS_HASH')}</span>
+
+            <strong style="color:var(--admin-text-secondary);">Record Hash:</strong>
+            <span style="font-family:var(--font-mono);font-size:0.75rem;color:var(--admin-primary);word-break:break-all;">${this._escape(item.hash || '—')}</span>
+          </div>
+
+          <div>
+            <h4 style="font-size:0.875rem;font-weight:700;margin-bottom:0.5rem;color:var(--admin-text-primary);">Sanitized Event Metadata</h4>
+            <pre style="background:var(--admin-bg-subtle);padding:0.75rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border-subtle);font-family:var(--font-mono);font-size:0.8125rem;overflow-x:auto;max-height:220px;">${this._escape(metaPretty)}</pre>
+          </div>
+        </div>
+      `;
+
+      this._showDrawer(`Audit Record Details — ${item.action}`, content);
+    }
+
+    async verifyAuditIntegrity() {
+      const banner = document.getElementById('auditIntegrityBanner');
+      const btn = document.getElementById('verifyChainBtn');
+      if (btn) btn.disabled = true;
+
+      try {
+        this.toast('Executing cryptographic SHA-256 chain verification...', 'info');
+        const res = await window.AdminApi.post('/admin/audit-logs/verify-integrity', {});
+        const data = res.data || {};
+
+        if (banner) {
+          banner.style.display = 'block';
+          if (data.isValid) {
+            banner.innerHTML = `
+              <div style="background:#ecfdf5;border:1px solid #10b981;color:#065f46;padding:0.875rem 1rem;border-radius:var(--radius-sm);display:flex;align-items:center;gap:0.75rem;">
+                ${ICONS.shield}
+                <div>
+                  <strong>Cryptographic Integrity Verified:</strong> All ${data.verifiedRecords || 0} audit records match SHA-256 chain hashes from Genesis root. No tampering detected.
+                </div>
+              </div>
+            `;
+            this.toast('Audit log chain integrity is 100% VALID.', 'success');
+          } else {
+            banner.innerHTML = `
+              <div style="background:#fef2f2;border:1px solid #ef4444;color:#991b1b;padding:0.875rem 1rem;border-radius:var(--radius-sm);display:flex;align-items:center;gap:0.75rem;">
+                ${ICONS.alert}
+                <div>
+                  <strong>Integrity Violation Detected:</strong> Audit log hash mismatch found! (${(data.errors || []).join(', ')})
+                </div>
+              </div>
+            `;
+            this.toast('Audit log integrity check detected a hash mismatch!', 'danger');
+          }
+        }
+      } catch (err) {
+        this.toast(err.message || 'Integrity verification failed', 'danger');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async exportAuditLogs(format = 'csv') {
+      try {
+        this.toast(`Preparing audit export in ${format.toUpperCase()} format...`, 'info');
+        const params = new URLSearchParams({ format });
+        if (this.auditState.action) params.append('action', this.auditState.action);
+        if (this.auditState.status) params.append('status', this.auditState.status);
+
+        const token = window.AdminAuth.token;
+        const res = await fetch(`/api/v1/admin/audit-logs/export?${params.toString()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`Export failed with HTTP ${res.status}`);
+        }
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `audit-export-${Date.now()}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        this.toast('Audit export downloaded successfully.', 'success');
+      } catch (err) {
+        this.toast(err.message || 'Audit export failed', 'danger');
+      }
     }
 
     _renderForbiddenView(item) {
