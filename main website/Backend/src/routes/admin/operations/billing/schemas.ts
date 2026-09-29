@@ -101,3 +101,15 @@ export const AdminCancelSubscriptionSchema = z.object({
 
 export type AdminCancelSubscriptionInput = z.infer<typeof AdminCancelSubscriptionSchema>;
 
+export const AdminExecuteRefundSchema = z.object({
+  amountMinorUnits: z.number().int().positive('Refund amount must be positive integer').optional(),
+  reason: z.nativeEnum(RefundReason).default(RefundReason.ADMIN_APPROVED_EXCEPTION),
+  reasonDetails: z.string().trim().max(500, 'Reason details cannot exceed 500 characters').optional(),
+  idempotencyKey: z.string().trim().min(5, 'Idempotency key must be at least 5 characters').max(128).optional(),
+  terminateSubscription: z.boolean().optional(),
+  correlationId: z.string().trim().max(128).optional()
+});
+
+export type AdminExecuteRefundInput = z.infer<typeof AdminExecuteRefundSchema>;
+
+

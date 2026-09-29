@@ -3,6 +3,7 @@ import {
   BillingStatus,
   PaymentStatus,
   RefundStatus,
+  RefundReason,
   ReconciliationStatus,
   ReconciliationRunStatus,
   AdminAuditAction,
@@ -16,6 +17,7 @@ import { createPaginatedResponse, PaginatedResult } from '../utils/pagination.js
 import { executeAdminOperation } from '../utils/operation_executor.js';
 import { AdminOperationContext } from '../types.js';
 import { RazorpayClient } from '../../../../services/billing/providers/razorpay/razorpay_client.js';
+import { BillingRefundService } from '../../../../services/billing/billing_refund_service.js';
 import { PAID_ENTITLED_STATUSES } from '../../../../services/billing/billing_state_service.js';
 import {
   AdminSubscriptionSummary,
@@ -23,10 +25,13 @@ import {
   AdminSubscriptionDunningDetail,
   AdminCancelSubscriptionResult,
   AdminProviderSubscriptionInspectionResult,
+  AdminProviderPaymentInspectionResult,
+  AdminProviderRefundInspectionResult,
   AdminPaymentSummary,
   AdminPaymentDetail,
   AdminRefundSummary,
   AdminRefundDetail,
+  AdminExecuteRefundResult,
   AdminReconciliationRunSummary,
   AdminReconciliationDiscrepancySummary,
   AdminPlanSummary,
@@ -38,7 +43,8 @@ import {
   AdminRefundListQuery,
   AdminReconciliationRunListQuery,
   AdminDiscrepancyListQuery,
-  AdminPlanListQuery
+  AdminPlanListQuery,
+  AdminExecuteRefundInput
 } from './schemas.js';
 
 export class AdminBillingService {
@@ -801,6 +807,230 @@ export class AdminBillingService {
   }
 
   /**
+   * Inspects live payment transaction status directly from payment provider (Razorpay).
+   */
+  static async inspectProviderPayment(
+    paymentId: string,
+    context: AdminOperationContext
+  ): Promise<AdminProviderPaymentInspectionResult> {
+    const payment = await prisma.billingPayment.findUnique({
+      where: { id: paymentId },
+      include: {
+        refunds: true,
+        user: { select: { id: true, email: true } }
+      }
+    });
+
+    if (!payment) {
+      throw new NotFoundError(`Payment with ID '${paymentId}' not found`);
+    }
+
+    const nonFailedRefunds = payment.refunds.filter(
+      r => r.status === RefundStatus.PROCESSED || r.status === RefundStatus.PROCESSING || r.status === RefundStatus.REQUESTED
+    );
+    const cumulativeRefunded = nonFailedRefunds.reduce((sum, r) => sum + r.amountMinorUnits, 0);
+
+    const client = new RazorpayClient();
+    const isConfigured = client.isConfigured();
+
+    let providerData: any = null;
+    const mismatches: string[] = [];
+    let isMatched = true;
+    let statusMatches = true;
+    let amountMatches = true;
+    let currencyMatches = true;
+
+    if (isConfigured && payment.providerPaymentId) {
+      try {
+        providerData = await client.fetchPayment(payment.providerPaymentId);
+
+        if (providerData) {
+          const provStatus = String(providerData.status || '').toLowerCase();
+          const localStatus = payment.status;
+
+          if (provStatus === 'captured' && localStatus !== PaymentStatus.SUCCESS && localStatus !== PaymentStatus.REFUNDED) {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${localStatus}' but Provider is '${provStatus}'`);
+          } else if (provStatus === 'failed' && localStatus !== PaymentStatus.FAILED) {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${localStatus}' but Provider is '${provStatus}'`);
+          } else if (provStatus === 'refunded' && localStatus !== PaymentStatus.REFUNDED) {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${localStatus}' but Provider is '${provStatus}'`);
+          }
+
+          if (typeof providerData.amount === 'number' && providerData.amount !== payment.amountMinorUnits) {
+            amountMatches = false;
+            mismatches.push(`Amount mismatch: Local is ${payment.amountMinorUnits} but Provider is ${providerData.amount}`);
+          }
+
+          if (providerData.currency && String(providerData.currency).toUpperCase() !== payment.currency) {
+            currencyMatches = false;
+            mismatches.push(`Currency mismatch: Local is ${payment.currency} but Provider is ${providerData.currency}`);
+          }
+        }
+      } catch (err: any) {
+        mismatches.push(`Provider fetch error: ${err.message}`);
+        isMatched = false;
+      }
+    } else if (!payment.providerPaymentId) {
+      mismatches.push('No external providerPaymentId associated with this payment record');
+    }
+
+    isMatched = mismatches.length === 0 && Boolean(providerData);
+
+    const sanitizedProviderState = providerData ? {
+      id: providerData.id,
+      entity: providerData.entity,
+      amount: providerData.amount,
+      currency: providerData.currency,
+      status: providerData.status,
+      orderId: providerData.order_id,
+      invoiceId: providerData.invoice_id,
+      international: providerData.international,
+      method: providerData.method,
+      amountRefunded: providerData.amount_refunded,
+      refundStatus: providerData.refund_status,
+      captured: providerData.captured,
+      description: providerData.description,
+      card: providerData.card ? {
+        network: providerData.card.network,
+        last4: providerData.card.last4,
+        type: providerData.card.type,
+        issuer: providerData.card.issuer
+      } : undefined,
+      bank: providerData.bank,
+      wallet: providerData.wallet,
+      vpa: providerData.vpa,
+      email: providerData.email,
+      contact: providerData.contact,
+      fee: providerData.fee,
+      tax: providerData.tax,
+      errorCode: providerData.error_code,
+      errorDescription: providerData.error_description,
+      createdAt: providerData.created_at ? new Date(providerData.created_at * 1000).toISOString() : null
+    } : null;
+
+    return {
+      paymentId: payment.id,
+      userId: payment.userId,
+      provider: payment.provider,
+      providerEnvironment: payment.environment,
+      providerPaymentId: payment.providerPaymentId,
+      providerSubscriptionId: payment.providerSubscriptionId,
+      isConfigured,
+      localState: {
+        status: payment.status,
+        amountMinorUnits: payment.amountMinorUnits,
+        currency: payment.currency,
+        chargedAt: payment.chargedAt.toISOString(),
+        refundedAmountMinorUnits: cumulativeRefunded
+      },
+      providerState: sanitizedProviderState,
+      comparison: {
+        isMatched,
+        statusMatches,
+        amountMatches,
+        currencyMatches,
+        mismatches
+      },
+      inspectedAt: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Executes an administrative refund for a customer payment transaction.
+   * Enforces validation, idempotency, concurrency balance protection, Razorpay refund execution, and SHA-256 audit logging.
+   */
+  static async executePaymentRefund(
+    paymentId: string,
+    context: AdminOperationContext,
+    input: AdminExecuteRefundInput
+  ): Promise<AdminExecuteRefundResult> {
+    const payment = await prisma.billingPayment.findUnique({
+      where: { id: paymentId },
+      include: {
+        subscription: true,
+        refunds: true,
+        user: { select: { id: true, email: true } }
+      }
+    });
+
+    if (!payment) {
+      throw new NotFoundError(`Payment with ID '${paymentId}' not found`);
+    }
+
+    // 1. Validate refund eligibility using existing domain service
+    const eligibility = await BillingRefundService.validateRefundEligibility(payment.userId, payment.id, {
+      amountMinorUnits: input.amountMinorUnits,
+      reason: input.reason,
+      isAdmin: true
+    });
+
+    const refundAmount = eligibility.requestedAmountMinorUnits;
+
+    // 2. Wrap in fail-closed AdminOperationExecutor
+    return executeAdminOperation({
+      operationName: 'admin_payment_refund',
+      targetResourceType: 'billing_payment',
+      targetResourceId: payment.id,
+      context,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+      metadata: {
+        paymentId: payment.id,
+        userId: payment.userId,
+        userEmail: payment.user.email,
+        amountMinorUnits: refundAmount,
+        currency: payment.currency,
+        reason: input.reason,
+        reasonDetails: input.reasonDetails,
+        idempotencyKey: input.idempotencyKey,
+        terminateSubscription: input.terminateSubscription
+      },
+      execute: async (_tx) => {
+        const result = await BillingRefundService.requestRefund(
+          payment.userId,
+          {
+            paymentId: payment.id,
+            amountMinorUnits: refundAmount,
+            reason: input.reason,
+            reasonDetails: input.reasonDetails,
+            idempotencyKey: input.idempotencyKey,
+            correlationId: input.correlationId,
+            terminateSubscription: input.terminateSubscription,
+            isAdmin: true
+          }
+        );
+
+        const refundDetail = await this.getRefundDetail(result.refund.id);
+        const updatedPayment = await prisma.billingPayment.findUnique({
+          where: { id: payment.id },
+          include: { refunds: true }
+        });
+
+        const nonFailedRefunds = (updatedPayment?.refunds || []).filter(
+          r => r.status === RefundStatus.PROCESSED || r.status === RefundStatus.PROCESSING || r.status === RefundStatus.REQUESTED
+        );
+        const cumulativeRefunded = nonFailedRefunds.reduce((sum, r) => sum + r.amountMinorUnits, 0);
+        const remaining = (updatedPayment?.amountMinorUnits || 0) - cumulativeRefunded;
+
+        return {
+          success: true,
+          refund: refundDetail,
+          payment: {
+            id: payment.id,
+            amountMinorUnits: updatedPayment?.amountMinorUnits || payment.amountMinorUnits,
+            cumulativeRefundedMinorUnits: cumulativeRefunded,
+            remainingRefundableMinorUnits: Math.max(0, remaining),
+            status: updatedPayment?.status || payment.status
+          },
+          idempotent: result.idempotent
+        };
+      }
+    });
+  }
+
+  /**
    * Lists customer refund transactions with filters and pagination.
    */
   static async listRefunds(query: AdminRefundListQuery): Promise<PaginatedResult<AdminRefundSummary>> {
@@ -953,6 +1183,111 @@ export class AdminBillingService {
         status: r.subscription.status
       } : null,
       reconciliationRecords: r.reconciliationRecords
+    };
+  }
+
+  /**
+   * Inspects live refund status directly from payment provider (Razorpay).
+   */
+  static async inspectProviderRefund(
+    refundId: string,
+    context: AdminOperationContext
+  ): Promise<AdminProviderRefundInspectionResult> {
+    const refund = await prisma.billingRefund.findUnique({
+      where: { id: refundId },
+      include: {
+        payment: true,
+        user: { select: { id: true, email: true } }
+      }
+    });
+
+    if (!refund) {
+      throw new NotFoundError(`Refund with ID '${refundId}' not found`);
+    }
+
+    const client = new RazorpayClient();
+    const isConfigured = client.isConfigured();
+
+    let providerData: any = null;
+    const mismatches: string[] = [];
+    let isMatched = true;
+    let statusMatches = true;
+    let amountMatches = true;
+    let currencyMatches = true;
+
+    if (isConfigured && refund.providerRefundId) {
+      try {
+        providerData = await client.fetchRefund(refund.providerRefundId);
+
+        if (providerData) {
+          const provStatus = String(providerData.status || '').toLowerCase();
+
+          if (provStatus === 'processed' && refund.status !== RefundStatus.PROCESSED) {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${refund.status}' but Provider is '${provStatus}'`);
+          } else if (provStatus === 'failed' && refund.status !== RefundStatus.FAILED) {
+            statusMatches = false;
+            mismatches.push(`Status mismatch: Local is '${refund.status}' but Provider is '${provStatus}'`);
+          }
+
+          if (typeof providerData.amount === 'number' && providerData.amount !== refund.amountMinorUnits) {
+            amountMatches = false;
+            mismatches.push(`Amount mismatch: Local is ${refund.amountMinorUnits} but Provider is ${providerData.amount}`);
+          }
+
+          if (providerData.currency && String(providerData.currency).toUpperCase() !== refund.currency) {
+            currencyMatches = false;
+            mismatches.push(`Currency mismatch: Local is ${refund.currency} but Provider is ${providerData.currency}`);
+          }
+        }
+      } catch (err: any) {
+        mismatches.push(`Provider refund fetch error: ${err.message}`);
+        isMatched = false;
+      }
+    } else if (!refund.providerRefundId) {
+      mismatches.push('No external providerRefundId associated with this refund record');
+    }
+
+    isMatched = mismatches.length === 0 && Boolean(providerData);
+
+    const sanitizedProviderState = providerData ? {
+      id: providerData.id,
+      entity: providerData.entity,
+      amount: providerData.amount,
+      currency: providerData.currency,
+      paymentId: providerData.payment_id,
+      status: providerData.status,
+      speedProcessed: providerData.speed_processed,
+      speedRequested: providerData.speed_requested,
+      receipt: providerData.receipt,
+      createdAt: providerData.created_at ? new Date(providerData.created_at * 1000).toISOString() : null
+    } : null;
+
+    return {
+      refundId: refund.id,
+      paymentId: refund.paymentId,
+      userId: refund.userId,
+      provider: refund.provider,
+      providerEnvironment: refund.providerEnvironment,
+      providerRefundId: refund.providerRefundId,
+      providerPaymentId: refund.providerPaymentId,
+      isConfigured,
+      localState: {
+        status: refund.status,
+        amountMinorUnits: refund.amountMinorUnits,
+        currency: refund.currency,
+        reason: refund.reason,
+        requestedAt: refund.requestedAt.toISOString()
+      },
+      providerState: sanitizedProviderState,
+      comparison: {
+        isMatched,
+        statusMatches,
+        amountMatches,
+        currencyMatches,
+        mismatches
+      },
+      inspectedAt: new Date().toISOString()
     };
   }
 

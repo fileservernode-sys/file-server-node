@@ -8,10 +8,11 @@ import {
   AdminReconciliationRunListQuerySchema,
   AdminDiscrepancyListQuerySchema,
   AdminPlanListQuerySchema,
-  AdminCancelSubscriptionSchema
+  AdminCancelSubscriptionSchema,
+  AdminExecuteRefundSchema
 } from '../src/routes/admin/operations/billing/schemas.js';
 
-describe('Admin Billing Operations Baseline (Phase 9.1 & 9.2 Deferred Tests)', () => {
+describe('Admin Billing Operations Baseline (Phase 9.1, 9.2 & 9.3 Deferred Tests)', () => {
   describe('Validation Schemas', () => {
     test('should validate subscription list query defaults and constraints', () => {
       const parsed = AdminSubscriptionListQuerySchema.parse({
@@ -90,6 +91,34 @@ describe('Admin Billing Operations Baseline (Phase 9.1 & 9.2 Deferred Tests)', (
         AdminCancelSubscriptionSchema.parse({ mode: 'INVALID_MODE' });
       });
     });
+
+    test('should validate admin refund execution schema (Phase 9.3)', () => {
+      const fullRefund = AdminExecuteRefundSchema.parse({
+        reason: 'ADMIN_APPROVED_EXCEPTION',
+        reasonDetails: 'Goodwill refund for user support escalation',
+        idempotencyKey: 'idem_refund_test_12345'
+      });
+      assert.strictEqual(fullRefund.reason, 'ADMIN_APPROVED_EXCEPTION');
+      assert.strictEqual(fullRefund.reasonDetails, 'Goodwill refund for user support escalation');
+      assert.strictEqual(fullRefund.idempotencyKey, 'idem_refund_test_12345');
+      assert.strictEqual(fullRefund.amountMinorUnits, undefined);
+
+      const partialRefund = AdminExecuteRefundSchema.parse({
+        amountMinorUnits: 50000,
+        reason: 'DUPLICATE_PAYMENT',
+        terminateSubscription: false
+      });
+      assert.strictEqual(partialRefund.amountMinorUnits, 50000);
+      assert.strictEqual(partialRefund.reason, 'DUPLICATE_PAYMENT');
+      assert.strictEqual(partialRefund.terminateSubscription, false);
+
+      assert.throws(() => {
+        AdminExecuteRefundSchema.parse({ amountMinorUnits: -100 });
+      });
+      assert.throws(() => {
+        AdminExecuteRefundSchema.parse({ amountMinorUnits: 0 });
+      });
+    });
   });
 
   describe('Safe Projections & DTO Invariants', () => {
@@ -102,8 +131,11 @@ describe('Admin Billing Operations Baseline (Phase 9.1 & 9.2 Deferred Tests)', (
       assert.strictEqual(typeof AdminBillingService.inspectProviderSubscription, 'function');
       assert.strictEqual(typeof AdminBillingService.listPayments, 'function');
       assert.strictEqual(typeof AdminBillingService.getPaymentDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.inspectProviderPayment, 'function');
+      assert.strictEqual(typeof AdminBillingService.executePaymentRefund, 'function');
       assert.strictEqual(typeof AdminBillingService.listRefunds, 'function');
       assert.strictEqual(typeof AdminBillingService.getRefundDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.inspectProviderRefund, 'function');
       assert.strictEqual(typeof AdminBillingService.listReconciliationRuns, 'function');
       assert.strictEqual(typeof AdminBillingService.listDiscrepancies, 'function');
       assert.strictEqual(typeof AdminBillingService.listPlans, 'function');

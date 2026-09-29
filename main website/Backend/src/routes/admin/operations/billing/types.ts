@@ -395,3 +395,119 @@ export interface AdminProviderSubscriptionInspectionResult {
   inspectedAt: string;
 }
 
+export interface AdminProviderPaymentInspectionResult {
+  paymentId: string;
+  userId: string;
+  provider: PaymentProvider;
+  providerEnvironment: PaymentEnvironment;
+  providerPaymentId: string | null;
+  providerSubscriptionId: string | null;
+  isConfigured: boolean;
+  localState: {
+    status: PaymentStatus;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    chargedAt: string;
+    refundedAmountMinorUnits: number;
+  };
+  providerState: {
+    id?: string;
+    entity?: string;
+    amount?: number;
+    currency?: string;
+    status?: string;
+    orderId?: string;
+    invoiceId?: string;
+    international?: boolean;
+    method?: string;
+    amountRefunded?: number;
+    refundStatus?: string;
+    captured?: boolean;
+    description?: string;
+    card?: {
+      network?: string;
+      last4?: string;
+      type?: string;
+      issuer?: string;
+    };
+    bank?: string;
+    wallet?: string;
+    vpa?: string;
+    email?: string;
+    contact?: string;
+    fee?: number;
+    tax?: number;
+    errorCode?: string;
+    errorDescription?: string;
+    createdAt?: string | null;
+  } | null;
+  comparison: {
+    isMatched: boolean;
+    statusMatches: boolean;
+    amountMatches: boolean;
+    currencyMatches: boolean;
+    mismatches: string[];
+  };
+  inspectedAt: string;
+}
+
+export interface AdminProviderRefundInspectionResult {
+  refundId: string;
+  paymentId: string;
+  userId: string;
+  provider: PaymentProvider;
+  providerEnvironment: PaymentEnvironment;
+  providerRefundId: string | null;
+  providerPaymentId: string | null;
+  isConfigured: boolean;
+  localState: {
+    status: RefundStatus;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    reason: RefundReason;
+    requestedAt: string;
+  };
+  providerState: {
+    id?: string;
+    entity?: string;
+    amount?: number;
+    currency?: string;
+    paymentId?: string;
+    status?: string;
+    speedProcessed?: string;
+    speedRequested?: string;
+    receipt?: string;
+    createdAt?: string | null;
+  } | null;
+  comparison: {
+    isMatched: boolean;
+    statusMatches: boolean;
+    amountMatches: boolean;
+    currencyMatches: boolean;
+    mismatches: string[];
+  };
+  inspectedAt: string;
+}
+
+export interface AdminExecuteRefundBody {
+  amountMinorUnits?: number;
+  reason?: RefundReason;
+  reasonDetails?: string;
+  idempotencyKey?: string;
+  terminateSubscription?: boolean;
+  correlationId?: string;
+}
+
+export interface AdminExecuteRefundResult {
+  success: boolean;
+  refund: AdminRefundDetail | AdminRefundSummary;
+  payment: {
+    id: string;
+    amountMinorUnits: number;
+    cumulativeRefundedMinorUnits: number;
+    remainingRefundableMinorUnits: number;
+    status: PaymentStatus;
+  };
+  idempotent?: boolean;
+}
+

@@ -55,6 +55,18 @@
           label: 'Subscriptions & Dunning',
           icon: 'credit-card',
           permission: 'billing.read'
+        },
+        {
+          id: 'payments',
+          label: 'Payments & Transactions',
+          icon: 'dollar-sign',
+          permission: 'billing.read'
+        },
+        {
+          id: 'refunds',
+          label: 'Refunds & Returns',
+          icon: 'rotate-ccw',
+          permission: 'billing.read'
         }
       ]
     },
@@ -79,6 +91,8 @@
 
   const ICONS = {
     'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
+    'dollar-sign': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    'rotate-ccw': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>',
@@ -112,6 +126,8 @@
       this.gatewayState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.connectionsState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.subscriptionState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', planCode: '' };
+      this.paymentState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', currency: '' };
+      this.refundState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', reason: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -290,12 +306,22 @@
       if (rawHash === 'audit') hash = 'audit-logs';
       if (rawHash === 'roles') hash = 'admin-roles';
       if (rawHash === 'billing' || rawHash === 'billing-subscriptions') hash = 'subscriptions';
+      if (rawHash === 'billing-payments') hash = 'payments';
+      if (rawHash === 'billing-refunds') hash = 'refunds';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
       navItems.forEach(el => {
         const itemId = el.getAttribute('data-id');
-        if (itemId === hash || (rawHash === 'customers' && itemId === 'users') || (rawHash === 'audit' && itemId === 'audit-logs') || (rawHash === 'roles' && itemId === 'admin-roles') || ((rawHash === 'billing' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions')) {
+        if (
+          itemId === hash ||
+          (rawHash === 'customers' && itemId === 'users') ||
+          (rawHash === 'audit' && itemId === 'audit-logs') ||
+          (rawHash === 'roles' && itemId === 'admin-roles') ||
+          ((rawHash === 'billing' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions') ||
+          (rawHash === 'billing-payments' && itemId === 'payments') ||
+          (rawHash === 'billing-refunds' && itemId === 'refunds')
+        ) {
           el.classList.add('active');
         } else {
           el.classList.remove('active');
@@ -320,7 +346,9 @@
       const breadcrumbItem = document.getElementById('adminBreadcrumbCurrent');
       if (breadcrumbGroup && breadcrumbItem) {
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
-        breadcrumbItem.textContent = currentItem ? currentItem.label : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : 'Dashboard'));
+        breadcrumbItem.textContent = currentItem
+          ? currentItem.label
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : 'Dashboard'))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -356,6 +384,14 @@
         case 'billing':
         case 'billing-subscriptions':
           this._renderSubscriptionsView(container);
+          break;
+        case 'payments':
+        case 'billing-payments':
+          this._renderPaymentsView(container);
+          break;
+        case 'refunds':
+        case 'billing-refunds':
+          this._renderRefundsView(container);
           break;
         case 'admin-roles':
         case 'roles':
@@ -2367,6 +2403,760 @@
         this.inspectSubscription(subId);
       } catch (err) {
         this.toast(err.message || 'Provider sync check failed', 'danger');
+      }
+    }
+
+    /* =========================================================================
+       6C. PAYMENTS & TRANSACTIONS MANAGEMENT VIEW (Phase 9 - Batch 9.3)
+       ========================================================================= */
+    _renderPaymentsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Payment Transactions Ledger</h1>
+            <p class="admin-view-subtitle">Inspect customer transactions, verify upstream provider status, track fee/tax breakdowns, and execute refunds.</p>
+          </div>
+          <div class="admin-view-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshPaymentsBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-filter-bar">
+          <div class="admin-search-wrap">
+            ${ICONS.search}
+            <input type="text" id="paymentSearchInput" class="admin-search-input" placeholder="Search by email, payment ID, or provider reference..." value="${this._escape(this.paymentState.search)}">
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <select id="paymentStatusSelect" class="admin-select">
+              <option value="" ${!this.paymentState.status ? 'selected' : ''}>All Statuses</option>
+              <option value="SUCCESS" ${this.paymentState.status === 'SUCCESS' ? 'selected' : ''}>SUCCESS</option>
+              <option value="PENDING" ${this.paymentState.status === 'PENDING' ? 'selected' : ''}>PENDING</option>
+              <option value="FAILED" ${this.paymentState.status === 'FAILED' ? 'selected' : ''}>FAILED</option>
+              <option value="REFUNDED" ${this.paymentState.status === 'REFUNDED' ? 'selected' : ''}>REFUNDED</option>
+            </select>
+            <select id="paymentCurrencySelect" class="admin-select">
+              <option value="" ${!this.paymentState.currency ? 'selected' : ''}>All Currencies</option>
+              <option value="INR" ${this.paymentState.currency === 'INR' ? 'selected' : ''}>INR (₹)</option>
+              <option value="USD" ${this.paymentState.currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Customer / Email</th>
+                  <th>Amount</th>
+                  <th>Lifecycle Status</th>
+                  <th>Refund State</th>
+                  <th>Provider Ref & Receipt</th>
+                  <th>Charged At</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="paymentTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading payment transactions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="paymentPaginationBar" class="admin-pagination-bar"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('paymentSearchInput');
+      const statusSelect = document.getElementById('paymentStatusSelect');
+      const currencySelect = document.getElementById('paymentCurrencySelect');
+      const refreshBtn = document.getElementById('refreshPaymentsBtn');
+
+      let debounceTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.paymentState.search = e.target.value.trim();
+            this.paymentState.page = 1;
+            this.loadPayments();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.paymentState.status = e.target.value;
+          this.paymentState.page = 1;
+          this.loadPayments();
+        });
+      }
+
+      if (currencySelect) {
+        currencySelect.addEventListener('change', (e) => {
+          this.paymentState.currency = e.target.value;
+          this.paymentState.page = 1;
+          this.loadPayments();
+        });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => this.loadPayments());
+      }
+
+      this.loadPayments();
+    }
+
+    async loadPayments() {
+      const tbody = document.getElementById('paymentTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading payments...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: this.paymentState.page.toString(),
+          pageSize: this.paymentState.pageSize.toString()
+        });
+        if (this.paymentState.search) queryParams.set('search', this.paymentState.search);
+        if (this.paymentState.status) queryParams.set('status', this.paymentState.status);
+        if (this.paymentState.currency) queryParams.set('currency', this.paymentState.currency);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/payments?${queryParams.toString()}`);
+        const data = res.data;
+        this.paymentState.items = data.items || [];
+        this.paymentState.total = data.total || 0;
+
+        if (this.paymentState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="admin-empty-box">
+                  ${ICONS['dollar-sign']}
+                  <div class="admin-empty-title">No payment transactions found</div>
+                  <div class="admin-empty-desc">No customer payment records matched your search and filter criteria.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('paymentPaginationBar', this.paymentState, (p) => { this.paymentState.page = p; this.loadPayments(); });
+          return;
+        }
+
+        const canRefund = window.AdminAuth.hasPermission('billing.refund');
+
+        tbody.innerHTML = this.paymentState.items.map(p => {
+          const formattedAmount = `${(p.amountMinorUnits / 100).toFixed(2)} ${p.currency}`;
+          const refundedAmount = p.refundedAmountMinorUnits || 0;
+          const remainingMinor = p.amountMinorUnits - refundedAmount;
+
+          let refundBadge = '<span class="admin-badge admin-badge-neutral">Clean</span>';
+          if (p.status === 'REFUNDED' || remainingMinor <= 0) {
+            refundBadge = '<span class="admin-badge admin-badge-danger">Fully Refunded</span>';
+          } else if (refundedAmount > 0) {
+            refundBadge = `<span class="admin-badge admin-badge-warning">Refunded: ${(refundedAmount / 100).toFixed(2)}</span>`;
+          }
+
+          const isEligibleForRefund = canRefund && p.status === 'SUCCESS' && remainingMinor > 0;
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);">${this._escape(p.userEmail)}</strong>
+                <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(p.id)}</div>
+              </td>
+              <td>
+                <strong>${formattedAmount}</strong>
+                ${p.planCode ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(p.planCode)}</div>` : ''}
+              </td>
+              <td>${this._renderStatusBadge(p.status)}</td>
+              <td>${refundBadge}</td>
+              <td>
+                <div style="font-size:0.8125rem;">${this._escape(p.providerPaymentId || '—')}</div>
+                ${p.receiptNumber ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">Receipt: ${this._escape(p.receiptNumber)}</div>` : ''}
+              </td>
+              <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${p.chargedAt ? new Date(p.chargedAt).toLocaleString() : '—'}</td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex;gap:4px;">
+                  <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectPayment('${p.id}')" title="Inspect payment & provider sync">
+                    ${ICONS.eye} Inspect
+                  </button>
+                  ${isEligibleForRefund ? `
+                    <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.showExecuteRefundModal('${p.id}', '${this._escape(p.userEmail)}', ${p.amountMinorUnits}, '${this._escape(p.currency)}', ${remainingMinor})" title="Issue administrative refund">
+                      Refund
+                    </button>
+                  ` : ''}
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('paymentPaginationBar', this.paymentState, (p) => { this.paymentState.page = p; this.loadPayments(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load payments')}</td></tr>`;
+      }
+    }
+
+    async inspectPayment(paymentId) {
+      try {
+        const [payRes, syncRes] = await Promise.all([
+          window.AdminApi.get(`/admin/operations/billing/payments/${paymentId}`),
+          window.AdminApi.get(`/admin/operations/billing/payments/${paymentId}/provider-sync`).catch(() => ({ data: { sync: null } }))
+        ]);
+
+        const p = payRes.data;
+        const sync = syncRes.data.sync;
+
+        const totalFormatted = `${(p.amountMinorUnits / 100).toFixed(2)} ${p.currency}`;
+        const refundedAmount = p.refundedAmountMinorUnits || 0;
+        const remainingMinor = p.amountMinorUnits - refundedAmount;
+        const canRefund = window.AdminAuth.hasPermission('billing.refund') && p.status === 'SUCCESS' && remainingMinor > 0;
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Payment Overview</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Payment ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(p.id)}</code></span>
+              <span class="admin-property-label">Customer Email:</span>
+              <span class="admin-property-value"><strong>${this._escape(p.userEmail)}</strong></span>
+              <span class="admin-property-label">Customer ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(p.userId)}</code></span>
+              <span class="admin-property-label">Subscription ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(p.subscriptionId || 'One-off')}</code></span>
+              <span class="admin-property-label">Plan Tier:</span>
+              <span class="admin-property-value"><strong>${this._escape(p.planCode || 'N/A')}</strong></span>
+              <span class="admin-property-label">Lifecycle Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(p.status)}</span>
+              <span class="admin-property-label">Total Amount:</span>
+              <span class="admin-property-value"><strong>${totalFormatted}</strong></span>
+              <span class="admin-property-label">Charged Timestamp:</span>
+              <span class="admin-property-value">${p.chargedAt ? new Date(p.chargedAt).toLocaleString() : '—'}</span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Financial Breakdown & Taxes</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Receipt Number:</span>
+              <span class="admin-property-value"><strong>${this._escape(p.receiptNumber || 'None')}</strong></span>
+              <span class="admin-property-label">Tax Total:</span>
+              <span class="admin-property-value">${p.totalTaxMinorUnits !== null ? `${(p.totalTaxMinorUnits / 100).toFixed(2)} ${p.currency}` : '0.00'}</span>
+              <span class="admin-property-label">Processing Fee:</span>
+              <span class="admin-property-value">${p.totalFeeMinorUnits !== null ? `${(p.totalFeeMinorUnits / 100).toFixed(2)} ${p.currency}` : '0.00'}</span>
+              <span class="admin-property-label">Net Settlement:</span>
+              <span class="admin-property-value"><strong>${p.processingFee && p.processingFee.netSettlementAmountMinorUnits !== null ? `${(p.processingFee.netSettlementAmountMinorUnits / 100).toFixed(2)} ${p.currency}` : totalFormatted}</strong></span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Refund Summary (${p.refunds ? p.refunds.length : 0})</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Cumulative Refunded:</span>
+              <span class="admin-property-value">${(refundedAmount / 100).toFixed(2)} ${p.currency}</span>
+              <span class="admin-property-label">Remaining Refundable:</span>
+              <span class="admin-property-value"><strong>${(remainingMinor / 100).toFixed(2)} ${p.currency}</strong></span>
+            </div>
+            ${p.refunds && p.refunds.length > 0 ? `
+              <div style="margin-top:0.75rem;display:flex;flex-direction:column;gap:0.5rem;">
+                ${p.refunds.map(r => `
+                  <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                      <strong style="font-size:0.875rem;">${(r.amountMinorUnits / 100).toFixed(2)} ${r.currency}</strong>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(r.reason)} &bull; ${new Date(r.requestedAt).toLocaleDateString()}</div>
+                    </div>
+                    ${this._renderStatusBadge(r.status)}
+                  </div>
+                `).join('')}
+              </div>
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.8125rem;margin-top:0.5rem;">No refunds requested for this transaction.</p>'}
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Payment Provider (Razorpay) State</div>
+            ${sync ? `
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Provider Payment ID:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(sync.providerPaymentId || 'None')}</code></span>
+                <span class="admin-property-label">Provider Status:</span>
+                <span class="admin-property-value">${this._escape(sync.providerState ? sync.providerState.status : 'UNKNOWN')}</span>
+                <span class="admin-property-label">State Consistency:</span>
+                <span class="admin-property-value">${sync.comparison && sync.comparison.isMatched ? '<span class="admin-badge admin-badge-success">In Sync</span>' : '<span class="admin-badge admin-badge-danger">State Mismatch</span>'}</span>
+                ${sync.comparison && sync.comparison.mismatches && sync.comparison.mismatches.length > 0 ? `
+                  <span class="admin-property-label">Mismatches:</span>
+                  <span class="admin-property-value" style="color:var(--admin-danger);font-size:0.8125rem;">${this._escape(sync.comparison.mismatches.join('; '))}</span>
+                ` : ''}
+              </div>
+              ${sync.providerState ? `
+                <div style="margin-top:0.75rem;">
+                  <span style="font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);display:block;margin-bottom:0.25rem;">Provider Metadata (Sanitized):</span>
+                  <pre style="background:var(--admin-bg-base);padding:0.5rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);font-size:0.75rem;max-height:120px;overflow:auto;margin:0;"><code>${this._escape(JSON.stringify(sync.providerState, null, 2))}</code></pre>
+                </div>
+              ` : ''}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.8125rem;">No external payment provider record attached to this transaction.</p>'}
+          </div>
+
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            ${canRefund ? `
+              <button class="admin-btn admin-btn-danger" onclick="AdminShell.showExecuteRefundModal('${p.id}', '${this._escape(p.userEmail)}', ${p.amountMinorUnits}, '${this._escape(p.currency)}', ${remainingMinor})">
+                Issue Refund
+              </button>
+            ` : ''}
+            <button class="admin-btn admin-btn-secondary" onclick="AdminShell.syncProviderPayment('${p.id}')">
+              ${ICONS['refresh-cw']} Re-check Provider Sync
+            </button>
+          </div>
+        `;
+
+        this._showDrawer(`Payment: ${p.id.substring(0, 12)}... (${totalFormatted})`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect payment', 'danger');
+      }
+    }
+
+    showExecuteRefundModal(paymentId, userEmail, totalMinorUnits, currency, remainingMinorUnits) {
+      const existing = document.getElementById('adminConfirmModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminConfirmModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      const maxRefundMajor = (remainingMinorUnits / 100).toFixed(2);
+      const totalMajor = (totalMinorUnits / 100).toFixed(2);
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" style="max-width:540px;">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Administrative Payment Refund</h3>
+            <button class="admin-btn-icon" id="adminModalCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <div style="background:var(--admin-bg-base);padding:0.75rem 1rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);margin-bottom:1rem;font-size:0.8125rem;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="color:var(--admin-text-muted);">Customer:</span>
+                <strong>${this._escape(userEmail)}</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <span style="color:var(--admin-text-muted);">Total Captured Amount:</span>
+                <strong>${totalMajor} ${currency}</strong>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="color:var(--admin-text-muted);">Available Refundable Balance:</span>
+                <strong style="color:var(--admin-success);">${maxRefundMajor} ${currency}</strong>
+              </div>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Refund Amount (${currency}):
+              </label>
+              <input type="number" id="adminRefundAmountInput" class="admin-search-input" min="0.01" max="${maxRefundMajor}" step="0.01" value="${maxRefundMajor}" style="padding-left:0.875rem;">
+              <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:0.25rem;">
+                Defaulted to full remaining balance (${maxRefundMajor} ${currency}). Enter a lower amount for partial refund.
+              </div>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Refund Policy Reason:
+              </label>
+              <select id="adminRefundReasonSelect" class="admin-select" style="width:100%;">
+                <option value="ADMIN_APPROVED_EXCEPTION">ADMIN_APPROVED_EXCEPTION (Administrative Discretion)</option>
+                <option value="DUPLICATE_PAYMENT">DUPLICATE_PAYMENT (Accidental Duplicate Charge)</option>
+                <option value="ERRONEOUS_PAYMENT">ERRONEOUS_PAYMENT (Incorrect Plan / Billing Error)</option>
+                <option value="TECHNICAL_SERVICE_FAILURE">TECHNICAL_SERVICE_FAILURE (Platform Outage / Service Issue)</option>
+                <option value="ANNUAL_WITHIN_REFUND_WINDOW">ANNUAL_WITHIN_REFUND_WINDOW (Annual 14-Day Cooling Period)</option>
+                <option value="OTHER_APPROVED">OTHER_APPROVED (Customer Goodwill)</option>
+              </select>
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Administrative Notes / Reason Details:
+              </label>
+              <input type="text" id="adminRefundDetailsInput" class="admin-search-input" maxlength="255" placeholder="e.g. Support ticket #8921, approved by billing lead..." style="padding-left:0.875rem;">
+            </div>
+
+            <div style="margin-bottom:1rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.8125rem;cursor:pointer;">
+                <input type="checkbox" id="adminRefundTerminateSubCheckbox">
+                <span>Terminate and expire customer subscription immediately</span>
+              </label>
+            </div>
+
+            <div style="background:var(--admin-warning-subtle);border-left:3px solid var(--admin-warning);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-size:0.8125rem;color:var(--admin-warning);">
+              <strong>Warning:</strong> Executing a refund dispatches an irreversible external transaction to Razorpay and creates an immutable entry in the SHA-256 audit chain.
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminModalCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-danger" id="adminModalConfirmRefundBtn">Execute Refund</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminModalCloseBtn');
+      const cancelBtn = document.getElementById('adminModalCancelBtn');
+      const confirmBtn = document.getElementById('adminModalConfirmRefundBtn');
+      const amountInput = document.getElementById('adminRefundAmountInput');
+      const reasonSelect = document.getElementById('adminRefundReasonSelect');
+      const detailsInput = document.getElementById('adminRefundDetailsInput');
+      const termSubCheckbox = document.getElementById('adminRefundTerminateSubCheckbox');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          const rawAmount = parseFloat(amountInput.value);
+          if (isNaN(rawAmount) || rawAmount <= 0) {
+            this.toast('Please enter a valid refund amount greater than zero.', 'danger');
+            return;
+          }
+
+          const amountMinorUnits = Math.round(rawAmount * 100);
+          if (amountMinorUnits > remainingMinorUnits) {
+            this.toast(`Refund amount cannot exceed remaining balance (${maxRefundMajor} ${currency}).`, 'danger');
+            return;
+          }
+
+          const reason = reasonSelect.value;
+          const reasonDetails = detailsInput ? detailsInput.value.trim() : '';
+          const terminateSubscription = termSubCheckbox ? termSubCheckbox.checked : false;
+
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Executing Refund...';
+
+          try {
+            await window.AdminApi.post(`/admin/operations/billing/payments/${paymentId}/refund`, {
+              amountMinorUnits,
+              reason,
+              reasonDetails: reasonDetails || undefined,
+              terminateSubscription
+            });
+
+            this.toast(`Refund of ${(amountMinorUnits / 100).toFixed(2)} ${currency} executed successfully.`, 'success');
+            closeModal();
+            this._closeDrawer();
+            this.loadPayments();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Execute Refund';
+            this.toast(err.message || 'Refund execution failed', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    async syncProviderPayment(paymentId) {
+      try {
+        this.toast('Checking live provider transaction state...', 'info');
+        const res = await window.AdminApi.get(`/admin/operations/billing/payments/${paymentId}/provider-sync`);
+        const sync = res.data.sync;
+        if (sync && sync.comparison && sync.comparison.isMatched) {
+          this.toast(`Payment is in sync with provider (${sync.providerState ? sync.providerState.status : 'captured'}).`, 'success');
+        } else {
+          this.toast(`Mismatch detected: ${sync && sync.comparison && sync.comparison.mismatches ? sync.comparison.mismatches.join(', ') : 'Check details'}`, 'warning');
+        }
+        this.inspectPayment(paymentId);
+      } catch (err) {
+        this.toast(err.message || 'Provider sync check failed', 'danger');
+      }
+    }
+
+    /* =========================================================================
+       6D. REFUNDS & RETURNS MANAGEMENT VIEW (Phase 9 - Batch 9.3)
+       ========================================================================= */
+    _renderRefundsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Refunds & Returns Ledger</h1>
+            <p class="admin-view-subtitle">Inspect customer refund requests, track Razorpay provider execution status, and analyze dispute reasons.</p>
+          </div>
+          <div class="admin-view-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshRefundsBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-filter-bar">
+          <div class="admin-search-wrap">
+            ${ICONS.search}
+            <input type="text" id="refundSearchInput" class="admin-search-input" placeholder="Search by email, refund ID, provider refund ID, or payment ID..." value="${this._escape(this.refundState.search)}">
+          </div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <select id="refundStatusSelect" class="admin-select">
+              <option value="" ${!this.refundState.status ? 'selected' : ''}>All Statuses</option>
+              <option value="PROCESSED" ${this.refundState.status === 'PROCESSED' ? 'selected' : ''}>PROCESSED</option>
+              <option value="PROCESSING" ${this.refundState.status === 'PROCESSING' ? 'selected' : ''}>PROCESSING</option>
+              <option value="REQUESTED" ${this.refundState.status === 'REQUESTED' ? 'selected' : ''}>REQUESTED</option>
+              <option value="FAILED" ${this.refundState.status === 'FAILED' ? 'selected' : ''}>FAILED</option>
+            </select>
+            <select id="refundReasonSelect" class="admin-select">
+              <option value="" ${!this.refundState.reason ? 'selected' : ''}>All Reasons</option>
+              <option value="ADMIN_APPROVED_EXCEPTION" ${this.refundState.reason === 'ADMIN_APPROVED_EXCEPTION' ? 'selected' : ''}>ADMIN_APPROVED_EXCEPTION</option>
+              <option value="DUPLICATE_PAYMENT" ${this.refundState.reason === 'DUPLICATE_PAYMENT' ? 'selected' : ''}>DUPLICATE_PAYMENT</option>
+              <option value="ERRONEOUS_PAYMENT" ${this.refundState.reason === 'ERRONEOUS_PAYMENT' ? 'selected' : ''}>ERRONEOUS_PAYMENT</option>
+              <option value="TECHNICAL_SERVICE_FAILURE" ${this.refundState.reason === 'TECHNICAL_SERVICE_FAILURE' ? 'selected' : ''}>TECHNICAL_SERVICE_FAILURE</option>
+              <option value="ANNUAL_WITHIN_REFUND_WINDOW" ${this.refundState.reason === 'ANNUAL_WITHIN_REFUND_WINDOW' ? 'selected' : ''}>ANNUAL_WITHIN_REFUND_WINDOW</option>
+              <option value="OTHER_APPROVED" ${this.refundState.reason === 'OTHER_APPROVED' ? 'selected' : ''}>OTHER_APPROVED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Refund ID / Customer</th>
+                  <th>Amount</th>
+                  <th>Reason</th>
+                  <th>Lifecycle Status</th>
+                  <th>Requested By & Date</th>
+                  <th>Provider Ref</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="refundTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading refunds...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="refundPaginationBar" class="admin-pagination-bar"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('refundSearchInput');
+      const statusSelect = document.getElementById('refundStatusSelect');
+      const reasonSelect = document.getElementById('refundReasonSelect');
+      const refreshBtn = document.getElementById('refreshRefundsBtn');
+
+      let debounceTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.refundState.search = e.target.value.trim();
+            this.refundState.page = 1;
+            this.loadRefunds();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.refundState.status = e.target.value;
+          this.refundState.page = 1;
+          this.loadRefunds();
+        });
+      }
+
+      if (reasonSelect) {
+        reasonSelect.addEventListener('change', (e) => {
+          this.refundState.reason = e.target.value;
+          this.refundState.page = 1;
+          this.loadRefunds();
+        });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => this.loadRefunds());
+      }
+
+      this.loadRefunds();
+    }
+
+    async loadRefunds() {
+      const tbody = document.getElementById('refundTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading refunds...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: this.refundState.page.toString(),
+          pageSize: this.refundState.pageSize.toString()
+        });
+        if (this.refundState.search) queryParams.set('search', this.refundState.search);
+        if (this.refundState.status) queryParams.set('status', this.refundState.status);
+        if (this.refundState.reason) queryParams.set('reason', this.refundState.reason);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/refunds?${queryParams.toString()}`);
+        const data = res.data;
+        this.refundState.items = data.items || [];
+        this.refundState.total = data.total || 0;
+
+        if (this.refundState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7">
+                <div class="admin-empty-box">
+                  ${ICONS['rotate-ccw']}
+                  <div class="admin-empty-title">No refund records found</div>
+                  <div class="admin-empty-desc">No customer refunds matched your search and filter criteria.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('refundPaginationBar', this.refundState, (p) => { this.refundState.page = p; this.loadRefunds(); });
+          return;
+        }
+
+        tbody.innerHTML = this.refundState.items.map(r => {
+          const formattedAmount = `${(r.amountMinorUnits / 100).toFixed(2)} ${r.currency}`;
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);">${this._escape(r.userEmail)}</strong>
+                <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(r.id)}</div>
+              </td>
+              <td><strong>${formattedAmount}</strong></td>
+              <td style="font-size:0.8125rem;">
+                <div>${this._escape(r.reason)}</div>
+                ${r.reasonDetails ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(r.reasonDetails)}</div>` : ''}
+              </td>
+              <td>${this._renderStatusBadge(r.status)}</td>
+              <td style="font-size:0.8125rem;">
+                <div>${this._escape(r.requestedBy || 'ADMIN')}</div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">${r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '—'}</div>
+              </td>
+              <td style="font-size:0.8125rem;">
+                <div>${this._escape(r.providerRefundId || '—')}</div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">Pay: ${this._escape(r.paymentId.substring(0, 8))}...</div>
+              </td>
+              <td style="text-align:right;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectRefund('${r.id}')" title="Inspect refund detail & provider sync">
+                  ${ICONS.eye} Inspect
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('refundPaginationBar', this.refundState, (p) => { this.refundState.page = p; this.loadRefunds(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load refunds')}</td></tr>`;
+      }
+    }
+
+    async inspectRefund(refundId) {
+      try {
+        const [refRes, syncRes] = await Promise.all([
+          window.AdminApi.get(`/admin/operations/billing/refunds/${refundId}`),
+          window.AdminApi.get(`/admin/operations/billing/refunds/${refundId}/provider-sync`).catch(() => ({ data: { sync: null } }))
+        ]);
+
+        const r = refRes.data;
+        const sync = syncRes.data.sync;
+        const formattedAmount = `${(r.amountMinorUnits / 100).toFixed(2)} ${r.currency}`;
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Refund Overview</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Refund ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(r.id)}</code></span>
+              <span class="admin-property-label">Customer Email:</span>
+              <span class="admin-property-value"><strong>${this._escape(r.userEmail)}</strong></span>
+              <span class="admin-property-label">Customer ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(r.userId)}</code></span>
+              <span class="admin-property-label">Refund Amount:</span>
+              <span class="admin-property-value"><strong>${formattedAmount}</strong></span>
+              <span class="admin-property-label">Lifecycle Status:</span>
+              <span class="admin-property-value">${this._renderStatusBadge(r.status)}</span>
+              <span class="admin-property-label">Policy Reason:</span>
+              <span class="admin-property-value"><strong>${this._escape(r.reason)}</strong></span>
+              <span class="admin-property-label">Reason Details:</span>
+              <span class="admin-property-value">${this._escape(r.reasonDetails || 'None provided')}</span>
+              <span class="admin-property-label">Requested By:</span>
+              <span class="admin-property-value">${this._escape(r.requestedBy || 'ADMIN')}</span>
+              <span class="admin-property-label">Requested At:</span>
+              <span class="admin-property-value">${r.requestedAt ? new Date(r.requestedAt).toLocaleString() : '—'}</span>
+              <span class="admin-property-label">Processed At:</span>
+              <span class="admin-property-value">${r.providerProcessedAt ? new Date(r.providerProcessedAt).toLocaleString() : (r.status === 'PROCESSED' ? 'Processed' : 'Pending Provider')}</span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Associated Payment Record</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Payment ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(r.paymentId)}</code></span>
+              <span class="admin-property-label">Original Amount:</span>
+              <span class="admin-property-value"><strong>${r.payment ? `${(r.payment.amountMinorUnits / 100).toFixed(2)} ${r.payment.currency}` : '—'}</strong></span>
+              <span class="admin-property-label">Payment Status:</span>
+              <span class="admin-property-value">${r.payment ? this._renderStatusBadge(r.payment.status) : '—'}</span>
+              <span class="admin-property-label">Charged At:</span>
+              <span class="admin-property-value">${r.payment && r.payment.chargedAt ? new Date(r.payment.chargedAt).toLocaleString() : '—'}</span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Payment Provider (Razorpay) State</div>
+            ${sync ? `
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Provider Refund ID:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(sync.providerRefundId || 'None')}</code></span>
+                <span class="admin-property-label">Provider Status:</span>
+                <span class="admin-property-value">${this._escape(sync.providerState ? sync.providerState.status : 'UNKNOWN')}</span>
+                <span class="admin-property-label">State Consistency:</span>
+                <span class="admin-property-value">${sync.comparison && sync.comparison.isMatched ? '<span class="admin-badge admin-badge-success">In Sync</span>' : '<span class="admin-badge admin-badge-danger">State Mismatch</span>'}</span>
+                ${sync.comparison && sync.comparison.mismatches && sync.comparison.mismatches.length > 0 ? `
+                  <span class="admin-property-label">Mismatches:</span>
+                  <span class="admin-property-value" style="color:var(--admin-danger);font-size:0.8125rem;">${this._escape(sync.comparison.mismatches.join('; '))}</span>
+                ` : ''}
+              </div>
+              ${sync.providerState ? `
+                <div style="margin-top:0.75rem;">
+                  <span style="font-size:0.75rem;font-weight:600;color:var(--admin-text-muted);display:block;margin-bottom:0.25rem;">Provider Refund Payload (Sanitized):</span>
+                  <pre style="background:var(--admin-bg-base);padding:0.5rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);font-size:0.75rem;max-height:120px;overflow:auto;margin:0;"><code>${this._escape(JSON.stringify(sync.providerState, null, 2))}</code></pre>
+                </div>
+              ` : ''}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.8125rem;">No external provider refund record attached.</p>'}
+          </div>
+
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button class="admin-btn admin-btn-secondary" onclick="AdminShell.syncProviderRefund('${r.id}')">
+              ${ICONS['refresh-cw']} Re-check Provider Sync
+            </button>
+          </div>
+        `;
+
+        this._showDrawer(`Refund: ${formattedAmount} (${r.id.substring(0, 12)}...)`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect refund', 'danger');
+      }
+    }
+
+    async syncProviderRefund(refundId) {
+      try {
+        this.toast('Checking live provider refund state...', 'info');
+        const res = await window.AdminApi.get(`/admin/operations/billing/refunds/${refundId}/provider-sync`);
+        const sync = res.data.sync;
+        if (sync && sync.comparison && sync.comparison.isMatched) {
+          this.toast(`Refund is in sync with provider (${sync.providerState ? sync.providerState.status : 'processed'}).`, 'success');
+        } else {
+          this.toast(`Mismatch detected: ${sync && sync.comparison && sync.comparison.mismatches ? sync.comparison.mismatches.join(', ') : 'Check details'}`, 'warning');
+        }
+        this.inspectRefund(refundId);
+      } catch (err) {
+        this.toast(err.message || 'Provider refund sync check failed', 'danger');
       }
     }
 

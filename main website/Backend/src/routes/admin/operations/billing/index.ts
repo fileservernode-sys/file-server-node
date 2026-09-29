@@ -11,7 +11,8 @@ import {
   AdminReconciliationRunListQuerySchema,
   AdminDiscrepancyListQuerySchema,
   AdminPlanListQuerySchema,
-  AdminCancelSubscriptionSchema
+  AdminCancelSubscriptionSchema,
+  AdminExecuteRefundSchema
 } from './schemas.js';
 
 export * from './types.js';
@@ -190,6 +191,83 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
   );
 
   /**
+   * GET /api/v1/admin/operations/billing/payments/:id/provider-sync
+   * Inspects live payment transaction status directly from Razorpay provider.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/payments/:id/provider-sync',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Payment ID is required');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.inspectProviderPayment(id, context);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/billing/payments/:id/refund
+   * Executes an administrative refund for a specific payment transaction.
+   * Permission required: 'billing.refund'
+   */
+  app.post(
+    '/admin/operations/billing/payments/:id/refund',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.refund')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Payment ID is required');
+      }
+
+      const parsed = AdminExecuteRefundSchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid refund parameters');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.executePaymentRefund(id, context, parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/billing/refunds
+   * Alternative endpoint to issue a refund with paymentId in the body.
+   * Permission required: 'billing.refund'
+   */
+  app.post(
+    '/admin/operations/billing/refunds',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.refund')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const body = request.body as any;
+      const paymentId = body?.paymentId;
+      if (!paymentId || typeof paymentId !== 'string') {
+        throw new ValidationError('paymentId is required in the refund request body');
+      }
+
+      const parsed = AdminExecuteRefundSchema.safeParse(body);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid refund parameters');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.executePaymentRefund(paymentId, context, parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
    * GET /api/v1/admin/operations/billing/refunds
    * Lists customer refund transactions with filters and bounded pagination.
    * Permission required: 'billing.read'
@@ -227,6 +305,28 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
       }
 
       const result = await AdminBillingService.getRefundDetail(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/refunds/:id/provider-sync
+   * Inspects live refund status directly from Razorpay provider.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/refunds/:id/provider-sync',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Refund ID is required');
+      }
+
+      const context = (request as any).adminOperationContext;
+      const result = await AdminBillingService.inspectProviderRefund(id, context);
       return reply.status(200).send(createSuccessResponse(result));
     }
   );
