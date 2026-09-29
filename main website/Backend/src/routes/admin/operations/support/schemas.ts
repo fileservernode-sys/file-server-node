@@ -2,7 +2,8 @@ import { z } from 'zod';
 import {
   SupportCaseStatus,
   SupportCasePriority,
-  SupportCaseCategory
+  SupportCaseCategory,
+  UserStatus
 } from '@prisma/client';
 
 export const SupportCaseListQuerySchema = z.object({
@@ -50,3 +51,23 @@ export const AddSupportCaseNoteSchema = z.object({
 });
 
 export type AddSupportCaseNoteInput = z.infer<typeof AddSupportCaseNoteSchema>;
+
+export const SupportCustomerListQuerySchema = z.object({
+  search: z.string().optional(),
+  status: z.nativeEnum(UserStatus).optional(),
+  emailVerified: z.preprocess((val) => {
+    if (val === 'true' || val === true) return true;
+    if (val === 'false' || val === false) return false;
+    return undefined;
+  }, z.boolean().optional()),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20)
+});
+
+export type SupportCustomerListQuery = z.infer<typeof SupportCustomerListQuerySchema>;
+
+export const SupportCustomerParamSchema = z.object({
+  userId: z.string().min(1, 'User ID is required')
+});
+
+export type SupportCustomerParam = z.infer<typeof SupportCustomerParamSchema>;

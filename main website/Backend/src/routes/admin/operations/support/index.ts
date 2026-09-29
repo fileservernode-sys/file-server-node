@@ -9,7 +9,9 @@ import {
   CreateSupportCaseSchema,
   UpdateSupportCaseSchema,
   AssignSupportCaseSchema,
-  AddSupportCaseNoteSchema
+  AddSupportCaseNoteSchema,
+  SupportCustomerListQuerySchema,
+  SupportCustomerParamSchema
 } from './schemas.js';
 
 export * from './types.js';
@@ -176,6 +178,52 @@ export async function adminSupportOperationsRoutes(app: FastifyInstance): Promis
       const context = request.operationContext!;
       const result = await AdminSupportService.addCaseNote(caseId, parsed.data, context);
       return reply.status(201).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/support/customers
+   * Lists customer accounts for Support search and lookup with device/server/case counts.
+   * Permission required: 'support.read'
+   */
+  app.get(
+    '/admin/operations/support/customers',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('support.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = SupportCustomerListQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid customer lookup query parameters');
+      }
+
+      const context = request.operationContext!;
+      const result = await AdminSupportService.listSupportCustomers(parsed.data, context);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/support/customers/:userId/context
+   * Aggregates comprehensive, read-only diagnostic context for a customer.
+   * Includes identity, registered devices, server daemons, connection status, safe billing, and support history.
+   * Permission required: 'support.read'
+   */
+  app.get(
+    '/admin/operations/support/customers/:userId/context',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('support.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsedParam = SupportCustomerParamSchema.safeParse(request.params);
+      if (!parsedParam.success) {
+        throw new ValidationError(parsedParam.error.errors[0]?.message || 'Invalid userId parameter');
+      }
+
+      const { userId } = parsedParam.data;
+      const context = request.operationContext!;
+      const result = await AdminSupportService.getSupportCustomerContext(userId, context);
+      return reply.status(200).send(createSuccessResponse(result));
     }
   );
 }

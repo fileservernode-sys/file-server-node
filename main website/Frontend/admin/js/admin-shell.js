@@ -409,6 +409,8 @@
       this.discrepancyState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', discrepancyType: '' };
       this.settlementState = { page: 1, pageSize: 20, total: 0, items: [], search: '', reconciliationStatus: '' };
       this.supportState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', priority: '', category: '' };
+      this.supportActiveTab = 'cases';
+      this.supportCustomerState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -5128,7 +5130,7 @@
         <div class="admin-view-header">
           <div class="admin-view-title-wrap">
             <h1>Customer Support &amp; Help Desk</h1>
-            <p>Triage customer support cases, inspect bounded hardware/server diagnostic projections, and manage resolution lifecycles.</p>
+            <p>Triage customer support cases, inspect bounded customer diagnostics, and manage resolution lifecycles.</p>
           </div>
           <div class="admin-header-actions">
             <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshSupportBtn">
@@ -5142,80 +5144,165 @@
           </div>
         </div>
 
-        <div id="supportMetricsCards" class="admin-grid-4" style="margin-bottom:1.5rem;">
-          <div class="admin-card"><div class="admin-stat-label">Total Cases</div><div class="admin-stat-value" id="supStatTotal">...</div></div>
-          <div class="admin-card"><div class="admin-stat-label">Open / In Progress</div><div class="admin-stat-value" id="supStatActive" style="color:var(--admin-warning);">...</div></div>
-          <div class="admin-card"><div class="admin-stat-label">Resolved / Closed</div><div class="admin-stat-value" id="supStatResolved" style="color:var(--admin-success);">...</div></div>
-          <div class="admin-card"><div class="admin-stat-label">Urgent / High Priority</div><div class="admin-stat-value" id="supStatUrgent" style="color:var(--admin-danger);">...</div></div>
+        <div class="admin-tab-bar" style="display:flex;gap:0.5rem;margin-bottom:1.25rem;">
+          <button class="admin-btn ${this.supportActiveTab === 'cases' ? 'admin-btn-primary' : 'admin-btn-secondary'} admin-btn-sm" id="supportTabCasesBtn">
+            ${ICONS['life-buoy']} Support Cases &amp; Desk
+          </button>
+          <button class="admin-btn ${this.supportActiveTab === 'customers' ? 'admin-btn-primary' : 'admin-btn-secondary'} admin-btn-sm" id="supportTabCustomersBtn">
+            ${ICONS.users} Customer Lookup &amp; Diagnostics
+          </button>
         </div>
 
-        <div class="admin-filter-bar" style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
-          <div style="position:relative;flex:1;min-width:240px;">
-            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--admin-text-muted);">${ICONS.search}</span>
-            <input type="text" id="supportSearchInput" class="admin-search-input" placeholder="Search by case #, subject, or customer email..." style="padding-left:2.25rem;width:100%;">
+        <!-- Cases Tab Content -->
+        <div id="supportCasesTabContent" style="display:${this.supportActiveTab === 'cases' ? 'block' : 'none'};">
+          <div id="supportMetricsCards" class="admin-grid-4" style="margin-bottom:1.5rem;">
+            <div class="admin-card"><div class="admin-stat-label">Total Cases</div><div class="admin-stat-value" id="supStatTotal">...</div></div>
+            <div class="admin-card"><div class="admin-stat-label">Open / In Progress</div><div class="admin-stat-value" id="supStatActive" style="color:var(--admin-warning);">...</div></div>
+            <div class="admin-card"><div class="admin-stat-label">Resolved / Closed</div><div class="admin-stat-value" id="supStatResolved" style="color:var(--admin-success);">...</div></div>
+            <div class="admin-card"><div class="admin-stat-label">Urgent / High Priority</div><div class="admin-stat-value" id="supStatUrgent" style="color:var(--admin-danger);">...</div></div>
           </div>
-          <select id="supportStatusFilter" class="admin-select" style="min-width:160px;">
-            <option value="">All Statuses</option>
-            <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="WAITING_ON_CUSTOMER">Waiting on Customer</option>
-            <option value="RESOLVED">Resolved</option>
-            <option value="CLOSED">Closed</option>
-          </select>
-          <select id="supportPriorityFilter" class="admin-select" style="min-width:140px;">
-            <option value="">All Priorities</option>
-            <option value="LOW">Low</option>
-            <option value="NORMAL">Normal</option>
-            <option value="HIGH">High</option>
-            <option value="URGENT">Urgent</option>
-          </select>
-          <select id="supportCategoryFilter" class="admin-select" style="min-width:160px;">
-            <option value="">All Categories</option>
-            <option value="ACCOUNT">Account</option>
-            <option value="DEVICE">Device</option>
-            <option value="SERVER">Server</option>
-            <option value="FILE_ACCESS">File Access</option>
-            <option value="BILLING">Billing</option>
-            <option value="CONNECTION">Connection</option>
-            <option value="SECURITY">Security</option>
-            <option value="GENERAL">General</option>
-          </select>
+
+          <div class="admin-filter-bar" style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+            <div style="position:relative;flex:1;min-width:240px;">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--admin-text-muted);">${ICONS.search}</span>
+              <input type="text" id="supportSearchInput" class="admin-search-input" placeholder="Search by case #, subject, or customer email..." style="padding-left:2.25rem;width:100%;">
+            </div>
+            <select id="supportStatusFilter" class="admin-select" style="min-width:160px;">
+              <option value="">All Statuses</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="WAITING_ON_CUSTOMER">Waiting on Customer</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="CLOSED">Closed</option>
+            </select>
+            <select id="supportPriorityFilter" class="admin-select" style="min-width:140px;">
+              <option value="">All Priorities</option>
+              <option value="LOW">Low</option>
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+            <select id="supportCategoryFilter" class="admin-select" style="min-width:160px;">
+              <option value="">All Categories</option>
+              <option value="ACCOUNT">Account</option>
+              <option value="DEVICE">Device</option>
+              <option value="SERVER">Server</option>
+              <option value="FILE_ACCESS">File Access</option>
+              <option value="BILLING">Billing</option>
+              <option value="CONNECTION">Connection</option>
+              <option value="SECURITY">Security</option>
+              <option value="GENERAL">General</option>
+            </select>
+          </div>
+
+          <div class="admin-card" style="padding:0;overflow:hidden;">
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Case #</th>
+                    <th>Customer</th>
+                    <th>Subject &amp; Category</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Assigned Agent</th>
+                    <th>Notes</th>
+                    <th>Created</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="supportTableBody">
+                  <tr><td colspan="9" style="text-align:center;padding:2rem;">Loading support cases...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="admin-pagination-bar" id="supportPagination" style="padding:0.75rem 1rem;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;"></div>
+          </div>
         </div>
 
-        <div class="admin-card" style="padding:0;overflow:hidden;">
-          <div class="admin-table-container">
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Case #</th>
-                  <th>Customer</th>
-                  <th>Subject &amp; Category</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Assigned Agent</th>
-                  <th>Notes</th>
-                  <th>Created</th>
-                  <th style="text-align:right;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="supportTableBody">
-                <tr><td colspan="9" style="text-align:center;padding:2rem;">Loading support cases...</td></tr>
-              </tbody>
-            </table>
+        <!-- Customer Lookup Tab Content -->
+        <div id="supportCustomersTabContent" style="display:${this.supportActiveTab === 'customers' ? 'block' : 'none'};">
+          <div class="admin-filter-bar" style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+            <div style="position:relative;flex:1;min-width:280px;">
+              <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--admin-text-muted);">${ICONS.search}</span>
+              <input type="text" id="supportCustomerSearchInput" class="admin-search-input" placeholder="Search customers by email, full name, or user ID..." style="padding-left:2.25rem;width:100%;">
+            </div>
+            <select id="supportCustomerStatusSelect" class="admin-select" style="min-width:160px;">
+              <option value="">All Account Statuses</option>
+              <option value="ACTIVE">Active Accounts</option>
+              <option value="SUSPENDED">Suspended Accounts</option>
+              <option value="DELETED">Deleted Accounts</option>
+            </select>
           </div>
-          <div class="admin-pagination-bar" id="supportPagination" style="padding:0.75rem 1rem;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;"></div>
+
+          <div class="admin-card" style="padding:0;overflow:hidden;">
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Customer Identity</th>
+                    <th>Account Status</th>
+                    <th>Registered Hardware</th>
+                    <th>Storage Projection</th>
+                    <th>Active Plan</th>
+                    <th>Joined</th>
+                    <th style="text-align:right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="supportCustomerTableBody">
+                  <tr><td colspan="8" style="text-align:center;padding:2rem;">Loading customer diagnostic directories...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="admin-pagination-bar" id="supportCustomerPagination" style="padding:0.75rem 1rem;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;"></div>
+          </div>
         </div>
       `;
 
       const refreshBtn = document.getElementById('refreshSupportBtn');
       const createBtn = document.getElementById('createSupportCaseBtn');
+      const tabCasesBtn = document.getElementById('supportTabCasesBtn');
+      const tabCustomersBtn = document.getElementById('supportTabCustomersBtn');
+      const casesContent = document.getElementById('supportCasesTabContent');
+      const customersContent = document.getElementById('supportCustomersTabContent');
+
+      if (tabCasesBtn && tabCustomersBtn) {
+        tabCasesBtn.addEventListener('click', () => {
+          this.supportActiveTab = 'cases';
+          tabCasesBtn.className = 'admin-btn admin-btn-primary admin-btn-sm';
+          tabCustomersBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+          if (casesContent) casesContent.style.display = 'block';
+          if (customersContent) customersContent.style.display = 'none';
+          this.loadSupportCases(1);
+        });
+
+        tabCustomersBtn.addEventListener('click', () => {
+          this.supportActiveTab = 'customers';
+          tabCustomersBtn.className = 'admin-btn admin-btn-primary admin-btn-sm';
+          tabCasesBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+          if (casesContent) casesContent.style.display = 'none';
+          if (customersContent) customersContent.style.display = 'block';
+          this.loadSupportCustomers(1);
+        });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          if (this.supportActiveTab === 'cases') {
+            this.loadSupportCases(this.supportState.page);
+          } else {
+            this.loadSupportCustomers(this.supportCustomerState.page);
+          }
+        });
+      }
+
+      if (createBtn) createBtn.addEventListener('click', () => this.showCreateSupportCaseModal());
+
       const searchInput = document.getElementById('supportSearchInput');
       const statusFilter = document.getElementById('supportStatusFilter');
       const priorityFilter = document.getElementById('supportPriorityFilter');
       const categoryFilter = document.getElementById('supportCategoryFilter');
-
-      if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadSupportCases(1));
-      if (createBtn) createBtn.addEventListener('click', () => this.showCreateSupportCaseModal());
 
       let debounceTimer;
       if (searchInput) {
@@ -5249,7 +5336,32 @@
         });
       }
 
-      this.loadSupportCases(1);
+      const custSearchInput = document.getElementById('supportCustomerSearchInput');
+      const custStatusSelect = document.getElementById('supportCustomerStatusSelect');
+
+      let custDebounce;
+      if (custSearchInput) {
+        custSearchInput.addEventListener('input', (e) => {
+          clearTimeout(custDebounce);
+          custDebounce = setTimeout(() => {
+            this.supportCustomerState.search = e.target.value.trim();
+            this.loadSupportCustomers(1);
+          }, 300);
+        });
+      }
+
+      if (custStatusSelect) {
+        custStatusSelect.addEventListener('change', (e) => {
+          this.supportCustomerState.status = e.target.value;
+          this.loadSupportCustomers(1);
+        });
+      }
+
+      if (this.supportActiveTab === 'cases') {
+        this.loadSupportCases(1);
+      } else {
+        this.loadSupportCustomers(1);
+      }
     }
 
     async loadSupportCases(page = 1) {
@@ -5363,6 +5475,270 @@
       }
     }
 
+    async loadSupportCustomers(page = 1) {
+      this.supportCustomerState.page = page;
+      const tbody = document.getElementById('supportCustomerTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;">Loading customer diagnostic directories...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: String(page),
+          pageSize: String(this.supportCustomerState.pageSize)
+        });
+
+        if (this.supportCustomerState.search) queryParams.set('search', this.supportCustomerState.search);
+        if (this.supportCustomerState.status) queryParams.set('status', this.supportCustomerState.status);
+
+        const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/customers?${queryParams.toString()}`);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to load support customer directory');
+        }
+
+        const data = res.data;
+        this.supportCustomerState.items = data.items || [];
+        this.supportCustomerState.total = data.total || 0;
+
+        if (this.supportCustomerState.items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No customers match your lookup query.</td></tr>`;
+          this._renderPagination('supportCustomerPagination', this.supportCustomerState, (p) => this.loadSupportCustomers(p));
+          return;
+        }
+
+        const formatBytes = (bytes) => {
+          if (!bytes || bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        };
+
+        tbody.innerHTML = this.supportCustomerState.items.map(c => {
+          let statusClass = 'neutral';
+          if (c.status === 'ACTIVE') statusClass = 'success';
+          else if (c.status === 'SUSPENDED') statusClass = 'danger';
+
+          const usedStr = formatBytes(c.storageUsed);
+          const limitStr = formatBytes(c.storageLimit);
+
+          return `
+            <tr>
+              <td>
+                <span style="font-family:monospace;font-size:0.8125rem;font-weight:700;color:var(--admin-primary);cursor:pointer;" onclick="AdminShell.inspectSupportCustomerContext('${c.id}')">
+                  ${this._escape(c.id.length > 12 ? c.id.substring(0, 10) + '...' : c.id)}
+                </span>
+              </td>
+              <td>
+                <div style="font-weight:600;font-size:0.8125rem;">${this._escape(c.email)}</div>
+                ${c.fullName ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(c.fullName)}</div>` : ''}
+              </td>
+              <td>
+                <span class="admin-badge admin-badge-${statusClass}">${this._escape(c.status)}</span>
+                ${c.emailVerified ? `<span style="color:var(--admin-success);font-size:0.75rem;margin-left:4px;" title="Email Verified">&check;</span>` : ''}
+              </td>
+              <td style="font-size:0.8125rem;">
+                <strong>${c.deviceCount}</strong> devices &bull; <strong>${c.serverCount}</strong> daemons
+              </td>
+              <td style="font-size:0.8125rem;">
+                <span>${usedStr}</span> <span style="font-size:0.75rem;color:var(--admin-text-muted);">/ ${limitStr}</span>
+              </td>
+              <td>
+                <span class="admin-badge admin-badge-neutral">${this._escape(c.activePlan || 'FREE')}</span>
+              </td>
+              <td style="font-size:0.75rem;color:var(--admin-text-secondary);white-space:nowrap;">
+                ${new Date(c.createdAt).toLocaleDateString()}
+              </td>
+              <td style="text-align:right;">
+                <div style="display:inline-flex;gap:0.375rem;">
+                  <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.inspectSupportCustomerContext('${c.id}')" title="Inspect Full Diagnostic Context">
+                    ${ICONS.search} Diagnostics
+                  </button>
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.showCreateSupportCaseModal('${c.id}')" title="Create Support Ticket">
+                    + Ticket
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('supportCustomerPagination', this.supportCustomerState, (p) => this.loadSupportCustomers(p));
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async inspectSupportCustomerContext(userId) {
+      this._showDrawer('Customer Operational Diagnostics', `<div style="padding:2rem;text-align:center;">Aggregating bounded diagnostic projections...</div>`);
+
+      try {
+        const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/customers/${userId}/context`);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to aggregate customer diagnostics');
+        }
+
+        const data = res.data;
+        const u = data.user;
+        const devices = data.devices || [];
+        const servers = data.servers || [];
+        const billing = data.billing;
+        const casesSummary = data.supportCases;
+        const recentCases = casesSummary?.recentCases || [];
+
+        const formatBytes = (bytes) => {
+          if (!bytes || bytes === 0) return '0 B';
+          const k = 1024;
+          const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        };
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <!-- Customer Identity Card -->
+            <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                <div>
+                  <div style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);">${this._escape(u.fullName || u.email)}</div>
+                  <div style="font-size:0.8125rem;color:var(--admin-text-muted);">${this._escape(u.email)} &bull; User ID: <code style="font-family:monospace;font-size:0.75rem;">${this._escape(u.id)}</code></div>
+                </div>
+                <div style="display:flex;gap:0.375rem;">
+                  <span class="admin-badge admin-badge-${u.status === 'ACTIVE' ? 'success' : 'danger'}">${this._escape(u.status)}</span>
+                  ${u.emailVerified ? `<span class="admin-badge admin-badge-success">Verified</span>` : `<span class="admin-badge admin-badge-warning">Unverified</span>`}
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:0.75rem;font-size:0.8125rem;background:var(--admin-bg-base);padding:0.75rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);">
+                <div><strong>Registered:</strong> ${new Date(u.createdAt).toLocaleDateString()}</div>
+                <div><strong>Last Updated:</strong> ${new Date(u.updatedAt).toLocaleDateString()}</div>
+                <div><strong>Storage Used:</strong> ${formatBytes(u.storageUsed)}</div>
+                <div><strong>Storage Quota:</strong> ${formatBytes(u.storageLimit)}</div>
+              </div>
+
+              <div style="display:flex;gap:0.5rem;margin-top:0.75rem;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${u.id}')">
+                  ${ICONS.eye} Core Account Inspector
+                </button>
+                <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.showCreateSupportCaseModal('${u.id}')">
+                  + Create Ticket For Customer
+                </button>
+              </div>
+            </div>
+
+            <!-- Edge Hardware Devices -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.875rem;font-weight:700;color:var(--admin-text-primary);">
+                  ${ICONS['hard-drive']} Registered Edge Hardware (${devices.length})
+                </div>
+              </div>
+              ${devices.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${devices.map(d => `
+                    <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-size:0.8125rem;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;">
+                        <span>${this._escape(d.deviceName || 'Unnamed Device')}</span>
+                        <span class="admin-badge admin-badge-${d.status === 'ONLINE' ? 'success' : 'neutral'}">${this._escape(d.status)}</span>
+                      </div>
+                      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.375rem;font-size:0.75rem;color:var(--admin-text-secondary);margin-top:0.375rem;">
+                        <div>Platform: <strong>${this._escape(d.platform)}</strong></div>
+                        <div>OS: <strong>${this._escape(d.osVersion || 'N/A')}</strong></div>
+                        <div>App: <strong>${this._escape(d.appVersion || 'N/A')}</strong></div>
+                        <div>Connection: <strong>${d.connection ? this._escape(d.connection.status) : 'DISCONNECTED'}</strong></div>
+                        <div>Last Seen: ${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}</div>
+                        <div>Registered: ${new Date(d.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No edge Android devices registered under this account.</div>`}
+            </div>
+
+            <!-- Server Daemons -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.875rem;font-weight:700;margin-bottom:0.75rem;color:var(--admin-text-primary);">
+                ${ICONS.server} Node Server Daemons (${servers.length})
+              </div>
+              ${servers.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${servers.map(s => `
+                    <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-size:0.8125rem;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;font-weight:600;">
+                        <span>${this._escape(s.serverName || 'Daemon')}</span>
+                        <span class="admin-badge admin-badge-${s.status === 'RUNNING' ? 'success' : 'neutral'}">${this._escape(s.status)}</span>
+                      </div>
+                      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:0.375rem;font-size:0.75rem;color:var(--admin-text-secondary);margin-top:0.375rem;">
+                        <div>Daemon ID: <code style="font-size:0.7rem;">${this._escape(s.id.substring(0, 10))}...</code></div>
+                        <div>Host: <strong>${this._escape(s.endpoints?.[0]?.hostname || 'Internal Relay')}</strong></div>
+                        <div>Started: ${s.startedAt ? new Date(s.startedAt).toLocaleString() : 'N/A'}</div>
+                        <div>Heartbeat: ${s.lastHeartbeatAt ? new Date(s.lastHeartbeatAt).toLocaleString() : 'N/A'}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No active file server daemons found.</div>`}
+            </div>
+
+            <!-- Commercial & Billing State -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.875rem;font-weight:700;margin-bottom:0.75rem;color:var(--admin-text-primary);">
+                ${ICONS['credit-card']} Commercial &amp; Billing Summary
+              </div>
+              ${billing ? `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));gap:0.625rem;font-size:0.8125rem;">
+                  <div><strong>Subscription State:</strong> <span class="admin-badge admin-badge-${billing.status === 'ACTIVE' ? 'success' : 'neutral'}">${this._escape(billing.status || 'FREE')}</span></div>
+                  <div><strong>Active Plan:</strong> <strong>${this._escape(billing.activePlanCode || 'FREE')}</strong> (${this._escape(billing.planTier || 'COMMUNITY')})</div>
+                  <div><strong>Country / Currency:</strong> ${this._escape(billing.billingCountry || 'IN')} / ${this._escape(billing.currency || 'INR')}</div>
+                  <div><strong>Current Period End:</strong> ${billing.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toLocaleDateString() : 'N/A'}</div>
+                  <div><strong>Payment Transactions:</strong> ${billing.totalPaymentsCount}</div>
+                  <div><strong>Refund Records:</strong> ${billing.totalRefundsCount}</div>
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No commercial subscription ledger found. Customer is on Free Tier.</div>`}
+            </div>
+
+            <!-- Support Case History -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.875rem;font-weight:700;color:var(--admin-text-primary);">
+                  ${ICONS['life-buoy']} Support Case History (${casesSummary?.totalCases || 0} Total &bull; ${casesSummary?.openCases || 0} Open)
+                </div>
+              </div>
+              ${recentCases.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${recentCases.map(rc => `
+                    <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-size:0.8125rem;display:flex;justify-content:space-between;align-items:center;">
+                      <div>
+                        <div style="font-weight:600;">
+                          <span style="font-family:monospace;color:var(--admin-primary);cursor:pointer;" onclick="AdminShell.inspectSupportCase('${rc.id}')">
+                            ${this._escape(rc.caseNumber)}
+                          </span>
+                          &bull; ${this._escape(rc.subject)}
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">
+                          Created: ${new Date(rc.createdAt).toLocaleDateString()} &bull; Assigned: ${this._escape(rc.assignedAdminName || 'Unassigned')}
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:0.375rem;align-items:center;">
+                        <span class="admin-badge admin-badge-${rc.status === 'RESOLVED' ? 'success' : (rc.status === 'OPEN' ? 'warning' : 'neutral')}">${this._escape(rc.status)}</span>
+                        <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectSupportCase('${rc.id}')">
+                          Inspect
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No previous support tickets recorded for this customer.</div>`}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Diagnostics: ${u.fullName || u.email}`, html);
+      } catch (err) {
+        this._showDrawer('Diagnostic Inspection Failed', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
     async inspectSupportCase(caseId) {
       this._showDrawer('Support Case Inspection', `<div style="padding:2rem;text-align:center;">Loading case details...</div>`);
 
@@ -5442,7 +5818,10 @@
             <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
                 <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Customer Account Context</div>
-                ${customer ? `<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${customer.id}')">${ICONS.eye} Inspect Account</button>` : ''}
+                <div style="display:flex;gap:0.375rem;">
+                  ${customer ? `<button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.inspectSupportCustomerContext('${customer.id}')">${ICONS.search} Diagnostics</button>` : ''}
+                  ${customer ? `<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${customer.id}')">${ICONS.eye} Inspect Account</button>` : ''}
+                </div>
               </div>
               ${customer ? `
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8125rem;">
@@ -5535,7 +5914,7 @@
       }
     }
 
-    showCreateSupportCaseModal() {
+    showCreateSupportCaseModal(defaultUserId = '') {
       const existing = document.getElementById('adminSupportCreateModalBackdrop');
       if (existing) existing.remove();
 
@@ -5553,7 +5932,7 @@
             <div style="display:flex;flex-direction:column;gap:0.875rem;">
               <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Customer User ID <span style="color:var(--admin-danger);">*</span></label>
-                <input type="text" id="supNewUserId" class="admin-search-input" placeholder="cuid or user ID" style="width:100%;padding-left:0.75rem;">
+                <input type="text" id="supNewUserId" class="admin-search-input" value="${this._escape(defaultUserId)}" placeholder="cuid or user ID" style="width:100%;padding-left:0.75rem;">
               </div>
               <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Subject <span style="color:var(--admin-danger);">*</span></label>
@@ -5585,7 +5964,7 @@
               </div>
               <div>
                 <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Issue Description <span style="color:var(--admin-danger);">*</span></label>
-                <textarea id="supNewDescription" class="admin-search-input" rows="4" placeholder="Detailed description of customer inquiry or technical issue..." style="width:100%;padding:0.625rem;resize:vertical;"></textarea>
+                <textarea id="supNewDescription" class="admin-search-input" rows="4" placeholder="Detailed description of customer inquiry or technical issue..." style="width:100%;padding-left:0.625rem;padding-right:0.625rem;resize:vertical;"></textarea>
               </div>
             </div>
           </div>

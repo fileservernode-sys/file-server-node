@@ -4,26 +4,34 @@ import {
   SupportCaseStatus,
   SupportCasePriority,
   SupportCaseCategory,
-  AdminAuditAction
+  AdminAuditAction,
+  UserStatus
 } from '@prisma/client';
 import { prisma } from '../../../../config/database.js';
 import { NotFoundError, ValidationError, ConflictError } from '../../../../errors/app-error.js';
 import { AdminOperationContext } from '../types.js';
 import { createPaginatedResponse, PaginatedResult } from '../utils/pagination.js';
 import { executeAdminOperation } from '../utils/operation_executor.js';
+import { assertAdminCanOperateOnResource } from '../middleware/object_authorization.js';
 import { AdminAuditService } from '../../../../services/admin/admin_audit_service.js';
 import {
   SupportOverviewMetrics,
   SupportCaseSummaryItem,
   SupportCaseDetailResult,
-  SupportCaseNoteItem
+  SupportCaseNoteItem,
+  SupportCustomerSummaryItem,
+  SupportCustomerContextResult,
+  SafeDeviceSupportContext,
+  SafeServerSupportContext,
+  SafeBillingSupportContext
 } from './types.js';
 import {
   SupportCaseListQuery,
   CreateSupportCaseInput,
   UpdateSupportCaseInput,
   AssignSupportCaseInput,
-  AddSupportCaseNoteInput
+  AddSupportCaseNoteInput,
+  SupportCustomerListQuery
 } from './schemas.js';
 
 export class AdminSupportService {
@@ -309,6 +317,7 @@ export class AdminSupportService {
             status: true,
             emailVerified: true,
             createdAt: true,
+            updatedAt: true,
             devices: {
               select: {
                 id: true,
@@ -467,7 +476,8 @@ export class AdminSupportService {
           fullName: supportCase.user.fullName,
           status: supportCase.user.status,
           emailVerified: supportCase.user.emailVerified,
-          createdAt: supportCase.user.createdAt.toISOString()
+          createdAt: supportCase.user.createdAt.toISOString(),
+          updatedAt: supportCase.user.updatedAt.toISOString()
         },
         devices,
         servers,
@@ -697,5 +707,355 @@ export class AdminSupportService {
         };
       }
     });
+  }
+
+  /**
+   * Lists customer accounts for Support lookup with bounded search, counts, and privacy safeguards.
+   * Permission required: 'support.read'
+   */
+  static async listSupportCustomers(
+    query: SupportCustomerListQuery,
+    context: AdminOperationContext
+  ): Promise<PaginatedResult<SupportCustomerSummaryItem>> {
+    const page = Math.max(1, query.page);
+    const pageSize = Math.min(100, Math.max(1, query.pageSize));
+    const skip = (page - 1) * pageSize;
+
+    const where: Prisma.UserWhereInput = {};
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.emailVerified !== undefined) {
+      where.emailVerified = query.emailVerified;
+    }
+
+    if (query.search && query.search.trim().length > 0) {
+      const term = query.search.trim();
+      where.OR = [
+        { email: { contains: term } },
+        { fullName: { contains: term } },
+        { id: { equals: term } }
+      ];
+
+      // Log search audit event
+      await AdminAuditService.logEvent({
+        adminId: context.adminId,
+        action: AdminAuditAction.ADMIN_SUPPORT_CUSTOMER_SEARCHED,
+        status: 'SUCCESS',
+        ipAddress: context.clientIp,
+        userAgent: context.userAgent,
+        metadata: {
+          search: term,
+          page,
+          pageSize
+        }
+      });
+    }
+
+    const [total, users] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          status: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              devices: true,
+              supportCases: {
+                where: {
+                  status: { in: [SupportCaseStatus.OPEN, SupportCaseStatus.IN_PROGRESS, SupportCaseStatus.WAITING_ON_CUSTOMER] }
+                }
+              }
+            }
+          },
+          devices: {
+            select: {
+              _count: {
+                select: {
+                  servers: {
+                    where: { status: 'RUNNING' }
+                  }
+                }
+              }
+            }
+          },
+          billingState: {
+            select: {
+              status: true
+            }
+          },
+          subscriptions: {
+            where: { status: { in: ['ACTIVE', 'PAST_DUE', 'GRACE_PERIOD', 'CANCELLING'] } },
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: {
+              plan: { select: { code: true } }
+            }
+          }
+        }
+      })
+    ]);
+
+    const items: SupportCustomerSummaryItem[] = users.map(u => {
+      const activeServerCount = u.devices.reduce((acc, d) => acc + d._count.servers, 0);
+      const activePlanCode = u.subscriptions[0]?.plan.code || null;
+
+      return {
+        id: u.id,
+        email: u.email,
+        fullName: u.fullName,
+        status: u.status,
+        emailVerified: u.emailVerified,
+        deviceCount: u._count.devices,
+        activeServerCount,
+        openSupportCaseCount: u._count.supportCases,
+        billingStatus: u.billingState?.status || null,
+        activePlanCode,
+        createdAt: u.createdAt.toISOString(),
+        updatedAt: u.updatedAt.toISOString()
+      };
+    });
+
+    return createPaginatedResponse(items, total, page, pageSize);
+  }
+
+  /**
+   * Aggregates comprehensive customer diagnostic context for Support agents.
+   * Performs object authorization and safe projections. NEVER returns file trees or raw secrets.
+   */
+  static async getSupportCustomerContext(
+    userId: string,
+    context: AdminOperationContext
+  ): Promise<SupportCustomerContextResult> {
+    // 1. Object authorization check
+    await assertAdminCanOperateOnResource({
+      resourceType: 'user',
+      resourceId: userId,
+      operation: 'read',
+      context,
+      targetOwnerUserId: userId
+    });
+
+    // 2. Fetch User with bounded relationships
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        status: true,
+        emailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+        devices: {
+          take: 50,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            deviceName: true,
+            platform: true,
+            osVersion: true,
+            appVersion: true,
+            status: true,
+            lastSeenAt: true,
+            createdAt: true,
+            connections: {
+              take: 1,
+              orderBy: { createdAt: 'desc' },
+              select: {
+                status: true,
+                connectedAt: true,
+                lastHeartbeatAt: true
+              }
+            },
+            servers: {
+              take: 20,
+              orderBy: { createdAt: 'desc' },
+              select: {
+                id: true,
+                deviceId: true,
+                serverName: true,
+                status: true,
+                startedAt: true,
+                lastHeartbeatAt: true,
+                createdAt: true,
+                endpoints: {
+                  take: 1,
+                  orderBy: { createdAt: 'desc' },
+                  select: {
+                    hostname: true,
+                    status: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        billingState: {
+          select: {
+            status: true,
+            currency: true,
+            billingCountry: true
+          }
+        },
+        subscriptions: {
+          where: { status: { in: ['ACTIVE', 'PAST_DUE', 'GRACE_PERIOD', 'CANCELLING'] } },
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            plan: { select: { code: true } },
+            currentPeriodEnd: true,
+            status: true
+          }
+        },
+        _count: {
+          select: {
+            payments: true,
+            refunds: true
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new NotFoundError(`Customer account with ID '${userId}' not found`);
+    }
+
+    // 3. Support Cases Aggregation
+    const [totalCases, openCases, activeCases, resolvedCases, recentCasesRaw] = await Promise.all([
+      prisma.supportCase.count({ where: { userId } }),
+      prisma.supportCase.count({ where: { userId, status: SupportCaseStatus.OPEN } }),
+      prisma.supportCase.count({ where: { userId, status: { in: [SupportCaseStatus.OPEN, SupportCaseStatus.IN_PROGRESS, SupportCaseStatus.WAITING_ON_CUSTOMER] } } }),
+      prisma.supportCase.count({ where: { userId, status: { in: [SupportCaseStatus.RESOLVED, SupportCaseStatus.CLOSED] } } }),
+      prisma.supportCase.findMany({
+        where: { userId },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: { select: { email: true, fullName: true } },
+          assignedAdmin: { select: { name: true } },
+          _count: { select: { notes: true } }
+        }
+      })
+    ]);
+
+    // 4. Log Audit Event
+    await AdminAuditService.logEvent({
+      adminId: context.adminId,
+      action: AdminAuditAction.ADMIN_SUPPORT_CUSTOMER_CONTEXT_VIEWED,
+      status: 'SUCCESS',
+      ipAddress: context.clientIp,
+      userAgent: context.userAgent,
+      metadata: {
+        userId: user.id,
+        userEmail: user.email,
+        totalCases,
+        deviceCount: user.devices.length
+      }
+    });
+
+    // 5. Construct Safe Projections
+    const devices: SafeDeviceSupportContext[] = user.devices.map(d => {
+      const conn = d.connections[0] || null;
+      return {
+        id: d.id,
+        deviceName: d.deviceName,
+        platform: d.platform,
+        osVersion: d.osVersion,
+        appVersion: d.appVersion,
+        status: d.status,
+        lastSeenAt: d.lastSeenAt ? d.lastSeenAt.toISOString() : null,
+        serverCount: d.servers.length,
+        connectionStatus: conn?.status || null,
+        lastConnectedAt: conn?.connectedAt ? conn.connectedAt.toISOString() : null,
+        lastHeartbeatAt: conn?.lastHeartbeatAt ? conn.lastHeartbeatAt.toISOString() : null,
+        createdAt: d.createdAt.toISOString()
+      };
+    });
+
+    const servers: SafeServerSupportContext[] = user.devices.flatMap(d =>
+      d.servers.map(s => {
+        const ep = s.endpoints[0] || null;
+        return {
+          id: s.id,
+          deviceId: s.deviceId,
+          deviceName: d.deviceName,
+          serverName: s.serverName,
+          status: s.status,
+          endpointHostname: ep?.hostname || null,
+          endpointStatus: ep?.status || null,
+          startedAt: s.startedAt ? s.startedAt.toISOString() : null,
+          lastHeartbeatAt: s.lastHeartbeatAt ? s.lastHeartbeatAt.toISOString() : null,
+          createdAt: s.createdAt.toISOString()
+        };
+      })
+    );
+
+    const activeSub = user.subscriptions[0] || null;
+
+    const billing: SafeBillingSupportContext | null = user.billingState ? {
+      status: user.billingState.status,
+      currency: user.billingState.currency,
+      billingCountry: user.billingState.billingCountry,
+      activeSubscriptionId: activeSub?.id || null,
+      activePlanCode: activeSub?.plan.code || null,
+      currentPeriodEnd: activeSub?.currentPeriodEnd ? activeSub.currentPeriodEnd.toISOString() : null,
+      totalPaymentsCount: user._count.payments,
+      totalRefundsCount: user._count.refunds,
+      hasPastDue: activeSub?.status === 'PAST_DUE' || user.billingState.status === 'PAST_DUE'
+    } : null;
+
+    const recentCases: SupportCaseSummaryItem[] = recentCasesRaw.map(c => ({
+      id: c.id,
+      caseNumber: c.caseNumber,
+      userId: c.userId,
+      userEmail: c.user.email,
+      userFullName: c.user.fullName,
+      subject: c.subject,
+      category: c.category,
+      priority: c.priority,
+      status: c.status,
+      assignedAdminId: c.assignedAdminId,
+      assignedAdminName: c.assignedAdmin?.name || null,
+      noteCount: c._count.notes,
+      createdAt: c.createdAt.toISOString(),
+      updatedAt: c.updatedAt.toISOString(),
+      resolvedAt: c.resolvedAt ? c.resolvedAt.toISOString() : null,
+      closedAt: c.closedAt ? c.closedAt.toISOString() : null
+    }));
+
+    return {
+      customer: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        status: user.status,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString()
+      },
+      devices,
+      servers,
+      billing,
+      supportCases: {
+        totalCount: totalCases,
+        openCount: openCases,
+        activeCount: activeCases,
+        resolvedCount: resolvedCases,
+        recentCases
+      }
+    };
   }
 }

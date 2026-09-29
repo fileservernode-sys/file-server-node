@@ -1,7 +1,8 @@
 import {
   SupportCaseStatus,
   SupportCasePriority,
-  SupportCaseCategory
+  SupportCaseCategory,
+  UserStatus
 } from '@prisma/client';
 
 export interface SupportOverviewMetrics {
@@ -55,23 +56,32 @@ export interface SafeUserSupportContext {
   status: string;
   emailVerified: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface SafeDeviceSupportContext {
   id: string;
   deviceName: string;
   platform: string;
+  osVersion?: string | null;
+  appVersion?: string | null;
   status: string;
   lastSeenAt: string | null;
-  serverCount: number;
+  serverCount?: number;
+  connectionStatus?: string | null;
+  lastConnectedAt?: string | null;
+  lastHeartbeatAt?: string | null;
   createdAt: string;
 }
 
 export interface SafeServerSupportContext {
   id: string;
   deviceId: string;
+  deviceName?: string;
   serverName: string | null;
   status: string;
+  endpointHostname?: string | null;
+  endpointStatus?: string | null;
   startedAt: string | null;
   lastHeartbeatAt: string | null;
   createdAt: string;
@@ -86,6 +96,38 @@ export interface SafeBillingSupportContext {
   currentPeriodEnd: string | null;
   totalPaymentsCount: number;
   totalRefundsCount: number;
+  hasPastDue?: boolean;
+}
+
+export interface SupportCustomerCasesSummary {
+  totalCount: number;
+  openCount: number;
+  activeCount: number;
+  resolvedCount: number;
+  recentCases: SupportCaseSummaryItem[];
+}
+
+export interface SupportCustomerSummaryItem {
+  id: string;
+  email: string;
+  fullName: string | null;
+  status: UserStatus;
+  emailVerified: boolean;
+  deviceCount: number;
+  activeServerCount: number;
+  openSupportCaseCount: number;
+  billingStatus: string | null;
+  activePlanCode: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportCustomerContextResult {
+  customer: SafeUserSupportContext;
+  devices: SafeDeviceSupportContext[];
+  servers: SafeServerSupportContext[];
+  billing: SafeBillingSupportContext | null;
+  supportCases: SupportCustomerCasesSummary;
 }
 
 export interface SupportCaseDetailResult {
