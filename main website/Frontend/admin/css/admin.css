@@ -1318,3 +1318,353 @@ button, input, select, textarea {
     font-size: 1.125rem;
   }
 }
+
+/* ==========================================================================
+   18. PHASE 8.7 OPERATIONAL UI COMPONENTS (Filters, Modals, Drawers, Tabs)
+   ========================================================================== */
+
+/* Filter Toolbar */
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  background-color: var(--admin-bg-surface);
+  padding: var(--space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+}
+
+.admin-toolbar-left,
+.admin-toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.admin-search-wrap {
+  position: relative;
+  min-width: 260px;
+}
+
+.admin-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--admin-text-muted);
+  pointer-events: none;
+}
+
+.admin-search-input {
+  width: 100%;
+  padding: 0.5rem 0.875rem 0.5rem 2.25rem;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--admin-text-primary);
+  background-color: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.admin-search-input:focus {
+  border-color: var(--admin-primary);
+  background-color: var(--admin-bg-surface);
+  box-shadow: 0 0 0 3px var(--admin-primary-subtle);
+}
+
+.admin-select {
+  padding: 0.5rem 2rem 0.5rem 0.875rem;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--admin-text-primary);
+  background-color: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.625rem center;
+  background-size: 14px;
+}
+
+.admin-select:focus {
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-primary-subtle);
+}
+
+/* Pagination Bar */
+.admin-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--admin-border-subtle);
+  font-size: var(--font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.admin-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.admin-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-primary);
+  background-color: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-pagination-btn:hover:not(:disabled) {
+  background-color: var(--admin-bg-subtle);
+  border-color: var(--admin-border-hover);
+}
+
+.admin-pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-pagination-btn.active {
+  background-color: var(--admin-primary);
+  color: var(--admin-text-on-primary);
+  border-color: var(--admin-primary);
+}
+
+/* Operational Tabs */
+.admin-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  border-bottom: 1px solid var(--admin-border);
+  margin-bottom: var(--space-lg);
+}
+
+.admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: -1px;
+}
+
+.admin-tab-btn:hover {
+  color: var(--admin-text-primary);
+}
+
+.admin-tab-btn.active {
+  color: var(--admin-primary);
+  font-weight: 600;
+  border-bottom-color: var(--admin-primary);
+}
+
+/* Modal Overlay & Dialog */
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: fadeIn 150ms ease-out;
+}
+
+.admin-modal-card {
+  width: 100%;
+  max-width: 520px;
+  background-color: var(--admin-bg-surface-elevated);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: modalPop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--admin-border-subtle);
+}
+
+.admin-modal-title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: 0;
+}
+
+.admin-modal-body {
+  padding: var(--space-xl);
+  font-size: var(--font-size-base);
+  color: var(--admin-text-secondary);
+  line-height: var(--line-height-body);
+}
+
+.admin-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-xl);
+  background-color: var(--admin-bg-base);
+  border-top: 1px solid var(--admin-border-subtle);
+}
+
+/* Detail Drawer */
+.admin-drawer-container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 560px;
+  background-color: var(--admin-bg-surface);
+  box-shadow: var(--shadow-xl);
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--admin-border);
+  transform: translateX(100%);
+  transition: transform var(--transition-smooth);
+}
+
+.admin-drawer-container.open {
+  transform: translateX(0);
+}
+
+.admin-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg) var(--space-xl);
+  border-bottom: 1px solid var(--admin-border-subtle);
+}
+
+.admin-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-xl);
+}
+
+.admin-drawer-section {
+  margin-bottom: var(--space-xl);
+}
+
+.admin-drawer-section:last-child {
+  margin-bottom: 0;
+}
+
+.admin-drawer-section-title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.admin-property-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+  align-items: center;
+}
+
+.admin-property-label {
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.admin-property-value {
+  color: var(--admin-text-primary);
+  word-break: break-word;
+}
+
+/* Empty State */
+.admin-empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4xl) var(--space-xl);
+  text-align: center;
+}
+
+.admin-empty-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--admin-text-subtle);
+  margin-bottom: var(--space-md);
+}
+
+.admin-empty-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.admin-empty-desc {
+  font-size: var(--font-size-sm);
+  color: var(--admin-text-muted);
+  max-width: 360px;
+}
+
+/* Technical Code Style */
+.admin-code-pill {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background-color: var(--admin-bg-subtle);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-xs);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border-subtle);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
