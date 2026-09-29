@@ -133,23 +133,23 @@
       const sidebarNameEl = document.getElementById('adminSidebarName');
       if (sidebarNameEl) sidebarNameEl.textContent = user.fullName || user.email;
 
-      const primaryRole = roles[0]?.name || (window.AdminAuth.isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN');
+      const primaryRole = (typeof roles[0] === 'string' ? roles[0] : roles[0]?.name) || (window.AdminAuth.isSuperAdmin ? 'SUPER_ADMIN' : 'ADMIN');
       const sidebarRoleEl = document.getElementById('adminSidebarRole');
       if (sidebarRoleEl) sidebarRoleEl.textContent = primaryRole;
 
       const dropdownNameEl = document.getElementById('adminDropdownName');
-      if (dropdownNameEl) dropdownNameEl.textContent = user.fullName || 'Admin User';
+      if (dropdownNameEl) dropdownNameEl.textContent = user.fullName || user.name || 'Super Administrator';
 
       const dropdownEmailEl = document.getElementById('adminDropdownEmail');
       if (dropdownEmailEl) dropdownEmailEl.textContent = user.email;
 
       const rolesContainer = document.getElementById('adminDropdownRoles');
       if (rolesContainer) {
-        rolesContainer.innerHTML = roles.map(r => `
-          <span class="admin-role-badge ${r.name === 'SUPER_ADMIN' ? 'super-admin' : ''}">
-            ${this._escape(r.name)}
-          </span>
-        `).join('') || '<span class="admin-role-badge">ADMIN</span>';
+        rolesContainer.innerHTML = roles.map(r => {
+          const roleName = typeof r === 'string' ? r : (r.name || r.slug || 'ADMIN');
+          const isSuper = roleName === 'SUPER_ADMIN' || window.AdminAuth.isSuperAdmin;
+          return `<span class="admin-role-badge ${isSuper ? 'super-admin' : ''}">${this._escape(roleName)}</span>`;
+        }).join('') || '<span class="admin-role-badge super-admin">SUPER_ADMIN</span>';
       }
     }
 

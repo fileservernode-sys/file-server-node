@@ -29,7 +29,9 @@
         if (storedRoles) this.roles = JSON.parse(storedRoles);
         if (storedPerms) this.permissions = JSON.parse(storedPerms);
 
-        this.isSuperAdmin = this.permissions.includes('*') || this.roles.some(r => r.name === 'SUPER_ADMIN' || r.code === 'SUPER_ADMIN');
+        this.isSuperAdmin = Boolean(this.currentUser?.isSuperAdmin) ||
+          this.permissions.includes('*') ||
+          this.roles.some(r => r === 'SUPER_ADMIN' || r?.name === 'SUPER_ADMIN' || r?.slug === 'SUPER_ADMIN' || r?.code === 'SUPER_ADMIN');
       } catch (err) {
         console.warn('[AdminAuth] Error loading cached state:', err);
       }
@@ -39,7 +41,9 @@
       this.currentUser = user;
       this.roles = roles || [];
       this.permissions = permissions || [];
-      this.isSuperAdmin = this.permissions.includes('*') || this.roles.some(r => r.name === 'SUPER_ADMIN' || r.code === 'SUPER_ADMIN');
+      this.isSuperAdmin = Boolean(user?.isSuperAdmin) ||
+        this.permissions.includes('*') ||
+        this.roles.some(r => r === 'SUPER_ADMIN' || r?.name === 'SUPER_ADMIN' || r?.slug === 'SUPER_ADMIN' || r?.code === 'SUPER_ADMIN');
 
       try {
         localStorage.setItem(window.AdminStorageKeys.ADMIN_USER, JSON.stringify(this.currentUser));
@@ -127,22 +131,25 @@
     async fetchMe() {
       try {
         const response = await this.api.get('/admin/auth/me');
-        const adminData = response.data || response;
+        const rootData = response.data || response;
+        const rawAdmin = rootData.admin || rootData;
 
         const user = {
-          id: adminData.id,
-          email: adminData.email,
-          fullName: adminData.fullName,
-          status: adminData.status,
-          createdAt: adminData.createdAt
+          id: rawAdmin.id,
+          email: rawAdmin.email,
+          name: rawAdmin.name || rawAdmin.fullName,
+          fullName: rawAdmin.name || rawAdmin.fullName,
+          status: rawAdmin.status,
+          isSuperAdmin: Boolean(rawAdmin.isSuperAdmin),
+          createdAt: rawAdmin.createdAt
         };
 
-        const roles = adminData.roles || [];
-        const permissions = adminData.permissions || [];
+        const roles = rawAdmin.roles || [];
+        const permissions = rawAdmin.permissions || [];
 
         this._saveState(user, roles, permissions);
         this.isInitialized = true;
-        return adminData;
+        return rawAdmin;
       } catch (err) {
         this.isInitialized = true;
         throw err;
