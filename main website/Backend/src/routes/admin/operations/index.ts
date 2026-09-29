@@ -6,6 +6,7 @@ import { adminUserOperationsRoutes } from './users/index.js';
 import { adminDeviceOperationsRoutes } from './devices/index.js';
 import { adminServerOperationsRoutes } from './servers/index.js';
 import { adminGatewayOperationsRoutes } from './gateway/index.js';
+import { adminBillingOperationsRoutes } from './billing/index.js';
 
 export * from './types.js';
 export * from './schemas/common.js';
@@ -17,6 +18,7 @@ export * from './users/index.js';
 export * from './devices/index.js';
 export * from './servers/index.js';
 export * from './gateway/index.js';
+export * from './billing/index.js';
 
 export async function adminOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -35,7 +37,7 @@ export async function adminOperationsRoutes(app: FastifyInstance): Promise<void>
       return reply.status(200).send(createSuccessResponse({
         status: 'ok',
         service: 'admin-operations',
-        version: '8.2',
+        version: '9.1',
         timestamp: now.toISOString()
       }));
     }
@@ -46,4 +48,5 @@ export async function adminOperationsRoutes(app: FastifyInstance): Promise<void>
   await app.register(adminDeviceOperationsRoutes);
   await app.register(adminServerOperationsRoutes);
   await app.register(adminGatewayOperationsRoutes);
+  await app.register(adminBillingOperationsRoutes);
 }

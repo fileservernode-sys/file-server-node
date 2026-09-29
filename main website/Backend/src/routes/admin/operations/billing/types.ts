@@ -1,0 +1,313 @@
+import {
+  BillingStatus,
+  CurrencyCode,
+  BillingInterval,
+  PaymentProvider,
+  PaymentEnvironment,
+  PaymentStatus,
+  RefundStatus,
+  RefundReason,
+  PlanChangeStatus,
+  UpgradeReconciliationStatus,
+  ReconciliationStatus,
+  ReconciliationDiscrepancyType,
+  ReconciliationRunStatus,
+  ReconciliationEntityType,
+  WebhookEventStatus
+} from '@prisma/client';
+
+export interface AdminSubscriptionSummary {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userFullName: string | null;
+  planId: string;
+  planCode: string;
+  planName: string;
+  status: BillingStatus;
+  billingInterval: BillingInterval;
+  currency: CurrencyCode;
+  amountMinorUnits: number;
+  priceVersion: number;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  cancelledAt: string | null;
+  gracePeriodStartedAt: string | null;
+  gracePeriodEndsAt: string | null;
+  expiredAt: string | null;
+  refundedAt: string | null;
+  provider: PaymentProvider;
+  providerEnvironment: PaymentEnvironment;
+  providerSubscriptionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSubscriptionDetail extends AdminSubscriptionSummary {
+  planDetails: {
+    id: string;
+    code: string;
+    name: string;
+    serverLimit: number;
+    priorityRelay: boolean;
+    isActive: boolean;
+  };
+  priceDetails: {
+    id: string;
+    currency: CurrencyCode;
+    amountMinorUnits: number;
+    effectiveFrom: string;
+    effectiveTo: string | null;
+    version: number;
+  };
+  userAccountBillingState: {
+    status: BillingStatus;
+    billingCountry: string | null;
+    billingPostalCode: string | null;
+    currency: CurrencyCode | null;
+  } | null;
+  recentPayments: Array<{
+    id: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: PaymentStatus;
+    chargedAt: string;
+    providerPaymentId: string | null;
+    hasReceipt: boolean;
+  }>;
+  recentRefunds: Array<{
+    id: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: RefundStatus;
+    reason: RefundReason;
+    requestedAt: string;
+  }>;
+  recentPlanChanges: Array<{
+    id: string;
+    fromPlanCode: string;
+    toPlanCode: string;
+    status: PlanChangeStatus;
+    creditMinorUnits: number;
+    netAmountMinorUnits: number;
+    requestedAt: string;
+    completedAt: string | null;
+  }>;
+  upgradeReconciliations: Array<{
+    id: string;
+    status: UpgradeReconciliationStatus;
+    expectedAmountMinorUnits: number;
+    actualAmountMinorUnits: number | null;
+    checkedAt: string;
+    resolvedAt: string | null;
+    mismatchReason: string | null;
+  }>;
+}
+
+export interface AdminPaymentSummary {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userFullName: string | null;
+  subscriptionId: string;
+  planCode: string | null;
+  amountMinorUnits: number;
+  currency: CurrencyCode;
+  status: PaymentStatus;
+  chargedAt: string;
+  provider: PaymentProvider;
+  providerEnvironment: PaymentEnvironment;
+  providerPaymentId: string | null;
+  providerSubscriptionId: string | null;
+  receiptNumber: string | null;
+  totalTaxMinorUnits: number | null;
+  totalFeeMinorUnits: number | null;
+  refundCount: number;
+  refundedAmountMinorUnits: number;
+  createdAt: string;
+}
+
+export interface AdminPaymentDetail extends AdminPaymentSummary {
+  receipt: {
+    id: string;
+    receiptNumber: string;
+    status: string;
+    type: string;
+    subtotalMinorUnits: number;
+    taxMinorUnits: number;
+    totalMinorUnits: number;
+    issuedAt: string;
+  } | null;
+  tax: {
+    id: string;
+    jurisdiction: string;
+    taxType: string;
+    isInclusive: boolean;
+    taxRateBasisPoints: number;
+    taxableAmountMinorUnits: number;
+    taxAmountMinorUnits: number;
+    breakdown: Record<string, unknown> | null;
+  } | null;
+  processingFee: {
+    id: string;
+    feeAmountMinorUnits: number;
+    feeTaxMinorUnits: number;
+    totalFeeMinorUnits: number;
+    feeCurrency: CurrencyCode;
+    netSettlementAmountMinorUnits: number | null;
+    status: string;
+    source: string;
+  } | null;
+  refunds: Array<{
+    id: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    reason: RefundReason;
+    status: RefundStatus;
+    requestedBy: string;
+    requestedAt: string;
+    providerRefundId: string | null;
+  }>;
+  reconciliationRecords: Array<{
+    id: string;
+    runId: string | null;
+    status: ReconciliationStatus;
+    settled: boolean;
+    settledAt: string | null;
+    providerFeeMinorUnits: number | null;
+  }>;
+}
+
+export interface AdminRefundSummary {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userFullName: string | null;
+  paymentId: string;
+  subscriptionId: string | null;
+  amountMinorUnits: number;
+  currency: CurrencyCode;
+  reason: RefundReason;
+  reasonDetails: string | null;
+  status: RefundStatus;
+  requestedBy: string;
+  requestedAt: string;
+  providerRequestedAt: string | null;
+  providerProcessedAt: string | null;
+  providerRefundId: string | null;
+  providerPaymentId: string | null;
+  failureCode: string | null;
+  failureReason: string | null;
+  createdAt: string;
+}
+
+export interface AdminRefundDetail extends AdminRefundSummary {
+  payment: {
+    id: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: PaymentStatus;
+    chargedAt: string;
+    providerPaymentId: string | null;
+  };
+  subscription: {
+    id: string;
+    planCode: string;
+    status: BillingStatus;
+  } | null;
+  reconciliationRecords: Array<{
+    id: string;
+    status: ReconciliationStatus;
+    providerRefundId: string | null;
+  }>;
+}
+
+export interface AdminReconciliationRunSummary {
+  id: string;
+  provider: PaymentProvider;
+  environment: PaymentEnvironment;
+  periodStart: string;
+  periodEnd: string;
+  status: ReconciliationRunStatus;
+  totalRecords: number;
+  paymentRecords: number;
+  refundRecords: number;
+  transferRecords: number;
+  adjustmentRecords: number;
+  matchedCount: number;
+  mismatchCount: number;
+  reviewCount: number;
+  duplicateCount: number;
+  failureCount: number;
+  durationMs: number | null;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminReconciliationDiscrepancySummary {
+  id: string;
+  runId: string | null;
+  provider: PaymentProvider;
+  entityType: ReconciliationEntityType;
+  providerEntityId: string;
+  internalEntityId: string | null;
+  discrepancyType: ReconciliationDiscrepancyType;
+  status: ReconciliationStatus;
+  expectedValue: string | null;
+  actualValue: string | null;
+  resolutionReason: string | null;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminPlanSummary {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  interval: BillingInterval;
+  intervalCount: number;
+  serverLimit: number;
+  priorityRelay: boolean;
+  isActive: boolean;
+  prices: Array<{
+    id: string;
+    currency: CurrencyCode;
+    amountMinorUnits: number;
+    effectiveFrom: string;
+    effectiveTo: string | null;
+    isActive: boolean;
+    version: number;
+  }>;
+  entitlements: Array<{
+    code: string;
+    name: string;
+    intValue: number | null;
+    boolValue: boolean | null;
+  }>;
+  activeSubscriberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminBillingOverviewMetrics {
+  activeSubscriptions: number;
+  pastDueSubscriptions: number;
+  gracePeriodSubscriptions: number;
+  cancellingSubscriptions: number;
+  totalPaidUsers: number;
+  revenue30dMinorUnits: Record<string, number>;
+  refunds30dMinorUnits: Record<string, number>;
+  pendingDiscrepancies: number;
+  stuckWebhooksCount: number;
+  latestReconciliationRun: {
+    id: string;
+    status: ReconciliationRunStatus;
+    completedAt: string | null;
+    mismatchCount: number;
+  } | null;
+}
