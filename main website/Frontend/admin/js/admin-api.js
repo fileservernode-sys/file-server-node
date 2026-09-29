@@ -16,11 +16,12 @@
   const host = typeof window !== 'undefined' ? window.location.hostname : '';
   const port = typeof window !== 'undefined' ? window.location.port : '';
   const protocol = typeof window !== 'undefined' ? window.location.protocol : '';
-  const isLocal = host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host;
+  const isDirectBackend = port === '4000';
+  const isLocalDev = host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host;
 
-  const API_BASE = (isLocal && port !== '4000' && port !== '')
-    ? 'http://localhost:4000/api/v1'
-    : '/api/v1';
+  const API_BASE = isDirectBackend
+    ? '/api/v1'
+    : (isLocalDev ? 'http://localhost:4000/api/v1' : '/api/v1');
 
   class AdminApiClient {
     constructor() {
