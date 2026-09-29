@@ -62,6 +62,17 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/admin/audit-logs/export',
     {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const adminId = (req as any).admin?.id || 'anonymous';
+            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+            return `audit_export_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+          }
+        }
+      },
       preHandler: [adminAuthenticate, requirePermission('audit.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

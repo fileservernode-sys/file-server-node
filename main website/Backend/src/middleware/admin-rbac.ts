@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AdminStatus, AdminAuditAction } from '@prisma/client';
 import { AdminRbacService } from '../services/admin/admin_rbac_service.js';
-import { prisma } from '../config/database.js';
+import { AdminAuditService } from '../services/admin/admin_audit_service.js';
 import { UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
 
 /**
@@ -27,19 +27,17 @@ export function requirePermission(permission: string) {
     const isAllowed = await AdminRbacService.hasPermission(admin, permission);
 
     if (!isAllowed) {
-      // Log authorization denial
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
-          status: 'DENIED',
-          ipAddress: request.ip || null,
-          userAgent: (request.headers['user-agent'] as string) || null,
-          metadata: {
-            requiredPermission: permission,
-            url: request.url,
-            method: request.method
-          }
+      // Log authorization denial with cryptographic integrity chaining
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
+        status: 'DENIED',
+        ipAddress: request.ip || null,
+        userAgent: (request.headers['user-agent'] as string) || null,
+        metadata: {
+          requiredPermission: permission,
+          url: request.url,
+          method: request.method
         }
       });
 
@@ -66,18 +64,16 @@ export function requireAnyPermission(permissions: string[]) {
     const isAllowed = await AdminRbacService.hasAnyPermission(admin, permissions);
 
     if (!isAllowed) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
-          status: 'DENIED',
-          ipAddress: request.ip || null,
-          userAgent: (request.headers['user-agent'] as string) || null,
-          metadata: {
-            requiredAnyPermissions: permissions,
-            url: request.url,
-            method: request.method
-          }
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
+        status: 'DENIED',
+        ipAddress: request.ip || null,
+        userAgent: (request.headers['user-agent'] as string) || null,
+        metadata: {
+          requiredAnyPermissions: permissions,
+          url: request.url,
+          method: request.method
         }
       });
 
@@ -104,18 +100,16 @@ export function requireAllPermissions(permissions: string[]) {
     const isAllowed = await AdminRbacService.hasAllPermissions(admin, permissions);
 
     if (!isAllowed) {
-      await prisma.adminAuditLog.create({
-        data: {
-          adminId: admin.id,
-          action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
-          status: 'DENIED',
-          ipAddress: request.ip || null,
-          userAgent: (request.headers['user-agent'] as string) || null,
-          metadata: {
-            requiredAllPermissions: permissions,
-            url: request.url,
-            method: request.method
-          }
+      await AdminAuditService.logEvent({
+        adminId: admin.id,
+        action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
+        status: 'DENIED',
+        ipAddress: request.ip || null,
+        userAgent: (request.headers['user-agent'] as string) || null,
+        metadata: {
+          requiredAllPermissions: permissions,
+          url: request.url,
+          method: request.method
         }
       });
 

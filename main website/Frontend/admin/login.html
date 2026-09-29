@@ -3,85 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZdexCloud — Admin Control Plane Sign In</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin Sign In | ZdexCloud — Operations Control Plane</title>
+  
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Admin Design System Stylesheet -->
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body class="admin-login-body">
+
   <div class="admin-login-container">
     <div class="admin-login-card">
+      
+      <!-- Brand Header -->
       <div class="admin-login-brand">
         <div class="admin-brand-logo-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
-            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/>
-            <path d="m9 12 2 2 4-4"/>
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
           </svg>
         </div>
         <h1 class="admin-login-title">ZdexCloud Admin</h1>
-        <p class="admin-login-subtitle">Production Operations Control Plane</p>
+        <p class="admin-login-subtitle">Operations & Infrastructure Control Plane</p>
         <div class="admin-env-badge prod">
           <span class="admin-env-dot"></span>
-          Restricted Access
+          Restricted Access • Production
         </div>
       </div>
 
-      <div id="alertBanner" style="display: none;"></div>
+      <!-- Accessible Alert Banner -->
+      <div id="alertBanner" role="alert" aria-live="assertive" style="display: none;"></div>
 
-      <!-- Step 1: Credentials Form -->
+      <!-- Step 1: Primary Credentials Form -->
       <form id="loginForm" autocomplete="off">
         <div class="admin-form-group">
           <label class="admin-form-label" for="email">Admin Email Address</label>
           <div class="admin-input-wrap">
-            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;" aria-hidden="true">
               <rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
             </svg>
-            <input type="email" id="email" class="admin-input" placeholder="admin@zdexcloud.com" required autofocus>
+            <input type="email" id="email" class="admin-input" placeholder="admin@zdexcloud.com" required autofocus autocomplete="username">
           </div>
         </div>
 
         <div class="admin-form-group">
           <label class="admin-form-label" for="password">Password</label>
           <div class="admin-input-wrap">
-            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+            <svg class="admin-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;" aria-hidden="true">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <input type="password" id="password" class="admin-input" placeholder="••••••••••••" required>
+            <input type="password" id="password" class="admin-input" placeholder="••••••••••••" required autocomplete="current-password">
           </div>
         </div>
 
-        <button type="submit" id="submitLoginBtn" class="admin-btn admin-btn-primary" style="margin-top: 1.5rem;">
+        <button type="submit" id="submitLoginBtn" class="admin-btn admin-btn-primary admin-btn-block" style="margin-top: var(--space-md);">
           <span>Sign In to Control Plane</span>
         </button>
       </form>
 
       <!-- Step 2: 2FA OTP Challenge Form -->
       <form id="otpForm" style="display: none;" autocomplete="off">
-        <div style="text-align:center;margin-bottom:1rem;">
-          <p style="font-size:0.875rem;color:var(--admin-text-secondary);">
+        <div style="text-align:center;margin-bottom:var(--space-md);">
+          <p style="font-size:var(--font-size-sm);color:var(--admin-text-secondary);">
             Enter the 6-digit security code sent to:
           </p>
-          <strong id="otpTargetEmail" style="font-size:0.9375rem;color:var(--admin-primary);font-family:var(--font-mono);"></strong>
+          <strong id="otpTargetEmail" style="font-size:var(--font-size-base);color:var(--admin-primary);font-family:var(--font-mono);"></strong>
         </div>
 
         <div class="otp-container">
-          <input type="text" maxlength="1" class="otp-box" data-index="0" autofocus>
-          <input type="text" maxlength="1" class="otp-box" data-index="1">
-          <input type="text" maxlength="1" class="otp-box" data-index="2">
-          <input type="text" maxlength="1" class="otp-box" data-index="3">
-          <input type="text" maxlength="1" class="otp-box" data-index="4">
-          <input type="text" maxlength="1" class="otp-box" data-index="5">
+          <input type="text" maxlength="1" class="otp-box" data-index="0" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 1 of 6" autofocus>
+          <input type="text" maxlength="1" class="otp-box" data-index="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 2 of 6">
+          <input type="text" maxlength="1" class="otp-box" data-index="2" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 3 of 6">
+          <input type="text" maxlength="1" class="otp-box" data-index="3" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 4 of 6">
+          <input type="text" maxlength="1" class="otp-box" data-index="4" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 5 of 6">
+          <input type="text" maxlength="1" class="otp-box" data-index="5" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code" aria-label="Digit 6 of 6">
         </div>
 
-        <button type="submit" id="submitOtpBtn" class="admin-btn admin-btn-primary">
+        <button type="submit" id="submitOtpBtn" class="admin-btn admin-btn-primary admin-btn-block">
           <span>Verify & Access Console</span>
         </button>
 
-        <div class="admin-helper-text">
-          <button type="button" id="backToLoginBtn" class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:1rem;">
+        <div style="margin-top: var(--space-md);">
+          <button type="button" id="backToLoginBtn" class="admin-btn admin-btn-secondary admin-btn-sm admin-btn-block">
             ← Back to email sign in
           </button>
         </div>
       </form>
+
+      <div class="admin-login-footer">
+        <span>ZDEXCLOUD CONTROL PLANE</span>
+        <span>TLS 1.3 SECURED</span>
+      </div>
+
     </div>
   </div>
 
@@ -101,8 +120,9 @@
       const otpBoxes = Array.from(document.querySelectorAll('.otp-box'));
 
       let pendingEmail = '';
+      let pendingChallengeToken = '';
 
-      // Check URL query parameters for notifications
+      // Check URL query parameters for session messages
       const urlParams = new URLSearchParams(window.location.search);
       const reason = urlParams.get('reason');
       if (reason === 'session_expired') {
@@ -110,14 +130,14 @@
       }
 
       // If already authenticated, redirect
-      if (window.AdminAuth.isAuthenticated()) {
-        window.location.href = '/admin/';
+      if (window.AdminAuth && window.AdminAuth.isAuthenticated()) {
+        window.location.href = getRedirectDestination();
       }
 
       function showAlert(msg, type = 'danger') {
         alertBanner.className = `admin-alert admin-alert-${type}`;
         alertBanner.textContent = msg;
-        alertBanner.style.display = 'block';
+        alertBanner.style.display = 'flex';
       }
 
       function hideAlert() {
@@ -130,7 +150,6 @@
         if (window.AdminAuth && typeof window.AdminAuth.getSafeRedirect === 'function') {
           return window.AdminAuth.getSafeRedirect(raw, '/admin/');
         }
-        // Self-contained fallback validator if AdminAuth is loading
         if (!raw || typeof raw !== 'string') return '/admin/';
         let t = raw.trim();
         if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t) || t.startsWith('//') || t.startsWith('\\') || t.includes('@')) return '/admin/';
@@ -148,81 +167,87 @@
         const password = passwordInput.value;
 
         if (!email || !password) {
-          showAlert('Please provide both email and password.');
+          showAlert('Please enter both your admin email address and password.', 'warning');
           return;
         }
 
         submitLoginBtn.disabled = true;
-        submitLoginBtn.innerHTML = '<span class="admin-spinner"></span> Authenticating...';
+        submitLoginBtn.innerHTML = '<span>Signing in...</span>';
 
         try {
-          const res = await window.AdminAuth.login(email, password);
-          
-          if (res.requiresOtp) {
-            pendingEmail = res.email || email;
-            otpTargetEmail.textContent = pendingEmail;
+          const result = await window.AdminAuth.login(email, password);
+
+          if (result.requiresOtp) {
+            pendingEmail = email;
+            pendingChallengeToken = result.challengeToken || '';
+            otpTargetEmail.textContent = email;
+
             loginForm.style.display = 'none';
             otpForm.style.display = 'block';
-            showAlert('2FA security code required. Check your email.', 'info');
-            setTimeout(() => otpBoxes[0].focus(), 100);
+            otpBoxes[0].focus();
+            showAlert('A 6-digit verification code has been sent to your administrator email.', 'info');
           } else {
-            // Direct login success with safe redirect validation
             window.location.href = getRedirectDestination();
           }
         } catch (err) {
-          showAlert(err.message || 'Authentication failed.');
+          console.error('[AdminLogin] Error:', err);
+          showAlert(err.message || 'Authentication failed. Please check your credentials.', 'danger');
         } finally {
           submitLoginBtn.disabled = false;
           submitLoginBtn.innerHTML = '<span>Sign In to Control Plane</span>';
         }
       });
 
-      // OTP Input navigation & paste handling
-      otpBoxes.forEach((box, idx) => {
+      // OTP Input keyboard navigation
+      otpBoxes.forEach((box, index) => {
         box.addEventListener('input', (e) => {
-          const val = e.target.value;
-          if (val.length === 1 && idx < otpBoxes.length - 1) {
-            otpBoxes[idx + 1].focus();
+          const val = e.target.value.replace(/[^0-9]/g, '');
+          e.target.value = val ? val.slice(-1) : '';
+
+          if (e.target.value && index < otpBoxes.length - 1) {
+            otpBoxes[index + 1].focus();
           }
         });
 
         box.addEventListener('keydown', (e) => {
-          if (e.key === 'Backspace' && !box.value && idx > 0) {
-            otpBoxes[idx - 1].focus();
+          if (e.key === 'Backspace' && !box.value && index > 0) {
+            otpBoxes[index - 1].focus();
           }
         });
 
         box.addEventListener('paste', (e) => {
           e.preventDefault();
-          const text = (e.clipboardData || window.clipboardData).getData('text').trim();
-          if (/^\d{6}$/.test(text)) {
-            text.split('').forEach((char, i) => {
+          const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+          if (pasted) {
+            pasted.split('').slice(0, 6).forEach((char, i) => {
               if (otpBoxes[i]) otpBoxes[i].value = char;
             });
-            otpBoxes[5].focus();
+            const focusIndex = Math.min(pasted.length, otpBoxes.length - 1);
+            otpBoxes[focusIndex].focus();
           }
         });
       });
 
-      // Step 2: OTP Verification
+      // Step 2: OTP Submission
       otpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         hideAlert();
 
-        const otpCode = otpBoxes.map(b => b.value).join('').trim();
+        const otpCode = otpBoxes.map(b => b.value).join('');
         if (otpCode.length !== 6) {
-          showAlert('Please enter the complete 6-digit verification code.');
+          showAlert('Please enter the complete 6-digit verification code.', 'warning');
           return;
         }
 
         submitOtpBtn.disabled = true;
-        submitOtpBtn.innerHTML = '<span class="admin-spinner"></span> Verifying Security Code...';
+        submitOtpBtn.innerHTML = '<span>Verifying...</span>';
 
         try {
-          await window.AdminAuth.verifyOtp(pendingEmail, otpCode);
+          await window.AdminAuth.verifyOtp(pendingChallengeToken || pendingEmail, otpCode, pendingChallengeToken);
           window.location.href = getRedirectDestination();
         } catch (err) {
-          showAlert(err.message || 'OTP verification failed. Please check the code.');
+          console.error('[AdminOTP] Error:', err);
+          showAlert(err.message || 'Invalid or expired OTP verification code.', 'danger');
           otpBoxes.forEach(b => b.value = '');
           otpBoxes[0].focus();
         } finally {
@@ -231,12 +256,14 @@
         }
       });
 
-      // Back button
+      // Back to login button
       backToLoginBtn.addEventListener('click', () => {
         hideAlert();
         otpForm.style.display = 'none';
         loginForm.style.display = 'block';
         otpBoxes.forEach(b => b.value = '');
+        passwordInput.value = '';
+        passwordInput.focus();
       });
     });
   </script>

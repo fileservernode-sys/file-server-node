@@ -46,7 +46,11 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
       config: {
         rateLimit: {
           max: 10,
-          timeWindow: '1 minute'
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+            return `admin_login_${forwarded || req.ip || '127.0.0.1'}`;
+          }
         }
       }
     },
@@ -179,6 +183,17 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/admin/auth/change-password',
     {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const adminId = (req as any).admin?.id || 'anonymous';
+            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+            return `admin_pwd_change_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+          }
+        }
+      },
       preHandler: [adminAuthenticate]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

@@ -1,5 +1,6 @@
 import { AdminStatus, AdminAuditAction } from '@prisma/client';
 import { prisma } from '../../config/database.js';
+import { AdminAuditService } from './admin_audit_service.js';
 import { ForbiddenError, NotFoundError, ValidationError, UnauthorizedError } from '../../errors/app-error.js';
 import { SYSTEM_PERMISSIONS } from './admin_rbac_seed.js';
 
@@ -222,18 +223,16 @@ export class AdminRbacService {
     }
 
     // 6. Audit Trail
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: actor.id,
-        action: AdminAuditAction.ADMIN_ROLE_ASSIGNED,
-        status: 'SUCCESS',
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
-        metadata: {
-          targetAdminId: targetAdmin.id,
-          targetEmail: targetAdmin.email,
-          roleSlug: role.slug
-        }
+    await AdminAuditService.logEvent({
+      adminId: actor.id,
+      action: AdminAuditAction.ADMIN_ROLE_ASSIGNED,
+      status: 'SUCCESS',
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+      metadata: {
+        targetAdminId: targetAdmin.id,
+        targetEmail: targetAdmin.email,
+        roleSlug: role.slug
       }
     });
 
@@ -292,18 +291,16 @@ export class AdminRbacService {
       }
     });
 
-    await prisma.adminAuditLog.create({
-      data: {
-        adminId: actor.id,
-        action: AdminAuditAction.ADMIN_ROLE_REMOVED,
-        status: 'SUCCESS',
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
-        metadata: {
-          targetAdminId: targetAdmin.id,
-          targetEmail: targetAdmin.email,
-          roleSlug: role.slug
-        }
+    await AdminAuditService.logEvent({
+      adminId: actor.id,
+      action: AdminAuditAction.ADMIN_ROLE_REMOVED,
+      status: 'SUCCESS',
+      ipAddress: ipAddress || null,
+      userAgent: userAgent || null,
+      metadata: {
+        targetAdminId: targetAdmin.id,
+        targetEmail: targetAdmin.email,
+        roleSlug: role.slug
       }
     });
 

@@ -162,7 +162,9 @@
     shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>',
     'file-text': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>',
     settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
-    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon" style="width:14px;height:14px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon" style="width:14px;height:14px;" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:inline-block;vertical-align:middle;" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;display:inline-block;vertical-align:middle;" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
   };
 
   class AdminShellManager {
@@ -481,8 +483,8 @@
             </p>
             <div class="admin-permission-grid">
               ${isSuper 
-                ? '<span class="admin-perm-tag wildcard">★ SuperAdmin Wildcard (*) — Full Operational Authority</span>' 
-                : permissions.map(p => `<span class="admin-perm-tag granted">✓ ${this._escape(p)}</span>`).join('')
+                ? `<span class="admin-perm-tag wildcard">${ICONS.star} SuperAdmin Wildcard (*) — Full Operational Authority</span>` 
+                : permissions.map(p => `<span class="admin-perm-tag granted">${ICONS.check} ${this._escape(p)}</span>`).join('')
               }
             </div>
           </div>
@@ -493,11 +495,11 @@
               Admin Operations Architecture Certification Roadmap:
             </p>
             <ul style="list-style:none;font-size:0.8125rem;line-height:2;">
-              <li><strong style="color:var(--admin-success)">✓ Phase 7.1:</strong> Admin Architecture Audit (Passed)</li>
-              <li><strong style="color:var(--admin-success)">✓ Phase 7.2:</strong> Admin Auth & Session Foundation (Passed)</li>
-              <li><strong style="color:var(--admin-success)">✓ Phase 7.3:</strong> Admin Role-Based Access Control / RBAC (Passed)</li>
-              <li><strong style="color:var(--admin-primary)">● Phase 7.4:</strong> Admin Layout & UI Foundation (Active)</li>
-              <li><strong style="color:var(--admin-text-muted)">○ Phase 7.5:</strong> Admin Security Foundation (Next)</li>
+              <li><strong style="color:var(--admin-success)">[PASS] Phase 7.1:</strong> Admin Architecture Audit (Passed)</li>
+              <li><strong style="color:var(--admin-success)">[PASS] Phase 7.2:</strong> Admin Auth & Session Foundation (Passed)</li>
+              <li><strong style="color:var(--admin-success)">[PASS] Phase 7.3:</strong> Admin Role-Based Access Control / RBAC (Passed)</li>
+              <li><strong style="color:var(--admin-success)">[PASS] Phase 7.4:</strong> Admin Layout & UI Foundation (Passed)</li>
+              <li><strong style="color:var(--admin-success)">[PASS] Phase 7.5:</strong> Admin Security & Design Foundation (Certified)</li>
             </ul>
           </div>
         </div>
@@ -540,8 +542,8 @@
             </p>
             <div class="admin-permission-grid">
               ${isSuper
-                ? '<span class="admin-perm-tag wildcard">★ Wildcard All (*) — Unlimited System Capabilities</span>'
-                : permissions.map(p => `<span class="admin-perm-tag granted">${this._escape(p)}</span>`).join('')
+                ? `<span class="admin-perm-tag wildcard">${ICONS.star} Wildcard All (*) — Unlimited System Capabilities</span>`
+                : permissions.map(p => `<span class="admin-perm-tag granted">${ICONS.check} ${this._escape(p)}</span>`).join('')
               }
             </div>
           </div>
@@ -650,11 +652,15 @@
         container = document.createElement('div');
         container.id = 'adminToastContainer';
         container.className = 'admin-toast-container';
+        container.setAttribute('role', 'region');
+        container.setAttribute('aria-label', 'System notifications');
         document.body.appendChild(container);
       }
 
       const toast = document.createElement('div');
       toast.className = `admin-toast toast-${type}`;
+      toast.setAttribute('role', type === 'danger' ? 'alert' : 'status');
+      toast.setAttribute('aria-live', type === 'danger' ? 'assertive' : 'polite');
       toast.innerHTML = `
         <div style="flex:1;">${this._escape(message)}</div>
       `;

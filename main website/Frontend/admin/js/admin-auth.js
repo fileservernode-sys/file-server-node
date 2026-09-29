@@ -80,29 +80,36 @@
 
     async login(email, password) {
       const response = await this.api.post('/admin/auth/login', { email, password });
+      const data = response.data || response;
       
       // If 2FA OTP is required by the backend
-      if (response.requiresOtp || response.data?.requiresOtp) {
+      if (data.requiresOtp || response.requiresOtp) {
         return {
           requiresOtp: true,
-          email: response.email || response.data?.email || email,
-          message: response.message || response.data?.message || '2FA OTP challenge required.'
+          challengeToken: data.challengeToken || response.challengeToken,
+          email: data.email || response.email || email,
+          message: data.message || response.message || '2FA OTP challenge required.'
         };
       }
 
       // If token is returned directly
-      const token = response.token || response.data?.token;
+      const token = data.sessionToken || data.token || response.sessionToken || response.token;
       if (token) {
         this.api.setToken(token);
         await this.fetchMe();
       }
 
-      return response;
+      return data;
     }
 
-    async verifyOtp(email, otpCode) {
-      const response = await this.api.post('/admin/auth/verify-otp', { email, otpCode });
-      const token = response.token || response.data?.token;
+    async verifyOtp(challengeTokenOrEmail, otpCode, challengeTokenOverride) {
+      const challengeToken = challengeTokenOverride || challengeTokenOrEmail;
+      const response = await this.api.post('/admin/auth/verify-otp', {
+        challengeToken: challengeToken,
+        otp: otpCode
+      });
+      const data = response.data || response;
+      const token = data.sessionToken || data.token || response.sessionToken || response.token;
       
       if (!token) {
         throw {
@@ -114,7 +121,7 @@
 
       this.api.setToken(token);
       await this.fetchMe();
-      return response;
+      return data;
     }
 
     async fetchMe() {

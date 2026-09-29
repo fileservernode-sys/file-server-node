@@ -112,8 +112,8 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const ip = req.ip || '127.0.0.1';
-            return `rbac_mutation_${adminId}_${ip}`;
+            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+            return `rbac_mutation_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
           }
         }
       },
@@ -155,8 +155,8 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const ip = req.ip || '127.0.0.1';
-            return `rbac_mutation_${adminId}_${ip}`;
+            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
+            return `rbac_mutation_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
           }
         }
       },

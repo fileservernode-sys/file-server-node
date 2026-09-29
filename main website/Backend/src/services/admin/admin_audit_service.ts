@@ -40,6 +40,21 @@ export interface AuditIntegrityVerificationResult {
 
 export class AdminAuditService {
   /**
+   * Deterministically serializes an object with sorted keys to guarantee
+   * identical canonical JSON across in-memory objects and database-retrieved JSON.
+   */
+  static deterministicStringify(obj: unknown): string {
+    if (obj === null || obj === undefined) return '{}';
+    if (typeof obj !== 'object') return JSON.stringify(obj);
+    if (Array.isArray(obj)) {
+      return '[' + obj.map(item => this.deterministicStringify(item)).join(',') + ']';
+    }
+    const keys = Object.keys(obj as Record<string, unknown>).sort();
+    const pairs = keys.map(k => `${JSON.stringify(k)}:${this.deterministicStringify((obj as Record<string, unknown>)[k])}`);
+    return '{' + pairs.join(',') + '}';
+  }
+
+  /**
    * Computes the deterministic canonical representation of an audit record
    */
   static computeCanonicalString(params: {
@@ -72,61 +87,88 @@ export class AdminAuditService {
       .digest('hex');
   }
 
+  private static writeMutex: Promise<void> = Promise.resolve();
+
   /**
    * Records an administrative audit event with cryptographic tamper-evident chaining.
-   * Atomic and concurrency-safe via database transaction.
+   * Atomic and concurrency-safe via database transaction and in-process mutex queue.
    */
   static async logEvent(params: LogAuditParams): Promise<any> {
-    const { adminId, action, status = 'SUCCESS', ipAddress, userAgent, metadata } = params;
+    let releaseLock: () => void;
+    const nextLock = new Promise<void>((resolve) => { releaseLock = resolve; });
+    const currentLock = this.writeMutex;
+    this.writeMutex = nextLock;
+    await currentLock;
 
-    const sanitizedMetadata = AdminAuditSanitizer.sanitizeMetadata(metadata);
-    const sanitizedIp = ipAddress ? AdminAuditSanitizer.sanitizeString(ipAddress) : null;
-    const sanitizedUserAgent = userAgent ? AdminAuditSanitizer.sanitizeString(userAgent).substring(0, 512) : null;
+    try {
+      const { adminId, action, status = 'SUCCESS', ipAddress, userAgent, metadata } = params;
 
-    const id = crypto.randomUUID();
-    const createdAt = new Date();
-    const createdAtIso = createdAt.toISOString();
-    const metadataJson = JSON.stringify(sanitizedMetadata || {});
+      const sanitizedMetadata = AdminAuditSanitizer.sanitizeMetadata(metadata);
+      const sanitizedIp = ipAddress ? AdminAuditSanitizer.sanitizeString(ipAddress) : null;
+      const sanitizedUserAgent = userAgent ? AdminAuditSanitizer.sanitizeString(userAgent).substring(0, 512) : null;
 
-    return await prisma.$transaction(async (tx) => {
-      // Find the most recent audit record in the active chain
-      const latest = await tx.adminAuditLog.findFirst({
-        where: { integrityHash: { not: null } },
-        orderBy: [{ sequence: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
-        select: { integrityHash: true, sequence: true }
-      });
+      const id = crypto.randomUUID();
+      const createdAt = new Date();
+      const createdAtIso = createdAt.toISOString();
+      const metadataJson = this.deterministicStringify(sanitizedMetadata);
 
-      const previousHash = latest?.integrityHash || GENESIS_HASH;
-      const sequence = (latest?.sequence || 0) + 1;
+      return await prisma.$transaction(async (tx) => {
+        // Distributed Lock via MySQL named lock for cross-instance / multi-process serialization
+        await tx.$queryRaw`SELECT GET_LOCK('zdex_admin_audit_chain_lock', 15) as lock_acquired`;
 
-      const canonical = this.computeCanonicalString({
-        id,
-        adminId: adminId || null,
-        action,
-        status,
-        createdAtIso,
-        ipAddress: sanitizedIp,
-        metadataJson
-      });
+        try {
+          // Find the most recent audit record in the active chain with row-level lock
+          const latestRows = await tx.$queryRaw<Array<{ integrityHash: string | null; sequence: number | null }>>`
+            SELECT integrityHash, sequence 
+            FROM admin_audit_logs 
+            WHERE integrityHash IS NOT NULL 
+            ORDER BY sequence DESC, createdAt DESC, id DESC 
+            LIMIT 1 
+            FOR UPDATE
+          `;
 
-      const integrityHash = this.computeIntegrityHash(previousHash, canonical);
+          const latest = latestRows[0];
+          const previousHash = latest?.integrityHash || GENESIS_HASH;
+          const sequence = (latest?.sequence || 0) + 1;
 
-      return await tx.adminAuditLog.create({
-        data: {
-          id,
-          adminId: adminId || null,
-          action,
-          status,
-          ipAddress: sanitizedIp,
-          userAgent: sanitizedUserAgent,
-          metadata: (sanitizedMetadata || {}) as Prisma.InputJsonValue,
-          previousHash,
-          integrityHash,
-          sequence,
-          createdAt
+          const canonical = this.computeCanonicalString({
+            id,
+            adminId: adminId || null,
+            action,
+            status,
+            createdAtIso,
+            ipAddress: sanitizedIp,
+            metadataJson
+          });
+
+          const integrityHash = this.computeIntegrityHash(previousHash, canonical);
+
+          return await tx.adminAuditLog.create({
+            data: {
+              id,
+              adminId: adminId || null,
+              action,
+              status,
+              ipAddress: sanitizedIp,
+              userAgent: sanitizedUserAgent,
+              metadata: (sanitizedMetadata || {}) as Prisma.InputJsonValue,
+              previousHash,
+              integrityHash,
+              sequence,
+              createdAt
+            }
+          });
+        } finally {
+          await tx.$queryRaw`SELECT RELEASE_LOCK('zdex_admin_audit_chain_lock') as lock_released`;
         }
+      }, {
+        timeout: 25000,
+        maxWait: 20000,
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted
       });
-    });
+    } finally {
+      releaseLock!();
+    }
   }
 
   /**
@@ -357,9 +399,13 @@ export class AdminAuditService {
 
   /**
    * Verifies the cryptographic integrity of the entire audit chain from Genesis to present.
-   * Detects modified record payloads, broken previousHash links, and missing entries.
+   * Detects modified record payloads, broken previousHash links, sequence gaps, and missing/deleted entries.
    */
-  static async verifyIntegrity(actorAdminId?: string, ipAddress?: string): Promise<AuditIntegrityVerificationResult> {
+  static async verifyIntegrity(
+    actorAdminId?: string,
+    ipAddress?: string,
+    expectedTerminalState?: { sequence?: number; integrityHash?: string }
+  ): Promise<AuditIntegrityVerificationResult> {
     const historicalCount = await prisma.adminAuditLog.count({ where: { integrityHash: null } });
     const records = await prisma.adminAuditLog.findMany({
       where: { integrityHash: { not: null } },
@@ -373,14 +419,21 @@ export class AdminAuditService {
     for (let i = 0; i < records.length; i++) {
       const record = records[i];
 
-      // 1. Verify previousHash link
+      // 1. Verify sequence monotonicity
+      if (record.sequence !== undefined && record.sequence !== null && record.sequence !== i + 1) {
+        errors.push(
+          `Record [${record.id}] has unexpected sequence number. Expected: ${i + 1}, Found: ${record.sequence}`
+        );
+      }
+
+      // 2. Verify previousHash link
       if (record.previousHash !== expectedPreviousHash) {
         errors.push(
           `Record [${record.id}] at sequence ${record.sequence || i + 1} has broken previousHash. Expected: ${expectedPreviousHash}, Found: ${record.previousHash}`
         );
       }
 
-      // 2. Recompute integrity hash
+      // 3. Recompute integrity hash
       const canonical = this.computeCanonicalString({
         id: record.id,
         adminId: record.adminId,
@@ -388,7 +441,7 @@ export class AdminAuditService {
         status: record.status,
         createdAtIso: record.createdAt.toISOString(),
         ipAddress: record.ipAddress,
-        metadataJson: JSON.stringify(record.metadata || {})
+        metadataJson: this.deterministicStringify(record.metadata)
       });
 
       const recomputedHash = this.computeIntegrityHash(record.previousHash || GENESIS_HASH, canonical);
@@ -402,6 +455,27 @@ export class AdminAuditService {
       }
 
       expectedPreviousHash = record.integrityHash || GENESIS_HASH;
+    }
+
+    // 4. Verify terminal chain state if expected terminal state is provided (e.g. to detect deletion of terminal records)
+    if (expectedTerminalState) {
+      const latestRecord = records[records.length - 1];
+      if (expectedTerminalState.sequence !== undefined) {
+        const actualSeq = latestRecord?.sequence || 0;
+        if (actualSeq !== expectedTerminalState.sequence) {
+          errors.push(
+            `Terminal chain state sequence mismatch (DELETION DETECTED). Expected terminal sequence: ${expectedTerminalState.sequence}, Found: ${actualSeq}`
+          );
+        }
+      }
+      if (expectedTerminalState.integrityHash !== undefined) {
+        const actualHash = latestRecord?.integrityHash || null;
+        if (actualHash !== expectedTerminalState.integrityHash) {
+          errors.push(
+            `Terminal chain state integrityHash mismatch (TAMPER/DELETION DETECTED). Expected terminal hash: ${expectedTerminalState.integrityHash}, Found: ${actualHash}`
+          );
+        }
+      }
     }
 
     const isValid = errors.length === 0;
