@@ -408,7 +408,21 @@
       this.reconciliationState = { page: 1, pageSize: 20, total: 0, items: [], status: '', activeTab: 'runs' };
       this.discrepancyState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', discrepancyType: '' };
       this.settlementState = { page: 1, pageSize: 20, total: 0, items: [], search: '', reconciliationStatus: '' };
-      this.supportState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', priority: '', category: '' };
+      this.supportState = {
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        items: [],
+        search: '',
+        status: '',
+        priority: '',
+        category: '',
+        assignedAdminId: '',
+        unassigned: false,
+        needsAttention: false,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
       this.supportActiveTab = 'cases';
       this.supportCustomerState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
@@ -5167,7 +5181,7 @@
               <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--admin-text-muted);">${ICONS.search}</span>
               <input type="text" id="supportSearchInput" class="admin-search-input" placeholder="Search by case #, subject, or customer email..." style="padding-left:2.25rem;width:100%;">
             </div>
-            <select id="supportStatusFilter" class="admin-select" style="min-width:160px;">
+            <select id="supportStatusFilter" class="admin-select" style="min-width:140px;">
               <option value="">All Statuses</option>
               <option value="OPEN">Open</option>
               <option value="IN_PROGRESS">In Progress</option>
@@ -5175,14 +5189,14 @@
               <option value="RESOLVED">Resolved</option>
               <option value="CLOSED">Closed</option>
             </select>
-            <select id="supportPriorityFilter" class="admin-select" style="min-width:140px;">
+            <select id="supportPriorityFilter" class="admin-select" style="min-width:130px;">
               <option value="">All Priorities</option>
               <option value="LOW">Low</option>
               <option value="NORMAL">Normal</option>
               <option value="HIGH">High</option>
               <option value="URGENT">Urgent</option>
             </select>
-            <select id="supportCategoryFilter" class="admin-select" style="min-width:160px;">
+            <select id="supportCategoryFilter" class="admin-select" style="min-width:140px;">
               <option value="">All Categories</option>
               <option value="ACCOUNT">Account</option>
               <option value="DEVICE">Device</option>
@@ -5192,6 +5206,18 @@
               <option value="CONNECTION">Connection</option>
               <option value="SECURITY">Security</option>
               <option value="GENERAL">General</option>
+            </select>
+            <select id="supportAttentionFilter" class="admin-select" style="min-width:160px;">
+              <option value="">All Attention States</option>
+              <option value="attention">Needs Attention</option>
+              <option value="unassigned">Unassigned Only</option>
+            </select>
+            <select id="supportSortFilter" class="admin-select" style="min-width:160px;">
+              <option value="createdAt:desc">Newest First</option>
+              <option value="createdAt:asc">Oldest First</option>
+              <option value="updatedAt:desc">Recently Updated</option>
+              <option value="priority:desc">Priority (High-Low)</option>
+              <option value="status:asc">Status</option>
             </select>
           </div>
 
@@ -5303,6 +5329,8 @@
       const statusFilter = document.getElementById('supportStatusFilter');
       const priorityFilter = document.getElementById('supportPriorityFilter');
       const categoryFilter = document.getElementById('supportCategoryFilter');
+      const attentionFilter = document.getElementById('supportAttentionFilter');
+      const sortFilter = document.getElementById('supportSortFilter');
 
       let debounceTimer;
       if (searchInput) {
@@ -5332,6 +5360,32 @@
       if (categoryFilter) {
         categoryFilter.addEventListener('change', (e) => {
           this.supportState.category = e.target.value;
+          this.loadSupportCases(1);
+        });
+      }
+
+      if (attentionFilter) {
+        attentionFilter.addEventListener('change', (e) => {
+          const val = e.target.value;
+          if (val === 'attention') {
+            this.supportState.needsAttention = true;
+            this.supportState.unassigned = false;
+          } else if (val === 'unassigned') {
+            this.supportState.unassigned = true;
+            this.supportState.needsAttention = false;
+          } else {
+            this.supportState.needsAttention = false;
+            this.supportState.unassigned = false;
+          }
+          this.loadSupportCases(1);
+        });
+      }
+
+      if (sortFilter) {
+        sortFilter.addEventListener('change', (e) => {
+          const parts = e.target.value.split(':');
+          this.supportState.sortBy = parts[0] || 'createdAt';
+          this.supportState.sortOrder = parts[1] || 'desc';
           this.loadSupportCases(1);
         });
       }
@@ -5381,6 +5435,11 @@
         if (this.supportState.status) queryParams.set('status', this.supportState.status);
         if (this.supportState.priority) queryParams.set('priority', this.supportState.priority);
         if (this.supportState.category) queryParams.set('category', this.supportState.category);
+        if (this.supportState.assignedAdminId) queryParams.set('assignedAdminId', this.supportState.assignedAdminId);
+        if (this.supportState.unassigned) queryParams.set('unassigned', 'true');
+        if (this.supportState.needsAttention) queryParams.set('needsAttention', 'true');
+        if (this.supportState.sortBy) queryParams.set('sortBy', this.supportState.sortBy);
+        if (this.supportState.sortOrder) queryParams.set('sortOrder', this.supportState.sortOrder);
 
         const [casesRes, overviewRes] = await Promise.all([
           window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases?${queryParams.toString()}`),
@@ -5424,12 +5483,26 @@
           else if (item.status === 'IN_PROGRESS') statusClass = 'primary';
           else if (item.status === 'RESOLVED') statusClass = 'success';
 
+          const attentionBadges = [];
+          if (item.isUrgent) {
+            attentionBadges.push(`<span class="admin-badge admin-badge-danger" style="font-size:0.625rem;padding:1px 4px;" title="Urgent Priority Case">URGENT</span>`);
+          }
+          if (item.isOverdue) {
+            attentionBadges.push(`<span class="admin-badge admin-badge-danger" style="font-size:0.625rem;padding:1px 4px;" title="Overdue: Active with no updates in >24h">OVERDUE</span>`);
+          }
+          if (item.needsAttention && !item.isUrgent && !item.isOverdue) {
+            attentionBadges.push(`<span class="admin-badge admin-badge-warning" style="font-size:0.625rem;padding:1px 4px;" title="Needs Attention">ATTENTION</span>`);
+          }
+
           return `
             <tr>
               <td>
-                <span style="font-family:monospace;font-weight:700;color:var(--admin-primary);cursor:pointer;" onclick="AdminShell.inspectSupportCase('${item.id}')">
-                  ${this._escape(item.caseNumber)}
-                </span>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="font-family:monospace;font-weight:700;color:var(--admin-primary);cursor:pointer;" onclick="AdminShell.inspectSupportCase('${item.id}')">
+                    ${this._escape(item.caseNumber)}
+                  </span>
+                  ${attentionBadges.join(' ')}
+                </div>
               </td>
               <td>
                 <div style="font-weight:600;font-size:0.8125rem;">${this._escape(item.userEmail)}</div>
@@ -5452,7 +5525,7 @@
               <td>
                 ${item.assignedAdminName ? `
                   <span style="font-size:0.8125rem;font-weight:600;">${this._escape(item.assignedAdminName)}</span>
-                ` : `<span style="font-size:0.8125rem;color:var(--admin-text-muted);font-style:italic;">Unassigned</span>`}
+                ` : `<span class="admin-badge admin-badge-warning" style="font-size:0.6875rem;">Unassigned</span>`}
               </td>
               <td>
                 <span class="admin-badge admin-badge-neutral">${item.noteCount}</span>
@@ -5762,6 +5835,31 @@
         else if (c.status === 'IN_PROGRESS') statusClass = 'primary';
         else if (c.status === 'RESOLVED') statusClass = 'success';
 
+        const escalationBadges = [];
+        if (c.isUrgent) escalationBadges.push(`<span class="admin-badge admin-badge-danger" style="font-size:0.6875rem;">URGENT</span>`);
+        if (c.isOverdue) escalationBadges.push(`<span class="admin-badge admin-badge-danger" style="font-size:0.6875rem;">OVERDUE (>24h Inactive)</span>`);
+        if (c.needsAttention && !c.isUrgent && !c.isOverdue) escalationBadges.push(`<span class="admin-badge admin-badge-warning" style="font-size:0.6875rem;">NEEDS ATTENTION</span>`);
+        if (c.isUnassigned) escalationBadges.push(`<span class="admin-badge admin-badge-warning" style="font-size:0.6875rem;">UNASSIGNED</span>`);
+
+        const transitions = c.allowedTransitions || [];
+        const transitionButtons = [];
+        if (transitions.includes('OPEN')) {
+          const label = (c.status === 'CLOSED' || c.status === 'RESOLVED') ? 'Reopen Case' : 'Mark Open';
+          transitionButtons.push(`<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'OPEN')">${label}</button>`);
+        }
+        if (transitions.includes('IN_PROGRESS')) {
+          transitionButtons.push(`<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'IN_PROGRESS')">In Progress</button>`);
+        }
+        if (transitions.includes('WAITING_ON_CUSTOMER')) {
+          transitionButtons.push(`<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'WAITING_ON_CUSTOMER')">Waiting on Customer</button>`);
+        }
+        if (transitions.includes('RESOLVED')) {
+          transitionButtons.push(`<button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'RESOLVED')">Resolve Case</button>`);
+        }
+        if (transitions.includes('CLOSED')) {
+          transitionButtons.push(`<button class="admin-btn admin-btn-danger admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'CLOSED')">Close Case</button>`);
+        }
+
         const customer = c.customerContext?.user;
         const devices = c.customerContext?.devices || [];
         const servers = c.customerContext?.servers || [];
@@ -5776,7 +5874,8 @@
                   <span style="font-family:monospace;font-size:1.125rem;font-weight:700;color:var(--admin-primary);">${this._escape(c.caseNumber)}</span>
                   <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">Created: ${new Date(c.createdAt).toLocaleString()}</div>
                 </div>
-                <div style="display:flex;gap:0.375rem;">
+                <div style="display:flex;gap:0.375rem;flex-wrap:wrap;justify-content:flex-end;">
+                  ${escalationBadges.join(' ')}
                   <span class="admin-badge admin-badge-${priorityClass}">${this._escape(c.priority)}</span>
                   <span class="admin-badge admin-badge-${statusClass}">${this._escape(c.status)}</span>
                 </div>
@@ -5796,15 +5895,12 @@
             </div>
 
             <!-- Lifecycle State Actions -->
-            ${canWrite ? `
+            ${(canWrite || canAssign) ? `
               <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
                 <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.75rem;color:var(--admin-text-primary);">Lifecycle &amp; Assignment Controls</div>
-                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'OPEN')">Mark Open</button>
-                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'IN_PROGRESS')">In Progress</button>
-                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'WAITING_ON_CUSTOMER')">Waiting on Customer</button>
-                  <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'RESOLVED')">Resolve Case</button>
-                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'CLOSED')">Close Case</button>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+                  ${canWrite ? transitionButtons.join(' ') : ''}
+                  ${transitionButtons.length === 0 && canWrite ? `<span style="font-size:0.75rem;color:var(--admin-text-muted);font-style:italic;">No further state transitions permitted from current status.</span>` : ''}
                   ${canAssign ? `
                     <button class="admin-btn admin-btn-secondary admin-btn-xs" style="margin-left:auto;" onclick="AdminShell.showAssignSupportCaseModal('${c.id}', '${c.assignedAdminId || ''}')">
                       ${c.assignedAdminId ? 'Reassign Agent' : 'Assign Agent'}
@@ -6016,24 +6112,41 @@
       });
     }
 
-    showAssignSupportCaseModal(caseId, currentAssignedAdminId) {
+    async showAssignSupportCaseModal(caseId, currentAssignedAdminId) {
       const existing = document.getElementById('adminSupportAssignModalBackdrop');
       if (existing) existing.remove();
+
+      let eligibleAdmins = [];
+      try {
+        const res = await window.AdminAuth.fetchWithAuth('/api/v1/admin/operations/support/assignees');
+        if (res.success && res.data?.assignees) {
+          eligibleAdmins = res.data.assignees;
+        }
+      } catch (err) {
+        // Continue with empty list if fetch fails
+      }
 
       const backdrop = document.createElement('div');
       backdrop.id = 'adminSupportAssignModalBackdrop';
       backdrop.className = 'admin-modal-backdrop';
 
       backdrop.innerHTML = `
-        <div class="admin-modal-card" style="max-width:440px;" role="dialog" aria-modal="true">
+        <div class="admin-modal-card" style="max-width:480px;" role="dialog" aria-modal="true">
           <div class="admin-modal-header">
             <h3 class="admin-modal-title">Assign Support Case</h3>
             <button class="admin-btn-icon" id="supAssignCloseBtn" aria-label="Close modal">${ICONS.x}</button>
           </div>
           <div class="admin-modal-body">
-            <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Target Administrator UUID</label>
-            <input type="text" id="supAssignAdminId" class="admin-search-input" value="${this._escape(currentAssignedAdminId)}" placeholder="Enter Admin UUID (or leave blank to unassign)" style="width:100%;padding-left:0.75rem;">
-            <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:0.5rem;">Leave empty to set case as unassigned.</p>
+            <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Eligible Support Administrator</label>
+            <select id="supAssignAdminSelect" class="admin-select" style="width:100%;">
+              <option value="">-- Unassigned --</option>
+              ${eligibleAdmins.map(a => `
+                <option value="${this._escape(a.id)}" ${a.id === currentAssignedAdminId ? 'selected' : ''}>
+                  ${this._escape(a.name)} (${this._escape(a.email)}) &mdash; ${this._escape(a.role || (a.isSuperAdmin ? 'Super Admin' : 'Support Agent'))}
+                </option>
+              `).join('')}
+            </select>
+            <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:0.5rem;">Only active administrators with support permissions or Super Admin privileges are listed.</p>
           </div>
           <div class="admin-modal-footer">
             <button type="button" class="admin-btn admin-btn-secondary" id="supAssignCancelBtn">Cancel</button>
@@ -6049,8 +6162,8 @@
       document.getElementById('supAssignCancelBtn')?.addEventListener('click', closeModal);
 
       document.getElementById('supAssignSubmitBtn')?.addEventListener('click', async () => {
-        const rawId = document.getElementById('supAssignAdminId')?.value.trim();
-        const assignedAdminId = rawId ? rawId : null;
+        const select = document.getElementById('supAssignAdminSelect');
+        const assignedAdminId = select ? (select.value || null) : null;
 
         const submitBtn = document.getElementById('supAssignSubmitBtn');
         if (submitBtn) submitBtn.disabled = true;
@@ -6065,7 +6178,7 @@
             throw new Error(res.error?.message || 'Failed to update assignment');
           }
 
-          this.toast('Support case assignment updated', 'success');
+          this.toast('Support case assignment updated successfully', 'success');
           closeModal();
           this.inspectSupportCase(caseId);
           this.loadSupportCases(this.supportState.page);
@@ -6139,30 +6252,73 @@
     }
 
     async updateSupportCaseStatus(caseId, newStatus) {
-      if (newStatus === 'RESOLVED' || newStatus === 'CLOSED') {
+      if (newStatus === 'RESOLVED') {
         this.showConfirmModal({
-          title: `${newStatus === 'RESOLVED' ? 'Resolve' : 'Close'} Support Case`,
-          message: `Are you sure you want to transition this case to <strong>${newStatus}</strong>?`,
+          title: 'Resolve Support Case',
+          message: 'Provide the administrative resolution summary for this case before marking it resolved:',
           requireReason: true,
-          confirmLabel: `Mark as ${newStatus}`,
-          confirmType: newStatus === 'RESOLVED' ? 'primary' : 'secondary',
+          confirmLabel: 'Resolve Case',
+          confirmType: 'primary',
           onConfirm: async (reason) => {
-            try {
-              const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status: newStatus, resolutionNotes: reason || undefined })
-              });
-
-              if (!res.success) {
-                throw new Error(res.error?.message || 'Failed to update case status');
-              }
-
-              this.toast(`Support case status updated to ${newStatus}`, 'success');
-              this.inspectSupportCase(caseId);
-              this.loadSupportCases(this.supportState.page);
-            } catch (err) {
-              this.toast(err.message, 'danger');
+            if (!reason || !reason.trim()) {
+              throw new Error('Resolution notes are required when resolving a support case.');
             }
+            const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'RESOLVED', resolutionNotes: reason.trim() })
+            });
+
+            if (!res.success) {
+              throw new Error(res.error?.message || 'Failed to resolve case');
+            }
+
+            this.toast('Support case resolved successfully', 'success');
+            this.inspectSupportCase(caseId);
+            this.loadSupportCases(this.supportState.page);
+          }
+        });
+      } else if (newStatus === 'CLOSED') {
+        this.showConfirmModal({
+          title: 'Close Support Case',
+          message: 'Are you sure you want to close this support case? Closed cases cannot be modified unless reopened.',
+          requireReason: true,
+          confirmLabel: 'Close Case',
+          confirmType: 'danger',
+          onConfirm: async (reason) => {
+            const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'CLOSED', resolutionNotes: reason?.trim() || undefined })
+            });
+
+            if (!res.success) {
+              throw new Error(res.error?.message || 'Failed to close case');
+            }
+
+            this.toast('Support case closed', 'success');
+            this.inspectSupportCase(caseId);
+            this.loadSupportCases(this.supportState.page);
+          }
+        });
+      } else if (newStatus === 'OPEN') {
+        this.showConfirmModal({
+          title: 'Reopen Support Case',
+          message: 'Are you sure you want to reopen this support case and return it to the active queue?',
+          requireReason: false,
+          confirmLabel: 'Reopen Case',
+          confirmType: 'warning',
+          onConfirm: async () => {
+            const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'OPEN' })
+            });
+
+            if (!res.success) {
+              throw new Error(res.error?.message || 'Failed to reopen case');
+            }
+
+            this.toast('Support case reopened', 'success');
+            this.inspectSupportCase(caseId);
+            this.loadSupportCases(this.supportState.page);
           }
         });
       } else {

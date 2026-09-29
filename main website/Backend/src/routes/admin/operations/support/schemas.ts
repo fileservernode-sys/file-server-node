@@ -11,8 +11,20 @@ export const SupportCaseListQuerySchema = z.object({
   priority: z.nativeEnum(SupportCasePriority).optional(),
   category: z.nativeEnum(SupportCaseCategory).optional(),
   assignedAdminId: z.string().uuid().optional(),
+  unassigned: z.preprocess((val) => {
+    if (val === 'true' || val === true) return true;
+    if (val === 'false' || val === false) return false;
+    return undefined;
+  }, z.boolean().optional()),
+  needsAttention: z.preprocess((val) => {
+    if (val === 'true' || val === true) return true;
+    if (val === 'false' || val === false) return false;
+    return undefined;
+  }, z.boolean().optional()),
   userId: z.string().optional(),
   search: z.string().optional(),
+  sortBy: z.enum(['createdAt', 'priority', 'updatedAt', 'status']).optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20)
 });
@@ -40,7 +52,10 @@ export const UpdateSupportCaseSchema = z.object({
 export type UpdateSupportCaseInput = z.infer<typeof UpdateSupportCaseSchema>;
 
 export const AssignSupportCaseSchema = z.object({
-  assignedAdminId: z.string().uuid().nullable()
+  assignedAdminId: z.preprocess((val) => {
+    if (val === '' || val === undefined || val === null) return null;
+    return val;
+  }, z.string().uuid().nullable())
 });
 
 export type AssignSupportCaseInput = z.infer<typeof AssignSupportCaseSchema>;

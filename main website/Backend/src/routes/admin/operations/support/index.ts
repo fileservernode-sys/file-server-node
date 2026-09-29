@@ -155,6 +155,23 @@ export async function adminSupportOperationsRoutes(app: FastifyInstance): Promis
   );
 
   /**
+   * GET /api/v1/admin/operations/support/assignees
+   * Returns list of active administrators eligible for support case assignment.
+   * Permission required: 'support.read'
+   */
+  app.get(
+    '/admin/operations/support/assignees',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('support.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const context = request.operationContext!;
+      const result = await AdminSupportService.listEligibleAssignees(context);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
    * POST /api/v1/admin/operations/support/cases/:caseId/notes
    * Appends an internal operator note to a support case.
    * Permission required: 'support.notes'

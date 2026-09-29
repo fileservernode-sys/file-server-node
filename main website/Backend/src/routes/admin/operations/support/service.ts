@@ -5,6 +5,7 @@ import {
   SupportCasePriority,
   SupportCaseCategory,
   AdminAuditAction,
+  AdminStatus,
   UserStatus
 } from '@prisma/client';
 import { prisma } from '../../../../config/database.js';
@@ -19,6 +20,7 @@ import {
   SupportCaseSummaryItem,
   SupportCaseDetailResult,
   SupportCaseNoteItem,
+  EligibleSupportAdminItem,
   SupportCustomerSummaryItem,
   SupportCustomerContextResult,
   SafeDeviceSupportContext,
@@ -33,6 +35,63 @@ import {
   AddSupportCaseNoteInput,
   SupportCustomerListQuery
 } from './schemas.js';
+
+/**
+ * Valid state machine transitions for SupportCase lifecycle.
+ */
+export const VALID_SUPPORT_TRANSITIONS: Record<SupportCaseStatus, SupportCaseStatus[]> = {
+  [SupportCaseStatus.OPEN]: [
+    SupportCaseStatus.IN_PROGRESS,
+    SupportCaseStatus.CLOSED
+  ],
+  [SupportCaseStatus.IN_PROGRESS]: [
+    SupportCaseStatus.WAITING_ON_CUSTOMER,
+    SupportCaseStatus.RESOLVED,
+    SupportCaseStatus.OPEN,
+    SupportCaseStatus.CLOSED
+  ],
+  [SupportCaseStatus.WAITING_ON_CUSTOMER]: [
+    SupportCaseStatus.IN_PROGRESS,
+    SupportCaseStatus.RESOLVED,
+    SupportCaseStatus.CLOSED
+  ],
+  [SupportCaseStatus.RESOLVED]: [
+    SupportCaseStatus.CLOSED,
+    SupportCaseStatus.OPEN,
+    SupportCaseStatus.IN_PROGRESS
+  ],
+  [SupportCaseStatus.CLOSED]: [
+    SupportCaseStatus.OPEN
+  ]
+};
+
+/**
+ * Computes non-speculative, derived queue escalation and attention indicators.
+ */
+function computeCaseEscalationIndicators(c: {
+  status: SupportCaseStatus;
+  priority: SupportCasePriority;
+  assignedAdminId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  const isUrgent = c.priority === SupportCasePriority.URGENT;
+  const isUnassigned = c.assignedAdminId === null && c.status !== SupportCaseStatus.RESOLVED && c.status !== SupportCaseStatus.CLOSED;
+  const ageMs = Date.now() - c.createdAt.getTime();
+  const updateAgeMs = Date.now() - c.updatedAt.getTime();
+
+  const needsAttention = isUrgent ||
+    (c.status === SupportCaseStatus.OPEN && ageMs > 24 * 3600 * 1000) ||
+    (c.status === SupportCaseStatus.WAITING_ON_CUSTOMER && updateAgeMs > 48 * 3600 * 1000);
+
+  const isOverdue = c.status !== SupportCaseStatus.RESOLVED && c.status !== SupportCaseStatus.CLOSED && (
+    (c.priority === SupportCasePriority.URGENT && ageMs > 4 * 3600 * 1000) ||
+    (c.priority === SupportCasePriority.HIGH && ageMs > 12 * 3600 * 1000) ||
+    (ageMs > 72 * 3600 * 1000)
+  );
+
+  return { isUrgent, isUnassigned, needsAttention, isOverdue };
+}
 
 export class AdminSupportService {
   /**
@@ -154,6 +213,17 @@ export class AdminSupportService {
       where.assignedAdminId = query.assignedAdminId;
     }
 
+    if (query.unassigned === true) {
+      where.assignedAdminId = null;
+    }
+
+    if (query.needsAttention === true) {
+      where.OR = [
+        { priority: SupportCasePriority.URGENT },
+        { status: SupportCaseStatus.OPEN, createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) } }
+      ];
+    }
+
     if (query.userId) {
       where.userId = query.userId;
     }
@@ -168,13 +238,25 @@ export class AdminSupportService {
       ];
     }
 
+    const orderBy: Prisma.SupportCaseOrderByWithRelationInput[] = [];
+    if (query.sortBy === 'priority') {
+      orderBy.push({ priority: query.sortOrder || 'desc' });
+    } else if (query.sortBy === 'updatedAt') {
+      orderBy.push({ updatedAt: query.sortOrder || 'desc' });
+    } else if (query.sortBy === 'status') {
+      orderBy.push({ status: query.sortOrder || 'desc' });
+    } else {
+      orderBy.push({ createdAt: query.sortOrder || 'desc' });
+    }
+    orderBy.push({ id: 'asc' });
+
     const [total, cases] = await Promise.all([
       prisma.supportCase.count({ where }),
       prisma.supportCase.findMany({
         where,
         skip,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           user: {
             select: {
@@ -194,24 +276,38 @@ export class AdminSupportService {
       })
     ]);
 
-    const items: SupportCaseSummaryItem[] = cases.map(c => ({
-      id: c.id,
-      caseNumber: c.caseNumber,
-      userId: c.userId,
-      userEmail: c.user.email,
-      userFullName: c.user.fullName,
-      subject: c.subject,
-      category: c.category,
-      priority: c.priority,
-      status: c.status,
-      assignedAdminId: c.assignedAdminId,
-      assignedAdminName: c.assignedAdmin?.name || null,
-      noteCount: c._count.notes,
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-      resolvedAt: c.resolvedAt ? c.resolvedAt.toISOString() : null,
-      closedAt: c.closedAt ? c.closedAt.toISOString() : null
-    }));
+    const items: SupportCaseSummaryItem[] = cases.map(c => {
+      const indicators = computeCaseEscalationIndicators({
+        status: c.status,
+        priority: c.priority,
+        assignedAdminId: c.assignedAdminId,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt
+      });
+
+      return {
+        id: c.id,
+        caseNumber: c.caseNumber,
+        userId: c.userId,
+        userEmail: c.user.email,
+        userFullName: c.user.fullName,
+        subject: c.subject,
+        category: c.category,
+        priority: c.priority,
+        status: c.status,
+        assignedAdminId: c.assignedAdminId,
+        assignedAdminName: c.assignedAdmin?.name || null,
+        noteCount: c._count.notes,
+        isUrgent: indicators.isUrgent,
+        isUnassigned: indicators.isUnassigned,
+        needsAttention: indicators.needsAttention,
+        isOverdue: indicators.isOverdue,
+        createdAt: c.createdAt.toISOString(),
+        updatedAt: c.updatedAt.toISOString(),
+        resolvedAt: c.resolvedAt ? c.resolvedAt.toISOString() : null,
+        closedAt: c.closedAt ? c.closedAt.toISOString() : null
+      };
+    });
 
     return createPaginatedResponse(items, total, page, pageSize);
   }
@@ -233,15 +329,36 @@ export class AdminSupportService {
       throw new NotFoundError(`Customer account with ID '${input.userId}' not found`);
     }
 
-    // 2. Verify assigned admin exists if provided
+    // 2. Verify assigned admin exists if provided and has support permissions
     let assignedAdminName: string | null = null;
     if (input.assignedAdminId) {
       const admin = await prisma.adminUser.findUnique({
         where: { id: input.assignedAdminId },
-        select: { id: true, name: true }
+        include: {
+          userRoles: {
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: { permission: true }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
       if (!admin) {
         throw new NotFoundError(`Admin user with ID '${input.assignedAdminId}' not found`);
+      }
+      if (admin.status !== AdminStatus.ACTIVE) {
+        throw new ConflictError(`Target administrator account '${admin.name}' is not ACTIVE`);
+      }
+      const isEligible = admin.isSuperAdmin ||
+        admin.userRoles.some(ur => ur.role.slug === 'SUPPORT' || ur.role.name.toUpperCase().includes('SUPPORT')) ||
+        admin.userRoles.some(ur => ur.role.permissions.some(p => p.permission.slug.startsWith('support.')));
+      if (!isEligible) {
+        throw new ConflictError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
       }
       assignedAdminName = admin.name;
     }
@@ -276,6 +393,14 @@ export class AdminSupportService {
           }
         });
 
+        const indicators = computeCaseEscalationIndicators({
+          status: created.status,
+          priority: created.priority,
+          assignedAdminId: created.assignedAdminId,
+          createdAt: created.createdAt,
+          updatedAt: created.updatedAt
+        });
+
         return {
           id: created.id,
           caseNumber: created.caseNumber,
@@ -289,6 +414,10 @@ export class AdminSupportService {
           assignedAdminId: created.assignedAdminId,
           assignedAdminName,
           noteCount: 0,
+          isUrgent: indicators.isUrgent,
+          isUnassigned: indicators.isUnassigned,
+          needsAttention: indicators.needsAttention,
+          isOverdue: indicators.isOverdue,
           createdAt: created.createdAt.toISOString(),
           updatedAt: created.updatedAt.toISOString(),
           resolvedAt: null,
@@ -389,6 +518,10 @@ export class AdminSupportService {
       throw new NotFoundError(`Support case '${caseId}' not found`);
     }
 
+    // Object authorization check
+    await assertAdminCanOperateOnResource({ context, resourceType: 'User', resourceId: supportCase.userId, operation: 'read' });
+    await assertAdminCanOperateOnResource({ context, resourceType: 'SupportCase', resourceId: supportCase.id, operation: 'read' });
+
     // Log read audit event
     await AdminAuditService.logEvent({
       adminId: context.adminId,
@@ -448,6 +581,16 @@ export class AdminSupportService {
       createdAt: n.createdAt.toISOString()
     }));
 
+    const indicators = computeCaseEscalationIndicators({
+      status: supportCase.status,
+      priority: supportCase.priority,
+      assignedAdminId: supportCase.assignedAdminId,
+      createdAt: supportCase.createdAt,
+      updatedAt: supportCase.updatedAt
+    });
+
+    const allowedTransitions = VALID_SUPPORT_TRANSITIONS[supportCase.status] || [];
+
     return {
       id: supportCase.id,
       caseNumber: supportCase.caseNumber,
@@ -466,6 +609,11 @@ export class AdminSupportService {
       resolutionNotes: supportCase.resolutionNotes,
       resolvedAt: supportCase.resolvedAt ? supportCase.resolvedAt.toISOString() : null,
       closedAt: supportCase.closedAt ? supportCase.closedAt.toISOString() : null,
+      isUrgent: indicators.isUrgent,
+      isUnassigned: indicators.isUnassigned,
+      needsAttention: indicators.needsAttention,
+      isOverdue: indicators.isOverdue,
+      allowedTransitions,
       createdAt: supportCase.createdAt.toISOString(),
       updatedAt: supportCase.updatedAt.toISOString(),
       notes,
@@ -488,6 +636,7 @@ export class AdminSupportService {
 
   /**
    * Updates state, priority, category, or resolution notes of a support case.
+   * Enforces strict state machine transition validation and field-level controls.
    */
   static async updateCase(
     caseId: string,
@@ -507,21 +656,42 @@ export class AdminSupportService {
       throw new NotFoundError(`Support case '${caseId}' not found`);
     }
 
-    const dataToUpdate: Prisma.SupportCaseUpdateInput = {};
-    const auditAction = input.status && input.status !== existing.status
-      ? AdminAuditAction.ADMIN_SUPPORT_CASE_STATUS_CHANGED
-      : AdminAuditAction.ADMIN_SUPPORT_CASE_UPDATED;
+    // Object authorization check
+    await assertAdminCanOperateOnResource({ context, resourceType: 'User', resourceId: existing.userId, operation: 'update' });
+    await assertAdminCanOperateOnResource({ context, resourceType: 'SupportCase', resourceId: existing.id, operation: 'update' });
 
-    if (input.status !== undefined) {
-      dataToUpdate.status = input.status;
-      if (input.status === SupportCaseStatus.RESOLVED && !existing.resolvedAt) {
-        dataToUpdate.resolvedAt = new Date();
-      } else if (input.status === SupportCaseStatus.CLOSED && !existing.closedAt) {
-        dataToUpdate.closedAt = new Date();
-      } else if (input.status === SupportCaseStatus.OPEN || input.status === SupportCaseStatus.IN_PROGRESS) {
-        dataToUpdate.resolvedAt = null;
-        dataToUpdate.closedAt = null;
+    const dataToUpdate: Prisma.SupportCaseUpdateInput = {};
+    let auditAction: AdminAuditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_UPDATED;
+
+    if (input.status !== undefined && input.status !== existing.status) {
+      const allowed = VALID_SUPPORT_TRANSITIONS[existing.status] || [];
+      if (!allowed.includes(input.status)) {
+        throw new ConflictError(`Invalid status transition from '${existing.status}' to '${input.status}'`);
       }
+
+      dataToUpdate.status = input.status;
+
+      if (input.status === SupportCaseStatus.RESOLVED) {
+        if (!existing.resolutionNotes && !input.resolutionNotes) {
+          throw new ValidationError('Resolution notes are required when marking a support case as RESOLVED');
+        }
+        dataToUpdate.resolvedAt = new Date();
+        auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_STATUS_CHANGED;
+      } else if (input.status === SupportCaseStatus.CLOSED) {
+        dataToUpdate.closedAt = new Date();
+        auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_CLOSED;
+      } else if (existing.status === SupportCaseStatus.CLOSED && input.status === SupportCaseStatus.OPEN) {
+        dataToUpdate.closedAt = null;
+        dataToUpdate.resolvedAt = null;
+        auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_REOPENED;
+      } else if (existing.status === SupportCaseStatus.RESOLVED && (input.status === SupportCaseStatus.OPEN || input.status === SupportCaseStatus.IN_PROGRESS)) {
+        dataToUpdate.resolvedAt = null;
+        auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_REOPENED;
+      } else {
+        auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_STATUS_CHANGED;
+      }
+    } else if (input.priority !== undefined && input.priority !== existing.priority) {
+      auditAction = AdminAuditAction.ADMIN_SUPPORT_CASE_PRIORITY_CHANGED;
     }
 
     if (input.priority !== undefined) {
@@ -557,6 +727,14 @@ export class AdminSupportService {
           data: dataToUpdate
         });
 
+        const indicators = computeCaseEscalationIndicators({
+          status: updated.status,
+          priority: updated.priority,
+          assignedAdminId: updated.assignedAdminId,
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt
+        });
+
         return {
           id: updated.id,
           caseNumber: updated.caseNumber,
@@ -570,6 +748,10 @@ export class AdminSupportService {
           assignedAdminId: updated.assignedAdminId,
           assignedAdminName: existing.assignedAdmin?.name || null,
           noteCount: existing._count.notes,
+          isUrgent: indicators.isUrgent,
+          isUnassigned: indicators.isUnassigned,
+          needsAttention: indicators.needsAttention,
+          isOverdue: indicators.isOverdue,
           createdAt: updated.createdAt.toISOString(),
           updatedAt: updated.updatedAt.toISOString(),
           resolvedAt: updated.resolvedAt ? updated.resolvedAt.toISOString() : null,
@@ -580,7 +762,8 @@ export class AdminSupportService {
   }
 
   /**
-   * Assigns a support case to an admin operator.
+   * Assigns a support case to an eligible admin operator or unassigns it.
+   * Validates target admin eligibility server-side.
    */
   static async assignCase(
     caseId: string,
@@ -599,15 +782,45 @@ export class AdminSupportService {
       throw new NotFoundError(`Support case '${caseId}' not found`);
     }
 
+    // Object authorization check
+    await assertAdminCanOperateOnResource({ context, resourceType: 'User', resourceId: existing.userId, operation: 'assign' });
+    await assertAdminCanOperateOnResource({ context, resourceType: 'SupportCase', resourceId: existing.id, operation: 'assign' });
+
     let assignedAdminName: string | null = null;
     if (input.assignedAdminId) {
       const admin = await prisma.adminUser.findUnique({
         where: { id: input.assignedAdminId },
-        select: { id: true, name: true }
+        include: {
+          userRoles: {
+            include: {
+              role: {
+                include: {
+                  permissions: {
+                    include: { permission: true }
+                  }
+                }
+              }
+            }
+          }
+        }
       });
+
       if (!admin) {
         throw new NotFoundError(`Admin user with ID '${input.assignedAdminId}' not found`);
       }
+
+      if (admin.status !== AdminStatus.ACTIVE) {
+        throw new ConflictError(`Target administrator account '${admin.name}' is not ACTIVE`);
+      }
+
+      const isEligible = admin.isSuperAdmin ||
+        admin.userRoles.some(ur => ur.role.slug === 'SUPPORT' || ur.role.name.toUpperCase().includes('SUPPORT')) ||
+        admin.userRoles.some(ur => ur.role.permissions.some(p => p.permission.slug.startsWith('support.')));
+
+      if (!isEligible) {
+        throw new ConflictError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
+      }
+
       assignedAdminName = admin.name;
     }
 
@@ -631,6 +844,14 @@ export class AdminSupportService {
           }
         });
 
+        const indicators = computeCaseEscalationIndicators({
+          status: updated.status,
+          priority: updated.priority,
+          assignedAdminId: updated.assignedAdminId,
+          createdAt: updated.createdAt,
+          updatedAt: updated.updatedAt
+        });
+
         return {
           id: updated.id,
           caseNumber: updated.caseNumber,
@@ -644,6 +865,10 @@ export class AdminSupportService {
           assignedAdminId: updated.assignedAdminId,
           assignedAdminName,
           noteCount: existing._count.notes,
+          isUrgent: indicators.isUrgent,
+          isUnassigned: indicators.isUnassigned,
+          needsAttention: indicators.needsAttention,
+          isOverdue: indicators.isOverdue,
           createdAt: updated.createdAt.toISOString(),
           updatedAt: updated.updatedAt.toISOString(),
           resolvedAt: updated.resolvedAt ? updated.resolvedAt.toISOString() : null,
@@ -651,6 +876,44 @@ export class AdminSupportService {
         };
       }
     });
+  }
+
+  /**
+   * Lists eligible active administrators for support case assignment.
+   */
+  static async listEligibleAssignees(context: AdminOperationContext): Promise<EligibleSupportAdminItem[]> {
+    const admins = await prisma.adminUser.findMany({
+      where: { status: AdminStatus.ACTIVE },
+      include: {
+        userRoles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: { permission: true }
+                }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    const eligible = admins.filter(a =>
+      a.isSuperAdmin ||
+      a.userRoles.some(ur => ur.role.slug === 'SUPPORT' || ur.role.name.toUpperCase().includes('SUPPORT')) ||
+      a.userRoles.some(ur => ur.role.permissions.some(p => p.permission.slug.startsWith('support.')))
+    );
+
+    return eligible.map(a => ({
+      id: a.id,
+      name: a.name,
+      email: a.email,
+      status: a.status,
+      isSuperAdmin: a.isSuperAdmin,
+      roles: a.userRoles.map(ur => ur.role.name)
+    }));
   }
 
   /**
@@ -663,12 +926,16 @@ export class AdminSupportService {
   ): Promise<SupportCaseNoteItem> {
     const existing = await prisma.supportCase.findUnique({
       where: { id: caseId },
-      select: { id: true, caseNumber: true }
+      select: { id: true, userId: true, caseNumber: true }
     });
 
     if (!existing) {
       throw new NotFoundError(`Support case '${caseId}' not found`);
     }
+
+    // Object authorization check
+    await assertAdminCanOperateOnResource({ context, resourceType: 'User', resourceId: existing.userId, operation: 'note' });
+    await assertAdminCanOperateOnResource({ context, resourceType: 'SupportCase', resourceId: existing.id, operation: 'note' });
 
     const admin = await prisma.adminUser.findUnique({
       where: { id: context.adminId },
@@ -684,15 +951,15 @@ export class AdminSupportService {
       metadata: {
         caseId: existing.id,
         caseNumber: existing.caseNumber,
-        isInternal: input.isInternal
+        isInternal: true
       },
       execute: async (tx) => {
         const note = await tx.supportCaseNote.create({
           data: {
             caseId: existing.id,
             adminId: context.adminId,
-            note: input.note,
-            isInternal: input.isInternal
+            note: input.note.trim(),
+            isInternal: true
           }
         });
 
@@ -1017,24 +1284,31 @@ export class AdminSupportService {
       hasPastDue: activeSub?.status === 'PAST_DUE' || user.billingState.status === 'PAST_DUE'
     } : null;
 
-    const recentCases: SupportCaseSummaryItem[] = recentCasesRaw.map(c => ({
-      id: c.id,
-      caseNumber: c.caseNumber,
-      userId: c.userId,
-      userEmail: c.user.email,
-      userFullName: c.user.fullName,
-      subject: c.subject,
-      category: c.category,
-      priority: c.priority,
-      status: c.status,
-      assignedAdminId: c.assignedAdminId,
-      assignedAdminName: c.assignedAdmin?.name || null,
-      noteCount: c._count.notes,
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-      resolvedAt: c.resolvedAt ? c.resolvedAt.toISOString() : null,
-      closedAt: c.closedAt ? c.closedAt.toISOString() : null
-    }));
+    const recentCases: SupportCaseSummaryItem[] = recentCasesRaw.map(c => {
+      const indicators = computeCaseEscalationIndicators(c);
+      return {
+        id: c.id,
+        caseNumber: c.caseNumber,
+        userId: c.userId,
+        userEmail: c.user.email,
+        userFullName: c.user.fullName,
+        subject: c.subject,
+        category: c.category,
+        priority: c.priority,
+        status: c.status,
+        isUrgent: indicators.isUrgent,
+        isUnassigned: indicators.isUnassigned,
+        needsAttention: indicators.needsAttention,
+        isOverdue: indicators.isOverdue,
+        assignedAdminId: c.assignedAdminId,
+        assignedAdminName: c.assignedAdmin?.name || null,
+        noteCount: c._count.notes,
+        createdAt: c.createdAt.toISOString(),
+        updatedAt: c.updatedAt.toISOString(),
+        resolvedAt: c.resolvedAt ? c.resolvedAt.toISOString() : null,
+        closedAt: c.closedAt ? c.closedAt.toISOString() : null
+      };
+    });
 
     return {
       customer: {

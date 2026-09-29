@@ -33,10 +33,23 @@ export interface SupportCaseSummaryItem {
   assignedAdminId: string | null;
   assignedAdminName: string | null;
   noteCount: number;
+  isUrgent: boolean;
+  isUnassigned: boolean;
+  needsAttention: boolean;
+  isOverdue: boolean;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
   closedAt: string | null;
+}
+
+export interface EligibleSupportAdminItem {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  isSuperAdmin: boolean;
+  roles: string[];
 }
 
 export interface SupportCaseNoteItem {
@@ -148,6 +161,11 @@ export interface SupportCaseDetailResult {
   resolutionNotes: string | null;
   resolvedAt: string | null;
   closedAt: string | null;
+  isUrgent: boolean;
+  isUnassigned: boolean;
+  needsAttention: boolean;
+  isOverdue: boolean;
+  allowedTransitions: SupportCaseStatus[];
   createdAt: string;
   updatedAt: string;
   notes: SupportCaseNoteItem[];
