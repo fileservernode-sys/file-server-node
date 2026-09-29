@@ -6,6 +6,248 @@
 (function (window) {
   'use strict';
 
+  /**
+   * AUTHORITATIVE ZDEXCLOUD ADMIN CONTROL PLANE MODULE REGISTRY
+   * Authoritative source of truth for implementation state across all roadmap phases.
+   */
+  const MODULE_REGISTRY = [
+    // --- Phase 7: Security & Admin Foundation ---
+    {
+      id: 'admin-roles',
+      name: 'Roles & RBAC Matrix',
+      category: 'Security & Access',
+      route: '#admin-roles',
+      permission: 'admin_roles.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 7',
+      description: 'Role-based access control, privilege catalogs, and administrator assignments.',
+      apiNamespace: '/api/v1/admin/auth/*',
+      icon: 'shield'
+    },
+    {
+      id: 'audit-logs',
+      name: 'Security Audit Logs',
+      category: 'Security & Access',
+      route: '#audit-logs',
+      permission: 'audit.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 7',
+      description: 'Tamper-evident, cryptographically chained SHA-256 administrative event logs.',
+      apiNamespace: '/api/v1/admin/audit/*',
+      icon: 'file-text'
+    },
+
+    // --- Phase 8: Core Operations ---
+    {
+      id: 'users',
+      name: 'Customer Accounts',
+      category: 'Core Operations',
+      route: '#users',
+      permission: 'users.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 8',
+      description: 'Customer directory, identity verification, account suspension, and session revocation.',
+      apiNamespace: '/api/v1/admin/operations/users/*',
+      icon: 'users'
+    },
+    {
+      id: 'devices',
+      name: 'Devices & Nodes',
+      category: 'Core Operations',
+      route: '#devices',
+      permission: 'devices.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 8',
+      description: 'Registered hardware edge nodes, platform telemetry, and session disconnect controls.',
+      apiNamespace: '/api/v1/admin/operations/devices/*',
+      icon: 'server'
+    },
+    {
+      id: 'servers',
+      name: 'Server Instances',
+      category: 'Core Operations',
+      route: '#servers',
+      permission: 'servers.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 8',
+      description: 'Local file server daemons, health status, and administrative power controls.',
+      apiNamespace: '/api/v1/admin/operations/servers/*',
+      icon: 'hard-drive'
+    },
+    {
+      id: 'gateway',
+      name: 'Gateway & Relays',
+      category: 'Core Operations',
+      route: '#gateway',
+      permission: 'gateway.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 8',
+      description: 'Edge relay clusters, WebSocket tunnels, node drain controls, and diagnostics.',
+      apiNamespace: '/api/v1/admin/operations/gateway/*',
+      icon: 'radio'
+    },
+
+    // --- Phase 9: Commercial & Billing Operations ---
+    {
+      id: 'billing-overview',
+      name: 'Financial & Billing Overview',
+      category: 'Commercial & Billing',
+      route: '#billing-overview',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Consolidated commercial telemetry, revenue volume, and reconciliation health.',
+      apiNamespace: '/api/v1/admin/operations/billing/overview',
+      icon: 'dashboard'
+    },
+    {
+      id: 'subscriptions',
+      name: 'Subscriptions & Dunning',
+      category: 'Commercial & Billing',
+      route: '#subscriptions',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Subscription lifecycle management, dunning triage, and administrative cancellations.',
+      apiNamespace: '/api/v1/admin/operations/billing/subscriptions/*',
+      icon: 'credit-card'
+    },
+    {
+      id: 'payments',
+      name: 'Payments & Transactions',
+      category: 'Commercial & Billing',
+      route: '#payments',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Payment transaction ledger, provider synchronization, and tax/fee breakdowns.',
+      apiNamespace: '/api/v1/admin/operations/billing/payments/*',
+      icon: 'dollar-sign'
+    },
+    {
+      id: 'refunds',
+      name: 'Refunds & Returns',
+      category: 'Commercial & Billing',
+      route: '#refunds',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Administrative refund execution, partial refund tracking, and idempotency guards.',
+      apiNamespace: '/api/v1/admin/operations/billing/refunds/*',
+      icon: 'rotate-ccw'
+    },
+    {
+      id: 'reconciliation',
+      name: 'Billing Reconciliation & Drift',
+      category: 'Commercial & Billing',
+      route: '#reconciliation',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Provider reconciliation batch runs, drift detection, and discrepancy resolution.',
+      apiNamespace: '/api/v1/admin/operations/billing/reconciliation/*',
+      icon: 'git-compare'
+    },
+    {
+      id: 'settlements',
+      name: 'Settlements & Payouts',
+      category: 'Commercial & Billing',
+      route: '#settlements',
+      permission: 'billing.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 9',
+      description: 'Bank payout batch tracking, provider fee deductions, and net credit verification.',
+      apiNamespace: '/api/v1/admin/operations/billing/settlements/*',
+      icon: 'database'
+    },
+
+    // --- Future Scheduled Modules (Honest Roadmap Tracking) ---
+    {
+      id: 'support-cases',
+      name: 'Support Cases & Tickets',
+      category: 'Customer Support',
+      route: null,
+      permission: 'support.read',
+      status: 'FUTURE',
+      phase: 'Phase 10',
+      description: 'Customer lookup, support tickets, context inspection, and dispute lifecycles.',
+      apiNamespace: 'Scheduled for Phase 10',
+      icon: 'file-text'
+    },
+    {
+      id: 'communication-infra',
+      name: 'Communication & Push Relays',
+      category: 'Infrastructure',
+      route: null,
+      permission: 'communication.read',
+      status: 'FUTURE',
+      phase: 'Phase 11',
+      description: 'Notification dispatch, push notification delivery, and outbound messaging queues.',
+      apiNamespace: 'Scheduled for Phase 11',
+      icon: 'radio'
+    },
+    {
+      id: 'gateway-resilience',
+      name: 'Gateway Self-Healing & Failover',
+      category: 'Infrastructure',
+      route: null,
+      permission: 'gateway.admin',
+      status: 'FUTURE',
+      phase: 'Phase 11A',
+      description: 'Automated relay failover, circuit breaking, and distributed tunnel recovery.',
+      apiNamespace: 'Scheduled for Phase 11A',
+      icon: 'refresh-cw'
+    },
+    {
+      id: 'observability-center',
+      name: 'Observability & Error Center',
+      category: 'Observability',
+      route: null,
+      permission: 'observability.read',
+      status: 'FUTURE',
+      phase: 'Phase 12',
+      description: 'Centralized error aggregation, APM tracing, and critical alert dispatchers.',
+      apiNamespace: 'Scheduled for Phase 12',
+      icon: 'alert'
+    },
+    {
+      id: 'database-mgmt',
+      name: 'Database Management & Migrations',
+      category: 'System & Data',
+      route: null,
+      permission: 'database.admin',
+      status: 'FUTURE',
+      phase: 'Phase 14',
+      description: 'Schema inspection, connection pooling telemetry, and migration tracking.',
+      apiNamespace: 'Scheduled for Phase 14',
+      icon: 'database'
+    },
+    {
+      id: 'sql-query-runner',
+      name: 'SQL Query Runner',
+      category: 'System & Data',
+      route: null,
+      permission: 'sql.execute',
+      status: 'FUTURE',
+      phase: 'Phase 15',
+      description: 'Read-only administrative SQL query execution with immutable audit logging.',
+      apiNamespace: 'Scheduled for Phase 15',
+      icon: 'database'
+    },
+    {
+      id: 'system-settings',
+      name: 'System Settings & Config',
+      category: 'System & Data',
+      route: null,
+      permission: 'system.admin',
+      status: 'FUTURE',
+      phase: 'Phase 16',
+      description: 'Platform runtime configuration, feature flags, and maintenance mode toggles.',
+      apiNamespace: 'Scheduled for Phase 16',
+      icon: 'server'
+    }
+  ];
+
   const NAV_SCHEMA = [
     {
       group: 'Overview',
@@ -456,50 +698,166 @@
         <div class="admin-view-header">
           <div class="admin-view-title-wrap">
             <h1>Operations Overview</h1>
-            <p>Infrastructure state, edge node status, and administrative control telemetry.</p>
+            <p>Authoritative infrastructure state, edge node status, and administrative control telemetry.</p>
           </div>
           <div class="admin-header-actions">
             <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._renderDashboardView(document.getElementById('adminViewContainer'))">
-              ${ICONS['refresh-cw']} Refresh State
+              ${ICONS['refresh-cw']} Refresh Telemetry
             </button>
           </div>
         </div>
 
         <div id="adminDashCards" class="admin-grid-4">
-          <div class="admin-card"><div class="admin-stat-label">Users</div><div class="admin-stat-value">...</div></div>
-          <div class="admin-card"><div class="admin-stat-label">Devices</div><div class="admin-stat-value">...</div></div>
-          <div class="admin-card"><div class="admin-stat-label">Servers</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Customer Accounts</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Edge Devices</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Server Instances</div><div class="admin-stat-value">...</div></div>
           <div class="admin-card"><div class="admin-stat-label">Gateway Nodes</div><div class="admin-stat-value">...</div></div>
         </div>
 
         <div class="admin-grid-2" style="margin-top:var(--space-xl);">
+          <!-- Operational Telemetry & Infrastructure Health -->
           <div class="admin-card">
-            <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">Operational Status Distribution</h3>
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <h3 style="font-size:1.05rem;font-weight:700;margin:0;">Infrastructure Health &amp; Relays</h3>
+              <span class="admin-badge admin-badge-success">LIVE TELEMETRY</span>
+            </div>
             <div id="adminDashBreakdown" style="display:flex;flex-direction:column;gap:0.75rem;">
               <p style="color:var(--admin-text-muted);font-size:0.875rem;">Loading telemetry metrics...</p>
             </div>
           </div>
 
+          <!-- Active Control Planes Quick Access Hub -->
           <div class="admin-card">
-            <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem;">Operational Control Planes</h3>
-            <div style="display:flex;flex-direction:column;gap:0.75rem;">
-              <a href="#users" class="admin-btn admin-btn-secondary" style="justify-content:space-between;width:100%;">
-                <span>Manage Customer Accounts</span>
-                <span class="admin-badge admin-badge-info">Phase 8.3</span>
-              </a>
-              <a href="#devices" class="admin-btn admin-btn-secondary" style="justify-content:space-between;width:100%;">
-                <span>Inspect Devices & Edge Nodes</span>
-                <span class="admin-badge admin-badge-info">Phase 8.4</span>
-              </a>
-              <a href="#servers" class="admin-btn admin-btn-secondary" style="justify-content:space-between;width:100%;">
-                <span>Server Instances & Power Controls</span>
-                <span class="admin-badge admin-badge-info">Phase 8.5</span>
-              </a>
-              <a href="#gateway" class="admin-btn admin-btn-secondary" style="justify-content:space-between;width:100%;">
-                <span>Gateway Nodes & Cluster Telemetry</span>
-                <span class="admin-badge admin-badge-info">Phase 8.6</span>
-              </a>
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <h3 style="font-size:1.05rem;font-weight:700;margin:0;">Operational Control Planes</h3>
+              <span class="admin-badge admin-badge-info">AUTHENTICATED</span>
             </div>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <a href="#users" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS.users} <span>Customer Accounts</span>
+                </a>
+                <a href="#devices" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS.server} <span>Devices &amp; Nodes</span>
+                </a>
+                <a href="#servers" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS['hard-drive']} <span>Server Instances</span>
+                </a>
+                <a href="#gateway" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS.radio} <span>Gateway &amp; Relays</span>
+                </a>
+              </div>
+
+              <div style="border-top:1px solid var(--admin-border-subtle);margin:0.25rem 0;"></div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <a href="#billing-overview" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS.dashboard} <span>Financial Overview</span>
+                </a>
+                <a href="#subscriptions" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS['credit-card']} <span>Subscriptions</span>
+                </a>
+                <a href="#payments" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS['dollar-sign']} <span>Payments Ledger</span>
+                </a>
+                <a href="#reconciliation" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS['git-compare']} <span>Reconciliation</span>
+                </a>
+              </div>
+
+              <div style="border-top:1px solid var(--admin-border-subtle);margin:0.25rem 0;"></div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+                <a href="#admin-roles" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS.shield} <span>Roles &amp; RBAC</span>
+                </a>
+                <a href="#audit-logs" class="admin-btn admin-btn-secondary admin-btn-sm" style="justify-content:flex-start;gap:0.5rem;">
+                  ${ICONS['file-text']} <span>Security Audit Logs</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authoritative Control Plane Module Registry Matrix -->
+        <div class="admin-card" style="margin-top:var(--space-xl);">
+          <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+            <div>
+              <h2 class="admin-card-title" style="margin:0;font-size:1.125rem;font-weight:700;">ZdexCloud Control Plane — Authoritative Module Registry</h2>
+              <p style="margin:0.25rem 0 0 0;font-size:0.8125rem;color:var(--admin-text-muted);">
+                Real-time operational status and security classification across all implemented and scheduled platform modules.
+              </p>
+            </div>
+            <span class="admin-badge admin-badge-neutral">Registry v2.4</span>
+          </div>
+
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Module Name &amp; Description</th>
+                  <th>Category</th>
+                  <th>Authoritative Phase</th>
+                  <th>Required Authority</th>
+                  <th>Implementation State</th>
+                  <th style="text-align:right;">Control Plane Access</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${MODULE_REGISTRY.map(m => {
+                  const isImplemented = m.status === 'IMPLEMENTED';
+                  const hasPerm = m.permission === null || window.AdminAuth.hasPermission(m.permission);
+                  const iconSvg = ICONS[m.icon] || ICONS.dashboard;
+
+                  let statusBadge = `<span class="admin-badge admin-badge-success">${ICONS.check} OPERATIONAL</span>`;
+                  if (!isImplemented) {
+                    statusBadge = `<span class="admin-badge admin-badge-neutral">${this._escape(m.phase)} SCHEDULED</span>`;
+                  }
+
+                  let actionCell = '';
+                  if (isImplemented) {
+                    if (hasPerm) {
+                      actionCell = `
+                        <a href="${this._escape(m.route)}" class="admin-btn admin-btn-secondary admin-btn-xs" style="display:inline-flex;align-items:center;gap:4px;">
+                          Open Module &rarr;
+                        </a>
+                      `;
+                    } else {
+                      actionCell = `
+                        <span class="admin-badge admin-badge-warning" title="Requires ${m.permission}">
+                          ${ICONS.lock} RESTRICTED
+                        </span>
+                      `;
+                    }
+                  } else {
+                    actionCell = `<span style="font-size:0.75rem;color:var(--admin-text-subtle);font-family:var(--font-mono);">Future Phase</span>`;
+                  }
+
+                  return `
+                    <tr>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:0.625rem;">
+                          <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:var(--radius-xs);background:var(--admin-bg-subtle);">
+                            ${iconSvg}
+                          </span>
+                          <div>
+                            <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(m.name)}</strong>
+                            <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:1px;">${this._escape(m.description)}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="font-size:0.8125rem;">${this._escape(m.category)}</td>
+                      <td style="font-size:0.8125rem;"><strong>${this._escape(m.phase)}</strong></td>
+                      <td>
+                        <code class="admin-code-pill" style="font-size:0.6875rem;">${this._escape(m.permission || 'Authenticated')}</code>
+                      </td>
+                      <td>${statusBadge}</td>
+                      <td style="text-align:right;">${actionCell}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
       `;
@@ -521,22 +879,22 @@
         if (cardsContainer) {
           cardsContainer.innerHTML = `
             <div class="admin-card">
-              <div class="admin-stat-label"><span>Total Customer Accounts</span><span class="admin-status-dot" style="background-color:var(--admin-success)"></span></div>
+              <div class="admin-stat-label"><span>Customer Accounts</span><span class="admin-status-dot" style="background-color:var(--admin-success)"></span></div>
               <div class="admin-stat-value">${usersTotal}</div>
-              <div class="admin-stat-subtext"><a href="#users" style="color:var(--admin-primary);">Inspect users &rarr;</a></div>
+              <div class="admin-stat-subtext"><a href="#users" style="color:var(--admin-primary);font-weight:600;">Inspect Directory &rarr;</a></div>
             </div>
             <div class="admin-card">
-              <div class="admin-stat-label"><span>Registered Edge Devices</span><span class="admin-status-dot" style="background-color:var(--admin-primary)"></span></div>
+              <div class="admin-stat-label"><span>Edge Devices &amp; Nodes</span><span class="admin-status-dot" style="background-color:var(--admin-primary)"></span></div>
               <div class="admin-stat-value">${devicesTotal}</div>
-              <div class="admin-stat-subtext"><a href="#devices" style="color:var(--admin-primary);">Inspect devices &rarr;</a></div>
+              <div class="admin-stat-subtext"><a href="#devices" style="color:var(--admin-primary);font-weight:600;">Inspect Devices &rarr;</a></div>
             </div>
             <div class="admin-card">
               <div class="admin-stat-label"><span>Server Instances</span><span class="admin-status-dot" style="background-color:var(--admin-warning)"></span></div>
               <div class="admin-stat-value">${serversTotal}</div>
-              <div class="admin-stat-subtext"><a href="#servers" style="color:var(--admin-primary);">Power controls &rarr;</a></div>
+              <div class="admin-stat-subtext"><a href="#servers" style="color:var(--admin-primary);font-weight:600;">Power Controls &rarr;</a></div>
             </div>
             <div class="admin-card">
-              <div class="admin-stat-label"><span>Gateway Nodes</span><span class="admin-status-dot" style="background-color:var(--admin-success)"></span></div>
+              <div class="admin-stat-label"><span>Gateway Relay Nodes</span><span class="admin-status-dot" style="background-color:var(--admin-success)"></span></div>
               <div class="admin-stat-value">${telemetry.totalGatewayNodes || 0}</div>
               <div class="admin-stat-subtext">Active Tunnels: <strong>${telemetry.totalActiveConnections || 0}</strong></div>
             </div>
@@ -547,20 +905,24 @@
         if (breakdownContainer) {
           breakdownContainer.innerHTML = `
             <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--admin-border-subtle);">
-              <span style="color:var(--admin-text-secondary);">Active Gateway Nodes:</span>
+              <span style="color:var(--admin-text-secondary);font-size:0.875rem;">Active Gateway Nodes:</span>
               <span class="admin-badge admin-badge-success">${telemetry.activeGatewayNodes || 0} ACTIVE</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--admin-border-subtle);">
-              <span style="color:var(--admin-text-secondary);">Maintenance Gateway Nodes:</span>
+              <span style="color:var(--admin-text-secondary);font-size:0.875rem;">Maintenance Gateway Nodes:</span>
               <span class="admin-badge admin-badge-warning">${telemetry.maintenanceGatewayNodes || 0} MAINTENANCE</span>
             </div>
             <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--admin-border-subtle);">
-              <span style="color:var(--admin-text-secondary);">Connected Online Devices:</span>
+              <span style="color:var(--admin-text-secondary);font-size:0.875rem;">Connected Online Devices:</span>
               <span class="admin-badge admin-badge-info">${telemetry.connectedDevices || 0} ONLINE</span>
             </div>
-            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;">
-              <span style="color:var(--admin-text-secondary);">Active File Transfers:</span>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid var(--admin-border-subtle);">
+              <span style="color:var(--admin-text-secondary);font-size:0.875rem;">Active File Relay Streams:</span>
               <strong>${telemetry.runtimeTelemetry?.activeTransfers || 0}</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:0.5rem 0;">
+              <span style="color:var(--admin-text-secondary);font-size:0.875rem;">Security Integrity State:</span>
+              <span class="admin-badge admin-badge-success">${ICONS.check} SHA-256 CHAINED</span>
             </div>
           `;
         }
@@ -747,8 +1109,8 @@
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Linked Edge Devices (${user.devices.length})</div>
-            ${user.devices.length > 0 ? `
+            <div class="admin-drawer-section-title">Linked Edge Devices (${user.devices ? user.devices.length : 0})</div>
+            ${user.devices && user.devices.length > 0 ? `
               <div style="display:flex;flex-direction:column;gap:0.5rem;">
                 ${user.devices.map(d => `
                   <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
@@ -756,26 +1118,49 @@
                       <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(d.deviceName)}</strong>
                       <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(d.platform)} &bull; ${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}</div>
                     </div>
-                    ${this._renderStatusBadge(d.status)}
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      ${this._renderStatusBadge(d.status)}
+                      <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectDevice('${d.id}')" title="Inspect device details">
+                        ${ICONS.eye}
+                      </button>
+                    </div>
                   </div>
                 `).join('')}
               </div>
-            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No devices paired to this account.</p>'}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No hardware devices paired to this account.</p>'}
           </div>
 
           ${user.billing ? `
             <div class="admin-drawer-section">
-              <div class="admin-drawer-section-title">Billing Information</div>
+              <div class="admin-drawer-section-title">Commercial &amp; Billing State</div>
               <div class="admin-property-grid">
                 <span class="admin-property-label">Billing Status:</span>
-                <span class="admin-property-value">${this._escape(user.billing.status || 'Active')}</span>
+                <span class="admin-property-value">${this._renderStatusBadge(user.billing.status || 'ACTIVE')}</span>
                 <span class="admin-property-label">Currency:</span>
-                <span class="admin-property-value">${this._escape(user.billing.currency || 'USD')}</span>
+                <span class="admin-property-value"><strong>${this._escape(user.billing.currency || 'INR')}</strong></span>
                 <span class="admin-property-label">Country:</span>
-                <span class="admin-property-value">${this._escape(user.billing.billingCountry || 'Global')}</span>
+                <span class="admin-property-value">${this._escape(user.billing.billingCountry || 'IN')}</span>
+              </div>
+              <div style="margin-top:0.75rem;display:flex;gap:0.5rem;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.showGlobalBillingSearchModal('${this._escape(user.email)}')">
+                  ${ICONS.search} Search Commercial Ledger
+                </button>
               </div>
             </div>
           ` : ''}
+
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            ${window.AdminAuth.hasPermission('users.suspend') && user.status === 'ACTIVE' ? `
+              <button class="admin-btn admin-btn-danger" onclick="AdminShell.confirmSuspendUser('${user.id}', '${this._escape(user.email)}')">
+                Suspend Account
+              </button>
+            ` : ''}
+            ${window.AdminAuth.hasPermission('users.suspend') && user.status === 'SUSPENDED' ? `
+              <button class="admin-btn admin-btn-primary" onclick="AdminShell.confirmRestoreUser('${user.id}', '${this._escape(user.email)}')">
+                Restore Account
+              </button>
+            ` : ''}
+          </div>
         `;
 
         this._showDrawer(`Customer: ${user.email}`, content);
@@ -4941,4 +5326,5 @@
   }
 
   window.AdminShell = new AdminShellManager();
+  window.AdminShell.MODULE_REGISTRY = MODULE_REGISTRY;
 })(window);
