@@ -37,8 +37,10 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   { slug: 'billing.reconcile', name: 'Trigger Reconciliation', resource: 'billing', action: 'reconcile', description: 'Initiate and manage reconciliation runs' },
 
   // Support Desk
-  { slug: 'support.read', name: 'View Support Tickets', resource: 'support', action: 'read', description: 'Read customer support tickets and communications' },
-  { slug: 'support.write', name: 'Manage Support Tickets', resource: 'support', action: 'write', description: 'Respond to and manage support tickets' },
+  { slug: 'support.read', name: 'View Support Tickets', resource: 'support', action: 'read', description: 'Read customer support tickets, cases, and communications' },
+  { slug: 'support.write', name: 'Manage Support Tickets', resource: 'support', action: 'write', description: 'Create, update, resolve, and manage support cases' },
+  { slug: 'support.assign', name: 'Assign Support Cases', resource: 'support', action: 'assign', description: 'Assign support cases to administrative agents' },
+  { slug: 'support.notes', name: 'Manage Support Notes', resource: 'support', action: 'notes', description: 'Add and view internal operator notes on support cases' },
 
   // Communications & Notifications
   { slug: 'notifications.read', name: 'View Notifications', resource: 'notifications', action: 'read', description: 'View delivery logs and channel preferences' },
@@ -78,7 +80,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'devices.read', 'devices.write', 'devices.disconnect',
       'servers.read', 'servers.write', 'servers.power',
       'billing.read', 'billing.write', 'billing.refund', 'billing.reconcile',
-      'support.read', 'support.write',
+      'support.read', 'support.write', 'support.assign', 'support.notes',
       'notifications.read', 'notifications.write',
       'gateway.read', 'gateway.write', 'gateway.drain',
       'errors.read',
@@ -96,7 +98,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'devices.read',
       'servers.read',
       'billing.read',
-      'support.read', 'support.write',
+      'support.read', 'support.write', 'support.assign', 'support.notes',
       'notifications.read'
     ]
   },

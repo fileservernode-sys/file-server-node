@@ -161,19 +161,21 @@
       icon: 'database'
     },
 
-    // --- Future Scheduled Modules (Honest Roadmap Tracking) ---
+    // --- Phase 10: Customer Support Operations ---
     {
       id: 'support-cases',
-      name: 'Support Cases & Tickets',
+      name: 'Support Cases & Help Desk',
       category: 'Customer Support',
-      route: null,
+      route: '#support-cases',
       permission: 'support.read',
-      status: 'FUTURE',
+      status: 'IMPLEMENTED',
       phase: 'Phase 10',
-      description: 'Customer lookup, support tickets, context inspection, and dispute lifecycles.',
-      apiNamespace: 'Scheduled for Phase 10',
-      icon: 'file-text'
+      description: 'Customer support tickets, case triage, bounded customer diagnostic projections, and internal operator notes.',
+      apiNamespace: '/api/v1/admin/operations/support/*',
+      icon: 'life-buoy'
     },
+
+    // --- Future Scheduled Modules (Honest Roadmap Tracking) ---
     {
       id: 'communication-infra',
       name: 'Communication & Push Relays',
@@ -331,6 +333,17 @@
       ]
     },
     {
+      group: 'Customer Support',
+      items: [
+        {
+          id: 'support-cases',
+          label: 'Support Cases & Desk',
+          icon: 'life-buoy',
+          permission: 'support.read'
+        }
+      ]
+    },
+    {
       group: 'Security & Access',
       items: [
         {
@@ -350,6 +363,8 @@
   ];
 
   const ICONS = {
+    'life-buoy': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" x2="9.17" y1="4.93" y2="9.17"/><line x1="14.83" x2="19.07" y1="14.83" y2="19.07"/><line x1="14.83" x2="19.07" y1="9.17" y2="4.93"/><line x1="14.83" x2="9.17" y1="14.83" y2="19.07"/></svg>',
+    'message-square': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
     'git-compare': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>',
     'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
     'dollar-sign': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
@@ -393,6 +408,7 @@
       this.reconciliationState = { page: 1, pageSize: 20, total: 0, items: [], status: '', activeTab: 'runs' };
       this.discrepancyState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', discrepancyType: '' };
       this.settlementState = { page: 1, pageSize: 20, total: 0, items: [], search: '', reconciliationStatus: '' };
+      this.supportState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', priority: '', category: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -676,6 +692,11 @@
         case 'settlements':
         case 'billing-settlements':
           this._renderSettlementsView(container);
+          break;
+        case 'support':
+        case 'support-cases':
+        case 'support-desk':
+          this._renderSupportView(container);
           break;
         case 'admin-roles':
         case 'roles':
@@ -5093,6 +5114,694 @@
 
         if (initialQuery) {
           executeSearch(initialQuery);
+        }
+      }
+    }
+
+    /* =========================================================================
+       8. CUSTOMER SUPPORT & HELP DESK (PHASE 10)
+       ========================================================================= */
+    _renderSupportView(container) {
+      const canWrite = window.AdminAuth.hasPermission('support.write');
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>Customer Support &amp; Help Desk</h1>
+            <p>Triage customer support cases, inspect bounded hardware/server diagnostic projections, and manage resolution lifecycles.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshSupportBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+            ${canWrite ? `
+              <button class="admin-btn admin-btn-primary admin-btn-sm" id="createSupportCaseBtn">
+                + New Support Ticket
+              </button>
+            ` : ''}
+          </div>
+        </div>
+
+        <div id="supportMetricsCards" class="admin-grid-4" style="margin-bottom:1.5rem;">
+          <div class="admin-card"><div class="admin-stat-label">Total Cases</div><div class="admin-stat-value" id="supStatTotal">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Open / In Progress</div><div class="admin-stat-value" id="supStatActive" style="color:var(--admin-warning);">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Resolved / Closed</div><div class="admin-stat-value" id="supStatResolved" style="color:var(--admin-success);">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Urgent / High Priority</div><div class="admin-stat-value" id="supStatUrgent" style="color:var(--admin-danger);">...</div></div>
+        </div>
+
+        <div class="admin-filter-bar" style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center;">
+          <div style="position:relative;flex:1;min-width:240px;">
+            <span style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--admin-text-muted);">${ICONS.search}</span>
+            <input type="text" id="supportSearchInput" class="admin-search-input" placeholder="Search by case #, subject, or customer email..." style="padding-left:2.25rem;width:100%;">
+          </div>
+          <select id="supportStatusFilter" class="admin-select" style="min-width:160px;">
+            <option value="">All Statuses</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="WAITING_ON_CUSTOMER">Waiting on Customer</option>
+            <option value="RESOLVED">Resolved</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+          <select id="supportPriorityFilter" class="admin-select" style="min-width:140px;">
+            <option value="">All Priorities</option>
+            <option value="LOW">Low</option>
+            <option value="NORMAL">Normal</option>
+            <option value="HIGH">High</option>
+            <option value="URGENT">Urgent</option>
+          </select>
+          <select id="supportCategoryFilter" class="admin-select" style="min-width:160px;">
+            <option value="">All Categories</option>
+            <option value="ACCOUNT">Account</option>
+            <option value="DEVICE">Device</option>
+            <option value="SERVER">Server</option>
+            <option value="FILE_ACCESS">File Access</option>
+            <option value="BILLING">Billing</option>
+            <option value="CONNECTION">Connection</option>
+            <option value="SECURITY">Security</option>
+            <option value="GENERAL">General</option>
+          </select>
+        </div>
+
+        <div class="admin-card" style="padding:0;overflow:hidden;">
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Case #</th>
+                  <th>Customer</th>
+                  <th>Subject &amp; Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Assigned Agent</th>
+                  <th>Notes</th>
+                  <th>Created</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="supportTableBody">
+                <tr><td colspan="9" style="text-align:center;padding:2rem;">Loading support cases...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="admin-pagination-bar" id="supportPagination" style="padding:0.75rem 1rem;border-top:1px solid var(--admin-border);display:flex;justify-content:space-between;align-items:center;"></div>
+        </div>
+      `;
+
+      const refreshBtn = document.getElementById('refreshSupportBtn');
+      const createBtn = document.getElementById('createSupportCaseBtn');
+      const searchInput = document.getElementById('supportSearchInput');
+      const statusFilter = document.getElementById('supportStatusFilter');
+      const priorityFilter = document.getElementById('supportPriorityFilter');
+      const categoryFilter = document.getElementById('supportCategoryFilter');
+
+      if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadSupportCases(1));
+      if (createBtn) createBtn.addEventListener('click', () => this.showCreateSupportCaseModal());
+
+      let debounceTimer;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.supportState.search = e.target.value.trim();
+            this.loadSupportCases(1);
+          }, 300);
+        });
+      }
+
+      if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+          this.supportState.status = e.target.value;
+          this.loadSupportCases(1);
+        });
+      }
+
+      if (priorityFilter) {
+        priorityFilter.addEventListener('change', (e) => {
+          this.supportState.priority = e.target.value;
+          this.loadSupportCases(1);
+        });
+      }
+
+      if (categoryFilter) {
+        categoryFilter.addEventListener('change', (e) => {
+          this.supportState.category = e.target.value;
+          this.loadSupportCases(1);
+        });
+      }
+
+      this.loadSupportCases(1);
+    }
+
+    async loadSupportCases(page = 1) {
+      this.supportState.page = page;
+      const tbody = document.getElementById('supportTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;">Loading support cases...</td></tr>`;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: String(page),
+          pageSize: String(this.supportState.pageSize)
+        });
+
+        if (this.supportState.search) queryParams.set('search', this.supportState.search);
+        if (this.supportState.status) queryParams.set('status', this.supportState.status);
+        if (this.supportState.priority) queryParams.set('priority', this.supportState.priority);
+        if (this.supportState.category) queryParams.set('category', this.supportState.category);
+
+        const [casesRes, overviewRes] = await Promise.all([
+          window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases?${queryParams.toString()}`),
+          page === 1 ? window.AdminAuth.fetchWithAuth('/api/v1/admin/operations/support/overview') : Promise.resolve(null)
+        ]);
+
+        if (overviewRes && overviewRes.success && overviewRes.data) {
+          const ov = overviewRes.data;
+          const totalEl = document.getElementById('supStatTotal');
+          const activeEl = document.getElementById('supStatActive');
+          const resolvedEl = document.getElementById('supStatResolved');
+          const urgentEl = document.getElementById('supStatUrgent');
+
+          if (totalEl) totalEl.textContent = ov.totalCases.toLocaleString();
+          if (activeEl) activeEl.textContent = `${ov.openCases + ov.inProgressCases} (${ov.unassignedCases} unassigned)`;
+          if (resolvedEl) resolvedEl.textContent = (ov.resolvedCases + ov.closedCases).toLocaleString();
+          if (urgentEl) urgentEl.textContent = (ov.urgentCases + ov.highPriorityCases).toLocaleString();
+        }
+
+        if (!casesRes.success) {
+          throw new Error(casesRes.error?.message || 'Failed to load support cases');
+        }
+
+        const data = casesRes.data;
+        this.supportState.items = data.items || [];
+        this.supportState.total = data.total || 0;
+
+        if (this.supportState.items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No support cases found matching criteria.</td></tr>`;
+          this._renderPagination('supportPagination', this.supportState, (p) => this.loadSupportCases(p));
+          return;
+        }
+
+        tbody.innerHTML = this.supportState.items.map(item => {
+          let priorityClass = 'neutral';
+          if (item.priority === 'URGENT') priorityClass = 'danger';
+          else if (item.priority === 'HIGH') priorityClass = 'warning';
+
+          let statusClass = 'neutral';
+          if (item.status === 'OPEN' || item.status === 'WAITING_ON_CUSTOMER') statusClass = 'warning';
+          else if (item.status === 'IN_PROGRESS') statusClass = 'primary';
+          else if (item.status === 'RESOLVED') statusClass = 'success';
+
+          return `
+            <tr>
+              <td>
+                <span style="font-family:monospace;font-weight:700;color:var(--admin-primary);cursor:pointer;" onclick="AdminShell.inspectSupportCase('${item.id}')">
+                  ${this._escape(item.caseNumber)}
+                </span>
+              </td>
+              <td>
+                <div style="font-weight:600;font-size:0.8125rem;">${this._escape(item.userEmail)}</div>
+                ${item.userFullName ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(item.userFullName)}</div>` : ''}
+              </td>
+              <td>
+                <div style="font-weight:600;font-size:0.8125rem;max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${this._escape(item.subject)}
+                </div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);">
+                  Category: <strong>${this._escape(item.category)}</strong>
+                </div>
+              </td>
+              <td>
+                <span class="admin-badge admin-badge-${priorityClass}">${this._escape(item.priority)}</span>
+              </td>
+              <td>
+                <span class="admin-badge admin-badge-${statusClass}">${this._escape(item.status)}</span>
+              </td>
+              <td>
+                ${item.assignedAdminName ? `
+                  <span style="font-size:0.8125rem;font-weight:600;">${this._escape(item.assignedAdminName)}</span>
+                ` : `<span style="font-size:0.8125rem;color:var(--admin-text-muted);font-style:italic;">Unassigned</span>`}
+              </td>
+              <td>
+                <span class="admin-badge admin-badge-neutral">${item.noteCount}</span>
+              </td>
+              <td style="font-size:0.75rem;color:var(--admin-text-secondary);white-space:nowrap;">
+                ${new Date(item.createdAt).toLocaleDateString()}
+              </td>
+              <td style="text-align:right;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectSupportCase('${item.id}')">
+                  ${ICONS.eye} Inspect
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('supportPagination', this.supportState, (p) => this.loadSupportCases(p));
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async inspectSupportCase(caseId) {
+      this._showDrawer('Support Case Inspection', `<div style="padding:2rem;text-align:center;">Loading case details...</div>`);
+
+      try {
+        const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to retrieve support case details');
+        }
+
+        const c = res.data;
+        const canWrite = window.AdminAuth.hasPermission('support.write');
+        const canAssign = window.AdminAuth.hasPermission('support.assign') || canWrite;
+        const canNote = window.AdminAuth.hasPermission('support.notes') || canWrite;
+
+        let priorityClass = 'neutral';
+        if (c.priority === 'URGENT') priorityClass = 'danger';
+        else if (c.priority === 'HIGH') priorityClass = 'warning';
+
+        let statusClass = 'neutral';
+        if (c.status === 'OPEN' || c.status === 'WAITING_ON_CUSTOMER') statusClass = 'warning';
+        else if (c.status === 'IN_PROGRESS') statusClass = 'primary';
+        else if (c.status === 'RESOLVED') statusClass = 'success';
+
+        const customer = c.customerContext?.user;
+        const devices = c.customerContext?.devices || [];
+        const servers = c.customerContext?.servers || [];
+        const billing = c.customerContext?.billing;
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.5rem;">
+            <!-- Top Summary Card -->
+            <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                <div>
+                  <span style="font-family:monospace;font-size:1.125rem;font-weight:700;color:var(--admin-primary);">${this._escape(c.caseNumber)}</span>
+                  <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">Created: ${new Date(c.createdAt).toLocaleString()}</div>
+                </div>
+                <div style="display:flex;gap:0.375rem;">
+                  <span class="admin-badge admin-badge-${priorityClass}">${this._escape(c.priority)}</span>
+                  <span class="admin-badge admin-badge-${statusClass}">${this._escape(c.status)}</span>
+                </div>
+              </div>
+
+              <div style="font-size:1rem;font-weight:700;color:var(--admin-text-primary);margin-bottom:0.5rem;">
+                ${this._escape(c.subject)}
+              </div>
+              <div style="font-size:0.8125rem;color:var(--admin-text-secondary);background:var(--admin-bg-base);padding:0.75rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);white-space:pre-wrap;line-height:1.5;">
+                ${this._escape(c.description)}
+              </div>
+
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;font-size:0.75rem;color:var(--admin-text-muted);">
+                <div>Category: <strong>${this._escape(c.category)}</strong></div>
+                <div>Assigned: <strong>${c.assignedAdmin ? this._escape(c.assignedAdmin.name) : 'Unassigned'}</strong></div>
+              </div>
+            </div>
+
+            <!-- Lifecycle State Actions -->
+            ${canWrite ? `
+              <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+                <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.75rem;color:var(--admin-text-primary);">Lifecycle &amp; Assignment Controls</div>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'OPEN')">Mark Open</button>
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'IN_PROGRESS')">In Progress</button>
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'WAITING_ON_CUSTOMER')">Waiting on Customer</button>
+                  <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'RESOLVED')">Resolve Case</button>
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.updateSupportCaseStatus('${c.id}', 'CLOSED')">Close Case</button>
+                  ${canAssign ? `
+                    <button class="admin-btn admin-btn-secondary admin-btn-xs" style="margin-left:auto;" onclick="AdminShell.showAssignSupportCaseModal('${c.id}', '${c.assignedAdminId || ''}')">
+                      ${c.assignedAdminId ? 'Reassign Agent' : 'Assign Agent'}
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Customer Identity Summary -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Customer Account Context</div>
+                ${customer ? `<button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${customer.id}')">${ICONS.eye} Inspect Account</button>` : ''}
+              </div>
+              ${customer ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8125rem;">
+                  <div><strong>Email:</strong> ${this._escape(customer.email)}</div>
+                  <div><strong>Full Name:</strong> ${this._escape(customer.fullName || 'Not provided')}</div>
+                  <div><strong>Status:</strong> ${this._escape(customer.status)}</div>
+                  <div><strong>Verified:</strong> ${customer.emailVerified ? 'Yes' : 'No'}</div>
+                  <div><strong>User ID:</strong> <code style="font-size:0.75rem;">${this._escape(customer.id)}</code></div>
+                  <div><strong>Member Since:</strong> ${new Date(customer.createdAt).toLocaleDateString()}</div>
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">Customer metadata unavailable.</div>`}
+            </div>
+
+            <!-- Hardware & Server Diagnostics Context -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.5rem;color:var(--admin-text-primary);">
+                Edge Hardware &amp; Server Daemons (${devices.length} Devices / ${servers.length} Daemons)
+              </div>
+              ${devices.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${devices.map(d => `
+                    <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.5rem 0.75rem;font-size:0.8125rem;">
+                      <div style="display:flex;justify-content:space-between;font-weight:600;">
+                        <span>${this._escape(d.deviceName)} (${this._escape(d.platform)})</span>
+                        <span class="admin-badge admin-badge-${d.status === 'ONLINE' ? 'success' : 'neutral'}">${this._escape(d.status)}</span>
+                      </div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">
+                        Device ID: <code>${this._escape(d.id)}</code> &bull; Last Seen: ${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No registered Android edge devices found for this account.</div>`}
+            </div>
+
+            <!-- Commercial / Billing Context -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.5rem;color:var(--admin-text-primary);">Commercial &amp; Billing Summary</div>
+              ${billing ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8125rem;">
+                  <div><strong>Billing State:</strong> <span class="admin-badge admin-badge-${billing.status === 'ACTIVE' ? 'success' : 'neutral'}">${this._escape(billing.status || 'FREE')}</span></div>
+                  <div><strong>Active Plan:</strong> <strong>${this._escape(billing.activePlanCode || 'FREE')}</strong></div>
+                  <div><strong>Country / Currency:</strong> ${this._escape(billing.billingCountry || 'IN')} / ${this._escape(billing.currency || 'INR')}</div>
+                  <div><strong>Current Period End:</strong> ${billing.currentPeriodEnd ? new Date(billing.currentPeriodEnd).toLocaleDateString() : 'N/A'}</div>
+                  <div><strong>Total Payments:</strong> ${billing.totalPaymentsCount}</div>
+                  <div><strong>Total Refunds:</strong> ${billing.totalRefundsCount}</div>
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No active billing ledger or free tier account.</div>`}
+            </div>
+
+            <!-- Resolution Notes if any -->
+            ${c.resolutionNotes ? `
+              <div style="background:var(--admin-bg-subtle);border-left:3px solid var(--admin-success);border-radius:var(--radius-xs);padding:0.75rem 1rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-success);margin-bottom:0.25rem;">Resolution Notes</div>
+                <div style="font-size:0.8125rem;color:var(--admin-text-primary);white-space:pre-wrap;">${this._escape(c.resolutionNotes)}</div>
+              </div>
+            ` : ''}
+
+            <!-- Internal Operator Notes -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Internal Operator Notes (${c.notes.length})</div>
+                ${canNote ? `
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.showAddSupportNoteModal('${c.id}')">
+                    + Add Note
+                  </button>
+                ` : ''}
+              </div>
+
+              ${c.notes.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.625rem;">
+                  ${c.notes.map(n => `
+                    <div style="background:var(--admin-bg-subtle);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-size:0.8125rem;">
+                      <div style="display:flex;justify-content:space-between;font-weight:600;margin-bottom:0.25rem;">
+                        <span style="color:var(--admin-primary);">${this._escape(n.adminName)}</span>
+                        <span style="font-size:0.75rem;color:var(--admin-text-muted);">${new Date(n.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div style="white-space:pre-wrap;line-height:1.4;">${this._escape(n.note)}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `<div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No operator notes added yet.</div>`}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Case: ${c.caseNumber}`, html);
+      } catch (err) {
+        this._showDrawer('Inspection Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
+    showCreateSupportCaseModal() {
+      const existing = document.getElementById('adminSupportCreateModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminSupportCreateModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" style="max-width:540px;" role="dialog" aria-modal="true">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Create Customer Support Ticket</h3>
+            <button class="admin-btn-icon" id="supCreateCloseBtn" aria-label="Close modal">${ICONS.x}</button>
+          </div>
+          <div class="admin-modal-body">
+            <div style="display:flex;flex-direction:column;gap:0.875rem;">
+              <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Customer User ID <span style="color:var(--admin-danger);">*</span></label>
+                <input type="text" id="supNewUserId" class="admin-search-input" placeholder="cuid or user ID" style="width:100%;padding-left:0.75rem;">
+              </div>
+              <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Subject <span style="color:var(--admin-danger);">*</span></label>
+                <input type="text" id="supNewSubject" class="admin-search-input" placeholder="Brief issue summary" style="width:100%;padding-left:0.75rem;">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+                <div>
+                  <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Category</label>
+                  <select id="supNewCategory" class="admin-select" style="width:100%;">
+                    <option value="GENERAL">General</option>
+                    <option value="ACCOUNT">Account</option>
+                    <option value="DEVICE">Device</option>
+                    <option value="SERVER">Server</option>
+                    <option value="FILE_ACCESS">File Access</option>
+                    <option value="BILLING">Billing</option>
+                    <option value="CONNECTION">Connection</option>
+                    <option value="SECURITY">Security</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Priority</label>
+                  <select id="supNewPriority" class="admin-select" style="width:100%;">
+                    <option value="LOW">Low</option>
+                    <option value="NORMAL" selected>Normal</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Issue Description <span style="color:var(--admin-danger);">*</span></label>
+                <textarea id="supNewDescription" class="admin-search-input" rows="4" placeholder="Detailed description of customer inquiry or technical issue..." style="width:100%;padding:0.625rem;resize:vertical;"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="supCreateCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="supCreateSubmitBtn">Create Ticket</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeModal = () => backdrop.remove();
+      document.getElementById('supCreateCloseBtn')?.addEventListener('click', closeModal);
+      document.getElementById('supCreateCancelBtn')?.addEventListener('click', closeModal);
+
+      document.getElementById('supCreateSubmitBtn')?.addEventListener('click', async () => {
+        const userId = document.getElementById('supNewUserId')?.value.trim();
+        const subject = document.getElementById('supNewSubject')?.value.trim();
+        const category = document.getElementById('supNewCategory')?.value;
+        const priority = document.getElementById('supNewPriority')?.value;
+        const description = document.getElementById('supNewDescription')?.value.trim();
+
+        if (!userId || !subject || !description) {
+          this.toast('Please provide customer User ID, Subject, and Description', 'warning');
+          return;
+        }
+
+        const submitBtn = document.getElementById('supCreateSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const res = await window.AdminAuth.fetchWithAuth('/api/v1/admin/operations/support/cases', {
+            method: 'POST',
+            body: JSON.stringify({ userId, subject, description, category, priority })
+          });
+
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to create support ticket');
+          }
+
+          this.toast(`Support ticket ${res.data.caseNumber} created successfully`, 'success');
+          closeModal();
+          this.loadSupportCases(1);
+        } catch (err) {
+          this.toast(err.message, 'danger');
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    }
+
+    showAssignSupportCaseModal(caseId, currentAssignedAdminId) {
+      const existing = document.getElementById('adminSupportAssignModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminSupportAssignModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" style="max-width:440px;" role="dialog" aria-modal="true">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Assign Support Case</h3>
+            <button class="admin-btn-icon" id="supAssignCloseBtn" aria-label="Close modal">${ICONS.x}</button>
+          </div>
+          <div class="admin-modal-body">
+            <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Target Administrator UUID</label>
+            <input type="text" id="supAssignAdminId" class="admin-search-input" value="${this._escape(currentAssignedAdminId)}" placeholder="Enter Admin UUID (or leave blank to unassign)" style="width:100%;padding-left:0.75rem;">
+            <p style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:0.5rem;">Leave empty to set case as unassigned.</p>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="supAssignCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="supAssignSubmitBtn">Save Assignment</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeModal = () => backdrop.remove();
+      document.getElementById('supAssignCloseBtn')?.addEventListener('click', closeModal);
+      document.getElementById('supAssignCancelBtn')?.addEventListener('click', closeModal);
+
+      document.getElementById('supAssignSubmitBtn')?.addEventListener('click', async () => {
+        const rawId = document.getElementById('supAssignAdminId')?.value.trim();
+        const assignedAdminId = rawId ? rawId : null;
+
+        const submitBtn = document.getElementById('supAssignSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}/assign`, {
+            method: 'POST',
+            body: JSON.stringify({ assignedAdminId })
+          });
+
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to update assignment');
+          }
+
+          this.toast('Support case assignment updated', 'success');
+          closeModal();
+          this.inspectSupportCase(caseId);
+          this.loadSupportCases(this.supportState.page);
+        } catch (err) {
+          this.toast(err.message, 'danger');
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    }
+
+    showAddSupportNoteModal(caseId) {
+      const existing = document.getElementById('adminSupportNoteModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminSupportNoteModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" style="max-width:480px;" role="dialog" aria-modal="true">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Add Internal Operator Note</h3>
+            <button class="admin-btn-icon" id="supNoteCloseBtn" aria-label="Close modal">${ICONS.x}</button>
+          </div>
+          <div class="admin-modal-body">
+            <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;">Operator Note <span style="color:var(--admin-danger);">*</span></label>
+            <textarea id="supNoteText" class="admin-search-input" rows="4" placeholder="Enter diagnostic observations, actions taken, or escalation notes..." style="width:100%;padding:0.625rem;resize:vertical;"></textarea>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="supNoteCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="supNoteSubmitBtn">Save Note</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeModal = () => backdrop.remove();
+      document.getElementById('supNoteCloseBtn')?.addEventListener('click', closeModal);
+      document.getElementById('supNoteCancelBtn')?.addEventListener('click', closeModal);
+
+      document.getElementById('supNoteSubmitBtn')?.addEventListener('click', async () => {
+        const note = document.getElementById('supNoteText')?.value.trim();
+        if (!note) {
+          this.toast('Please enter note content', 'warning');
+          return;
+        }
+
+        const submitBtn = document.getElementById('supNoteSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}/notes`, {
+            method: 'POST',
+            body: JSON.stringify({ note, isInternal: true })
+          });
+
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to add operator note');
+          }
+
+          this.toast('Internal operator note added', 'success');
+          closeModal();
+          this.inspectSupportCase(caseId);
+          this.loadSupportCases(this.supportState.page);
+        } catch (err) {
+          this.toast(err.message, 'danger');
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      });
+    }
+
+    async updateSupportCaseStatus(caseId, newStatus) {
+      if (newStatus === 'RESOLVED' || newStatus === 'CLOSED') {
+        this.showConfirmModal({
+          title: `${newStatus === 'RESOLVED' ? 'Resolve' : 'Close'} Support Case`,
+          message: `Are you sure you want to transition this case to <strong>${newStatus}</strong>?`,
+          requireReason: true,
+          confirmLabel: `Mark as ${newStatus}`,
+          confirmType: newStatus === 'RESOLVED' ? 'primary' : 'secondary',
+          onConfirm: async (reason) => {
+            try {
+              const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: newStatus, resolutionNotes: reason || undefined })
+              });
+
+              if (!res.success) {
+                throw new Error(res.error?.message || 'Failed to update case status');
+              }
+
+              this.toast(`Support case status updated to ${newStatus}`, 'success');
+              this.inspectSupportCase(caseId);
+              this.loadSupportCases(this.supportState.page);
+            } catch (err) {
+              this.toast(err.message, 'danger');
+            }
+          }
+        });
+      } else {
+        try {
+          const res = await window.AdminAuth.fetchWithAuth(`/api/v1/admin/operations/support/cases/${caseId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: newStatus })
+          });
+
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to update case status');
+          }
+
+          this.toast(`Support case status updated to ${newStatus}`, 'success');
+          this.inspectSupportCase(caseId);
+          this.loadSupportCases(this.supportState.page);
+        } catch (err) {
+          this.toast(err.message, 'danger');
         }
       }
     }

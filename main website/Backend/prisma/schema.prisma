@@ -330,6 +330,36 @@ enum ReconciliationEntityType {
 }
 
 // -----------------------------------------------------------------------------
+// SUPPORT ENUMS (PHASE 10)
+// -----------------------------------------------------------------------------
+
+enum SupportCaseStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportCasePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SupportCaseCategory {
+  ACCOUNT
+  DEVICE
+  SERVER
+  FILE_ACCESS
+  BILLING
+  CONNECTION
+  SECURITY
+  GENERAL
+}
+
+// -----------------------------------------------------------------------------
 // CORE ENTITIES
 // -----------------------------------------------------------------------------
 
@@ -359,6 +389,7 @@ model User {
   taxes                   BillingPaymentTax[]
   planChanges             SubscriptionPlanChange[]
   upgradeReconciliations  SubscriptionUpgradeReconciliation[]
+  supportCases            SupportCase[]
 
   @@index([email])
 }
@@ -1296,6 +1327,12 @@ enum AdminAuditAction {
   ADMIN_LOCKOUT_TRIGGERED
   ADMIN_PASSWORD_UPDATED
   ADMIN_STATUS_UPDATED
+  ADMIN_SUPPORT_CASE_VIEWED
+  ADMIN_SUPPORT_CASE_CREATED
+  ADMIN_SUPPORT_CASE_UPDATED
+  ADMIN_SUPPORT_CASE_ASSIGNED
+  ADMIN_SUPPORT_NOTE_ADDED
+  ADMIN_SUPPORT_CASE_STATUS_CHANGED
 }
 
 enum AdminOtpPurpose {
@@ -1314,10 +1351,12 @@ model AdminUser {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  sessions     AdminSession[]
-  otps         AdminEmailOtp[]
-  auditLogs    AdminAuditLog[]
-  userRoles    AdminUserRole[]
+  sessions             AdminSession[]
+  otps                 AdminEmailOtp[]
+  auditLogs            AdminAuditLog[]
+  userRoles            AdminUserRole[]
+  assignedSupportCases SupportCase[]     @relation("AssignedSupportCases")
+  supportCaseNotes     SupportCaseNote[]
 
   @@map("admin_users")
 }
@@ -1465,4 +1504,57 @@ model AdminRolePermission {
   @@index([permissionId])
   @@map("admin_role_permissions")
 }
+
+// -----------------------------------------------------------------------------
+// SUPPORT OPERATIONS (PHASE 10)
+// -----------------------------------------------------------------------------
+
+/// Customer Support Ticket / Case Model
+model SupportCase {
+  id              String              @id @default(uuid())
+  caseNumber      String              @unique
+  userId          String
+  subject         String
+  description     String              @db.Text
+  category        SupportCaseCategory @default(GENERAL)
+  priority        SupportCasePriority @default(NORMAL)
+  status          SupportCaseStatus   @default(OPEN)
+  assignedAdminId String?
+  resolutionNotes String?             @db.Text
+  resolvedAt      DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedAdmin AdminUser?        @relation("AssignedSupportCases", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  notes         SupportCaseNote[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([assignedAdminId])
+  @@index([createdAt])
+  @@map("support_cases")
+}
+
+/// Internal Support Case Operator Notes
+model SupportCaseNote {
+  id         String   @id @default(uuid())
+  caseId     String
+  adminId    String
+  note       String   @db.Text
+  isInternal Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  case  SupportCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  admin AdminUser   @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("support_case_notes")
+}
+
 
