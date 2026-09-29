@@ -13,15 +13,32 @@
     PERMISSIONS: 'zdex_admin_permissions'
   };
 
-  const host = typeof window !== 'undefined' ? window.location.hostname : '';
-  const port = typeof window !== 'undefined' ? window.location.port : '';
-  const protocol = typeof window !== 'undefined' ? window.location.protocol : '';
-  const isDirectBackend = port === '4000';
-  const isLocalDev = host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host;
+  function getCalculatedApiBase() {
+    if (typeof window === 'undefined') return '/api/v1';
+    const host = window.location.hostname;
+    const port = window.location.port;
+    const protocol = window.location.protocol;
 
-  const API_BASE = isDirectBackend
-    ? '/api/v1'
-    : (isLocalDev ? 'http://localhost:4000/api/v1' : '/api/v1');
+    // 1. Direct local backend on port 4000
+    if (port === '4000') {
+      return '/api/v1';
+    }
+
+    // 2. Local development (Live Server, port 8080, 5500, 3000, file://, etc.)
+    if (host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host) {
+      return 'http://localhost:4000/api/v1';
+    }
+
+    // 3. Subdomains that serve the API directly
+    if (host === 'api.zdexcloud.com' || host === 'gateway.zdexcloud.com') {
+      return '/api/v1';
+    }
+
+    // 4. Production web frontend on zdexcloud.com / www.zdexcloud.com
+    return 'https://api.zdexcloud.com/api/v1';
+  }
+
+  const API_BASE = getCalculatedApiBase();
 
   class AdminApiClient {
     constructor() {
