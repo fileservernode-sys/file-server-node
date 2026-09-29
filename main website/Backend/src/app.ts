@@ -1,13 +1,16 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { config } from './config/env.js';
 import { registerSecurityPlugins } from './middleware/security.js';
 import { globalErrorHandler } from './middleware/error-handler.js';
-import { createErrorResponse } from './schemas/response.js';
+import { createErrorResponse, createSuccessResponse } from './schemas/response.js';
 import { apiV1Routes } from './routes/index.js';
 import { defaultGatewayService } from './gateway/gateway_service.js';
 import { getAdminCspHeader } from './utils/security.js';
+import { metricsCollector } from './observability/metrics.js';
+import { checkDatabaseReadiness } from './config/database.js';
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -54,6 +57,13 @@ function getFrontendDir(): string {
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
     bodyLimit: 104857600, // 100 MB body limit for file uploads
+    genReqId: (req) => {
+      const headerId = req.headers['x-request-id'];
+      if (typeof headerId === 'string' && /^[a-zA-Z0-9_-]{1,64}$/.test(headerId)) {
+        return headerId;
+      }
+      return crypto.randomUUID();
+    },
     logger: {
       level: config.LOG_LEVEL,
       redact: [
@@ -80,11 +90,26 @@ export async function buildApp(): Promise<FastifyInstance> {
     }
   });
 
+  // Metrics and Request Correlation Hooks
+  app.addHook('onRequest', async (request) => {
+    (request.raw as any).__startTime = Date.now();
+  });
+
+  app.addHook('onResponse', async (request, reply) => {
+    const start = (request.raw as any).__startTime || Date.now();
+    const duration = Date.now() - start;
+    metricsCollector.recordHttpRequest(request.method, reply.statusCode, duration);
+  });
+
   // 1. Security & CORS
   await registerSecurityPlugins(app);
 
-  // 2. Attach Content-Security-Policy & Frame Protection Hook for Admin Routes (/admin/* and /api/v1/admin/*)
+  // 2. Attach Content-Security-Policy, Frame Protection, and Request-ID Hook
   app.addHook('onSend', async (request, reply) => {
+    if (request.id) {
+      reply.header('x-request-id', request.id);
+    }
+
     const rawUrl = request.raw.url || request.url || '';
     const urlPath = rawUrl.split('?')[0];
 
@@ -97,7 +122,35 @@ export async function buildApp(): Promise<FastifyInstance> {
   // 3. Global Error Handler
   app.setErrorHandler(globalErrorHandler);
 
-  // 4. API Versioning Router (/api/v1)
+  // 4. Root Health & Readiness Probes (For Cloud LB & Kubernetes)
+  app.get('/health', async () => ({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  }));
+
+  app.get('/health/live', async () => ({
+    status: 'live',
+    timestamp: new Date().toISOString()
+  }));
+
+  app.get('/health/ready', async (_req, reply) => {
+    const isReady = await checkDatabaseReadiness();
+    if (isReady) {
+      return reply.status(200).send({
+        status: 'ready',
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      });
+    }
+    return reply.status(503).send({
+      status: 'unavailable',
+      database: 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  // 5. API Versioning Router (/api/v1)
   await app.register(apiV1Routes, { prefix: '/api/v1' });
 
   // 5. Subdomain File Manager & Frontend Static File Serving Router

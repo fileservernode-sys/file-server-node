@@ -60,6 +60,41 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * GET /api/v1/health/live
+   * Standard Kubernetes / Cloud Liveness Probe: Answers 'is the process alive?'.
+   */
+  app.get('/health/live', async () => {
+    return createSuccessResponse({
+      status: 'live',
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  /**
+   * GET /api/v1/health/ready
+   * Standard Kubernetes / Cloud Readiness Probe: Answers 'can this node receive traffic?'.
+   */
+  app.get('/health/ready', async (_request, reply: FastifyReply) => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return reply.status(200).send(
+        createSuccessResponse({
+          status: 'ready',
+          database: 'connected',
+          timestamp: new Date().toISOString()
+        })
+      );
+    } catch (err) {
+      return reply.status(503).send(
+        createErrorResponse(
+          'SERVICE_UNAVAILABLE',
+          'Database connectivity not ready'
+        )
+      );
+    }
+  });
+
+  /**
    * GET /api/v1/health/db
    * Database Connectivity Verification & Diagnostic Probe.
    * Executes a minimal SELECT 1 query via the Prisma singleton.

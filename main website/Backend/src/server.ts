@@ -1,11 +1,20 @@
 import { buildApp } from './app.js';
 import { config } from './config/env.js';
+import { validateEnvironment } from './config/env_validator.js';
 import { disconnectDatabase } from './config/database.js';
 import { runStartupMigrations } from './services/db_migrator.js';
 import { defaultGatewayService } from './gateway/gateway_service.js';
+import { appLogger } from './observability/logger.js';
 
 async function startServer() {
   try {
+    // 0. Perform startup environment & configuration validation
+    const envValidation = validateEnvironment();
+    if (!envValidation.valid) {
+      console.error('Fatal configuration errors detected:', envValidation.errors);
+      process.exit(1);
+    }
+
     const app = await buildApp();
 
     // Execute runtime safe Prisma migrations on startup
@@ -54,11 +63,18 @@ async function startServer() {
     }
 
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
-    app.log.info(`📊 Health probe available at ${address}/api/v1/health`);
+    app.log.info(`📊 Health probes available at ${address}/health and ${address}/api/v1/health`);
 
     // Graceful Shutdown Logic
     const shutdown = async (signal: string) => {
       app.log.info(`Received ${signal}. Starting graceful shutdown...`);
+
+      // Bounded shutdown timer: force exit if cleanup exceeds 15 seconds
+      const forceExitTimer = setTimeout(() => {
+        app.log.error('Graceful shutdown timeout exceeded (15s). Forcing process exit.');
+        process.exit(1);
+      }, 15000);
+      forceExitTimer.unref();
 
       try {
         if (config.NOTIFICATION_WORKER_ENABLED) {
@@ -67,14 +83,23 @@ async function startServer() {
           app.log.info('Notification background workers stopped.');
         }
 
+        // 1. Close Gateway WebSocket Relay Server
+        await defaultGatewayService.stop();
+        app.log.info('Gateway WebSocket relay stopped.');
+
+        // 2. Close HTTP Server
         await app.close();
         app.log.info('HTTP server closed.');
 
+        // 3. Disconnect Database Pool
         await disconnectDatabase();
         app.log.info('Database client disconnected.');
 
+        clearTimeout(forceExitTimer);
+        appLogger.info('Graceful shutdown completed successfully', { operation: 'SHUTDOWN', event: signal });
         process.exit(0);
       } catch (err) {
+        clearTimeout(forceExitTimer);
         app.log.error({ err }, 'Error during graceful shutdown');
         process.exit(1);
       }
