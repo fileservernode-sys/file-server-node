@@ -7,6 +7,9 @@ import {
   AdminRefundListQuerySchema,
   AdminReconciliationRunListQuerySchema,
   AdminDiscrepancyListQuerySchema,
+  AdminSettlementListQuerySchema,
+  AdminBillingSearchQuerySchema,
+  AdminBillingAuditListQuerySchema,
   AdminPlanListQuerySchema,
   AdminCancelSubscriptionSchema,
   AdminExecuteRefundSchema,
@@ -14,7 +17,7 @@ import {
   AdminResolveDiscrepancySchema
 } from '../src/routes/admin/operations/billing/schemas.js';
 
-describe('Admin Billing Operations Baseline (Phase 9.1, 9.2, 9.3 & 9.4 Deferred Tests)', () => {
+describe('Admin Billing Operations Baseline (Phase 9.1 through 9.5 Deferred Tests)', () => {
   describe('Validation Schemas', () => {
     test('should validate subscription list query defaults and constraints', () => {
       const parsed = AdminSubscriptionListQuerySchema.parse({
@@ -63,6 +66,38 @@ describe('Admin Billing Operations Baseline (Phase 9.1, 9.2, 9.3 & 9.4 Deferred 
 
       assert.strictEqual(parsed.status, 'REQUIRES_REVIEW');
       assert.strictEqual(parsed.discrepancyType, 'PAYMENT_AMOUNT_MISMATCH');
+    });
+
+    test('should validate settlement list query schema (Phase 9.5)', () => {
+      const parsed = AdminSettlementListQuerySchema.parse({
+        page: '1',
+        pageSize: '15',
+        reconciliationStatus: 'RECONCILED'
+      });
+
+      assert.strictEqual(parsed.page, 1);
+      assert.strictEqual(parsed.pageSize, 15);
+      assert.strictEqual(parsed.reconciliationStatus, 'RECONCILED');
+    });
+
+    test('should validate global billing search schema (Phase 9.5)', () => {
+      const parsed = AdminBillingSearchQuerySchema.parse({
+        q: 'sub_123456'
+      });
+
+      assert.strictEqual(parsed.q, 'sub_123456');
+    });
+
+    test('should validate billing audit log query schema (Phase 9.5)', () => {
+      const parsed = AdminBillingAuditListQuerySchema.parse({
+        page: '1',
+        pageSize: '30',
+        action: 'ADMIN_RESOLVE_DISCREPANCY'
+      });
+
+      assert.strictEqual(parsed.page, 1);
+      assert.strictEqual(parsed.pageSize, 30);
+      assert.strictEqual(parsed.action, 'ADMIN_RESOLVE_DISCREPANCY');
     });
 
     test('should validate plan catalog query', () => {
@@ -182,6 +217,10 @@ describe('Admin Billing Operations Baseline (Phase 9.1, 9.2, 9.3 & 9.4 Deferred 
       assert.strictEqual(typeof AdminBillingService.listDiscrepancies, 'function');
       assert.strictEqual(typeof AdminBillingService.getDiscrepancyDetail, 'function');
       assert.strictEqual(typeof AdminBillingService.resolveDiscrepancy, 'function');
+      assert.strictEqual(typeof AdminBillingService.listSettlements, 'function');
+      assert.strictEqual(typeof AdminBillingService.getSettlementDetail, 'function');
+      assert.strictEqual(typeof AdminBillingService.searchBilling, 'function');
+      assert.strictEqual(typeof AdminBillingService.listBillingAuditLogs, 'function');
       assert.strictEqual(typeof AdminBillingService.listPlans, 'function');
     });
   });

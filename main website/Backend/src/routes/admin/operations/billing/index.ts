@@ -14,7 +14,10 @@ import {
   AdminCancelSubscriptionSchema,
   AdminExecuteRefundSchema,
   AdminStartReconciliationRunSchema,
-  AdminResolveDiscrepancySchema
+  AdminResolveDiscrepancySchema,
+  AdminSettlementListQuerySchema,
+  AdminBillingSearchQuerySchema,
+  AdminBillingAuditListQuerySchema
 } from './schemas.js';
 
 export * from './types.js';
@@ -462,6 +465,90 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
 
       const context = (request as any).adminOperationContext;
       const result = await AdminBillingService.resolveDiscrepancy(id, context, parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/settlements
+   * Lists provider settlement payout records with filters and pagination.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/settlements',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = AdminSettlementListQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid settlement query parameters');
+      }
+
+      const result = await AdminBillingService.listSettlements(parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/settlements/:id
+   * Inspects detailed state of a provider settlement payout and linked transactions.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/settlements/:id',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
+      if (!id || typeof id !== 'string') {
+        throw new ValidationError('Settlement ID is required');
+      }
+
+      const result = await AdminBillingService.getSettlementDetail(id);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/search
+   * Fast, bounded cross-resource billing lookup across payments, refunds, subscriptions, settlements, and users.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/search',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = AdminBillingSearchQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid billing search parameters');
+      }
+
+      const result = await AdminBillingService.searchBilling(parsed.data);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/operations/billing/audit
+   * Lists administrative audit logs specifically scoped to billing mutations and financial operations.
+   * Permission required: 'billing.read'
+   */
+  app.get(
+    '/admin/operations/billing/audit',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = AdminBillingAuditListQuerySchema.safeParse(request.query);
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid billing audit query parameters');
+      }
+
+      const result = await AdminBillingService.listBillingAuditLogs(parsed.data);
       return reply.status(200).send(createSuccessResponse(result));
     }
   );

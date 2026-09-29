@@ -137,5 +137,39 @@ export const AdminResolveDiscrepancySchema = z.object({
 
 export type AdminResolveDiscrepancyInput = z.infer<typeof AdminResolveDiscrepancySchema>;
 
+export const AdminSettlementListQuerySchema = paginationQuerySchema.extend({
+  reconciliationStatus: z.nativeEnum(ReconciliationStatus).optional(),
+  settlementStatus: z.string().trim().optional(),
+  providerSettlementId: z.string().trim().optional(),
+  settlementUtr: z.string().trim().optional(),
+  startDate: z.string().trim().datetime({ offset: true }).optional().or(z.string().datetime().optional()),
+  endDate: z.string().trim().datetime({ offset: true }).optional().or(z.string().datetime().optional())
+});
+
+export type AdminSettlementListQuery = z.infer<typeof AdminSettlementListQuerySchema>;
+
+export const AdminBillingSearchQuerySchema = z.object({
+  q: z.string().trim().min(2, 'Search query must be at least 2 characters').max(128, 'Search query cannot exceed 128 characters')
+});
+
+export type AdminBillingSearchQuery = z.infer<typeof AdminBillingSearchQuerySchema>;
+
+export const AdminBillingAuditListQuerySchema = paginationQuerySchema.extend({
+  targetResourceType: z.enum([
+    'billing_payment',
+    'billing_refund',
+    'subscription',
+    'billing_reconciliation_run',
+    'billing_reconciliation_discrepancy',
+    'billing_settlement'
+  ]).optional(),
+  action: z.string().trim().optional(),
+  adminId: z.string().trim().optional(),
+  startDate: z.string().trim().datetime({ offset: true }).optional().or(z.string().datetime().optional()),
+  endDate: z.string().trim().datetime({ offset: true }).optional().or(z.string().datetime().optional())
+});
+
+export type AdminBillingAuditListQuery = z.infer<typeof AdminBillingAuditListQuerySchema>;
+
 
 

@@ -51,6 +51,12 @@
       group: 'Commercial & Billing',
       items: [
         {
+          id: 'billing-overview',
+          label: 'Financial & Billing Overview',
+          icon: 'dashboard',
+          permission: 'billing.read'
+        },
+        {
           id: 'subscriptions',
           label: 'Subscriptions & Dunning',
           icon: 'credit-card',
@@ -72,6 +78,12 @@
           id: 'reconciliation',
           label: 'Billing Reconciliation & Drift',
           icon: 'git-compare',
+          permission: 'billing.read'
+        },
+        {
+          id: 'settlements',
+          label: 'Settlements & Payouts',
+          icon: 'database',
           permission: 'billing.read'
         }
       ]
@@ -100,6 +112,7 @@
     'credit-card': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>',
     'dollar-sign': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     'rotate-ccw': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>',
+    database: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     server: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>',
@@ -137,6 +150,7 @@
       this.refundState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', reason: '' };
       this.reconciliationState = { page: 1, pageSize: 20, total: 0, items: [], status: '', activeTab: 'runs' };
       this.discrepancyState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', discrepancyType: '' };
+      this.settlementState = { page: 1, pageSize: 20, total: 0, items: [], search: '', reconciliationStatus: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
     }
 
@@ -314,10 +328,12 @@
       if (rawHash === 'customers') hash = 'users';
       if (rawHash === 'audit') hash = 'audit-logs';
       if (rawHash === 'roles') hash = 'admin-roles';
-      if (rawHash === 'billing' || rawHash === 'billing-subscriptions') hash = 'subscriptions';
+      if (rawHash === 'billing' || rawHash === 'billing-overview' || rawHash === 'financial-overview') hash = 'billing-overview';
+      if (rawHash === 'subscriptions' || rawHash === 'billing-subscriptions') hash = 'subscriptions';
       if (rawHash === 'billing-payments') hash = 'payments';
       if (rawHash === 'billing-refunds') hash = 'refunds';
       if (rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') hash = 'reconciliation';
+      if (rawHash === 'settlements' || rawHash === 'billing-settlements') hash = 'settlements';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -328,10 +344,12 @@
           (rawHash === 'customers' && itemId === 'users') ||
           (rawHash === 'audit' && itemId === 'audit-logs') ||
           (rawHash === 'roles' && itemId === 'admin-roles') ||
-          ((rawHash === 'billing' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions') ||
+          ((rawHash === 'billing' || rawHash === 'billing-overview' || rawHash === 'financial-overview') && itemId === 'billing-overview') ||
+          ((rawHash === 'subscriptions' || rawHash === 'billing-subscriptions') && itemId === 'subscriptions') ||
           (rawHash === 'billing-payments' && itemId === 'payments') ||
           (rawHash === 'billing-refunds' && itemId === 'refunds') ||
-          ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation')
+          ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation') ||
+          ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements')
         ) {
           el.classList.add('active');
         } else {
@@ -359,7 +377,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : 'Dashboard')))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : 'Dashboard')))))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -391,8 +409,12 @@
         case 'gateway':
           this._renderGatewayView(container);
           break;
-        case 'subscriptions':
         case 'billing':
+        case 'billing-overview':
+        case 'financial-overview':
+          this._renderBillingOverviewView(container);
+          break;
+        case 'subscriptions':
         case 'billing-subscriptions':
           this._renderSubscriptionsView(container);
           break;
@@ -408,6 +430,10 @@
         case 'recon':
         case 'billing-reconciliation':
           this._renderReconciliationView(container);
+          break;
+        case 'settlements':
+        case 'billing-settlements':
+          this._renderSettlementsView(container);
           break;
         case 'admin-roles':
         case 'roles':
@@ -3913,6 +3939,777 @@
       backdrop.addEventListener('click', (e) => {
         if (e.target === backdrop) closeModal();
       });
+    }
+
+    /* =========================================================================
+       6-E. CONSOLIDATED BILLING OVERVIEW & FINANCIAL OPERATIONS
+       ========================================================================= */
+    async _renderBillingOverviewView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>Financial &amp; Billing Overview</h1>
+            <p>Consolidated subscription metrics, revenue telemetry, settlement tracking, and real-time reconciliation health.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="billingGlobalSearchModalBtn">
+              ${ICONS.search} Global Billing Search
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshBillingOverviewBtn">
+              ${ICONS['refresh-cw']} Refresh Telemetry
+            </button>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" id="triggerReconFromOverviewBtn">
+              ${ICONS.play} Run Reconciliation
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-filter-bar" style="margin-bottom:var(--space-md);">
+          <div class="admin-search-wrap" style="flex:1;">
+            ${ICONS.search}
+            <input type="text" id="billingOverviewQuickSearchInput" class="admin-search-input" placeholder="Quick search transactions, subscriptions, refunds, settlements, or customer emails...">
+          </div>
+        </div>
+
+        <div id="billingOverviewCards" class="admin-grid-4">
+          <div class="admin-card"><div class="admin-stat-label">Active Subscriptions</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Gross Revenue</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Refunds Processed</div><div class="admin-stat-value">...</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Total Settlements</div><div class="admin-stat-value">...</div></div>
+        </div>
+
+        <div class="admin-grid-2" style="margin-top:var(--space-xl);">
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+              <h2 class="admin-card-title" style="margin:0;font-size:1rem;font-weight:700;">Recent Billing &amp; Financial Activity</h2>
+              <span class="admin-badge admin-badge-neutral">Live Ledger</span>
+            </div>
+            <div id="billingRecentActivityContainer">
+              <div style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading live activity stream...</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+              <h2 class="admin-card-title" style="margin:0;font-size:1rem;font-weight:700;">Reconciliation Health &amp; Provider Drift</h2>
+              <span class="admin-badge admin-badge-neutral">Provider Sync</span>
+            </div>
+            <div id="billingReconHealthContainer">
+              <div style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading reconciliation telemetry...</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const searchBtn = document.getElementById('billingGlobalSearchModalBtn');
+      const refreshBtn = document.getElementById('refreshBillingOverviewBtn');
+      const triggerBtn = document.getElementById('triggerReconFromOverviewBtn');
+      const quickSearchInput = document.getElementById('billingOverviewQuickSearchInput');
+
+      if (searchBtn) searchBtn.addEventListener('click', () => this.showGlobalBillingSearchModal());
+      if (refreshBtn) refreshBtn.addEventListener('click', () => this._renderBillingOverviewView(container));
+      if (triggerBtn) triggerBtn.addEventListener('click', () => this.showStartReconciliationModal());
+
+      if (quickSearchInput) {
+        quickSearchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const query = quickSearchInput.value.trim();
+            if (query) {
+              this.showGlobalBillingSearchModal(query);
+            }
+          }
+        });
+      }
+
+      try {
+        const res = await window.AdminApi.get('/admin/operations/billing/overview');
+        const data = res.data;
+
+        // Populate Top KPI Cards
+        const cardsEl = document.getElementById('billingOverviewCards');
+        if (cardsEl) {
+          const subs = data.subscriptions || {};
+          const pays = data.payments || {};
+          const refs = data.refunds || {};
+          const setts = data.settlements || {};
+
+          const grossFormatted = `₹${((pays.totalGrossVolumeMinorUnits || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          const refundFormatted = `₹${((refs.totalRefundedVolumeMinorUnits || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+          const settFormatted = `₹${((setts.totalSettledAmountMinorUnits || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+
+          cardsEl.innerHTML = `
+            <div class="admin-card">
+              <div class="admin-stat-label">Active Subscriptions</div>
+              <div class="admin-stat-value" style="color:var(--admin-primary);">${subs.activeCount || 0}</div>
+              <div class="admin-stat-hint">
+                <span style="color:var(--admin-warning);">${subs.pastDueCount || 0} past due</span> &bull; <span>${subs.triagedCount || 0} triaged</span>
+              </div>
+            </div>
+            <div class="admin-card">
+              <div class="admin-stat-label">Gross Collections</div>
+              <div class="admin-stat-value" style="color:var(--admin-success);">${grossFormatted}</div>
+              <div class="admin-stat-hint">
+                <span>${pays.successfulCount || 0} successful</span> &bull; <span style="color:var(--admin-danger);">${pays.failedCount || 0} failed</span>
+              </div>
+            </div>
+            <div class="admin-card">
+              <div class="admin-stat-label">Refunds Issued</div>
+              <div class="admin-stat-value" style="color:var(--admin-warning);">${refundFormatted}</div>
+              <div class="admin-stat-hint">
+                <span>${refs.processedCount || 0} processed</span> &bull; <span>${refs.pendingCount || 0} pending</span>
+              </div>
+            </div>
+            <div class="admin-card">
+              <div class="admin-stat-label">Net Settled Payouts</div>
+              <div class="admin-stat-value" style="color:var(--admin-text-primary);">${settFormatted}</div>
+              <div class="admin-stat-hint">
+                <span>${setts.reconciledCount || 0} / ${setts.totalSettlements || 0} reconciled</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // Populate Activity Container
+        const activityEl = document.getElementById('billingRecentActivityContainer');
+        if (activityEl) {
+          const events = data.recentActivity || [];
+          if (events.length === 0) {
+            activityEl.innerHTML = `
+              <div class="admin-empty-box" style="padding:1.5rem;">
+                <div class="admin-empty-title">No recent billing activity</div>
+                <div class="admin-empty-desc">Transactions, refunds, and subscriptions will appear here in real time.</div>
+              </div>
+            `;
+          } else {
+            activityEl.innerHTML = `
+              <div style="display:flex;flex-direction:column;gap:0.625rem;">
+                ${events.map(ev => {
+                  let badgeType = 'neutral';
+                  let icon = ICONS['dollar-sign'];
+                  let inspectAction = '';
+
+                  if (ev.type === 'PAYMENT') {
+                    icon = ICONS['dollar-sign'];
+                    badgeType = ev.status === 'SUCCESS' ? 'success' : (ev.status === 'FAILED' ? 'danger' : 'warning');
+                    inspectAction = `AdminShell.inspectPayment('${ev.id}')`;
+                  } else if (ev.type === 'REFUND') {
+                    icon = ICONS['rotate-ccw'];
+                    badgeType = ev.status === 'PROCESSED' ? 'warning' : 'neutral';
+                    inspectAction = `AdminShell.inspectRefund('${ev.id}')`;
+                  } else if (ev.type === 'SUBSCRIPTION') {
+                    icon = ICONS['credit-card'];
+                    badgeType = ev.status === 'ACTIVE' ? 'success' : (ev.status === 'PAST_DUE' ? 'warning' : 'danger');
+                    inspectAction = `AdminShell.inspectSubscription('${ev.id}')`;
+                  } else if (ev.type === 'SETTLEMENT') {
+                    icon = ICONS.database;
+                    badgeType = 'neutral';
+                    inspectAction = `AdminShell.inspectSettlement('${ev.id}')`;
+                  }
+
+                  const amtStr = ev.amountMinorUnits ? `₹${(ev.amountMinorUnits / 100).toFixed(2)} ${ev.currency || 'INR'}` : '';
+
+                  return `
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:var(--radius-xs);background:var(--admin-bg-subtle);">
+                          ${icon}
+                        </span>
+                        <div>
+                          <div style="font-size:0.8125rem;font-weight:600;color:var(--admin-text-primary);">
+                            ${this._escape(ev.type)} &bull; <code>${this._escape(ev.id.substring(0, 10))}...</code>
+                            ${amtStr ? `<strong style="margin-left:0.5rem;color:var(--admin-text-primary);">${amtStr}</strong>` : ''}
+                          </div>
+                          <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">
+                            ${this._escape(ev.userEmail || ev.title || 'System entity')} &bull; ${ev.timestamp ? new Date(ev.timestamp).toLocaleString() : '—'}
+                          </div>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span class="admin-badge admin-badge-${badgeType}">${this._escape(ev.status)}</span>
+                        ${inspectAction ? `
+                          <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="${inspectAction}">
+                            ${ICONS.eye}
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `;
+          }
+        }
+
+        // Populate Recon Health Container
+        const reconEl = document.getElementById('billingReconHealthContainer');
+        if (reconEl) {
+          const recon = data.reconciliation || {};
+          const latestRun = recon.latestRun;
+          const openDiscs = recon.openDiscrepancies || 0;
+          const discBreakdown = recon.discrepanciesByType || {};
+
+          reconEl.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+              <div class="admin-property-grid" style="background:var(--admin-bg-base);padding:1rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                <span class="admin-property-label">Last Reconciliation Run:</span>
+                <span class="admin-property-value">
+                  ${latestRun ? `<strong>${latestRun.status}</strong> (${new Date(latestRun.createdAt).toLocaleString()})` : '<span style="color:var(--admin-text-muted);">No runs recorded yet</span>'}
+                </span>
+                <span class="admin-property-label">Last Successful Run:</span>
+                <span class="admin-property-value">
+                  ${recon.lastSuccessfulRun ? new Date(recon.lastSuccessfulRun).toLocaleString() : '<span style="color:var(--admin-text-muted);">Never</span>'}
+                </span>
+                <span class="admin-property-label">Active Discrepancies:</span>
+                <span class="admin-property-value">
+                  <strong style="color:${openDiscs > 0 ? 'var(--admin-warning)' : 'var(--admin-success)'};">${openDiscs} Open Drifts</strong>
+                </span>
+                <span class="admin-property-label">Resolved Discrepancies:</span>
+                <span class="admin-property-value">
+                  <strong style="color:var(--admin-success);">${recon.resolvedDiscrepancies || 0} Resolved</strong>
+                </span>
+              </div>
+
+              <div>
+                <h3 style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;letter-spacing:0.04em;">
+                  Drift Distribution by Type
+                </h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:0.5rem;">
+                  <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Amount Drift</div>
+                    <div style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin-top:2px;">${discBreakdown.AMOUNT_MISMATCH || 0}</div>
+                  </div>
+                  <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Status Drift</div>
+                    <div style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin-top:2px;">${discBreakdown.STATUS_MISMATCH || 0}</div>
+                  </div>
+                  <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Fee Variance</div>
+                    <div style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin-top:2px;">${discBreakdown.FEE_MISMATCH || 0}</div>
+                  </div>
+                  <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem;text-align:center;">
+                    <div style="font-size:0.75rem;color:var(--admin-text-muted);">Missing Upstream</div>
+                    <div style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin-top:2px;">${discBreakdown.MISSING_PROVIDER_RECORD || 0}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap;">
+                <a href="#reconciliation" class="admin-btn admin-btn-secondary admin-btn-sm" style="flex:1;text-align:center;justify-content:center;">
+                  ${ICONS['git-compare']} Reconciliation Console
+                </a>
+                <a href="#settlements" class="admin-btn admin-btn-secondary admin-btn-sm" style="flex:1;text-align:center;justify-content:center;">
+                  ${ICONS.database} Settlements Ledger
+                </a>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        this.toast(err.message || 'Failed to load consolidated billing telemetry', 'danger');
+      }
+    }
+
+    /* =========================================================================
+       6-F. SETTLEMENTS & PAYOUTS LEDGER
+       ========================================================================= */
+    _renderSettlementsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>Settlements &amp; Provider Payouts</h1>
+            <p>Track Razorpay settlement batches, transaction processing fees, net bank credits, and reconciliation ledger state.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="refreshSettlementsBtn">
+              ${ICONS['refresh-cw']} Refresh
+            </button>
+            <a href="#reconciliation" class="admin-btn admin-btn-primary admin-btn-sm">
+              ${ICONS['git-compare']} Reconciliation Workspace
+            </a>
+          </div>
+        </div>
+
+        <div class="admin-filter-bar">
+          <div class="admin-search-wrap" style="flex:1;">
+            ${ICONS.search}
+            <input type="text" id="settlementSearchInput" class="admin-search-input" placeholder="Search by Settlement ID, Provider Settlement Reference, or Currency...">
+          </div>
+          <div class="admin-filter-group">
+            <select id="settlementReconStatusSelect" class="admin-select">
+              <option value="">All Reconciliation States</option>
+              <option value="RECONCILED">RECONCILED</option>
+              <option value="DISCREPANCY">DISCREPANCY</option>
+              <option value="UNRECONCILED">UNRECONCILED</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="admin-table-card">
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Settlement ID / Provider Ref</th>
+                  <th>Settled Date</th>
+                  <th>Currency</th>
+                  <th>Gross Amount</th>
+                  <th>Fee &amp; Tax</th>
+                  <th>Net Bank Credit</th>
+                  <th>Reconciliation State</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="settlementTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading settlements ledger...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="settlementPaginationBar" class="admin-pagination-bar"></div>
+        </div>
+      `;
+
+      const refreshBtn = document.getElementById('refreshSettlementsBtn');
+      const searchInput = document.getElementById('settlementSearchInput');
+      const statusSelect = document.getElementById('settlementReconStatusSelect');
+
+      if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadSettlements());
+
+      let debounce = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounce);
+          debounce = setTimeout(() => {
+            this.settlementState.search = e.target.value.trim();
+            this.settlementState.page = 1;
+            this.loadSettlements();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.settlementState.reconciliationStatus = e.target.value;
+          this.settlementState.page = 1;
+          this.loadSettlements();
+        });
+      }
+
+      this.loadSettlements();
+    }
+
+    async loadSettlements() {
+      const tbody = document.getElementById('settlementTableBody');
+      if (!tbody) return;
+
+      try {
+        const queryParams = new URLSearchParams({
+          page: String(this.settlementState.page),
+          pageSize: String(this.settlementState.pageSize)
+        });
+        if (this.settlementState.search) queryParams.set('search', this.settlementState.search);
+        if (this.settlementState.reconciliationStatus) queryParams.set('reconciliationStatus', this.settlementState.reconciliationStatus);
+
+        const res = await window.AdminApi.get(`/admin/operations/billing/settlements?${queryParams.toString()}`);
+        const data = res.data;
+        this.settlementState.items = data.items || [];
+        this.settlementState.total = data.total || 0;
+
+        if (this.settlementState.items.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8">
+                <div class="admin-empty-box">
+                  ${ICONS.database}
+                  <div class="admin-empty-title">No settlements recorded</div>
+                  <div class="admin-empty-desc">Bank settlement batches will appear here once Razorpay processes payout cycles.</div>
+                </div>
+              </td>
+            </tr>
+          `;
+          this._renderPagination('settlementPaginationBar', this.settlementState, (p) => { this.settlementState.page = p; this.loadSettlements(); });
+          return;
+        }
+
+        tbody.innerHTML = this.settlementState.items.map(s => {
+          const grossFormatted = `₹${((s.grossAmountMinorUnits || 0) / 100).toFixed(2)}`;
+          const feeTaxMinor = (s.feeAmountMinorUnits || 0) + (s.taxAmountMinorUnits || 0);
+          const feeTaxFormatted = `₹${(feeTaxMinor / 100).toFixed(2)}`;
+          const netFormatted = `₹${((s.netAmountMinorUnits || 0) / 100).toFixed(2)}`;
+          const settledDate = s.settledAt ? new Date(s.settledAt).toLocaleDateString() : (s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—');
+
+          let reconBadge = `<span class="admin-badge admin-badge-neutral">${this._escape(s.reconciliationStatus || 'UNRECONCILED')}</span>`;
+          if (s.reconciliationStatus === 'RECONCILED') {
+            reconBadge = `<span class="admin-badge admin-badge-success">${ICONS.check} RECONCILED</span>`;
+          } else if (s.reconciliationStatus === 'DISCREPANCY') {
+            reconBadge = `<span class="admin-badge admin-badge-warning">DISCREPANCY</span>`;
+          }
+
+          return `
+            <tr>
+              <td>
+                <strong style="color:var(--admin-text-primary);"><code class="admin-code-pill">${this._escape(s.id.substring(0, 10))}...</code></strong>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);font-family:var(--font-mono);">${this._escape(s.providerSettlementId || 'N/A')}</div>
+              </td>
+              <td style="font-size:0.8125rem;">${settledDate}</td>
+              <td><span class="admin-badge admin-badge-neutral">${this._escape(s.currency)}</span></td>
+              <td style="font-size:0.8125rem;"><strong>${grossFormatted}</strong></td>
+              <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${feeTaxFormatted}</td>
+              <td style="font-size:0.8125rem;"><strong style="color:var(--admin-success);">${netFormatted}</strong></td>
+              <td>${reconBadge}</td>
+              <td style="text-align:right;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectSettlement('${s.id}')" title="Inspect settlement details & linked transactions">
+                  ${ICONS.eye} Inspect
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        this._renderPagination('settlementPaginationBar', this.settlementState, (p) => { this.settlementState.page = p; this.loadSettlements(); });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load settlements')}</td></tr>`;
+      }
+    }
+
+    async inspectSettlement(settlementId) {
+      try {
+        const res = await window.AdminApi.get(`/admin/operations/billing/settlements/${settlementId}`);
+        const s = res.data;
+
+        const grossFormatted = `₹${((s.grossAmountMinorUnits || 0) / 100).toFixed(2)} ${s.currency}`;
+        const feeFormatted = `₹${((s.feeAmountMinorUnits || 0) / 100).toFixed(2)} ${s.currency}`;
+        const taxFormatted = `₹${((s.taxAmountMinorUnits || 0) / 100).toFixed(2)} ${s.currency}`;
+        const netFormatted = `₹${((s.netAmountMinorUnits || 0) / 100).toFixed(2)} ${s.currency}`;
+        const settledDate = s.settledAt ? new Date(s.settledAt).toLocaleString() : 'Pending Payout';
+
+        const content = `
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Settlement Batch Telemetry</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Settlement ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(s.id)}</code></span>
+              <span class="admin-property-label">Provider Ref:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(s.providerSettlementId || 'N/A')}</code></span>
+              <span class="admin-property-label">Settled Timestamp:</span>
+              <span class="admin-property-value">${settledDate}</span>
+              <span class="admin-property-label">Reconciliation State:</span>
+              <span class="admin-property-value">${this._escape(s.reconciliationStatus || 'UNRECONCILED')}</span>
+              <span class="admin-property-label">Currency:</span>
+              <span class="admin-property-value"><strong>${this._escape(s.currency)}</strong></span>
+            </div>
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Financial Breakdown</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Gross Batch Total:</span>
+              <span class="admin-property-value"><strong>${grossFormatted}</strong></span>
+              <span class="admin-property-label">Provider Fee:</span>
+              <span class="admin-property-value">${feeFormatted}</span>
+              <span class="admin-property-label">Goods &amp; Services Tax:</span>
+              <span class="admin-property-value">${taxFormatted}</span>
+              <span class="admin-property-label">Net Bank Payout:</span>
+              <span class="admin-property-value"><strong style="color:var(--admin-success);">${netFormatted}</strong></span>
+            </div>
+          </div>
+
+          ${s.reconciliationRecord ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Linked Reconciliation Run</div>
+              <div class="admin-property-grid">
+                <span class="admin-property-label">Recon Run ID:</span>
+                <span class="admin-property-value"><code class="admin-code-pill">${this._escape(s.reconciliationRecord.id)}</code></span>
+                <span class="admin-property-label">Run Status:</span>
+                <span class="admin-property-value">${this._renderStatusBadge(s.reconciliationRecord.status)}</span>
+                <span class="admin-property-label">Processed At:</span>
+                <span class="admin-property-value">${s.reconciliationRecord.createdAt ? new Date(s.reconciliationRecord.createdAt).toLocaleString() : '—'}</span>
+              </div>
+              <div style="margin-top:0.75rem;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectReconciliationRun('${s.reconciliationRecord.id}')">
+                  ${ICONS.eye} View Reconciliation Run
+                </button>
+              </div>
+            </div>
+          ` : ''}
+
+          ${s.payments && s.payments.length > 0 ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Settled Payment Transactions (${s.payments.length})</div>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                ${s.payments.map(p => `
+                  <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                      <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(p.id.substring(0, 10))}...</code> &bull; ₹${((p.amountMinorUnits || 0) / 100).toFixed(2)}</div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">${this._escape(p.userEmail || p.userId)}</div>
+                    </div>
+                    <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectPayment('${p.id}')">
+                      ${ICONS.eye} Inspect
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${s.refunds && s.refunds.length > 0 ? `
+            <div class="admin-drawer-section">
+              <div class="admin-drawer-section-title">Settled Refund Deductions (${s.refunds.length})</div>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                ${s.refunds.map(r => `
+                  <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                      <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(r.id.substring(0, 10))}...</code> &bull; -₹${((r.amountMinorUnits || 0) / 100).toFixed(2)}</div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">Reason: ${this._escape(r.reason || 'Refund')}</div>
+                    </div>
+                    <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectRefund('${r.id}')">
+                      ${ICONS.eye} Inspect
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        `;
+
+        this._showDrawer(`Settlement Batch: ${s.id.substring(0, 12)}...`, content);
+      } catch (err) {
+        this.toast(err.message || 'Failed to inspect settlement', 'danger');
+      }
+    }
+
+    /* =========================================================================
+       6-G. GLOBAL BILLING SEARCH MODAL & WORKSPACE
+       ========================================================================= */
+    showGlobalBillingSearchModal(initialQuery = '') {
+      const existing = document.getElementById('adminGlobalSearchModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminGlobalSearchModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" style="max-width:760px;width:95%;">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">${ICONS.search} Global Billing &amp; Financial Search</h3>
+            <button class="admin-btn-icon" id="adminSearchModalCloseBtn" aria-label="Close search">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <div class="admin-search-wrap" style="margin-bottom:1rem;">
+              ${ICONS.search}
+              <input type="text" id="adminGlobalSearchDialogInput" class="admin-search-input" value="${this._escape(initialQuery)}" placeholder="Search across payments, refunds, subscriptions, settlements, and customers..." autofocus>
+            </div>
+            <div id="adminGlobalSearchResults" style="max-height:450px;overflow-y:auto;">
+              <div style="text-align:center;padding:2rem;color:var(--admin-text-muted);">
+                Type at least 2 characters to search across all commercial sub-ledgers.
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminSearchModalCloseBtn');
+      const searchInput = document.getElementById('adminGlobalSearchDialogInput');
+      const resultsContainer = document.getElementById('adminGlobalSearchResults');
+
+      const closeModal = () => backdrop.remove();
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+
+      let debounce = null;
+      const executeSearch = async (query) => {
+        if (!query || query.length < 2) {
+          resultsContainer.innerHTML = `
+            <div style="text-align:center;padding:2rem;color:var(--admin-text-muted);">
+              Type at least 2 characters to search across all commercial sub-ledgers.
+            </div>
+          `;
+          return;
+        }
+
+        resultsContainer.innerHTML = `
+          <div style="text-align:center;padding:2rem;color:var(--admin-text-muted);">
+            Searching billing records for <strong>"${this._escape(query)}"</strong>...
+          </div>
+        `;
+
+        try {
+          const res = await window.AdminApi.get(`/admin/operations/billing/search?q=${encodeURIComponent(query)}`);
+          const data = res.data;
+
+          const totalHits = (data.payments?.length || 0) + (data.refunds?.length || 0) + (data.subscriptions?.length || 0) + (data.settlements?.length || 0) + (data.users?.length || 0);
+
+          if (totalHits === 0) {
+            resultsContainer.innerHTML = `
+              <div class="admin-empty-box" style="padding:2rem;">
+                ${ICONS.search}
+                <div class="admin-empty-title">No billing entities found</div>
+                <div class="admin-empty-desc">No payments, refunds, subscriptions, or settlements matched "${this._escape(query)}".</div>
+              </div>
+            `;
+            return;
+          }
+
+          let html = `<div style="display:flex;flex-direction:column;gap:1.25rem;">`;
+
+          // Payments Section
+          if (data.payments && data.payments.length > 0) {
+            html += `
+              <div>
+                <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                  Payments (${data.payments.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${data.payments.map(p => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0.875rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div>
+                        <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(p.id)}</code> &bull; ₹${((p.amountMinorUnits || 0) / 100).toFixed(2)} ${this._escape(p.currency)}</div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(p.userEmail || p.userId)} &bull; ${this._escape(p.providerPaymentId || 'No Provider Ref')}</div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span class="admin-badge admin-badge-${p.status === 'SUCCESS' ? 'success' : 'neutral'}">${this._escape(p.status)}</span>
+                        <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectPayment('${p.id}'); document.getElementById('adminGlobalSearchModalBackdrop')?.remove();">
+                          ${ICONS.eye} Inspect
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // Refunds Section
+          if (data.refunds && data.refunds.length > 0) {
+            html += `
+              <div>
+                <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                  Refunds (${data.refunds.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${data.refunds.map(r => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0.875rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div>
+                        <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(r.id)}</code> &bull; ₹${((r.amountMinorUnits || 0) / 100).toFixed(2)} ${this._escape(r.currency)}</div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(r.providerRefundId || 'No Provider Ref')} &bull; Reason: ${this._escape(r.reason || 'None')}</div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span class="admin-badge admin-badge-warning">${this._escape(r.status)}</span>
+                        <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectRefund('${r.id}'); document.getElementById('adminGlobalSearchModalBackdrop')?.remove();">
+                          ${ICONS.eye} Inspect
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // Subscriptions Section
+          if (data.subscriptions && data.subscriptions.length > 0) {
+            html += `
+              <div>
+                <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                  Subscriptions (${data.subscriptions.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${data.subscriptions.map(s => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0.875rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div>
+                        <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(s.id)}</code> &bull; Tier: <strong>${this._escape(s.planCode)}</strong></div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(s.userEmail || s.userId)} &bull; ${this._escape(s.providerSubscriptionId || 'No Provider Ref')}</div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.5rem;">
+                        <span class="admin-badge admin-badge-${s.status === 'ACTIVE' ? 'success' : 'neutral'}">${this._escape(s.status)}</span>
+                        <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectSubscription('${s.id}'); document.getElementById('adminGlobalSearchModalBackdrop')?.remove();">
+                          ${ICONS.eye} Inspect
+                        </button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // Settlements Section
+          if (data.settlements && data.settlements.length > 0) {
+            html += `
+              <div>
+                <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                  Settlements (${data.settlements.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${data.settlements.map(st => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0.875rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div>
+                        <div style="font-size:0.8125rem;font-weight:600;"><code>${this._escape(st.id)}</code> &bull; Net: ₹${((st.netAmountMinorUnits || 0) / 100).toFixed(2)} ${this._escape(st.currency)}</div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);">Ref: ${this._escape(st.providerSettlementId || 'N/A')} &bull; Status: ${this._escape(st.reconciliationStatus || 'UNRECONCILED')}</div>
+                      </div>
+                      <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectSettlement('${st.id}'); document.getElementById('adminGlobalSearchModalBackdrop')?.remove();">
+                        ${ICONS.eye} Inspect
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          // Customers Section
+          if (data.users && data.users.length > 0) {
+            html += `
+              <div>
+                <div style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;color:var(--admin-text-muted);margin-bottom:0.5rem;">
+                  Customer Accounts (${data.users.length})
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${data.users.map(u => `
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.625rem 0.875rem;background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                      <div>
+                        <div style="font-size:0.8125rem;font-weight:600;">${this._escape(u.email)}</div>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);">ID: <code>${this._escape(u.id)}</code> &bull; Role: ${this._escape(u.role || 'USER')}</div>
+                      </div>
+                      <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${u.id}'); document.getElementById('adminGlobalSearchModalBackdrop')?.remove();">
+                        ${ICONS.eye} Inspect Customer
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          html += `</div>`;
+          resultsContainer.innerHTML = html;
+        } catch (err) {
+          resultsContainer.innerHTML = `
+            <div style="text-align:center;padding:2rem;color:var(--admin-danger);">
+              ${this._escape(err.message || 'Search execution failed')}
+            </div>
+          `;
+        }
+      };
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounce);
+          debounce = setTimeout(() => {
+            executeSearch(e.target.value.trim());
+          }, 300);
+        });
+
+        if (initialQuery) {
+          executeSearch(initialQuery);
+        }
+      }
     }
 
     _renderForbiddenView(item) {

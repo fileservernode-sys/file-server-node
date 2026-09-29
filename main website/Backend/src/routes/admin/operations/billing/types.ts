@@ -598,3 +598,139 @@ export interface AdminResolveDiscrepancyResult {
   idempotent?: boolean;
 }
 
+export interface AdminSettlementSummary {
+  id: string;
+  provider: PaymentProvider;
+  environment: PaymentEnvironment;
+  providerSettlementId: string;
+  settlementUtr: string | null;
+  settlementCurrency: CurrencyCode;
+  settlementAmountMinorUnits: number;
+  providerFeesMinorUnits: number;
+  providerTaxMinorUnits: number;
+  settlementStatus: string;
+  settledAt: string | null;
+  reconciliationStatus: ReconciliationStatus;
+  reconciliationRecordCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSettlementDetail extends AdminSettlementSummary {
+  reconciliationRecords: Array<{
+    id: string;
+    providerEntityId: string;
+    entityType: ReconciliationEntityType;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    providerPaymentId: string | null;
+    providerRefundId: string | null;
+    status: ReconciliationStatus;
+    internalPaymentId: string | null;
+    internalRefundId: string | null;
+  }>;
+  linkedPayments: Array<{
+    id: string;
+    userId: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: PaymentStatus;
+    chargedAt: string;
+  }>;
+  linkedRefunds: Array<{
+    id: string;
+    userId: string;
+    amountMinorUnits: number;
+    currency: CurrencyCode;
+    status: RefundStatus;
+    requestedAt: string;
+  }>;
+  metadata: Record<string, unknown> | null;
+}
+
+export interface AdminBillingSearchResultItem {
+  resourceType: 'subscription' | 'payment' | 'refund' | 'settlement' | 'discrepancy' | 'user';
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  currency?: CurrencyCode;
+  amountMinorUnits?: number;
+  timestamp?: string;
+  navigationHash: string;
+}
+
+export interface AdminBillingSearchResult {
+  query: string;
+  totalMatches: number;
+  results: AdminBillingSearchResultItem[];
+}
+
+export interface AdminBillingActivityEvent {
+  id: string;
+  eventType: string;
+  category: 'subscription' | 'payment' | 'refund' | 'reconciliation' | 'settlement';
+  entityId: string;
+  userId?: string;
+  description: string;
+  amountMinorUnits?: number;
+  currency?: CurrencyCode;
+  status?: string;
+  timestamp: string;
+  navigationHash: string;
+}
+
+export interface AdminConsolidatedBillingOverview {
+  subscriptions: {
+    active: number;
+    pastDue: number;
+    gracePeriod: number;
+    cancelling: number;
+    expired: number;
+    unpaid: number;
+    total: number;
+  };
+  payments: {
+    successCount: number;
+    pendingCount: number;
+    failedCount: number;
+    refundedCount: number;
+    totalCount: number;
+    transactionVolume30dMinorUnits: Record<string, number>;
+  };
+  refunds: {
+    requestedCount: number;
+    processingCount: number;
+    processedCount: number;
+    failedCount: number;
+    totalCount: number;
+    refundedFunds30dMinorUnits: Record<string, number>;
+  };
+  reconciliation: {
+    latestRun: {
+      id: string;
+      status: ReconciliationRunStatus;
+      completedAt: string | null;
+      mismatchCount: number;
+      matchedCount: number;
+      totalRecords: number;
+    } | null;
+    lastSuccessfulRun: {
+      id: string;
+      completedAt: string;
+      matchedCount: number;
+    } | null;
+    openDiscrepanciesCount: number;
+    discrepanciesBySeverity: Record<string, number>;
+    discrepanciesByType: Record<string, number>;
+  };
+  settlements: {
+    pendingCount: number;
+    reconciledCount: number;
+    mismatchCount: number;
+    totalCount: number;
+    settledFunds30dMinorUnits: Record<string, number>;
+  };
+  recentActivity: AdminBillingActivityEvent[];
+}
+
