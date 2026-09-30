@@ -26,17 +26,27 @@ async function findUserDevices() {
 
     const mappedDevices = rawDevices.map(d => {
       const server = d.server;
-      const isOnline = d.status === 'ONLINE' && server?.status === 'RUNNING';
-      const isStarting = server?.status === 'STARTING';
+      // Customer Status Accuracy (Batch 11A.16): use authoritative derived remoteStatus
+      const effectiveRemoteStatus = d.remoteStatus || server?.remoteStatus || (d.status === 'ONLINE' && server?.status === 'RUNNING' ? 'ONLINE' : 'OFFLINE');
+      const isOnline = effectiveRemoteStatus === 'ONLINE';
+      const isConnecting = effectiveRemoteStatus === 'CONNECTING';
+      const isReconnecting = effectiveRemoteStatus === 'RECONNECTING';
+      const isError = effectiveRemoteStatus === 'ERROR';
 
       let status = 'offline';
       let serverStatusText = 'Offline';
       if (isOnline) {
         status = 'online';
         serverStatusText = 'Available';
-      } else if (isStarting) {
+      } else if (isConnecting) {
         status = 'connecting';
-        serverStatusText = 'Starting Server...';
+        serverStatusText = 'Connecting Server...';
+      } else if (isReconnecting) {
+        status = 'reconnecting';
+        serverStatusText = 'Reconnecting Gateway...';
+      } else if (isError) {
+        status = 'error';
+        serverStatusText = 'Error / Offline';
       }
 
       const rawEndpoint = server?.endpoint;
@@ -182,7 +192,9 @@ function renderDeviceCards(devices, container) {
     const statusMap = {
       online: { badgeClass: 'status-online', text: 'Online' },
       offline: { badgeClass: 'status-offline', text: 'Offline' },
-      connecting: { badgeClass: 'status-connecting', text: 'Connecting...' }
+      connecting: { badgeClass: 'status-connecting', text: 'Connecting...' },
+      reconnecting: { badgeClass: 'status-connecting', text: 'Reconnecting...' },
+      error: { badgeClass: 'status-offline', text: 'Error' }
     };
 
     const currentStatus = statusMap[device.status] || statusMap.offline;
@@ -195,8 +207,8 @@ function renderDeviceCards(devices, container) {
           <span>Open File Manager</span>
         </a>
       `;
-    } else if (device.status === 'connecting') {
-      ctaButtonHtml = `<button class="btn btn-secondary" disabled style="width: 100%;"><span class="spinner"></span> Connecting Server...</button>`;
+    } else if (device.status === 'connecting' || device.status === 'reconnecting') {
+      ctaButtonHtml = `<button class="btn btn-secondary" disabled style="width: 100%;"><span class="spinner"></span> ${device.status === 'connecting' ? 'Connecting Server...' : 'Reconnecting Gateway...'}</button>`;
     } else {
       ctaButtonHtml = `<button class="btn btn-secondary" disabled style="width: 100%;">Server Offline</button>`;
     }

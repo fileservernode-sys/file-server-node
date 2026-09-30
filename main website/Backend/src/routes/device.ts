@@ -8,6 +8,7 @@ import { hashPassword } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
+import { CustomerStatusService } from '../services/customer_status_service.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
 
@@ -292,6 +293,13 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         const activeEndpoint = activeServer?.endpoints?.find(e => e.status === 'ACTIVE') ?? activeServer?.endpoints?.[0];
         const activeConn = d.connections?.[0];
 
+        const derivedStatus = CustomerStatusService.deriveCustomerStatus({
+          deviceId: d.id,
+          serverInstance: activeServer,
+          deviceConnection: activeConn,
+          userStatus: user.status
+        });
+
         return {
           id: d.id,
           installationId: d.installationId,
@@ -300,12 +308,19 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           osVersion: d.osVersion,
           appVersion: d.appVersion,
           status: d.status,
+          remoteStatus: derivedStatus.remoteStatus,
+          statusReason: derivedStatus.statusReason,
+          isRemoteAvailable: derivedStatus.isRemoteAvailable,
+          livenessValid: derivedStatus.livenessValid,
           lastSeenAt: d.lastSeenAt?.toISOString(),
           server: activeServer ? {
             id: activeServer.id,
             serverName: activeServer.serverName || d.deviceName,
             adminUsername: activeServer.adminUsername,
             status: activeServer.status,
+            remoteStatus: derivedStatus.remoteStatus,
+            statusReason: derivedStatus.statusReason,
+            isRemoteAvailable: derivedStatus.isRemoteAvailable,
             localServerUrl: 'http://127.0.0.1:8080',
             startedAt: activeServer.startedAt?.toISOString(),
             endpoint: activeEndpoint ? {
@@ -318,6 +333,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           connection: activeConn ? {
             id: activeConn.id,
             status: activeConn.status,
+            remoteStatus: derivedStatus.remoteStatus,
+            statusReason: derivedStatus.statusReason,
             remoteEndpoint: activeConn.remoteEndpoint,
             gatewayHost: activeConn.gatewayNode?.hostname ?? null,
             lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()
@@ -369,6 +386,13 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     const activeEndpoint = activeServer?.endpoints?.find(e => e.status === 'ACTIVE') ?? activeServer?.endpoints?.[0];
     const activeConn = device.connections?.[0];
 
+    const derivedStatus = CustomerStatusService.deriveCustomerStatus({
+      deviceId: device.id,
+      serverInstance: activeServer,
+      deviceConnection: activeConn,
+      userStatus: user.status
+    });
+
     return reply.status(200).send(createSuccessResponse({
       device: {
         id: device.id,
@@ -378,12 +402,19 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         osVersion: device.osVersion,
         appVersion: device.appVersion,
         status: device.status,
+        remoteStatus: derivedStatus.remoteStatus,
+        statusReason: derivedStatus.statusReason,
+        isRemoteAvailable: derivedStatus.isRemoteAvailable,
+        livenessValid: derivedStatus.livenessValid,
         lastSeenAt: device.lastSeenAt?.toISOString(),
         server: activeServer ? {
           id: activeServer.id,
           serverName: activeServer.serverName || device.deviceName,
           adminUsername: activeServer.adminUsername,
           status: activeServer.status,
+          remoteStatus: derivedStatus.remoteStatus,
+          statusReason: derivedStatus.statusReason,
+          isRemoteAvailable: derivedStatus.isRemoteAvailable,
           localServerUrl: 'http://127.0.0.1:8080',
           startedAt: activeServer.startedAt?.toISOString(),
           endpoint: activeEndpoint ? {
@@ -396,6 +427,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         connection: activeConn ? {
           id: activeConn.id,
           status: activeConn.status,
+          remoteStatus: derivedStatus.remoteStatus,
+          statusReason: derivedStatus.statusReason,
           remoteEndpoint: activeConn.remoteEndpoint,
           gatewayHost: activeConn.gatewayNode?.hostname ?? null,
           lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()

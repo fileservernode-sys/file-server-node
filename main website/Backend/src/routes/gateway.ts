@@ -58,4 +58,40 @@ export async function gatewayRoutes(app: FastifyInstance): Promise<void> {
       }
     }));
   });
+
+  /**
+   * POST /api/v1/gateway/reconciliation/run
+   * Manually trigger an on-demand state reconciliation cycle
+   */
+  app.post('/gateway/reconciliation/run', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { StateReconciliationService } = await import('../observability/state_reconciliation.js');
+    const { defaultGatewayService } = await import('../gateway/gateway_service.js');
+    
+    const config = defaultGatewayService.getConfig();
+    const result = await StateReconciliationService.runReconciliationCycle(
+      config.GATEWAY_NODE_ID,
+      new Set(), // Active connection set if invoked externally
+      config.GATEWAY_NODE_HOSTNAME,
+      config.GATEWAY_NODE_STALE_THRESHOLD_MS,
+      config.GATEWAY_CONNECTION_STALE_THRESHOLD_MS
+    );
+
+    return reply.status(200).send(createSuccessResponse({
+      reconciliation: result
+    }));
+  });
+
+  /**
+   * GET /api/v1/gateway/reconciliation/metrics
+   * Retrieves live metrics & counters from the state reconciliation subsystem
+   */
+  app.get('/gateway/reconciliation/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { StateReconciliationService } = await import('../observability/state_reconciliation.js');
+    const metrics = StateReconciliationService.getReconciliationMetrics();
+
+    return reply.status(200).send(createSuccessResponse({
+      metrics
+    }));
+  });
 }
+

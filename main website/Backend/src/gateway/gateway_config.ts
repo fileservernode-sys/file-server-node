@@ -48,6 +48,17 @@ export const gatewayConfigSchema = z
     GATEWAY_TRANSFER_CHUNK_SIZE_BYTES: z.coerce.number().default(4194304), // 4MB chunk limit
     GATEWAY_TLS_CERT_PATH: z.string().optional(),
     GATEWAY_TLS_KEY_PATH: z.string().optional(),
+    
+    // Batch 11A.5: Reconciliation & Node Identity Configuration
+    GATEWAY_NODE_ID: z.string().default('gw-node-default'),
+    GATEWAY_NODE_HOSTNAME: z.string().default('gateway.zdexcloud.com'),
+    GATEWAY_NODE_REGION: z.string().default('default'),
+    GATEWAY_RECONCILIATION_INTERVAL_MS: z.coerce.number().default(60000),
+    GATEWAY_NODE_HEARTBEAT_INTERVAL_MS: z.coerce.number().default(30000),
+    GATEWAY_NODE_STALE_THRESHOLD_MS: z.coerce.number().default(120000),
+    GATEWAY_CONNECTION_STALE_THRESHOLD_MS: z.coerce.number().default(90000),
+    GATEWAY_HEARTBEAT_BATCH_FLUSH_INTERVAL_MS: z.coerce.number().default(30000),
+
     NODE_ENV: z.enum(['development', 'production', 'test', 'staging']).default('development')
   })
   .superRefine((data, ctx) => {
@@ -89,6 +100,19 @@ export function loadGatewayConfig(overrides: Partial<Record<string, string | num
       overrides.GATEWAY_TRANSFER_CHUNK_SIZE_BYTES ?? process.env.GATEWAY_TRANSFER_CHUNK_SIZE_BYTES,
     GATEWAY_TLS_CERT_PATH: overrides.GATEWAY_TLS_CERT_PATH ?? process.env.GATEWAY_TLS_CERT_PATH,
     GATEWAY_TLS_KEY_PATH: overrides.GATEWAY_TLS_KEY_PATH ?? process.env.GATEWAY_TLS_KEY_PATH,
+    GATEWAY_NODE_ID: overrides.GATEWAY_NODE_ID ?? process.env.GATEWAY_NODE_ID,
+    GATEWAY_NODE_HOSTNAME: overrides.GATEWAY_NODE_HOSTNAME ?? process.env.GATEWAY_NODE_HOSTNAME,
+    GATEWAY_NODE_REGION: overrides.GATEWAY_NODE_REGION ?? process.env.GATEWAY_NODE_REGION,
+    GATEWAY_RECONCILIATION_INTERVAL_MS:
+      overrides.GATEWAY_RECONCILIATION_INTERVAL_MS ?? process.env.GATEWAY_RECONCILIATION_INTERVAL_MS,
+    GATEWAY_NODE_HEARTBEAT_INTERVAL_MS:
+      overrides.GATEWAY_NODE_HEARTBEAT_INTERVAL_MS ?? process.env.GATEWAY_NODE_HEARTBEAT_INTERVAL_MS,
+    GATEWAY_NODE_STALE_THRESHOLD_MS:
+      overrides.GATEWAY_NODE_STALE_THRESHOLD_MS ?? process.env.GATEWAY_NODE_STALE_THRESHOLD_MS,
+    GATEWAY_CONNECTION_STALE_THRESHOLD_MS:
+      overrides.GATEWAY_CONNECTION_STALE_THRESHOLD_MS ?? process.env.GATEWAY_CONNECTION_STALE_THRESHOLD_MS,
+    GATEWAY_HEARTBEAT_BATCH_FLUSH_INTERVAL_MS:
+      overrides.GATEWAY_HEARTBEAT_BATCH_FLUSH_INTERVAL_MS ?? process.env.GATEWAY_HEARTBEAT_BATCH_FLUSH_INTERVAL_MS,
     NODE_ENV: overrides.NODE_ENV ?? process.env.NODE_ENV
   };
 

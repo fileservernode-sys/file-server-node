@@ -2306,7 +2306,7 @@
         const devices = res.data.data?.devices || [];
         currentServerCount = devices.length;
 
-        const onlineCount = devices.filter(d => d.status === 'ONLINE' && d.server?.status === 'RUNNING').length;
+        const onlineCount = devices.filter(d => (d.remoteStatus === 'ONLINE' || d.server?.remoteStatus === 'ONLINE')).length;
         const onlineEl = document.getElementById('stat-online-servers');
         const linkedEl = document.getElementById('stat-linked-devices');
         if (onlineEl) onlineEl.textContent = onlineCount;
@@ -2340,14 +2340,22 @@
         } else {
           const cardsHtml = devices.map(device => {
             const server = device.server;
-            const isOnline = device.status === 'ONLINE' && server?.status !== 'STOPPED';
-            const isStarting = server?.status === 'STARTING' && device.status !== 'ONLINE';
+            // Customer Status Accuracy (Batch 11A.16): use authoritative derived remoteStatus
+            const effectiveRemoteStatus = device.remoteStatus || server?.remoteStatus || (device.status === 'ONLINE' && server?.status === 'RUNNING' ? 'ONLINE' : 'OFFLINE');
+            const isOnline = effectiveRemoteStatus === 'ONLINE';
+            const isConnecting = effectiveRemoteStatus === 'CONNECTING';
+            const isReconnecting = effectiveRemoteStatus === 'RECONNECTING';
+            const isError = effectiveRemoteStatus === 'ERROR';
 
             let statusBadge = '';
             if (isOnline) {
               statusBadge = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> ONLINE</span>`;
-            } else if (isStarting) {
-              statusBadge = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> STARTING</span>`;
+            } else if (isConnecting) {
+              statusBadge = `<span class="badge" style="background: rgba(37, 99, 235, 0.1); color: #2563EB; border: 1px solid rgba(37, 99, 235, 0.3); display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2563EB; display: inline-block;"></span> CONNECTING</span>`;
+            } else if (isReconnecting) {
+              statusBadge = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> RECONNECTING</span>`;
+            } else if (isError) {
+              statusBadge = `<span class="badge" style="background: #FEF2F2; color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.3); display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #DC2626; display: inline-block;"></span> ERROR</span>`;
             } else {
               statusBadge = `<span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border); display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-text-muted); display: inline-block;"></span> OFFLINE</span>`;
             }
@@ -2369,6 +2377,16 @@
                   <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                   <span>Open File Manager</span>
                 </a>
+              `;
+            } else if (isConnecting || isReconnecting) {
+              fileManagerButtonHtml = `
+                <div style="margin-bottom: var(--space-md);">
+                  <button type="button" disabled class="btn btn-secondary btn-sm" style="width: 100%; opacity: 0.7; cursor: not-allowed; padding: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    <span>${isConnecting ? 'Connecting Server...' : 'Reconnecting Gateway...'}</span>
+                  </button>
+                  <p class="text-xs text-muted" style="text-align: center; margin-top: 4px;">Remote connection recovery in progress.</p>
+                </div>
               `;
             } else if (server?.id) {
               fileManagerButtonHtml = `

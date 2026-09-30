@@ -4,14 +4,18 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { EndpointService } from '../services/endpoint.js';
+import { ConnectionStateMachine } from '../services/connection_state_machine.js';
+import { ConnectionObservability } from '../observability/connection_observability.js';
+import { ConnectionStatus } from '@prisma/client';
 
 const registerConnectionSchema = z.object({
   deviceId: z.string().min(1),
-  gatewayNodeId: z.string().optional()
+  gatewayNodeId: z.string().optional(),
+  failedGatewayNodeId: z.string().optional()
 });
 
 const updateHeartbeatSchema = z.object({
-  status: z.enum(['DISCONNECTED', 'CONNECTING', 'CONNECTED', 'RECONNECTING', 'FAILED']).optional()
+  status: z.enum(['DISCONNECTED', 'CONNECTING', 'CONNECTED', 'RECONNECTING', 'STALE', 'FAILED']).optional()
 });
 
 const connectionParamSchema = z.object({
@@ -43,6 +47,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/connections/register
    * Registers intent for outbound remote connection from an Android device
+   * Supports deterministic gateway candidate selection and failed-node avoidance (Batch 11A.10)
    */
   app.post('/connections/register', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
@@ -52,14 +57,37 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('deviceId is required to register a remote connection');
     }
 
-    const { deviceId, gatewayNodeId } = body.data;
+    const { deviceId, gatewayNodeId, failedGatewayNodeId } = body.data;
+
+    ConnectionObservability.emit({
+      event: 'registration_started',
+      component: 'backend_connection',
+      outcome: 'started',
+      deviceId,
+      reason: failedGatewayNodeId ? 'gateway_failover' : 'initial_start'
+    });
+
     const device = await prisma.device.findUnique({ where: { id: deviceId } });
 
     if (!device) {
+      ConnectionObservability.emit({
+        event: 'registration_failed',
+        component: 'backend_connection',
+        outcome: 'failed',
+        errorCategory: 'device_not_owned',
+        deviceId
+      });
       throw new NotFoundError('Device node not found');
     }
 
     if (device.userId !== user.id) {
+      ConnectionObservability.emit({
+        event: 'auth_failed',
+        component: 'backend_connection',
+        outcome: 'failed',
+        errorCategory: 'device_not_owned',
+        deviceId
+      });
       throw new ForbiddenError('You do not have permission to register connections for this device');
     }
 
@@ -81,53 +109,116 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    // Resolve or discover active GatewayNode
-    let resolvedGatewayId = gatewayNodeId;
-    if (!resolvedGatewayId) {
-      const activeGateway = await prisma.gatewayNode.findFirst({ where: { status: 'ACTIVE' } });
-      resolvedGatewayId = activeGateway?.id;
+    // Resolve or discover active GatewayNode with deterministic failover candidate selection
+    let selectedGateway = null;
+
+    if (gatewayNodeId) {
+      selectedGateway = await prisma.gatewayNode.findUnique({ where: { id: gatewayNodeId } });
     }
 
-    // Reuse existing connection record or create if not present
-    let connection = await prisma.deviceConnection.findFirst({
-      where: { deviceId },
-      orderBy: { createdAt: 'desc' }
-    });
+    if (!selectedGateway) {
+      if (failedGatewayNodeId) {
+        ConnectionObservability.emit({
+          event: 'gateway_failover_started',
+          component: 'backend_connection',
+          outcome: 'started',
+          reason: 'failover_candidate_search',
+          deviceId,
+          metadata: { failedGatewayNodeId }
+        });
 
+        // Attempt to select an alternative active gateway node first to avoid thrashing
+        selectedGateway = await prisma.gatewayNode.findFirst({
+          where: {
+            status: 'ACTIVE',
+            id: { not: failedGatewayNodeId }
+          },
+          orderBy: { lastHeartbeatAt: 'desc' }
+        });
+      }
+
+      // If no alternative active gateway found, select any active gateway node
+      if (!selectedGateway) {
+        selectedGateway = await prisma.gatewayNode.findFirst({
+          where: { status: 'ACTIVE' },
+          orderBy: { lastHeartbeatAt: 'desc' }
+        });
+      }
+    }
+
+    const resolvedGatewayId = selectedGateway?.id ?? null;
+
+    if (failedGatewayNodeId && selectedGateway) {
+      ConnectionObservability.emit({
+        event: 'gateway_failover_succeeded',
+        component: 'backend_connection',
+        outcome: 'success',
+        deviceId,
+        gatewayNodeId: selectedGateway.id,
+        metadata: { failedGatewayNodeId, newGatewayNodeId: selectedGateway.id }
+      });
+    }
+
+    // Atomic connection registration & stale connection reconciliation
+    const now = new Date();
     const token = `conn-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
 
-    if (connection) {
-      connection = await prisma.deviceConnection.update({
-        where: { id: connection.id },
-        data: {
-          gatewayNodeId: resolvedGatewayId,
-          connectionToken: token,
-          remoteEndpoint: remoteEndpointStr,
-          status: 'CONNECTING',
-          lastHeartbeatAt: new Date(),
-          disconnectedAt: null
-        }
+    const connection = await prisma.$transaction(async (tx) => {
+      // Find existing connection records for this device
+      const existingConns = await tx.deviceConnection.findMany({
+        where: { deviceId },
+        orderBy: { createdAt: 'desc' }
       });
-    } else {
-      connection = await prisma.deviceConnection.create({
-        data: {
-          deviceId,
-          gatewayNodeId: resolvedGatewayId,
-          connectionToken: token,
-          remoteEndpoint: remoteEndpointStr,
-          status: 'CONNECTING',
-          lastHeartbeatAt: new Date()
-        }
-      });
-    }
 
-    await prisma.auditEvent.create({
-      data: {
-        userId: user.id,
-        deviceId,
-        eventType: 'REMOTE_CONNECTION_CREATED',
-        metadata: { connectionId: connection.id, remoteEndpoint: remoteEndpointStr }
+      let targetConn = existingConns.length > 0 ? existingConns[0] : null;
+
+      // If older/duplicate connection records exist, mark them as DISCONNECTED
+      if (existingConns.length > 1) {
+        const staleIds = existingConns.slice(1).map(c => c.id);
+        await tx.deviceConnection.updateMany({
+          where: { id: { in: staleIds } },
+          data: {
+            status: 'DISCONNECTED',
+            disconnectedAt: now
+          }
+        });
       }
+
+      if (targetConn) {
+        targetConn = await tx.deviceConnection.update({
+          where: { id: targetConn.id },
+          data: {
+            gatewayNodeId: resolvedGatewayId,
+            connectionToken: token,
+            remoteEndpoint: remoteEndpointStr,
+            status: 'CONNECTING',
+            lastHeartbeatAt: now,
+            disconnectedAt: null
+          }
+        });
+      } else {
+        targetConn = await tx.deviceConnection.create({
+          data: {
+            deviceId,
+            gatewayNodeId: resolvedGatewayId,
+            connectionToken: token,
+            remoteEndpoint: remoteEndpointStr,
+            status: 'CONNECTING',
+            lastHeartbeatAt: now
+          }
+        });
+      }
+
+      await tx.auditEvent.create({
+        data: {
+          userId: user.id,
+          deviceId,
+          eventType: 'REMOTE_CONNECTION_CREATED',
+          metadata: { connectionId: targetConn.id, remoteEndpoint: remoteEndpointStr, gatewayNodeId: resolvedGatewayId }
+        }
+      });
+
+      return targetConn;
     });
 
     let assignedHostname = '';
@@ -140,6 +231,22 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    const gatewayWsUrl = selectedGateway?.hostname
+      ? (selectedGateway.hostname.startsWith('ws://') || selectedGateway.hostname.startsWith('wss://')
+          ? selectedGateway.hostname
+          : `wss://${selectedGateway.hostname}/tunnel`)
+      : undefined;
+
+    ConnectionObservability.emit({
+      event: 'registration_succeeded',
+      component: 'backend_connection',
+      outcome: 'success',
+      deviceId: connection.deviceId,
+      connectionId: connection.id,
+      gatewayNodeId: connection.gatewayNodeId ?? undefined,
+      newState: 'CONNECTING'
+    });
+
     return reply.status(200).send(createSuccessResponse({
       connection: {
         id: connection.id,
@@ -149,6 +256,13 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
         remoteEndpoint: connection.remoteEndpoint,
         hostname: assignedHostname,
         publicUrl: remoteEndpointStr,
+        gatewayWsUrl,
+        gatewayNode: selectedGateway ? {
+          id: selectedGateway.id,
+          hostname: selectedGateway.hostname,
+          region: selectedGateway.region,
+          status: selectedGateway.status
+        } : null,
         status: connection.status,
         createdAt: connection.createdAt.toISOString()
       }
@@ -182,23 +296,21 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const body = updateHeartbeatSchema.safeParse(request.body);
-    const newStatus = body.success && body.data.status ? body.data.status : connection.status;
+    const newStatus = body.success && body.data.status ? (body.data.status as ConnectionStatus) : connection.status;
     const now = new Date();
 
-    const updated = await prisma.deviceConnection.update({
-      where: { id: connectionId },
-      data: {
-        status: newStatus,
-        lastHeartbeatAt: now,
-        connectedAt: newStatus === 'CONNECTED' ? (connection.connectedAt ?? now) : connection.connectedAt,
-        disconnectedAt: newStatus === 'DISCONNECTED' ? now : connection.disconnectedAt
-      }
+    const transitionResult = await ConnectionStateMachine.transition({
+      connectionId,
+      nextStatus: newStatus,
+      eventSource: 'HEARTBEAT_UPDATE',
+      timestamp: now
     });
 
     return reply.status(200).send(createSuccessResponse({
-      connectionId: updated.id,
-      status: updated.status,
-      lastHeartbeatAt: now.toISOString()
+      connectionId,
+      status: transitionResult.currentStatus,
+      lastHeartbeatAt: now.toISOString(),
+      applied: transitionResult.applied
     }));
   });
 
@@ -229,12 +341,11 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const now = new Date();
-    const updated = await prisma.deviceConnection.update({
-      where: { id: connectionId },
-      data: {
-        status: 'DISCONNECTED',
-        disconnectedAt: now
-      }
+    const transitionResult = await ConnectionStateMachine.transition({
+      connectionId,
+      nextStatus: ConnectionStatus.DISCONNECTED,
+      eventSource: 'DISCONNECT_EXPLICIT',
+      timestamp: now
     });
 
     await prisma.auditEvent.create({
@@ -247,8 +358,8 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return reply.status(200).send(createSuccessResponse({
-      connectionId: updated.id,
-      status: updated.status,
+      connectionId,
+      status: transitionResult.currentStatus,
       disconnectedAt: now.toISOString()
     }));
   });

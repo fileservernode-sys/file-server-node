@@ -7,6 +7,8 @@ import { GatewayConfig, loadGatewayConfig } from './gateway_config.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { gatewayEventProducer } from '../notifications/producers/gateway_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
+import { StateReconciliationService } from '../observability/state_reconciliation.js';
+import { ConnectionObservability } from '../observability/connection_observability.js';
 
 export interface HandshakeMessage {
   type: string;
@@ -14,6 +16,7 @@ export interface HandshakeMessage {
   connectionToken?: string;
   deviceId?: string;
   connectionId?: string;
+  sessionId?: string;
   userId?: string;
   authorizedUserId?: string;
   remoteEndpoint?: string;
@@ -39,18 +42,26 @@ export interface HandshakeMessage {
 
 export interface ActiveGatewayConnection {
   connectionId: string;
+  sessionId: string;
+  sessionEpoch: number;
   deviceId: string;
   userId?: string;
   hostname?: string;
+  gatewayNodeId?: string;
   socket: WebSocket;
   connectedAt: Date;
   lastHeartbeatAt: Date;
   remoteIp?: string;
+  isAuthoritative: boolean;
+  isEvicted: boolean;
+  isClosed: boolean;
 }
 
 export interface PendingClientRequest {
   requestId: string;
   connectionId: string;
+  sessionId?: string;
+  sessionEpoch?: number;
   operation?: string;
   clientSocket?: WebSocket;
   httpResolver?: (response: any) => void;
@@ -62,6 +73,8 @@ export interface ActiveFileTransfer {
   transferId: string;
   requestId: string;
   connectionId: string;
+  sessionId?: string;
+  sessionEpoch?: number;
   clientSocket: WebSocket;
   hostSocket: WebSocket;
   bytesTransferred: number;
@@ -83,7 +96,9 @@ export interface TokenValidator {
   markDisconnected(connectionId: string, disconnectedAt: Date): Promise<void>;
 }
 
-/** Production implementation — validates against the Control Plane DB via Prisma */
+import { ConnectionStateMachine } from '../services/connection_state_machine.js';
+import { ConnectionStatus } from '@prisma/client';
+
 export class PrismaTokenValidator implements TokenValidator {
   async findConnection(deviceId: string, connectionToken: string) {
     try {
@@ -105,105 +120,25 @@ export class PrismaTokenValidator implements TokenValidator {
 
   async markConnected(connectionId: string, now: Date) {
     try {
-      const conn = await prisma.deviceConnection.update({
-        where: { id: connectionId },
-        data: { status: 'CONNECTED', connectedAt: now, lastHeartbeatAt: now },
-        include: { device: true }
+      await ConnectionStateMachine.transition({
+        connectionId,
+        nextStatus: ConnectionStatus.CONNECTED,
+        eventSource: 'AUTH_SUCCESS',
+        timestamp: now
       });
-
-      if (conn?.deviceId) {
-        await prisma.device.update({
-          where: { id: conn.deviceId },
-          data: { status: 'ONLINE', lastSeenAt: now }
-        });
-
-        await prisma.serverInstance.updateMany({
-          where: { deviceId: conn.deviceId },
-          data: { status: 'RUNNING', startedAt: now, lastHeartbeatAt: now }
-        });
-
-        const endpoints = await prisma.serverEndpoint.findMany({
-          where: {
-            serverInstance: { deviceId: conn.deviceId }
-          }
-        });
-
-        for (const ep of endpoints) {
-          await prisma.serverEndpoint.update({
-            where: { id: ep.id },
-            data: { status: 'ACTIVE' }
-          });
-        }
-
-        if (conn.device?.userId) {
-          await prisma.auditEvent.create({
-            data: {
-              userId: conn.device.userId,
-              deviceId: conn.deviceId,
-              eventType: 'REMOTE_CONNECTION_CONNECTED',
-              metadata: { connectionId, remoteEndpoint: conn.remoteEndpoint }
-            }
-          });
-
-          // Non-blocking notification event emissions
-          deviceEventProducer.emitDeviceOnline(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
-          gatewayEventProducer.emitGatewayConnected(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
-          serverEventProducer.emitServerRecovered(conn.device.userId, conn.deviceId, `srv_${conn.deviceId}`, conn.device.deviceName, conn.device.deviceName).catch(() => {});
-        }
-      }
     } catch {
-      // Ignore DB errors
+      // Ignore DB errors during state transition
     }
   }
 
   async markDisconnected(connectionId: string, disconnectedAt: Date) {
     try {
-      const conn = await prisma.deviceConnection.update({
-        where: { id: connectionId },
-        data: { status: 'DISCONNECTED', disconnectedAt },
-        include: { device: true }
+      await ConnectionStateMachine.transition({
+        connectionId,
+        nextStatus: ConnectionStatus.DISCONNECTED,
+        eventSource: 'DISCONNECT_TRANSPORT',
+        timestamp: disconnectedAt
       });
-
-      if (conn?.deviceId) {
-        await prisma.device.update({
-          where: { id: conn.deviceId },
-          data: { status: 'OFFLINE' }
-        });
-
-        await prisma.serverInstance.updateMany({
-          where: { deviceId: conn.deviceId },
-          data: { status: 'STOPPED' }
-        });
-
-        const endpoints = await prisma.serverEndpoint.findMany({
-          where: {
-            serverInstance: { deviceId: conn.deviceId }
-          }
-        });
-
-        for (const ep of endpoints) {
-          await prisma.serverEndpoint.update({
-            where: { id: ep.id },
-            data: { status: 'INACTIVE' }
-          });
-        }
-
-        if (conn.device?.userId) {
-          await prisma.auditEvent.create({
-            data: {
-              userId: conn.device.userId,
-              deviceId: conn.deviceId,
-              eventType: 'REMOTE_CONNECTION_DISCONNECTED',
-              metadata: { connectionId }
-            }
-          });
-
-          // Non-blocking notification event emissions
-          deviceEventProducer.emitDeviceOffline(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
-          gatewayEventProducer.emitGatewayDisconnected(conn.device.userId, conn.deviceId, conn.device.deviceName).catch(() => {});
-          serverEventProducer.emitServerUnavailable(conn.device.userId, conn.deviceId, `srv_${conn.deviceId}`, conn.device.deviceName, conn.device.deviceName).catch(() => {});
-        }
-      }
     } catch {
       // Ignore DB errors during socket cleanup
     }
@@ -213,6 +148,13 @@ export class PrismaTokenValidator implements TokenValidator {
 /**
  * Production Gateway Service — Transport & Proxy Layer for RemoteNode Personal File Servers
  * (Strictly routes messages without storing user files or owning filesystem data)
+ *
+ * Batch 11A.13 Hardened In-Memory Runtime Maps & Registries:
+ * - Deterministic, identity-aware ownership for activeConnections, deviceToConnectionMap, hostnameToConnectionMap.
+ * - Monotonic session epoch dominance preventing stale socket takeover or accidental cleanup of newer sessions.
+ * - Atomic session handover with explicit eviction of superseded sessions.
+ * - Strict isolation of pending requests and active file transfers bound to owning session identity.
+ * - Idempotent, re-entrant cleanup routines with zero cross-tenant contamination.
  */
 export class GatewayService {
   private httpServer: http.Server | null = null;
@@ -224,6 +166,7 @@ export class GatewayService {
   private activeTransfers: Map<string, ActiveFileTransfer> = new Map(); // transferId -> ActiveFileTransfer
   private rateLimitTracker: Map<string, { count: number; resetAt: number }> = new Map(); // ip -> { count, resetAt }
   private idempotencyCache: Map<string, { response: any; expiresAt: number }> = new Map(); // requestId -> { response, expiresAt }
+  private deviceEpochMap: Map<string, number> = new Map(); // deviceId -> monotonic epoch counter
   
   // Observability Counters
   private failedAuthCount = 0;
@@ -232,12 +175,17 @@ export class GatewayService {
   private timedOutRequests = 0;
   private completedTransfersCount = 0;
   private failedTransfersCount = 0;
+  private sessionReplacedCount = 0;
+  private staleClosesIgnoredCount = 0;
   
   private isListening = false;
   private startTime = Date.now();
   private config: GatewayConfig;
   private tokenValidator: TokenValidator;
   private heartbeatReaperTimer: NodeJS.Timeout | null = null;
+  private reconciliationTimer: NodeJS.Timeout | null = null;
+  private heartbeatBatchTimer: NodeJS.Timeout | null = null;
+  private memoryPruneTimer: NodeJS.Timeout | null = null;
 
   constructor(configOverrides: Partial<GatewayConfig> = {}, tokenValidator?: TokenValidator) {
     this.config = loadGatewayConfig(configOverrides);
@@ -318,22 +266,126 @@ export class GatewayService {
 
   /**
    * Disconnects active WebSocket connections and unbinds proxy hostname routes for a deleted device.
+   * Identity-aware: ensures old cleanup never removes a replacement connection.
    */
   public evictDeviceSession(deviceId: string, reason: string = 'Server node deleted by owner'): void {
     const connId = this.deviceToConnectionMap.get(deviceId);
     if (connId && this.activeConnections.has(connId)) {
       const conn = this.activeConnections.get(connId)!;
-      try {
-        conn.socket.send(JSON.stringify({ type: 'DISCONNECT', reason }));
-        conn.socket.close();
-      } catch {}
+      this.evictStaleSession(conn, reason, false);
+      
+      // Identity-aware hostname unbinding
       if (conn.hostname) {
-        this.hostnameToConnectionMap.delete(conn.hostname.toLowerCase());
+        const lowerHost = conn.hostname.toLowerCase();
+        if (this.hostnameToConnectionMap.get(lowerHost) === connId) {
+          this.hostnameToConnectionMap.delete(lowerHost);
+        }
       }
-      this.activeConnections.delete(connId);
+      
+      // Identity-aware activeConnections unbinding
+      if (this.activeConnections.get(connId)?.sessionId === conn.sessionId) {
+        this.activeConnections.delete(connId);
+      }
     }
-    this.deviceToConnectionMap.delete(deviceId);
-    this.log('info', 'Evicted gateway session and unbound routing for deleted device', { deviceId });
+    
+    // Identity-aware deviceToConnectionMap unbinding
+    if (this.deviceToConnectionMap.get(deviceId) === connId) {
+      this.deviceToConnectionMap.delete(deviceId);
+    }
+
+    this.log('info', 'Evicted gateway session and unbound routing for deleted device', {
+      event: 'SESSION_EVICTED',
+      deviceId,
+      reason
+    });
+  }
+
+  /**
+   * Fast stale socket eviction & session replacement handler.
+   * Ensures superseded session resources (pending requests, active transfers) are cleanly terminated
+   * without mutating or deleting mappings belonging to the authoritative replacement session.
+   */
+  private evictStaleSession(conn: ActiveGatewayConnection, reason: string, isSuperseded: boolean): void {
+    conn.isAuthoritative = false;
+    conn.isEvicted = true;
+    conn.isClosed = true;
+
+    if (isSuperseded) {
+      this.sessionReplacedCount++;
+    }
+
+    this.log('info', 'Evicting stale gateway connection session', {
+      event: isSuperseded ? 'SESSION_REPLACED' : 'SESSION_EVICTED',
+      connectionId: conn.connectionId,
+      sessionId: conn.sessionId,
+      sessionEpoch: conn.sessionEpoch,
+      deviceId: conn.deviceId,
+      reason
+    });
+
+    // 1. Notify and close old socket promptly
+    try {
+      if (conn.socket.readyState === WebSocket.OPEN || conn.socket.readyState === WebSocket.CONNECTING) {
+        conn.socket.send(JSON.stringify({ type: 'DISCONNECT', reason }));
+        conn.socket.close(1000, reason);
+      }
+    } catch {}
+
+    // 2. Terminate pending requests strictly targeting this evicted session
+    for (const [reqId, pending] of Array.from(this.pendingRequests.entries())) {
+      if (pending.sessionId === conn.sessionId || (pending.connectionId === conn.connectionId && !pending.sessionId)) {
+        clearTimeout(pending.timer);
+        this.timedOutRequests++;
+        if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
+          pending.clientSocket.send(
+            JSON.stringify({
+              type: 'FILE_RESPONSE',
+              requestId: reqId,
+              success: false,
+              error: {
+                code: 'SESSION_REPLACED',
+                message: 'Host connection session was replaced by a newer session.'
+              }
+            })
+          );
+        } else if (pending.httpResolver) {
+          pending.httpResolver({
+            type: 'FILE_RESPONSE',
+            requestId: reqId,
+            success: false,
+            error: {
+              code: 'SESSION_REPLACED',
+              message: 'Host connection session was replaced by a newer session.'
+            }
+          });
+        }
+        this.pendingRequests.delete(reqId);
+      }
+    }
+
+    // 3. Terminate active transfers strictly targeting this evicted session
+    for (const [transferId, transfer] of Array.from(this.activeTransfers.entries())) {
+      if (transfer.sessionId === conn.sessionId || (transfer.connectionId === conn.connectionId && !transfer.sessionId)) {
+        clearTimeout(transfer.timer);
+        this.failedTransfersCount++;
+        const cancelPayload = JSON.stringify({
+          type: 'FILE_STREAM_CANCEL',
+          transferId,
+          reason: 'Host connection session was replaced or evicted'
+        });
+        try {
+          if (transfer.clientSocket && transfer.clientSocket.readyState === WebSocket.OPEN) {
+            transfer.clientSocket.send(cancelPayload);
+          }
+        } catch {}
+        this.activeTransfers.delete(transferId);
+      }
+    }
+
+    // 4. Identity-aware activeConnections deletion: Only delete if map still points to THIS session
+    if (this.activeConnections.get(conn.connectionId)?.sessionId === conn.sessionId) {
+      this.activeConnections.delete(conn.connectionId);
+    }
   }
 
   public async start(): Promise<void> {
@@ -380,7 +432,8 @@ export class GatewayService {
         (connectionIdHeader && this.activeConnections.has(connectionIdHeader) ? connectionIdHeader : null);
 
       if (pathname.startsWith('/api/')) {
-        if (!resolvedConnId || !this.activeConnections.has(resolvedConnId)) {
+        const targetConn = resolvedConnId ? this.activeConnections.get(resolvedConnId) : null;
+        if (!targetConn || !targetConn.isAuthoritative || targetConn.isEvicted || targetConn.isClosed || targetConn.socket.readyState !== WebSocket.OPEN) {
           const isUnknown = !this.hostnameToConnectionMap.has(targetHostname);
           res.writeHead(isUnknown ? 404 : 503, { 'Content-Type': 'application/json' });
           res.end(
@@ -397,8 +450,9 @@ export class GatewayService {
           return;
         }
 
-        const targetConn = this.activeConnections.get(resolvedConnId)!;
         const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+        const targetSessionId = targetConn.sessionId;
+        const targetEpoch = targetConn.sessionEpoch;
 
         // Read body if POST/PUT/DELETE
         let bodyPayload: any = {};
@@ -429,7 +483,8 @@ export class GatewayService {
         const fileRequestMsg: HandshakeMessage = {
           type: 'FILE_REQUEST',
           requestId,
-          connectionId: resolvedConnId,
+          connectionId: resolvedConnId!,
+          sessionId: targetSessionId,
           operation,
           path: parsedUrl.searchParams.get('path') || bodyPayload.path || '/',
           name: parsedUrl.searchParams.get('name') || bodyPayload.name,
@@ -453,7 +508,9 @@ export class GatewayService {
 
           this.pendingRequests.set(requestId, {
             requestId,
-            connectionId: resolvedConnId,
+            connectionId: resolvedConnId!,
+            sessionId: targetSessionId,
+            sessionEpoch: targetEpoch,
             operation,
             httpResolver: (resp) => {
               clearTimeout(timer);
@@ -522,37 +579,103 @@ export class GatewayService {
     });
 
     return new Promise((resolve) => {
-      this.httpServer?.listen(this.config.GATEWAY_PORT, this.config.GATEWAY_HOST, () => {
+      this.httpServer?.listen(this.config.GATEWAY_PORT, this.config.GATEWAY_HOST, async () => {
         this.isListening = true;
         this.startTime = Date.now();
         this.log('info', `Production Gateway listening on ${this.config.GATEWAY_HOST}:${this.config.GATEWAY_PORT}`, {
           wsUrl: this.config.GATEWAY_WS_URL,
           maxConnections: this.config.GATEWAY_MAX_CONNECTIONS,
-          rateLimitRpm: this.config.GATEWAY_RATE_LIMIT_RPM
+          rateLimitRpm: this.config.GATEWAY_RATE_LIMIT_RPM,
+          gatewayNodeId: this.config.GATEWAY_NODE_ID
         });
 
-        // Periodic Liveness Reaper: prune silent host sockets and send ping frames
+        // 1. Startup State Reconciliation: Prune local & dead-node orphans safely
+        if (this.config.NODE_ENV !== 'test') {
+          try {
+            await StateReconciliationService.reconcileOnStartup(
+              this.config.GATEWAY_NODE_ID,
+              this.config.GATEWAY_NODE_HOSTNAME,
+              this.config.GATEWAY_NODE_REGION,
+              this.config.GATEWAY_NODE_STALE_THRESHOLD_MS
+            );
+          } catch (err: any) {
+            this.log('error', 'Startup reconciliation encountered non-fatal error', { error: err.message });
+          }
+        }
+
+        // 2. Periodic Liveness Reaper: prune silent host sockets and send ping frames
         this.heartbeatReaperTimer = setInterval(async () => {
           const now = Date.now();
           const deadThresholdMs = 60000; // 60 seconds of complete silence
           for (const [connId, conn] of Array.from(this.activeConnections.entries())) {
             if (now - conn.lastHeartbeatAt.getTime() > deadThresholdMs) {
               this.log('warn', 'Reaping dead/silent host WebSocket connection', {
+                event: 'SESSION_HEARTBEAT_TIMEOUT',
                 connectionId: connId,
+                sessionId: conn.sessionId,
+                sessionEpoch: conn.sessionEpoch,
                 deviceId: conn.deviceId,
                 lastHeartbeatAgeMs: now - conn.lastHeartbeatAt.getTime()
               });
               try {
                 conn.socket.terminate();
               } catch {}
-              await this.cleanupConnection(connId);
-            } else if (conn.socket.readyState === WebSocket.OPEN) {
+              await this.cleanupConnection(connId, conn.sessionId);
+            } else if (conn.socket.readyState === WebSocket.OPEN && conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
               try {
                 conn.socket.ping();
               } catch {}
             }
           }
         }, this.config.GATEWAY_HEARTBEAT_INTERVAL_MS);
+
+        // 3. Periodic Control Plane Reconciliation Engine (Batch 11A.5)
+        if (this.config.NODE_ENV !== 'test') {
+          this.reconciliationTimer = setInterval(async () => {
+            const activeIds = new Set<string>(this.activeConnections.keys());
+            try {
+              await StateReconciliationService.runReconciliationCycle(
+                this.config.GATEWAY_NODE_ID,
+                activeIds,
+                this.config.GATEWAY_NODE_HOSTNAME,
+                this.config.GATEWAY_NODE_STALE_THRESHOLD_MS,
+                this.config.GATEWAY_CONNECTION_STALE_THRESHOLD_MS
+              );
+            } catch (err: any) {
+              this.log('warn', 'Periodic reconciliation error', { error: err.message });
+            }
+          }, this.config.GATEWAY_RECONCILIATION_INTERVAL_MS);
+        }
+
+        // 4. Batched Heartbeat Persistence: Flush active connection heartbeats in batches
+        if (this.config.NODE_ENV !== 'test') {
+          this.heartbeatBatchTimer = setInterval(async () => {
+            const updates: Array<{ connectionId: string; lastHeartbeatAt: Date }> = [];
+            for (const [connId, conn] of this.activeConnections.entries()) {
+              if (conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
+                updates.push({ connectionId: connId, lastHeartbeatAt: conn.lastHeartbeatAt });
+              }
+            }
+            if (updates.length > 0) {
+              await StateReconciliationService.flushBatchedConnectionHeartbeats(updates);
+            }
+          }, this.config.GATEWAY_HEARTBEAT_BATCH_FLUSH_INTERVAL_MS);
+        }
+
+        // 5. Periodic Memory/Cache Pruner: Cleans expired rate limit and idempotency entries
+        this.memoryPruneTimer = setInterval(() => {
+          const now = Date.now();
+          for (const [ip, entry] of this.rateLimitTracker.entries()) {
+            if (now > entry.resetAt) {
+              this.rateLimitTracker.delete(ip);
+            }
+          }
+          for (const [reqId, entry] of this.idempotencyCache.entries()) {
+            if (now > entry.expiresAt) {
+              this.idempotencyCache.delete(reqId);
+            }
+          }
+        }, 120000);
 
         resolve();
       });
@@ -567,6 +690,21 @@ export class GatewayService {
     if (this.heartbeatReaperTimer) {
       clearInterval(this.heartbeatReaperTimer);
       this.heartbeatReaperTimer = null;
+    }
+
+    if (this.reconciliationTimer) {
+      clearInterval(this.reconciliationTimer);
+      this.reconciliationTimer = null;
+    }
+
+    if (this.heartbeatBatchTimer) {
+      clearInterval(this.heartbeatBatchTimer);
+      this.heartbeatBatchTimer = null;
+    }
+
+    if (this.memoryPruneTimer) {
+      clearInterval(this.memoryPruneTimer);
+      this.memoryPruneTimer = null;
     }
 
     // Cancel all active transfers
@@ -586,10 +724,14 @@ export class GatewayService {
     }
     this.pendingRequests.clear();
     this.idempotencyCache.clear();
+    this.rateLimitTracker.clear();
 
     // Disconnect active connections
     for (const [, conn] of this.activeConnections.entries()) {
       try {
+        conn.isClosed = true;
+        conn.isAuthoritative = false;
+        conn.isEvicted = true;
         conn.socket.send(JSON.stringify({ type: 'DISCONNECT', reason: 'Gateway shutting down' }));
         conn.socket.close();
       } catch {}
@@ -612,12 +754,29 @@ export class GatewayService {
   }
 
   private handleSocketConnection(socket: WebSocket, remoteIp: string): void {
+    ConnectionObservability.emit({
+      event: 'transport_connected',
+      component: 'gateway',
+      outcome: 'success',
+      gatewayNodeId: this.config.GATEWAY_NODE_ID
+    });
+
     // 1. Capacity Limit Guard
     if (this.activeConnections.size >= this.config.GATEWAY_MAX_CONNECTIONS) {
       this.log('warn', 'Connection rejected: gateway capacity reached', {
         activeConnections: this.activeConnections.size,
         max: this.config.GATEWAY_MAX_CONNECTIONS
       });
+
+      ConnectionObservability.emit({
+        event: 'connection_failed',
+        component: 'gateway',
+        outcome: 'rejected',
+        errorCategory: 'gateway_rejected',
+        reason: 'capacity_reached',
+        gatewayNodeId: this.config.GATEWAY_NODE_ID
+      });
+
       socket.send(
         JSON.stringify({
           type: 'ERROR',
@@ -630,6 +789,8 @@ export class GatewayService {
     }
 
     let authenticatedConnectionId: string | null = null;
+    let authenticatedSessionId: string | null = null;
+    let authenticatedEpoch: number = 0;
     let authFailureCount = 0;
 
     // 2. Authentication Timeout Guard
@@ -637,6 +798,15 @@ export class GatewayService {
       if (!authenticatedConnectionId && socket.readyState === WebSocket.OPEN) {
         this.failedAuthCount++;
         this.log('warn', 'Socket authentication timed out');
+
+        ConnectionObservability.emit({
+          event: 'auth_failed',
+          component: 'gateway',
+          outcome: 'timeout',
+          errorCategory: 'auth_timeout',
+          gatewayNodeId: this.config.GATEWAY_NODE_ID
+        });
+
         socket.send(
           JSON.stringify({
             type: 'AUTH_FAILURE',
@@ -681,13 +851,23 @@ export class GatewayService {
         const msg: HandshakeMessage = JSON.parse(data.toString());
 
         // =====================================================================
-        // AUTHENTICATION & DUPLICATE SESSION EVICTION
+        // AUTHENTICATION & CLEAN SESSION HANDOVER
         // =====================================================================
         if (msg.type === 'AUTH') {
           const { connectionToken, deviceId } = msg;
           if (!connectionToken || !deviceId) {
             authFailureCount++;
             this.failedAuthCount++;
+
+            ConnectionObservability.emit({
+              event: 'auth_failed',
+              component: 'gateway',
+              outcome: 'failed',
+              errorCategory: 'missing_credentials',
+              deviceId: deviceId || undefined,
+              gatewayNodeId: this.config.GATEWAY_NODE_ID
+            });
+
             socket.send(
               JSON.stringify({
                 type: 'AUTH_FAILURE',
@@ -707,6 +887,16 @@ export class GatewayService {
             authFailureCount++;
             this.failedAuthCount++;
             this.log('warn', 'Authentication failed: invalid token', { deviceId });
+
+            ConnectionObservability.emit({
+              event: 'auth_failed',
+              component: 'gateway',
+              outcome: 'failed',
+              errorCategory: 'invalid_connection_token',
+              deviceId,
+              gatewayNodeId: this.config.GATEWAY_NODE_ID
+            });
+
             socket.send(
               JSON.stringify({
                 type: 'AUTH_FAILURE',
@@ -722,36 +912,29 @@ export class GatewayService {
           // Clear auth timeout on success
           clearTimeout(authTimeoutTimer);
 
-          // Duplicate Session Eviction: if same connectionId or deviceId is already active, close old socket
-          const existingConnId = connRecord.id;
-          if (this.activeConnections.has(existingConnId)) {
-            this.reconnectCount++;
-            const oldConn = this.activeConnections.get(existingConnId)!;
-            try {
-              oldConn.socket.send(
-                JSON.stringify({ type: 'DISCONNECT', reason: 'Replaced by newer connection session' })
-              );
-              oldConn.socket.close();
-            } catch {}
-            this.activeConnections.delete(existingConnId);
-          }
+          // Increment device monotonic session epoch
+          const nextEpoch = (this.deviceEpochMap.get(deviceId) || 0) + 1;
+          this.deviceEpochMap.set(deviceId, nextEpoch);
+          const newSessionId = `${connRecord.id}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
 
-          if (this.deviceToConnectionMap.has(deviceId)) {
+          // 1. Clean Handover / Fast Stale Socket Eviction
+          // If the same connectionId or deviceId has an active session, evict it immediately
+          const existingConnById = this.activeConnections.get(connRecord.id);
+          const existingConnIdByDev = this.deviceToConnectionMap.get(deviceId);
+
+          if (existingConnById) {
             this.reconnectCount++;
-            const oldConnId = this.deviceToConnectionMap.get(deviceId)!;
-            if (this.activeConnections.has(oldConnId)) {
-              const oldConn = this.activeConnections.get(oldConnId)!;
-              try {
-                oldConn.socket.send(
-                  JSON.stringify({ type: 'DISCONNECT', reason: 'Device reconnected with new session' })
-                );
-                oldConn.socket.close();
-              } catch {}
-              this.activeConnections.delete(oldConnId);
-            }
+            this.evictStaleSession(existingConnById, 'Replaced by newer connection session (id match)', true);
+          } else if (existingConnIdByDev && this.activeConnections.has(existingConnIdByDev)) {
+            this.reconnectCount++;
+            const oldConn = this.activeConnections.get(existingConnIdByDev)!;
+            this.evictStaleSession(oldConn, 'Replaced by newer connection session (device match)', true);
           }
 
           authenticatedConnectionId = connRecord.id;
+          authenticatedSessionId = newSessionId;
+          authenticatedEpoch = nextEpoch;
+
           const now = new Date();
           await this.tokenValidator.markConnected(connRecord.id, now);
 
@@ -760,49 +943,90 @@ export class GatewayService {
             `https://node-${deviceId.substring(0, 8)}.remotenode.net`;
           const hostname = remoteEndpoint.replace(/^https?:\/\//, '').replace(/:\d+$/, '').toLowerCase();
 
-          this.activeConnections.set(connRecord.id, {
+          const activeConn: ActiveGatewayConnection = {
             connectionId: connRecord.id,
+            sessionId: newSessionId,
+            sessionEpoch: nextEpoch,
             deviceId,
             userId: connRecord.userId,
             hostname,
+            gatewayNodeId: this.config.GATEWAY_NODE_ID,
             socket,
             connectedAt: now,
             lastHeartbeatAt: now,
-            remoteIp
-          });
+            remoteIp,
+            isAuthoritative: true,
+            isEvicted: false,
+            isClosed: false
+          };
+
+          this.activeConnections.set(connRecord.id, activeConn);
           this.deviceToConnectionMap.set(deviceId, connRecord.id);
           this.hostnameToConnectionMap.set(hostname, connRecord.id);
 
-          this.log('info', 'Android storage node authenticated successfully', {
+          this.log('info', 'Android storage node authenticated successfully and registered as authoritative session', {
+            event: 'SESSION_AUTHENTICATED',
             connectionId: connRecord.id,
+            sessionId: newSessionId,
+            sessionEpoch: nextEpoch,
             deviceId,
             userId: connRecord.userId,
             hostname
+          });
+
+          ConnectionObservability.emit({
+            event: 'session_authenticated',
+            component: 'gateway',
+            outcome: 'success',
+            connectionId: connRecord.id,
+            sessionId: newSessionId,
+            sessionEpoch: nextEpoch,
+            deviceId,
+            gatewayNodeId: this.config.GATEWAY_NODE_ID
           });
 
           socket.send(
             JSON.stringify({
               type: 'AUTH_SUCCESS',
               connectionId: connRecord.id,
+              sessionId: newSessionId,
               remoteEndpoint
             })
           );
           return;
         }
 
+        // Check if socket was authenticated and is still authoritative
+        if (authenticatedConnectionId && authenticatedSessionId) {
+          const currentConn = this.activeConnections.get(authenticatedConnectionId);
+          if (!currentConn || currentConn.sessionId !== authenticatedSessionId || currentConn.isEvicted || currentConn.isClosed) {
+            // Stale socket attempted to communicate — reject / ignore
+            this.log('warn', 'Rejected frame from evicted/stale socket session', {
+              type: msg.type,
+              connectionId: authenticatedConnectionId,
+              staleSessionId: authenticatedSessionId
+            });
+            return;
+          }
+        }
+
         if (msg.type === 'PING') {
-          if (authenticatedConnectionId && this.activeConnections.has(authenticatedConnectionId)) {
+          if (authenticatedConnectionId && authenticatedSessionId && this.activeConnections.has(authenticatedConnectionId)) {
             const conn = this.activeConnections.get(authenticatedConnectionId)!;
-            conn.lastHeartbeatAt = new Date();
+            if (conn.sessionId === authenticatedSessionId && conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
+              conn.lastHeartbeatAt = new Date();
+            }
           }
           socket.send(JSON.stringify({ type: 'PONG' }));
           return;
         }
 
         if (msg.type === 'PONG') {
-          if (authenticatedConnectionId && this.activeConnections.has(authenticatedConnectionId)) {
+          if (authenticatedConnectionId && authenticatedSessionId && this.activeConnections.has(authenticatedConnectionId)) {
             const conn = this.activeConnections.get(authenticatedConnectionId)!;
-            conn.lastHeartbeatAt = new Date();
+            if (conn.sessionId === authenticatedSessionId && conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
+              conn.lastHeartbeatAt = new Date();
+            }
           }
           return;
         }
@@ -825,7 +1049,7 @@ export class GatewayService {
           }
 
           const targetConn = this.activeConnections.get(connectionId);
-          if (!targetConn || targetConn.socket.readyState !== WebSocket.OPEN) {
+          if (!targetConn || !targetConn.isAuthoritative || targetConn.isEvicted || targetConn.isClosed || targetConn.socket.readyState !== WebSocket.OPEN) {
             socket.send(
               JSON.stringify({
                 type: 'FILE_RESPONSE',
@@ -879,6 +1103,8 @@ export class GatewayService {
           this.pendingRequests.set(requestId, {
             requestId,
             connectionId,
+            sessionId: targetConn.sessionId,
+            sessionEpoch: targetConn.sessionEpoch,
             operation,
             clientSocket: socket,
             createdAt: Date.now(),
@@ -894,6 +1120,17 @@ export class GatewayService {
           const { requestId } = msg;
           if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
+            
+            // Stale session validation: If response came from a socket that does not match pending sessionId
+            if (authenticatedSessionId && pending.sessionId && pending.sessionId !== authenticatedSessionId) {
+              this.log('warn', 'Ignoring FILE_RESPONSE from non-matching or stale session', {
+                requestId,
+                expectedSessionId: pending.sessionId,
+                actualSessionId: authenticatedSessionId
+              });
+              return;
+            }
+
             clearTimeout(pending.timer);
 
             if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
@@ -925,6 +1162,8 @@ export class GatewayService {
 
           const pending = this.pendingRequests.get(requestId);
           const targetConn = connectionId ? this.activeConnections.get(connectionId) : null;
+          const owningSessionId = authenticatedSessionId || targetConn?.sessionId;
+          const owningEpoch = authenticatedEpoch || targetConn?.sessionEpoch || 0;
 
           const transferTimer = setTimeout(() => {
             if (this.activeTransfers.has(transferId)) {
@@ -936,7 +1175,9 @@ export class GatewayService {
           this.activeTransfers.set(transferId, {
             transferId,
             requestId,
-            connectionId: connectionId || '',
+            connectionId: connectionId || targetConn?.connectionId || '',
+            sessionId: owningSessionId,
+            sessionEpoch: owningEpoch,
             clientSocket: pending && pending.clientSocket ? pending.clientSocket : socket,
             hostSocket: targetConn ? targetConn.socket : socket,
             bytesTransferred: 0,
@@ -955,6 +1196,17 @@ export class GatewayService {
           const { transferId } = msg;
           if (transferId && this.activeTransfers.has(transferId)) {
             const transfer = this.activeTransfers.get(transferId)!;
+            
+            // Verify session match strictly
+            if (authenticatedSessionId && transfer.sessionId && transfer.sessionId !== authenticatedSessionId) {
+              this.log('warn', 'Ignoring FILE_STREAM_CHUNK from stale/non-matching session', {
+                transferId,
+                expectedSessionId: transfer.sessionId,
+                actualSessionId: authenticatedSessionId
+              });
+              return;
+            }
+
             if (msg.dataBase64) {
               transfer.bytesTransferred += Buffer.byteLength(msg.dataBase64);
             }
@@ -969,6 +1221,16 @@ export class GatewayService {
           const { transferId, requestId } = msg;
           if (transferId && this.activeTransfers.has(transferId)) {
             const transfer = this.activeTransfers.get(transferId)!;
+            
+            if (authenticatedSessionId && transfer.sessionId && transfer.sessionId !== authenticatedSessionId) {
+              this.log('warn', 'Ignoring FILE_STREAM_END from stale/non-matching session', {
+                transferId,
+                expectedSessionId: transfer.sessionId,
+                actualSessionId: authenticatedSessionId
+              });
+              return;
+            }
+
             clearTimeout(transfer.timer);
             this.completedTransfersCount++;
             if (transfer.clientSocket.readyState === WebSocket.OPEN) {
@@ -988,6 +1250,16 @@ export class GatewayService {
           const { transferId, reason } = msg;
           if (transferId && this.activeTransfers.has(transferId)) {
             const transfer = this.activeTransfers.get(transferId)!;
+
+            if (authenticatedSessionId && transfer.sessionId && transfer.sessionId !== authenticatedSessionId) {
+              this.log('warn', 'Ignoring FILE_STREAM_CANCEL from stale/non-matching session', {
+                transferId,
+                expectedSessionId: transfer.sessionId,
+                actualSessionId: authenticatedSessionId
+              });
+              return;
+            }
+
             clearTimeout(transfer.timer);
             this.failedTransfersCount++;
 
@@ -1015,24 +1287,28 @@ export class GatewayService {
           const { requestId, transferId } = msg;
           if (transferId && this.activeTransfers.has(transferId)) {
             const transfer = this.activeTransfers.get(transferId)!;
-            clearTimeout(transfer.timer);
-            this.failedTransfersCount++;
-            this.activeTransfers.delete(transferId);
+            if (!authenticatedSessionId || !transfer.sessionId || transfer.sessionId === authenticatedSessionId) {
+              clearTimeout(transfer.timer);
+              this.failedTransfersCount++;
+              this.activeTransfers.delete(transferId);
+            }
           }
           if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
-            clearTimeout(pending.timer);
-            if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
-              pending.clientSocket.send(JSON.stringify(msg));
+            if (!authenticatedSessionId || !pending.sessionId || pending.sessionId === authenticatedSessionId) {
+              clearTimeout(pending.timer);
+              if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
+                pending.clientSocket.send(JSON.stringify(msg));
+              }
+              this.pendingRequests.delete(requestId);
             }
-            this.pendingRequests.delete(requestId);
           }
           return;
         }
 
         if (msg.type === 'DISCONNECT') {
-          if (authenticatedConnectionId) {
-            await this.cleanupConnection(authenticatedConnectionId);
+          if (authenticatedConnectionId && authenticatedSessionId) {
+            await this.handleSocketClose(authenticatedConnectionId, authenticatedSessionId, authenticatedEpoch);
           }
           socket.close();
           return;
@@ -1059,39 +1335,155 @@ export class GatewayService {
 
     socket.on('close', async () => {
       clearTimeout(authTimeoutTimer);
-      if (authenticatedConnectionId) {
-        await this.cleanupConnection(authenticatedConnectionId);
+      if (authenticatedConnectionId && authenticatedSessionId) {
+        await this.handleSocketClose(authenticatedConnectionId, authenticatedSessionId, authenticatedEpoch);
       }
     });
   }
 
-  private async cleanupConnection(connectionId: string): Promise<void> {
+  /**
+   * Close event handler with epoch & session verification.
+   * Prevents a stale/superseded socket from wiping a replacement session.
+   */
+  private async handleSocketClose(
+    connectionId: string,
+    sessionId: string,
+    sessionEpoch: number
+  ): Promise<void> {
+    const currentConn = this.activeConnections.get(connectionId);
+
+    // CRITICAL GUARD: Verify that this closing socket is STILL the authoritative session
+    if (!currentConn || currentConn.sessionId !== sessionId) {
+      this.staleClosesIgnoredCount++;
+      this.log('info', 'Ignoring close event from stale/superseded socket session', {
+        event: 'SESSION_CLOSE_IGNORED_STALE',
+        connectionId,
+        closedSessionId: sessionId,
+        closedEpoch: sessionEpoch,
+        currentSessionId: currentConn?.sessionId,
+        currentEpoch: currentConn?.sessionEpoch
+      });
+      return;
+    }
+
+    await this.cleanupConnection(connectionId, sessionId);
+  }
+
+  /**
+   * Cleans up runtime maps and synchronizes database status atomically.
+   * Enforces identity-aware deletion so that closing session A never deletes maps belonging to session B.
+   */
+  private async cleanupConnection(connectionId: string, sessionId?: string): Promise<void> {
     const conn = this.activeConnections.get(connectionId);
+
+    // If a specific sessionId was requested, verify that the active session matches
+    if (sessionId && conn && conn.sessionId !== sessionId) {
+      this.staleClosesIgnoredCount++;
+      this.log('info', 'Ignoring cleanupConnection for non-matching sessionId', {
+        connectionId,
+        targetSessionId: sessionId,
+        currentSessionId: conn.sessionId
+      });
+      return;
+    }
+
     if (conn) {
-      this.deviceToConnectionMap.delete(conn.deviceId);
+      // Identity-aware device map cleanup: Only delete from device map if it points to THIS connectionId AND this session
+      if (
+        this.deviceToConnectionMap.get(conn.deviceId) === connectionId &&
+        this.activeConnections.get(connectionId)?.sessionId === conn.sessionId
+      ) {
+        this.deviceToConnectionMap.delete(conn.deviceId);
+      }
+
+      // Identity-aware hostname map cleanup: Only delete from hostname map if it points to THIS connectionId AND this session
       if (conn.hostname) {
-        this.hostnameToConnectionMap.delete(conn.hostname);
+        const lowerHost = conn.hostname.toLowerCase();
+        if (
+          this.hostnameToConnectionMap.get(lowerHost) === connectionId &&
+          this.activeConnections.get(connectionId)?.sessionId === conn.sessionId
+        ) {
+          this.hostnameToConnectionMap.delete(lowerHost);
+        }
+      }
+
+      conn.isAuthoritative = false;
+      conn.isEvicted = true;
+      conn.isClosed = true;
+    }
+
+    // Identity-aware activeConnections cleanup: Only delete from activeConnections if it matches conn sessionId
+    if (conn && this.activeConnections.get(connectionId)?.sessionId === conn.sessionId) {
+      this.activeConnections.delete(connectionId);
+    } else if (!conn && connectionId) {
+      // If already missing from activeConnections, ensure clean state
+      this.activeConnections.delete(connectionId);
+    }
+
+    // Cancel pending requests associated with this specific connection/session
+    for (const [reqId, pending] of Array.from(this.pendingRequests.entries())) {
+      if (
+        (conn && pending.sessionId === conn.sessionId) ||
+        (!pending.sessionId && pending.connectionId === connectionId)
+      ) {
+        clearTimeout(pending.timer);
+        this.timedOutRequests++;
+        if (pending.clientSocket && pending.clientSocket.readyState === WebSocket.OPEN) {
+          pending.clientSocket.send(
+            JSON.stringify({
+              type: 'FILE_RESPONSE',
+              requestId: reqId,
+              success: false,
+              error: {
+                code: 'DEVICE_OFFLINE',
+                message: 'Android file server host disconnected.'
+              }
+            })
+          );
+        } else if (pending.httpResolver) {
+          pending.httpResolver({
+            type: 'FILE_RESPONSE',
+            requestId: reqId,
+            success: false,
+            error: {
+              code: 'DEVICE_OFFLINE',
+              message: 'Android file server host disconnected.'
+            }
+          });
+        }
+        this.pendingRequests.delete(reqId);
       }
     }
-    this.activeConnections.delete(connectionId);
 
-    // Cancel transfers associated with this connection
-    for (const [transferId, transfer] of this.activeTransfers.entries()) {
-      if (transfer.connectionId === connectionId) {
+    // Cancel active transfers associated with this specific connection/session
+    for (const [transferId, transfer] of Array.from(this.activeTransfers.entries())) {
+      if (
+        (conn && transfer.sessionId === conn.sessionId) ||
+        (!transfer.sessionId && transfer.connectionId === connectionId)
+      ) {
         clearTimeout(transfer.timer);
         this.failedTransfersCount++;
         try {
-          transfer.clientSocket.send(
-            JSON.stringify({
-              type: 'FILE_STREAM_CANCEL',
-              transferId,
-              reason: 'Host device disconnected during transfer'
-            })
-          );
+          if (transfer.clientSocket && transfer.clientSocket.readyState === WebSocket.OPEN) {
+            transfer.clientSocket.send(
+              JSON.stringify({
+                type: 'FILE_STREAM_CANCEL',
+                transferId,
+                reason: 'Host device disconnected during transfer'
+              })
+            );
+          }
         } catch {}
         this.activeTransfers.delete(transferId);
       }
     }
+
+    this.log('info', 'Cleaned up gateway connection session', {
+      event: 'SESSION_CLEANED',
+      connectionId,
+      sessionId: conn?.sessionId,
+      deviceId: conn?.deviceId
+    });
 
     await this.tokenValidator.markDisconnected(connectionId, new Date());
   }
@@ -1110,9 +1502,14 @@ export class GatewayService {
     activeTransfersCount: number;
     completedTransfersCount: number;
     failedTransfersCount: number;
+    sessionReplacedCount: number;
+    staleClosesIgnoredCount: number;
     port: number;
     uptimeSeconds: number;
     gatewayMode: string;
+    gatewayNodeId: string;
+    reconciliation?: any;
+    observability?: any;
   } {
     return {
       status: this.isListening ? 'ok' : 'stopped',
@@ -1128,9 +1525,14 @@ export class GatewayService {
       activeTransfersCount: this.activeTransfers.size,
       completedTransfersCount: this.completedTransfersCount,
       failedTransfersCount: this.failedTransfersCount,
+      sessionReplacedCount: this.sessionReplacedCount,
+      staleClosesIgnoredCount: this.staleClosesIgnoredCount,
       port: this.config.GATEWAY_PORT,
       uptimeSeconds: Math.floor((Date.now() - this.startTime) / 1000),
-      gatewayMode: this.config.NODE_ENV
+      gatewayMode: this.config.NODE_ENV,
+      gatewayNodeId: this.config.GATEWAY_NODE_ID,
+      reconciliation: StateReconciliationService.getReconciliationMetrics(),
+      observability: ConnectionObservability.getMetrics()
     };
   }
 
@@ -1198,14 +1600,13 @@ export class GatewayService {
       resolvedConnId = this.hostnameToConnectionMap.get(hostHeader) || null;
     } else if (connectionIdHeader && this.activeConnections.has(connectionIdHeader)) {
       resolvedConnId = connectionIdHeader;
-    } else if (this.activeConnections.size === 1) {
-      resolvedConnId = Array.from(this.activeConnections.keys())[0];
     }
 
     const targetHostname = endpointQuery || hostHeader;
+    const targetConn = resolvedConnId ? this.activeConnections.get(resolvedConnId) : null;
 
-    if (!resolvedConnId || !this.activeConnections.has(resolvedConnId)) {
-      const isUnknown = !this.hostnameToConnectionMap.has(targetHostname) && this.activeConnections.size === 0;
+    if (!targetConn || !targetConn.isAuthoritative || targetConn.isEvicted || targetConn.isClosed || targetConn.socket.readyState !== WebSocket.OPEN) {
+      const isUnknown = !this.hostnameToConnectionMap.has(targetHostname) && !this.deviceToConnectionMap.has(deviceIdQuery || '');
       return reply.status(isUnknown ? 404 : 503).send({
         success: false,
         error: {
@@ -1217,8 +1618,9 @@ export class GatewayService {
       });
     }
 
-    const targetConn = this.activeConnections.get(resolvedConnId)!;
     const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+    const targetSessionId = targetConn.sessionId;
+    const targetEpoch = targetConn.sessionEpoch;
     const bodyPayload = (request.body && typeof request.body === 'object') ? request.body : {};
 
     let operation = 'HEALTH';
@@ -1232,7 +1634,8 @@ export class GatewayService {
     const fileRequestMsg: HandshakeMessage = {
       type: 'FILE_REQUEST',
       requestId,
-      connectionId: resolvedConnId,
+      connectionId: resolvedConnId!,
+      sessionId: targetSessionId,
       operation,
       path: (request.query as any)?.path || bodyPayload.path || '/',
       name: (request.query as any)?.name || bodyPayload.name,
@@ -1257,6 +1660,8 @@ export class GatewayService {
       this.pendingRequests.set(requestId, {
         requestId,
         connectionId: resolvedConnId!,
+        sessionId: targetSessionId,
+        sessionEpoch: targetEpoch,
         operation,
         httpResolver: (resp) => {
           clearTimeout(timer);
@@ -1279,8 +1684,40 @@ export class GatewayService {
    * Used by the file-manager proxy routes to verify real connectivity before proxying.
    */
   public hasActiveConnectionForDevice(deviceId: string): boolean {
-    return this.deviceToConnectionMap.has(deviceId) &&
-      this.activeConnections.has(this.deviceToConnectionMap.get(deviceId)!);
+    const connId = this.deviceToConnectionMap.get(deviceId);
+    if (!connId) return false;
+    const conn = this.activeConnections.get(connId);
+    return !!(conn && conn.isAuthoritative && !conn.isEvicted && !conn.isClosed && conn.socket.readyState === WebSocket.OPEN);
+  }
+
+  /**
+   * Retrieves active authoritative session metadata for a given device.
+   * Used for evaluating customer status remote availability and liveness.
+   */
+  public getActiveSessionForDevice(deviceId: string): {
+    connectionId: string;
+    sessionId: string;
+    sessionEpoch: number;
+    isAuthoritative: boolean;
+    lastHeartbeatAt: Date;
+    connectedAt: Date;
+    remoteIp?: string;
+  } | null {
+    const connId = this.deviceToConnectionMap.get(deviceId);
+    if (!connId) return null;
+    const conn = this.activeConnections.get(connId);
+    if (!conn || !conn.isAuthoritative || conn.isEvicted || conn.isClosed || conn.socket.readyState !== WebSocket.OPEN) {
+      return null;
+    }
+    return {
+      connectionId: conn.connectionId,
+      sessionId: conn.sessionId,
+      sessionEpoch: conn.sessionEpoch,
+      isAuthoritative: conn.isAuthoritative,
+      lastHeartbeatAt: conn.lastHeartbeatAt,
+      connectedAt: conn.connectedAt,
+      remoteIp: conn.remoteIp
+    };
   }
 
   /**
@@ -1303,7 +1740,7 @@ export class GatewayService {
   ): Promise<any> {
     const connId = this.deviceToConnectionMap.get(deviceId);
     if (!connId || !this.activeConnections.has(connId)) {
-      console.warn(`[FILE_MANAGER] device offline deviceId=${deviceId}`);
+      this.log('warn', `[FILE_MANAGER] device offline deviceId=${deviceId}`);
       return {
         success: false,
         error: {
@@ -1314,14 +1751,28 @@ export class GatewayService {
     }
 
     const targetConn = this.activeConnections.get(connId)!;
-    const requestId = 'fm-' + Math.random().toString(36).substring(2, 12);
+    if (!targetConn.isAuthoritative || targetConn.isEvicted || targetConn.isClosed || targetConn.socket.readyState !== WebSocket.OPEN) {
+      this.log('warn', `[FILE_MANAGER] device session not authoritative or closed deviceId=${deviceId}`);
+      return {
+        success: false,
+        error: {
+          code: 'DEVICE_OFFLINE',
+          message: 'Android file server host connection is not ready or closing.'
+        }
+      };
+    }
 
-    console.log(`[FILE_MANAGER] request deviceId=${deviceId} connectionId=${connId} operation=${operation} requestId=${requestId}`);
+    const requestId = 'fm-' + Math.random().toString(36).substring(2, 12);
+    const targetSessionId = targetConn.sessionId;
+    const targetEpoch = targetConn.sessionEpoch;
+
+    this.log('info', `[FILE_MANAGER] request deviceId=${deviceId} connectionId=${connId} sessionId=${targetSessionId} operation=${operation} requestId=${requestId}`);
 
     const fileRequestMsg: any = {
       type: 'FILE_REQUEST',
       requestId,
       connectionId: connId,
+      sessionId: targetSessionId,
       operation,
       path: params.path || '/',
       name: params.name,
@@ -1339,7 +1790,7 @@ export class GatewayService {
         if (this.pendingRequests.has(requestId)) {
           this.timedOutRequests++;
           this.pendingRequests.delete(requestId);
-          console.error(`[FILE_MANAGER] timeout deviceId=${deviceId} requestId=${requestId} operation=${operation}`);
+          this.log('error', `[FILE_MANAGER] timeout deviceId=${deviceId} requestId=${requestId} operation=${operation}`);
           resolve({
             success: false,
             error: { code: 'REQUEST_TIMEOUT', message: 'Storage host request timed out.' }
@@ -1350,10 +1801,12 @@ export class GatewayService {
       this.pendingRequests.set(requestId, {
         requestId,
         connectionId: connId,
+        sessionId: targetSessionId,
+        sessionEpoch: targetEpoch,
         operation,
         httpResolver: (resp) => {
           clearTimeout(timer);
-          console.log(`[GATEWAY] Android response received requestId=${requestId} success=${resp?.success !== false}`);
+          this.log('info', `[GATEWAY] Android response received requestId=${requestId} success=${resp?.success !== false}`);
           resolve(resp);
         },
         createdAt: Date.now(),
@@ -1361,7 +1814,7 @@ export class GatewayService {
       });
     });
 
-    console.log(`[FILE_MANAGER] sending ${operation} request to Android requestId=${requestId}`);
+    this.log('info', `[FILE_MANAGER] sending ${operation} request to Android requestId=${requestId}`);
     targetConn.socket.send(JSON.stringify(fileRequestMsg));
     return responsePromise;
   }

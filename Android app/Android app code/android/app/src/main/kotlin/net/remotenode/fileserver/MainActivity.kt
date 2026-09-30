@@ -13,13 +13,19 @@ import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
 import java.util.Locale
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
+    private val NETWORK_EVENT_CHANNEL = "net.remotenode.fileserver/network_events"
+    private val TUNNEL_EVENT_CHANNEL = "net.remotenode.fileserver/tunnel_events"
     private val REQUEST_POST_NOTIFICATIONS = 101
     private var pendingNotificationPermissionResult: MethodChannel.Result? = null
+    private var networkEventSink: EventChannel.EventSink? = null
+    private var tunnelEventSink: EventChannel.EventSink? = null
+    private var tunnelListener: ((Map<String, Any?>) -> Unit)? = null
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -37,8 +43,108 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        NetworkWatcher.start(context)
+        NetworkWatcher.addListener { event ->
+            networkEventSink?.success(event)
+        }
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, NETWORK_EVENT_CHANNEL).setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    networkEventSink = events
+                    val current = NetworkWatcher.getCurrentNetworkInfo(context)
+                    events?.success(mapOf(
+                        "type" to "INITIAL_STATE",
+                        "networkId" to current["networkId"],
+                        "transport" to current["transport"],
+                        "hasInternet" to current["hasInternet"],
+                        "isValidated" to current["isValidated"]
+                    ))
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    networkEventSink = null
+                }
+            }
+        )
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, TUNNEL_EVENT_CHANNEL).setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    tunnelEventSink = events
+                    val listener: (Map<String, Any?>) -> Unit = { ev ->
+                        events?.success(ev)
+                    }
+                    tunnelListener = listener
+                    RemoteNodeTunnelManager.addListener(listener)
+                    events?.success(mapOf(
+                        "type" to "TUNNEL_STATE_CHANGED",
+                        "state" to RemoteNodeTunnelManager.currentState,
+                        "connectionId" to RemoteNodeTunnelManager.activeConnectionId,
+                        "remoteEndpoint" to RemoteNodeTunnelManager.activeRemoteEndpoint,
+                        "hostname" to RemoteNodeTunnelManager.activeHostname,
+                        "publicUrl" to RemoteNodeTunnelManager.activePublicUrl,
+                        "errorMessage" to RemoteNodeTunnelManager.lastErrorMessage
+                    ))
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    tunnelListener?.let { RemoteNodeTunnelManager.removeListener(it) }
+                    tunnelListener = null
+                    tunnelEventSink = null
+                }
+            }
+        )
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
+                "startTunnel" -> {
+                    val deviceId = call.argument<String>("deviceId")
+                    val sessionToken = call.argument<String>("sessionToken")
+                    val apiBaseUrl = call.argument<String>("apiBaseUrl")
+                    val gatewayWsUrl = call.argument<String>("gatewayWsUrl")
+
+                    if (!deviceId.isNullOrEmpty() && !sessionToken.isNullOrEmpty() && !apiBaseUrl.isNullOrEmpty() && !gatewayWsUrl.isNullOrEmpty()) {
+                        val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                            action = RemoteNodeServerService.ACTION_START_TUNNEL
+                            putExtra(RemoteNodeServerService.EXTRA_DEVICE_ID, deviceId)
+                            putExtra(RemoteNodeServerService.EXTRA_SESSION_TOKEN, sessionToken)
+                            putExtra(RemoteNodeServerService.EXTRA_API_BASE_URL, apiBaseUrl)
+                            putExtra(RemoteNodeServerService.EXTRA_GATEWAY_WS_URL, gatewayWsUrl)
+                        }
+                        try {
+                            ContextCompat.startForegroundService(context, intent)
+                        } catch (_: Exception) {
+                            RemoteNodeTunnelManager.startTunnel(context, deviceId, sessionToken, apiBaseUrl, gatewayWsUrl)
+                        }
+                        result.success(RemoteNodeTunnelManager.getStatus())
+                    } else {
+                        result.error("INVALID_ARGS", "Missing tunnel parameters", null)
+                    }
+                }
+                "stopTunnel" -> {
+                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
+                        action = RemoteNodeServerService.ACTION_STOP_TUNNEL
+                    }
+                    try {
+                        context.startService(intent)
+                    } catch (_: Exception) {
+                        RemoteNodeTunnelManager.stopTunnel()
+                    }
+                    result.success(RemoteNodeTunnelManager.getStatus())
+                }
+                "getTunnelStatus" -> {
+                    result.success(RemoteNodeTunnelManager.getStatus())
+                }
+                "reconnectTunnel" -> {
+                    RemoteNodeTunnelManager.triggerReconnect(immediate = true)
+                    result.success(true)
+                }
+                "getNetworkStatus" -> {
+                    val status = NetworkWatcher.getCurrentNetworkInfo(context)
+                    result.success(status)
+                }
                 "getInstallationId" -> {
                     try {
                         val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)

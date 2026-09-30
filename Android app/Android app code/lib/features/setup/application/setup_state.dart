@@ -109,7 +109,7 @@ final serverServiceProvider = Provider<ServerService>((ref) {
 
 final remoteConnectionServiceProvider =
     Provider<RemoteConnectionService>((ref) {
-  return HttpRemoteConnectionService();
+  return NativeRemoteConnectionService();
 });
 
 final setupStateProvider =

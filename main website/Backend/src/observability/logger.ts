@@ -11,6 +11,7 @@ export interface StructuredLogPayload {
   userId?: string;
   adminId?: string;
   deviceId?: string;
+  connectionId?: string;
   serverId?: string;
   gatewayNodeId?: string;
   event?: string;

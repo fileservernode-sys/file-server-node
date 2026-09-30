@@ -28,19 +28,31 @@ class RemoteNodeServerService : Service() {
         const val ACTION_STOP_SERVER = "net.remotenode.fileserver.ACTION_STOP_SERVER"
         const val ACTION_RESTART_SERVER = "net.remotenode.fileserver.ACTION_RESTART_SERVER"
         const val ACTION_SET_CREDENTIALS = "net.remotenode.fileserver.ACTION_SET_CREDENTIALS"
+        const val ACTION_START_TUNNEL = "net.remotenode.fileserver.ACTION_START_TUNNEL"
+        const val ACTION_STOP_TUNNEL = "net.remotenode.fileserver.ACTION_STOP_TUNNEL"
 
         const val EXTRA_PORT = "extra_port"
         const val EXTRA_USERNAME = "extra_username"
         const val EXTRA_PASSWORD = "extra_password"
+        const val EXTRA_DEVICE_ID = "extra_device_id"
+        const val EXTRA_SESSION_TOKEN = "extra_session_token"
+        const val EXTRA_API_BASE_URL = "extra_api_base_url"
+        const val EXTRA_GATEWAY_WS_URL = "extra_gateway_ws_url"
 
         private const val PREFS_NAME = "net.remotenode.server_prefs"
         private const val KEY_SERVER_ENABLED = "server_enabled"
+        private const val KEY_TUNNEL_ENABLED = "tunnel_enabled"
         private const val KEY_PORT = "server_port"
         private const val KEY_ADMIN_USER = "admin_user"
         private const val KEY_ADMIN_PASS = "admin_pass"
+        private const val KEY_DEVICE_ID = "tunnel_device_id"
+        private const val KEY_SESSION_TOKEN = "tunnel_session_token"
+        private const val KEY_API_BASE_URL = "tunnel_api_base_url"
+        private const val KEY_GATEWAY_WS_URL = "tunnel_gateway_ws_url"
 
         // Authoritative Singleton Local Server Engine instance
         val engine = LocalServerEngine()
+        val tunnelManager = RemoteNodeTunnelManager
 
         @Volatile
         var isServiceRunning: Boolean = false
@@ -64,6 +76,55 @@ class RemoteNodeServerService : Service() {
             prefs.edit().putBoolean(KEY_SERVER_ENABLED, enabled).apply()
         }
 
+        fun getDesiredTunnelEnabled(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return prefs.getBoolean(KEY_TUNNEL_ENABLED, false)
+        }
+
+        fun setDesiredTunnelEnabled(context: Context, enabled: Boolean) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putBoolean(KEY_TUNNEL_ENABLED, enabled).apply()
+        }
+
+        fun persistTunnelConfig(
+            context: Context,
+            deviceId: String,
+            sessionToken: String,
+            apiBaseUrl: String,
+            gatewayWsUrl: String
+        ) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString(KEY_DEVICE_ID, deviceId)
+                .putString(KEY_SESSION_TOKEN, sessionToken)
+                .putString(KEY_API_BASE_URL, apiBaseUrl)
+                .putString(KEY_GATEWAY_WS_URL, gatewayWsUrl)
+                .putBoolean(KEY_TUNNEL_ENABLED, true)
+                .apply()
+        }
+
+        fun getPersistedTunnelConfig(context: Context): Map<String, String?> {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            return mapOf(
+                "deviceId" to prefs.getString(KEY_DEVICE_ID, null),
+                "sessionToken" to prefs.getString(KEY_SESSION_TOKEN, null),
+                "apiBaseUrl" to prefs.getString(KEY_API_BASE_URL, null),
+                "gatewayWsUrl" to prefs.getString(KEY_GATEWAY_WS_URL, null)
+            )
+        }
+
+        fun clearPersistedCredentials(context: Context) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .remove(KEY_SESSION_TOKEN)
+                .remove(KEY_DEVICE_ID)
+                .remove(KEY_API_BASE_URL)
+                .remove(KEY_GATEWAY_WS_URL)
+                .putBoolean(KEY_TUNNEL_ENABLED, false)
+                .apply()
+            RemoteNodeTunnelManager.stopTunnel()
+        }
+
         fun getPersistedPort(context: Context): Int {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val port = prefs.getInt(KEY_PORT, 8080)
@@ -80,11 +141,27 @@ class RemoteNodeServerService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private val lifecycleLock = Any()
 
+    private val tunnelListener: (Map<String, Any?>) -> Unit = { event ->
+        if (isServiceRunning) {
+            val tunnelState = event["state"] as? String ?: "DISCONNECTED"
+            val text = "Personal file server on port $activePort | Gateway: $tunnelState"
+            val runningNotif = buildNotification(text)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, runningNotif)
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        // Promote immediately in onCreate to satisfy Android 14/15 FGS timeout contracts
+        val initialNotif = buildNotification("Initializing ZdexCloud background service...")
+        promoteToForeground(initialNotif)
+
+        NetworkWatcher.start(this)
+        RemoteNodeTunnelManager.addListener(tunnelListener)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -93,9 +170,21 @@ class RemoteNodeServerService : Service() {
             val desired = getDesiredServerEnabled(this)
             if (desired) {
                 val port = getPersistedPort(this)
-                handleStartServer(port)
+                if (!isServiceRunning) {
+                    handleStartServer(port)
+                } else {
+                    val notif = buildNotification("Personal file server is running on port $activePort")
+                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.notify(NOTIFICATION_ID, notif)
+                }
                 return START_STICKY
             } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    stopForeground(true)
+                }
                 stopSelf()
                 return START_NOT_STICKY
             }
@@ -125,6 +214,24 @@ class RemoteNodeServerService : Service() {
                 val pass = intent.getStringExtra(EXTRA_PASSWORD)
                 engine.setCredentials(user, pass)
             }
+            ACTION_START_TUNNEL -> {
+                val devId = intent.getStringExtra(EXTRA_DEVICE_ID)
+                val token = intent.getStringExtra(EXTRA_SESSION_TOKEN)
+                val apiBase = intent.getStringExtra(EXTRA_API_BASE_URL)
+                val gatewayWs = intent.getStringExtra(EXTRA_GATEWAY_WS_URL)
+                if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
+                    persistTunnelConfig(this, devId, token, apiBase, gatewayWs)
+                    RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs)
+                }
+            }
+            ACTION_STOP_TUNNEL -> {
+                setDesiredTunnelEnabled(this, false)
+                RemoteNodeTunnelManager.stopTunnel()
+                val text = "Personal file server on port $activePort | Gateway: DISCONNECTED"
+                val runningNotif = buildNotification(text)
+                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.notify(NOTIFICATION_ID, runningNotif)
+            }
         }
 
         return START_STICKY
@@ -133,14 +240,24 @@ class RemoteNodeServerService : Service() {
     private fun handleStartServer(port: Int) {
         synchronized(lifecycleLock) {
             try {
-                currentServerState = "STARTING"
                 val validatedPort = if (port in 1024..65535) port else 8080
+
+                // Idempotent start protection: if already running on the same port, refresh and return
+                if (isServiceRunning && activePort == validatedPort) {
+                    val text = "Personal file server is running on port $validatedPort"
+                    val runningNotif = buildNotification(text)
+                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.notify(NOTIFICATION_ID, runningNotif)
+                    return
+                }
+
+                currentServerState = "STARTING"
                 activePort = validatedPort
                 persistPort(this, validatedPort)
                 setDesiredServerEnabled(this, true)
 
-                // Start Foreground immediately with starting notification
-                val startingNotif = buildNotification("Starting ZdexCloud file server...")
+                // Start Foreground with starting notification
+                val startingNotif = buildNotification("Starting ZdexCloud file server on port $validatedPort...")
                 promoteToForeground(startingNotif)
 
                 acquireWakeLock()
@@ -154,6 +271,18 @@ class RemoteNodeServerService : Service() {
                     val runningNotif = buildNotification("Personal file server is running on port $validatedPort")
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     notificationManager.notify(NOTIFICATION_ID, runningNotif)
+
+                    // Auto-restore remote access tunnel if enabled and configured (e.g. after reboot)
+                    if (getDesiredTunnelEnabled(this)) {
+                        val tunnelConfig = getPersistedTunnelConfig(this)
+                        val devId = tunnelConfig["deviceId"]
+                        val token = tunnelConfig["sessionToken"]
+                        val apiBase = tunnelConfig["apiBaseUrl"]
+                        val gatewayWs = tunnelConfig["gatewayWsUrl"]
+                        if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
+                            RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs)
+                        }
+                    }
                 } else {
                     isServiceRunning = false
                     currentServerState = "START_FAILED"
@@ -173,6 +302,8 @@ class RemoteNodeServerService : Service() {
     private fun handleStopServer() {
         synchronized(lifecycleLock) {
             try {
+                setDesiredTunnelEnabled(this, false)
+                RemoteNodeTunnelManager.stopTunnel()
                 setDesiredServerEnabled(this, false)
                 engine.stop()
                 releaseWakeLock()
@@ -284,6 +415,13 @@ class RemoteNodeServerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        RemoteNodeTunnelManager.removeListener(tunnelListener)
         releaseWakeLock()
+        if (isServiceRunning) {
+            try {
+                engine.stop()
+            } catch (_: Exception) {}
+            isServiceRunning = false
+        }
     }
 }

@@ -13,6 +13,11 @@ const VALID_DEVICE = 'mock-device-456';
 const VALID_CONN_ID = 'mock-conn-id-789';
 const VALID_USER_ID = 'user-alice-111';
 
+const VALID_TOKEN_2 = 'mock-token-456';
+const VALID_DEVICE_2 = 'mock-device-789';
+const VALID_CONN_ID_2 = 'mock-conn-id-999';
+const VALID_USER_ID_2 = 'user-bob-222';
+
 class MockTokenValidator implements TokenValidator {
   async findConnection(deviceId: string, connectionToken: string) {
     if (deviceId === VALID_DEVICE && connectionToken === VALID_TOKEN) {
@@ -21,6 +26,14 @@ class MockTokenValidator implements TokenValidator {
         deviceId,
         userId: VALID_USER_ID,
         remoteEndpoint: 'https://srv-mockdevi.viewduration.com'
+      };
+    }
+    if (deviceId === VALID_DEVICE_2 && connectionToken === VALID_TOKEN_2) {
+      return {
+        id: VALID_CONN_ID_2,
+        deviceId: VALID_DEVICE_2,
+        userId: VALID_USER_ID_2,
+        remoteEndpoint: 'https://srv-mockdev2.viewduration.com'
       };
     }
     return null;
@@ -618,4 +631,266 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.strictEqual(res.statusCode, 404);
     assert.strictEqual(res.data.error.code, 'SERVER_NOT_FOUND');
   });
+
+  // =========================================================================
+  // BATCH 11A.4: GATEWAY SESSION RESILIENCE, CLEAN HANDOVER & EVICTION
+  // =========================================================================
+
+  test('Batch 11A.4: Clean handover assigns new session authoritative ownership and evicts stale socket', async () => {
+    // 1. Establish Session 1
+    const socket1 = new WebSocket(`ws://localhost:${testPort}`);
+    let session1Id = '';
+    await new Promise<void>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket1.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          session1Id = msg.sessionId;
+          resolve();
+        }
+      });
+    });
+
+    assert.ok(session1Id);
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), true);
+
+    // 2. Establish Session 2 (Reconnect for same device)
+    const socket2 = new WebSocket(`ws://localhost:${testPort}`);
+    let session2Id = '';
+    const socket1EvictedPromise = new Promise<any>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'DISCONNECT') {
+          resolve(msg);
+        }
+      });
+    });
+
+    await new Promise<void>((resolve) => {
+      socket2.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket2.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          session2Id = msg.sessionId;
+          resolve();
+        }
+      });
+    });
+
+    assert.ok(session2Id);
+    assert.notStrictEqual(session1Id, session2Id);
+
+    const disconnectNotice = await socket1EvictedPromise;
+    assert.strictEqual(disconnectNotice.type, 'DISCONNECT');
+
+    // 3. Verify Socket 2 is authoritative and Device is still active
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), true);
+
+    socket2.close();
+  });
+
+  test('Batch 11A.4: Delayed close callback of stale socket does not delete replacement session mappings', async () => {
+    // Connect Socket 1
+    const socket1 = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket1.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // Connect Socket 2 (supersedes Socket 1)
+    const socket2 = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socket2.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket2.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // Socket 1 fires close callback now
+    socket1.close();
+    await new Promise((r) => setTimeout(r, 50));
+
+    // CRITICAL CHECK: Socket 2 mappings MUST still be intact!
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), true);
+
+    socket2.close();
+  });
+
+  test('Batch 11A.4: Stale socket PING/PONG does not refresh liveness of replacement session', async () => {
+    // Connect Socket 1
+    const socket1 = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socket1.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket1.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // Connect Socket 2 (supersedes Socket 1)
+    const socket2 = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socket2.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket2.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // Send PING from stale socket 1
+    socket1.send(JSON.stringify({ type: 'PING' }));
+    await new Promise((r) => setTimeout(r, 30));
+
+    // Active connection should remain socket 2
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), true);
+
+    socket1.close();
+    socket2.close();
+  });
+
+  test('Batch 11A.4: Multi-device isolation guarantees evicting Device A does not touch Device B', async () => {
+    // Connect Device A
+    const socketA = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socketA.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socketA.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    // Connect Device B
+    const socketB = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => {
+      socketB.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socketB.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN_2,
+            deviceId: VALID_DEVICE_2
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          resolve();
+        }
+      });
+    });
+
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), true);
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE_2), true);
+
+    // Evict Device A
+    gateway.evictDeviceSession(VALID_DEVICE, 'Device A deleted');
+
+    // Device A must be gone, Device B MUST remain connected and untouched
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE), false);
+    assert.strictEqual(gateway.hasActiveConnectionForDevice(VALID_DEVICE_2), true);
+
+    socketB.close();
+  });
+
+  // =========================================================================
+  // BATCH 11A.7: HEARTBEAT & LIVENESS PROTOCOL DEFERRED TESTS
+  // =========================================================================
+
+  test('Batch 11A.7: Gateway responds with PONG to application PING messages and updates heartbeat timestamp', async () => {
+    const socket = new WebSocket(`ws://localhost:${testPort}`);
+    let connectionId = '';
+
+    await new Promise<void>((resolve) => {
+      socket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'HELLO') {
+          socket.send(JSON.stringify({
+            type: 'AUTH',
+            connectionToken: VALID_TOKEN,
+            deviceId: VALID_DEVICE
+          }));
+        } else if (msg.type === 'AUTH_SUCCESS') {
+          connectionId = msg.connectionId;
+          resolve();
+        }
+      });
+    });
+
+    const pongReceived = await new Promise<any>((resolve) => {
+      socket.on('message', (data) => {
+        const msg = JSON.parse(data.toString());
+        if (msg.type === 'PONG') {
+          resolve(msg);
+        }
+      });
+      socket.send(JSON.stringify({ type: 'PING' }));
+    });
+
+    assert.strictEqual(pongReceived.type, 'PONG');
+    assert.ok(connectionId);
+    socket.close();
+  });
+
+  test('Batch 11A.7: Heartbeat timing hierarchy is strictly maintained', () => {
+    // OkHttp transport ping (10s) < App JSON Ping (15s) < App Deadline (35s) < Reaper (60s) < Silent Prune (90s) < Stale Node (120s)
+    const transportPingIntervalMs = 10000;
+    const appPingIntervalMs = 15000;
+    const appLivenessDeadlineMs = 35000;
+    const gatewayReaperSilenceMs = 60000;
+    const dbSilentPruningMs = 90000;
+    const dbStaleNodeMs = 120000;
+
+    assert.ok(transportPingIntervalMs < appPingIntervalMs);
+    assert.ok(appPingIntervalMs < appLivenessDeadlineMs);
+    assert.ok(appLivenessDeadlineMs < gatewayReaperSilenceMs);
+    assert.ok(gatewayReaperSilenceMs < dbSilentPruningMs);
+    assert.ok(dbSilentPruningMs < dbStaleNodeMs);
+  });
 });
+

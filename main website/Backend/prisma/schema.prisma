@@ -49,6 +49,7 @@ enum ConnectionStatus {
   CONNECTING
   CONNECTED
   RECONNECTING
+  STALE
   FAILED
 }
 
