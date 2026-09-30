@@ -173,18 +173,17 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                           const SizedBox(height: AppSpacing.sm),
                           Row(
                             children: [
-                              const Icon(Icons.language_rounded,
+                              const Icon(Icons.shield_outlined,
                                   size: 16, color: AppColors.primary),
                               const SizedBox(width: AppSpacing.xs),
                               Expanded(
                                 child: Text(
-                                  setup.assignedSubdomain != null
-                                      ? '${setup.assignedSubdomain}.zdexcloud.com'
-                                      : 'Remote Gateway Routing Active',
+                                  setup.isGatewayConnected
+                                      ? 'Secure Remote Relay Connected'
+                                      : 'Remote Gateway Transport Ready',
                                   style: AppTypography.caption.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.primary,
-                                    fontFamily: 'monospace',
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -240,7 +239,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                           const SizedBox(height: AppSpacing.sm),
                           Text(
                             setup.isGatewayConnected
-                                ? 'Encrypted WebSocket tunnel active. Remote file manager is accessible via your secure account subdomain.'
+                                ? 'Encrypted WebSocket tunnel active. Remote file manager is accessible via your secure account on ZdexCloud.'
                                 : 'Gateway connection inactive. Start the local server engine to establish remote transport.',
                             style: AppTypography.bodySmall,
                           ),

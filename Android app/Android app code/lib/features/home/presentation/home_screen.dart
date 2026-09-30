@@ -101,8 +101,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           border: Border.all(color: AppColors.borderSubtle),
                         ),
                         child: Text(
-                          '1 / 5 Server Slots',
-                          style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+                          '${setup.planName} • ${setup.activeServersCount} / ${setup.maxServers} Active',
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -356,8 +359,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 const SizedBox(height: AppSpacing.xxs),
                                 Text(
                                   setup.isGatewayConnected
-                                      ? 'TLS 1.3 Active'
-                                      : (setup.assignedSubdomain != null ? 'Assigned' : 'Local Only'),
+                                      ? 'Connected'
+                                      : (setup.endpointStatus == 'CONNECTING'
+                                          ? 'Connecting'
+                                          : 'Disconnected'),
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -376,7 +381,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 const Text('Server Capacity', style: AppTypography.caption),
                                 const SizedBox(height: AppSpacing.xxs),
                                 Text(
-                                  '1 / 5 Limit',
+                                  '${setup.activeServersCount} / ${setup.maxServers} Limit',
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,
                                 ),

@@ -30,6 +30,10 @@ class SetupState {
   final bool isProcessing;
   final String? errorMessage;
 
+  final String planName;
+  final int maxServers;
+  final int activeServersCount;
+
   const SetupState({
     this.deviceName = 'Android Device',
     this.serverName = '',
@@ -49,6 +53,9 @@ class SetupState {
     this.stageIndex = 0,
     this.isProcessing = false,
     this.errorMessage,
+    this.planName = 'Free Plan',
+    this.maxServers = 1,
+    this.activeServersCount = 1,
   });
 
   SetupState copyWith({
@@ -70,6 +77,9 @@ class SetupState {
     int? stageIndex,
     bool? isProcessing,
     String? errorMessage,
+    String? planName,
+    int? maxServers,
+    int? activeServersCount,
   }) {
     return SetupState(
       deviceName: deviceName ?? this.deviceName,
@@ -90,6 +100,9 @@ class SetupState {
       stageIndex: stageIndex ?? this.stageIndex,
       isProcessing: isProcessing ?? this.isProcessing,
       errorMessage: errorMessage,
+      planName: planName ?? this.planName,
+      maxServers: maxServers ?? this.maxServers,
+      activeServersCount: activeServersCount ?? this.activeServersCount,
     );
   }
 }
@@ -231,6 +244,43 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     final sessionToken = authSession?.accessToken ?? 'dev-mock-session-token';
 
     try {
+      final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
+
+      // 1. Fetch user's registered devices count
+      int totalDevices = 1;
+      try {
+        final allDevsRes = await deviceDataSource.getUserDevices(sessionToken: sessionToken);
+        if (allDevsRes['success'] == true && allDevsRes['data'] != null) {
+          final list = allDevsRes['data']['devices'] as List<dynamic>?;
+          if (list != null && list.isNotEmpty) {
+            totalDevices = list.length;
+          }
+        }
+      } catch (_) {}
+
+      // 2. Fetch user's billing tier and server quotas
+      String resolvedPlan = 'Free Plan';
+      int resolvedMaxServers = 1;
+      try {
+        final billingRes = await deviceDataSource.getBillingState(sessionToken: sessionToken);
+        if (billingRes['success'] == true && billingRes['data'] != null) {
+          final data = billingRes['data'] as Map<String, dynamic>;
+          final rawPlan = (data['plan'] as String? ?? 'FREE').toUpperCase();
+          if (rawPlan.contains('YEAR')) {
+            resolvedPlan = 'Pro Yearly Plan';
+          } else if (rawPlan.contains('PRO')) {
+            resolvedPlan = 'Pro Plan';
+          } else {
+            resolvedPlan = 'Free Plan';
+          }
+
+          final ent = data['entitlements'] as Map<String, dynamic>?;
+          if (ent != null && ent['maxServers'] is num) {
+            resolvedMaxServers = (ent['maxServers'] as num).toInt();
+          }
+        }
+      } catch (_) {}
+
       final currentDev = await resolveCurrentDevice(sessionToken: sessionToken);
 
       if (currentDev != null) {
@@ -294,6 +344,9 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           isGatewayConnected: isGatewayConnected,
           isLocalOnline: isLocal,
           localServerUrl: localUrl,
+          planName: resolvedPlan,
+          maxServers: resolvedMaxServers,
+          activeServersCount: totalDevices,
         );
       } else {
         // Explicit "device not registered" for this installationId
@@ -305,10 +358,49 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           connectionId: null,
           isGatewayConnected: false,
           endpointStatus: 'NOT_CREATED',
+          planName: resolvedPlan,
+          maxServers: resolvedMaxServers,
+          activeServersCount: 0,
         );
       }
     } catch (_) {
       // Ignored if offline during initial sync
+    }
+  }
+
+  /// Retries / Forces Outbound Gateway WebSocket Reconnection
+  Future<void> reconnectGateway() async {
+    final devId = state.deviceId;
+    final authSession = _ref.read(authStateProvider).session;
+    final sessionToken = authSession?.accessToken ?? 'dev-mock-session-token';
+
+    if (devId != null && devId.isNotEmpty) {
+      state = state.copyWith(endpointStatus: 'CONNECTING');
+      try {
+        final remoteService = _ref.read(remoteConnectionServiceProvider);
+        final connInfo = await remoteService.connect(
+          deviceId: devId,
+          sessionToken: sessionToken,
+        );
+        final isConn = connInfo.isConnected || connInfo.status == RemoteConnectionState.connected;
+        state = state.copyWith(
+          isGatewayConnected: isConn,
+          endpointStatus: isConn
+              ? 'ACTIVE'
+              : (connInfo.status == RemoteConnectionState.reconnecting
+                  ? 'RECONNECTING'
+                  : (connInfo.status == RemoteConnectionState.connecting
+                      ? 'CONNECTING'
+                      : 'DISCONNECTED')),
+          connectionId: connInfo.connectionId ?? state.connectionId,
+        );
+      } catch (e) {
+        state = state.copyWith(
+          isGatewayConnected: false,
+          endpointStatus: 'DISCONNECTED',
+          errorMessage: 'Connection attempt failed: ${e.toString()}',
+        );
+      }
     }
   }
 

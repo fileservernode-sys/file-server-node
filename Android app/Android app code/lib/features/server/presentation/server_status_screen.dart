@@ -265,7 +265,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       appBar: const AppHeader(
         title: 'Server Node Details',
         subtitle: 'Node Telemetry & Control',
-        showBrandMark: true,
+        showBackButton: true,
       ),
       body: SafeArea(
         child: Center(
@@ -323,6 +323,56 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                             final serverService = ref.read(serverServiceProvider);
                             await serverService.openUrl(AppConfig.current.websiteUrl);
                           },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // -----------------------------------------------------------
+                  // 2. Account Plan & Server Limits Card
+                  // -----------------------------------------------------------
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.workspace_premium_rounded,
+                                    color: AppColors.primary, size: 20),
+                                const SizedBox(width: AppSpacing.xs),
+                                Text(
+                                  setup.planName,
+                                  style: AppTypography.cardTitle,
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySubtle,
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusFull),
+                              ),
+                              child: Text(
+                                '${setup.activeServersCount} / ${setup.maxServers} Active Server Node${setup.maxServers > 1 ? 's' : ''}',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Your account supports up to ${setup.maxServers} active server instance${setup.maxServers > 1 ? 's' : ''} according to your ${setup.planName}. Manage your subscription on the ZdexCloud website.',
+                          style: AppTypography.caption,
                         ),
                       ],
                     ),
@@ -485,6 +535,20 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                     onPressed: _isLocalRunning ? null : _handleStart,
                   ),
                   const SizedBox(height: AppSpacing.sm),
+                  if (!setup.isGatewayConnected && _isLocalRunning) ...[
+                    SecondaryButton(
+                      label: 'Reconnect Gateway Relay',
+                      icon: Icons.sync_rounded,
+                      isLoading: _isLoading,
+                      onPressed: () async {
+                        setState(() => _isLoading = true);
+                        await ref.read(setupStateProvider.notifier).reconnectGateway();
+                        await _refreshServerStatus();
+                        if (mounted) setState(() => _isLoading = false);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
                   SecondaryButton(
                     label: 'Restart Server Engine',
                     icon: Icons.refresh_outlined,
