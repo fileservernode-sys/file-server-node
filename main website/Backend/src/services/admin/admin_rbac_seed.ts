@@ -51,8 +51,10 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   { slug: 'gateway.write', name: 'Manage Gateway', resource: 'gateway', action: 'write', description: 'Execute ping probes and node maintenance' },
   { slug: 'gateway.drain', name: 'Drain Gateway Nodes', resource: 'gateway', action: 'drain', description: 'Drain gateway nodes and manage maintenance transitions' },
 
-  // Observability & Audit
-  { slug: 'errors.read', name: 'View System Errors', resource: 'errors', action: 'read', description: 'Inspect error fingerprints and incidents' },
+  // Observability & Error Center
+  { slug: 'errors.read', name: 'View System Errors', resource: 'errors', action: 'read', description: 'Inspect error fingerprints, incidents, and occurrence telemetry' },
+  { slug: 'errors.manage', name: 'Manage System Errors', resource: 'errors', action: 'manage', description: 'Acknowledge, resolve, mute, and unmute error incidents' },
+  { slug: 'errors.export', name: 'Export System Errors', resource: 'errors', action: 'export', description: 'Export operational error telemetry and reports' },
   { slug: 'audit.read', name: 'View Audit Logs', resource: 'audit', action: 'read', description: 'Inspect customer and administrative audit trails' },
 
   // RBAC & Administration
@@ -83,7 +85,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'support.read', 'support.write', 'support.assign', 'support.notes',
       'notifications.read', 'notifications.write',
       'gateway.read', 'gateway.write', 'gateway.drain',
-      'errors.read',
+      'errors.read', 'errors.manage',
       'audit.read',
       'admin_roles.read',
       'system.read'
@@ -110,7 +112,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'devices.read', 'devices.write', 'devices.disconnect',
       'servers.read', 'servers.write', 'servers.power',
       'gateway.read', 'gateway.write', 'gateway.drain',
-      'errors.read',
+      'errors.read', 'errors.manage',
       'audit.read',
       'system.read'
     ]

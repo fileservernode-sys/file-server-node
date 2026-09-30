@@ -1,3 +1,5 @@
+import { RequestContextStore } from '../observability/request_context.js';
+
 export interface ApiResponse<T = unknown> {
   success: true;
   data: T;
@@ -8,6 +10,7 @@ export interface ApiErrorResponse {
   error: {
     code: string;
     message: string;
+    requestId?: string;
   };
 }
 
@@ -18,12 +21,15 @@ export function createSuccessResponse<T>(data: T): ApiResponse<T> {
   };
 }
 
-export function createErrorResponse(code: string, message: string): ApiErrorResponse {
+export function createErrorResponse(code: string, message: string, requestId?: string): ApiErrorResponse {
+  const effectiveRequestId = requestId || RequestContextStore.getRequestId();
   return {
     success: false,
     error: {
       code,
-      message
+      message,
+      ...(effectiveRequestId ? { requestId: effectiveRequestId } : {})
     }
   };
 }
+

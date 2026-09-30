@@ -38,12 +38,37 @@ export class EndpointService {
   }
 
   /**
+   * Helper to identify obsolete legacy domain hostnames (viewduration.com, remotenode.net)
+   */
+  static isLegacyHostname(hostname: string): boolean {
+    if (!hostname || typeof hostname !== 'string') return false;
+    const lower = hostname.toLowerCase();
+    return lower.includes('viewduration.com') || lower.includes('remotenode.net');
+  }
+
+  /**
+   * Derives a canonical hostname on the active base domain preserving the server slug.
+   */
+  static canonicalizeHostname(hostname: string, serverInstanceId: string): string {
+    if (this.isLegacyHostname(hostname)) {
+      const slug = hostname.split('.')[0];
+      return `${slug}.${this.baseDomain}`;
+    }
+    return hostname;
+  }
+
+  /**
    * Validates that a hostname conforms strictly to a valid subdomain under the configured gateway or base domain.
-   * Rejects path components, protocol prefixes, uppercase letters, invalid characters, and external domains.
+   * Rejects path components, protocol prefixes, uppercase letters, invalid characters, and legacy domains.
    */
   static validateHostname(hostname: string, expectedDomain?: string): boolean {
     if (!hostname || typeof hostname !== 'string') return false;
     if (hostname.includes('://') || hostname.includes('/') || hostname.includes('\\') || hostname.includes(' ')) {
+      return false;
+    }
+
+    // Explicitly reject legacy domains
+    if (this.isLegacyHostname(hostname)) {
       return false;
     }
 
@@ -83,6 +108,7 @@ export class EndpointService {
   /**
    * Reserves or retrieves an allocated remote endpoint for a ServerInstance.
    * Idempotent: repeated calls do not create duplicate DNS records or endpoints.
+   * Automatically migrates any lingering legacy hostnames to canonical zdexcloud.com.
    */
   static async reserveEndpoint(serverInstanceId: string) {
     // Search for ANY existing endpoint for this server (regardless of status)
@@ -92,6 +118,26 @@ export class EndpointService {
     });
 
     if (existing) {
+      // If the existing record is using a legacy domain, canonicalize it in-place
+      if (this.isLegacyHostname(existing.hostname)) {
+        const canonicalHostname = this.canonicalizeHostname(existing.hostname, serverInstanceId);
+        const updated = await prisma.serverEndpoint.update({
+          where: { id: existing.id },
+          data: {
+            hostname: canonicalHostname,
+            status: 'ACTIVE'
+          }
+        });
+
+        await this.dnsProvider.provisionRecord({
+          hostname: canonicalHostname,
+          target: this.gatewayDomain,
+          type: 'CNAME'
+        });
+
+        return updated;
+      }
+
       // Reactivate the existing record and re-verify DNS
       const existsInDns = await this.dnsProvider.verifyRecord(existing.hostname);
       if (!existsInDns) {

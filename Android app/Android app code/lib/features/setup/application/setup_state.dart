@@ -9,6 +9,8 @@ import '../../server/domain/services/server_service.dart';
 import '../../../core/utils/logger.dart';
 import '../../../core/notifications/push_token_manager.dart';
 
+import '../../../core/widgets/status_badge.dart';
+
 /// Immutable Setup Configuration, Real Subdomain, and Live State Representation
 class SetupState {
   final String deviceName;
@@ -25,7 +27,7 @@ class SetupState {
   final String localServerUrl;
   final bool isLocalOnline;
   final bool isGatewayConnected;
-  final String endpointStatus; // 'NOT_CREATED', 'PROVISIONING', 'ACTIVE', 'FAILED'
+  final String endpointStatus; // 'NOT_CREATED', 'PROVISIONING', 'ACTIVE', 'CONNECTING', 'RECONNECTING', 'FAILED', 'DISCONNECTED'
   final int stageIndex;
   final bool isProcessing;
   final String? errorMessage;
@@ -57,6 +59,43 @@ class SetupState {
     this.maxServers = 1,
     this.activeServersCount = 1,
   });
+
+  /// Authoritative server running condition: Local engine running AND remote tunnel connected
+  bool get isServerRunning => isLocalOnline && isGatewayConnected;
+
+  /// Customer-facing server lifecycle status
+  DeviceServerStatus get serverStatus {
+    if (!isLocalOnline) {
+      return DeviceServerStatus.offline;
+    }
+    if (isGatewayConnected) {
+      return DeviceServerStatus.online;
+    }
+    if (endpointStatus == 'RECONNECTING') {
+      return DeviceServerStatus.reconnecting;
+    }
+    if (endpointStatus == 'FAILED') {
+      return DeviceServerStatus.offline;
+    }
+    return DeviceServerStatus.connecting;
+  }
+
+  /// User-friendly label for current server state
+  String get serverStatusLabel {
+    if (!isLocalOnline) {
+      return 'Stopped';
+    }
+    if (isGatewayConnected) {
+      return 'Running';
+    }
+    if (endpointStatus == 'RECONNECTING') {
+      return 'Reconnecting...';
+    }
+    if (endpointStatus == 'FAILED') {
+      return 'Connection Failed';
+    }
+    return 'Connecting...';
+  }
 
   SetupState copyWith({
     String? deviceName,
@@ -155,7 +194,9 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
                   ? 'RECONNECTING'
                   : (connInfo.status == RemoteConnectionState.connecting
                       ? 'CONNECTING'
-                      : (state.assignedSubdomain != null ? 'DISCONNECTED' : 'NOT_CREATED'))),
+                      : (connInfo.status == RemoteConnectionState.failed
+                          ? 'FAILED'
+                          : (state.assignedSubdomain != null ? 'DISCONNECTED' : 'NOT_CREATED')))),
         );
       });
     } catch (_) {}
@@ -437,26 +478,21 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           AppLogger.warning('[ServerLifecycle] Push token registration warning: $e');
         }
 
-        try {
-          final remoteService = _ref.read(remoteConnectionServiceProvider);
-          final connInfo = await remoteService.connect(
-            deviceId: devId,
-            sessionToken: sessionToken,
-          );
-          state = state.copyWith(
-            deviceId: devId,
-            isLocalOnline: true,
-            isGatewayConnected: connInfo.isConnected || connInfo.status == RemoteConnectionState.connected,
-            connectionId: connInfo.connectionId ?? state.connectionId,
-          );
-          AppLogger.info('[ServerLifecycle] Server node started successfully (Local Engine: ONLINE, Gateway: ${connInfo.isConnected ? "CONNECTED" : "DISCONNECTED"})');
-          return;
-        } catch (_) {}
+        state = state.copyWith(
+          deviceId: devId,
+          isLocalOnline: true,
+          endpointStatus: state.isGatewayConnected ? 'ACTIVE' : 'CONNECTING',
+        );
+        AppLogger.info('[ServerLifecycle] Server node started (Local Engine: ONLINE, Gateway Transport: ${state.isGatewayConnected ? "ACTIVE" : "CONNECTING"})');
+        return;
       }
     }
 
-    state = state.copyWith(isLocalOnline: true);
-    AppLogger.info('[ServerLifecycle] Server node started (Local Engine: ONLINE)');
+    state = state.copyWith(
+      isLocalOnline: true,
+      endpointStatus: state.isGatewayConnected ? 'ACTIVE' : 'CONNECTING',
+    );
+    AppLogger.info('[ServerLifecycle] Server node started (Local Engine: ONLINE, Gateway Transport: ${state.isGatewayConnected ? "ACTIVE" : "CONNECTING"})');
   }
 
   /// Manually stops both local HTTP server engine and outbound Gateway WebSocket transport
@@ -482,6 +518,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     state = state.copyWith(
       isLocalOnline: false,
       isGatewayConnected: false,
+      endpointStatus: state.assignedSubdomain != null ? 'DISCONNECTED' : 'NOT_CREATED',
     );
   }
 

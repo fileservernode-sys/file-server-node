@@ -203,14 +203,14 @@
     {
       id: 'observability-center',
       name: 'Observability & Error Center',
-      category: 'Observability',
-      route: null,
-      permission: 'observability.read',
-      status: 'FUTURE',
+      category: 'Observability & Diagnostics',
+      route: '#observability-center',
+      permission: 'errors.read',
+      status: 'IMPLEMENTED',
       phase: 'Phase 12',
-      description: 'Centralized error aggregation, APM tracing, and critical alert dispatchers.',
-      apiNamespace: 'Scheduled for Phase 12',
-      icon: 'alert'
+      description: 'Centralized operational error aggregation, incident triage, and diagnostic telemetry.',
+      apiNamespace: '/api/v1/admin/errors/*',
+      icon: 'alert-triangle'
     },
     {
       id: 'database-mgmt',
@@ -344,6 +344,17 @@
       ]
     },
     {
+      group: 'Observability & Health',
+      items: [
+        {
+          id: 'observability-center',
+          label: 'Error & Incident Center',
+          icon: 'alert-triangle',
+          permission: 'errors.read'
+        }
+      ]
+    },
+    {
       group: 'Security & Access',
       items: [
         {
@@ -363,6 +374,8 @@
   ];
 
   const ICONS = {
+    'alert-triangle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
     'life-buoy': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" x2="9.17" y1="4.93" y2="9.17"/><line x1="14.83" x2="19.07" y1="14.83" y2="19.07"/><line x1="14.83" x2="19.07" y1="9.17" y2="4.93"/><line x1="14.83" x2="9.17" y1="14.83" y2="19.07"/></svg>',
     'message-square': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
     'git-compare': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>',
@@ -426,6 +439,22 @@
       this.supportActiveTab = 'cases';
       this.supportCustomerState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.auditState = { page: 1, limit: 20, total: 0, items: [], search: '', status: '', action: '', startDate: '', endDate: '' };
+      this.errorCenterState = {
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        totalPages: 0,
+        items: [],
+        search: '',
+        status: '',
+        severity: '',
+        component: '',
+        errorCode: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'updatedAt',
+        sortOrder: 'desc'
+      };
     }
 
     async init() {
@@ -608,6 +637,7 @@
       if (rawHash === 'billing-refunds') hash = 'refunds';
       if (rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') hash = 'reconciliation';
       if (rawHash === 'settlements' || rawHash === 'billing-settlements') hash = 'settlements';
+      if (rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') hash = 'observability-center';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -623,7 +653,8 @@
           (rawHash === 'billing-payments' && itemId === 'payments') ||
           (rawHash === 'billing-refunds' && itemId === 'refunds') ||
           ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation') ||
-          ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements')
+          ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements') ||
+          ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center')
         ) {
           el.classList.add('active');
         } else {
@@ -651,7 +682,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : 'Dashboard')))))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : 'Dashboard'))))))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -721,6 +752,12 @@
         case 'audit-logs':
         case 'audit':
           this._renderAuditLogsView(container);
+          break;
+        case 'observability-center':
+        case 'errors':
+        case 'error-center':
+        case 'observability':
+          this._renderErrorCenterView(container);
           break;
         default:
           this._renderDashboardView(container);
@@ -6531,6 +6568,828 @@
         if (e.key === 'Escape') {
           closeModal();
           window.removeEventListener('keydown', escHandler);
+        }
+      });
+    }
+
+    copyErrorText(text, label = 'Text') {
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          this.toast(`${label} copied to clipboard`, 'info', 2000);
+        }).catch(() => {
+          this._fallbackCopyText(text, label);
+        });
+      } else {
+        this._fallbackCopyText(text, label);
+      }
+    }
+
+    _fallbackCopyText(text, label) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        this.toast(`${label} copied to clipboard`, 'info', 2000);
+      } catch (e) {
+        this.toast(`Failed to copy ${label}`, 'danger');
+      }
+      ta.remove();
+    }
+
+    /* =========================================================================
+       8. OBSERVABILITY & ERROR CENTER (Phase 12.6)
+       ========================================================================= */
+    _renderErrorCenterView(container) {
+      if (!window.AdminAuth.hasPermission('errors.read')) {
+        this._renderForbiddenView({ id: 'observability-center', label: 'Observability & Error Center', permission: 'errors.read' });
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Observability &amp; Error Center</h1>
+            <p class="admin-view-subtitle">Monitor runtime errors, inspect diagnostic fingerprints, and manage incident lifecycles across backend, android, and gateway components.</p>
+          </div>
+          <div class="admin-view-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btnRefreshErrors">
+              ${ICONS.rotate} Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary KPI Cards -->
+        <div class="admin-summary-strip" id="errorCenterSummaryStrip">
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Total Incidents</div>
+            <div class="admin-summary-value" id="kpiTotalIncidents">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Open Incidents</div>
+            <div class="admin-summary-value" id="kpiOpenIncidents" style="color:var(--admin-danger);">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Critical / High</div>
+            <div class="admin-summary-value" id="kpiCriticalIncidents" style="color:#ef4444;">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Muted Incidents</div>
+            <div class="admin-summary-value" id="kpiMutedIncidents" style="color:var(--admin-text-muted);">-</div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="admin-toolbar" style="margin-bottom:1rem;">
+          <div class="admin-toolbar-left" style="display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+            <div class="admin-search-wrapper" style="width:240px;">
+              <span class="admin-search-icon">${ICONS.search}</span>
+              <input type="search" id="inputErrorSearch" class="admin-search-input" placeholder="Search message, code, hash..." value="${this._escape(this.errorCenterState.search)}">
+            </div>
+
+            <select id="selectErrorStatus" class="admin-select" style="width:130px;">
+              <option value="" ${!this.errorCenterState.status ? 'selected' : ''}>All Statuses</option>
+              <option value="OPEN" ${this.errorCenterState.status === 'OPEN' ? 'selected' : ''}>Open</option>
+              <option value="ACKNOWLEDGED" ${this.errorCenterState.status === 'ACKNOWLEDGED' ? 'selected' : ''}>Acknowledged</option>
+              <option value="RESOLVED" ${this.errorCenterState.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
+              <option value="MUTED" ${this.errorCenterState.status === 'MUTED' ? 'selected' : ''}>Muted</option>
+            </select>
+
+            <select id="selectErrorSeverity" class="admin-select" style="width:130px;">
+              <option value="" ${!this.errorCenterState.severity ? 'selected' : ''}>All Severities</option>
+              <option value="CRITICAL" ${this.errorCenterState.severity === 'CRITICAL' ? 'selected' : ''}>Critical</option>
+              <option value="HIGH" ${this.errorCenterState.severity === 'HIGH' ? 'selected' : ''}>High</option>
+              <option value="MEDIUM" ${this.errorCenterState.severity === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+              <option value="LOW" ${this.errorCenterState.severity === 'LOW' ? 'selected' : ''}>Low</option>
+            </select>
+
+            <select id="selectErrorComponent" class="admin-select" style="width:130px;">
+              <option value="" ${!this.errorCenterState.component ? 'selected' : ''}>All Components</option>
+              <option value="BACKEND" ${this.errorCenterState.component === 'BACKEND' ? 'selected' : ''}>Backend</option>
+              <option value="ANDROID" ${this.errorCenterState.component === 'ANDROID' ? 'selected' : ''}>Android</option>
+              <option value="GATEWAY" ${this.errorCenterState.component === 'GATEWAY' ? 'selected' : ''}>Gateway</option>
+              <option value="FRONTEND" ${this.errorCenterState.component === 'FRONTEND' ? 'selected' : ''}>Frontend</option>
+              <option value="DATABASE" ${this.errorCenterState.component === 'DATABASE' ? 'selected' : ''}>Database</option>
+              <option value="UNKNOWN" ${this.errorCenterState.component === 'UNKNOWN' ? 'selected' : ''}>Unknown</option>
+            </select>
+
+            <select id="selectErrorSort" class="admin-select" style="width:140px;">
+              <option value="updatedAt_desc" ${this.errorCenterState.sortBy === 'updatedAt' && this.errorCenterState.sortOrder === 'desc' ? 'selected' : ''}>Updated (Newest)</option>
+              <option value="lastSeenAt_desc" ${this.errorCenterState.sortBy === 'lastSeenAt' && this.errorCenterState.sortOrder === 'desc' ? 'selected' : ''}>Last Seen (Newest)</option>
+              <option value="firstSeenAt_desc" ${this.errorCenterState.sortBy === 'firstSeenAt' && this.errorCenterState.sortOrder === 'desc' ? 'selected' : ''}>First Seen (Newest)</option>
+              <option value="occurrenceCount_desc" ${this.errorCenterState.sortBy === 'occurrenceCount' && this.errorCenterState.sortOrder === 'desc' ? 'selected' : ''}>Count (Highest)</option>
+              <option value="severity_desc" ${this.errorCenterState.sortBy === 'severity' && this.errorCenterState.sortOrder === 'desc' ? 'selected' : ''}>Severity (Highest)</option>
+            </select>
+
+            <button class="admin-btn admin-btn-secondary admin-btn-xs" id="btnResetErrorFilters" title="Reset all filters">Reset</button>
+          </div>
+        </div>
+
+        <!-- Incidents Table Container -->
+        <div class="admin-card">
+          <div class="admin-card-body" style="padding:0;">
+            <div class="admin-table-wrapper" id="errorIncidentsTableWrapper">
+              <div style="padding:2rem;text-align:center;color:var(--admin-text-muted);">Loading incidents...</div>
+            </div>
+          </div>
+          <div class="admin-card-footer" id="errorIncidentsPagination" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;"></div>
+        </div>
+      `;
+
+      // Event bindings
+      const searchInput = document.getElementById('inputErrorSearch');
+      let debounceTimer = null;
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.errorCenterState.search = e.target.value.trim();
+            this.loadErrorIncidents(1);
+          }, 300);
+        });
+      }
+
+      const statusSelect = document.getElementById('selectErrorStatus');
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.errorCenterState.status = e.target.value;
+          this.loadErrorIncidents(1);
+        });
+      }
+
+      const severitySelect = document.getElementById('selectErrorSeverity');
+      if (severitySelect) {
+        severitySelect.addEventListener('change', (e) => {
+          this.errorCenterState.severity = e.target.value;
+          this.loadErrorIncidents(1);
+        });
+      }
+
+      const compSelect = document.getElementById('selectErrorComponent');
+      if (compSelect) {
+        compSelect.addEventListener('change', (e) => {
+          this.errorCenterState.component = e.target.value;
+          this.loadErrorIncidents(1);
+        });
+      }
+
+      const sortSelect = document.getElementById('selectErrorSort');
+      if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+          const [by, ord] = e.target.value.split('_');
+          this.errorCenterState.sortBy = by || 'updatedAt';
+          this.errorCenterState.sortOrder = ord || 'desc';
+          this.loadErrorIncidents(1);
+        });
+      }
+
+      const resetBtn = document.getElementById('btnResetErrorFilters');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          this.errorCenterState.search = '';
+          this.errorCenterState.status = '';
+          this.errorCenterState.severity = '';
+          this.errorCenterState.component = '';
+          this.errorCenterState.sortBy = 'updatedAt';
+          this.errorCenterState.sortOrder = 'desc';
+          this._renderErrorCenterView(container);
+        });
+      }
+
+      const refreshBtn = document.getElementById('btnRefreshErrors');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+          this.loadErrorIncidents(this.errorCenterState.page);
+        });
+      }
+
+      this.loadErrorIncidents(1);
+    }
+
+    async loadErrorIncidents(page = 1) {
+      this.errorCenterState.page = page;
+      const wrapper = document.getElementById('errorIncidentsTableWrapper');
+      if (wrapper) {
+        wrapper.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--admin-text-muted);">Loading incidents...</div>`;
+      }
+
+      try {
+        const query = {
+          page: this.errorCenterState.page,
+          pageSize: this.errorCenterState.pageSize,
+          sortBy: this.errorCenterState.sortBy,
+          sortOrder: this.errorCenterState.sortOrder
+        };
+
+        if (this.errorCenterState.search) query.search = this.errorCenterState.search;
+        if (this.errorCenterState.status) query.status = this.errorCenterState.status;
+        if (this.errorCenterState.severity) query.severity = this.errorCenterState.severity;
+        if (this.errorCenterState.component) query.component = this.errorCenterState.component;
+
+        const res = await window.AdminApi.listErrorIncidents(query);
+
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to load error incidents');
+        }
+
+        const items = res.data?.items || [];
+        const pagination = res.data?.pagination || { page, pageSize: this.errorCenterState.pageSize, total: 0, totalPages: 0 };
+        this.errorCenterState.items = items;
+        this.errorCenterState.total = pagination.total || 0;
+        this.errorCenterState.totalPages = pagination.totalPages || 0;
+
+        // Update KPI counters based on current batch and summary
+        const totalEl = document.getElementById('kpiTotalIncidents');
+        const openEl = document.getElementById('kpiOpenIncidents');
+        const critEl = document.getElementById('kpiCriticalIncidents');
+        const muteEl = document.getElementById('kpiMutedIncidents');
+
+        if (totalEl) totalEl.textContent = pagination.total.toLocaleString();
+        if (openEl) openEl.textContent = items.filter(i => i.status === 'OPEN').length.toLocaleString();
+        if (critEl) critEl.textContent = items.filter(i => i.severity === 'CRITICAL' || i.severity === 'HIGH').length.toLocaleString();
+        if (muteEl) muteEl.textContent = items.filter(i => i.status === 'MUTED').length.toLocaleString();
+
+        this._renderErrorIncidentTable(items);
+        this._renderPagination('errorIncidentsPagination', this.errorCenterState, (newPage) => {
+          this.loadErrorIncidents(newPage);
+        });
+      } catch (err) {
+        if (wrapper) {
+          const reqIdHtml = err.requestId ? `
+            <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--admin-text-muted);">
+              Request ID: <code style="font-family:'JetBrains Mono',monospace;">${this._escape(err.requestId)}</code>
+              <button class="admin-btn admin-btn-xs admin-btn-secondary" style="margin-left:0.25rem;padding:1px 6px;" onclick="AdminShell.copyErrorText('${this._escape(err.requestId)}', 'Request ID')">Copy</button>
+            </div>
+          ` : '';
+          wrapper.innerHTML = `
+            <div style="padding:2rem;text-align:center;color:var(--admin-danger);">
+              <div style="font-weight:600;margin-bottom:0.25rem;">Failed to load error incidents</div>
+              <div style="font-size:0.875rem;">${this._escape(err.message)}</div>
+              ${reqIdHtml}
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" style="margin-top:1rem;" onclick="AdminShell.loadErrorIncidents(1)">Retry</button>
+            </div>
+          `;
+        }
+      }
+    }
+
+    _renderErrorIncidentTable(items) {
+      const wrapper = document.getElementById('errorIncidentsTableWrapper');
+      if (!wrapper) return;
+
+      if (!items || items.length === 0) {
+        wrapper.innerHTML = `
+          <div style="padding:3rem 1rem;text-align:center;color:var(--admin-text-muted);">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">🛡️</div>
+            <div style="font-weight:600;font-size:1rem;color:var(--admin-text-primary);">No error incidents found</div>
+            <div style="font-size:0.8125rem;margin-top:0.25rem;">There are no operational errors matching your active filter criteria.</div>
+          </div>
+        `;
+        return;
+      }
+
+      wrapper.innerHTML = `
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width:90px;">Severity</th>
+              <th style="width:110px;">Status</th>
+              <th style="width:95px;">Component</th>
+              <th>Error Code &amp; Message</th>
+              <th style="width:80px;text-align:right;">Count</th>
+              <th style="width:150px;">Last Seen</th>
+              <th style="width:130px;text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(inc => {
+              const fp = inc.fingerprint || {};
+              const errorCode = fp.errorCode || 'UNKNOWN_ERROR';
+              const message = fp.normalizedMessage || inc.title || 'No message provided';
+              const lastSeen = inc.lastSeenAt ? new Date(inc.lastSeenAt).toLocaleString() : 'N/A';
+              const count = inc.occurrenceCount || 1;
+
+              return `
+                <tr>
+                  <td>${this._renderSeverityBadge(inc.severity)}</td>
+                  <td>${this._renderIncidentStatusBadge(inc.status)}</td>
+                  <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;font-weight:600;">${this._escape(fp.component || 'BACKEND')}</span></td>
+                  <td>
+                    <div style="font-weight:600;font-size:0.8125rem;color:var(--admin-text-primary);font-family:'JetBrains Mono',monospace;">
+                      ${this._escape(errorCode)}
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--admin-text-secondary);max-width:500px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;" title="${this._escape(message)}">
+                      ${this._escape(message)}
+                    </div>
+                  </td>
+                  <td style="text-align:right;font-weight:700;font-family:'JetBrains Mono',monospace;">
+                    ${count > 999 ? count.toLocaleString() : count}
+                  </td>
+                  <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">
+                    ${lastSeen}
+                  </td>
+                  <td style="text-align:right;white-space:nowrap;">
+                    <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectIncident('${inc.id}')" title="Inspect Incident">
+                      ${ICONS.eye} View
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    _renderSeverityBadge(severity) {
+      if (!severity) return `<span class="admin-badge admin-badge-neutral">UNKNOWN</span>`;
+      const s = String(severity).toUpperCase();
+      if (s === 'CRITICAL') {
+        return `<span class="admin-badge admin-badge-critical"><span class="admin-status-dot"></span> CRITICAL</span>`;
+      }
+      if (s === 'HIGH') {
+        return `<span class="admin-badge admin-badge-danger"><span class="admin-status-dot"></span> HIGH</span>`;
+      }
+      if (s === 'MEDIUM') {
+        return `<span class="admin-badge admin-badge-warning"><span class="admin-status-dot"></span> MEDIUM</span>`;
+      }
+      if (s === 'LOW') {
+        return `<span class="admin-badge admin-badge-info"><span class="admin-status-dot"></span> LOW</span>`;
+      }
+      return `<span class="admin-badge admin-badge-neutral">${this._escape(s)}</span>`;
+    }
+
+    _renderIncidentStatusBadge(status) {
+      if (!status) return `<span class="admin-badge admin-badge-neutral">UNKNOWN</span>`;
+      const s = String(status).toUpperCase();
+      if (s === 'OPEN') {
+        return `<span class="admin-badge admin-badge-status-open"><span class="admin-status-dot"></span> OPEN</span>`;
+      }
+      if (s === 'ACKNOWLEDGED') {
+        return `<span class="admin-badge admin-badge-status-acknowledged"><span class="admin-status-dot"></span> ACKNOWLEDGED</span>`;
+      }
+      if (s === 'RESOLVED') {
+        return `<span class="admin-badge admin-badge-status-resolved"><span class="admin-status-dot"></span> RESOLVED</span>`;
+      }
+      if (s === 'MUTED') {
+        return `<span class="admin-badge admin-badge-status-muted"><span class="admin-status-dot"></span> MUTED</span>`;
+      }
+      return `<span class="admin-badge admin-badge-neutral">${this._escape(s)}</span>`;
+    }
+
+    async inspectIncident(incidentId) {
+      try {
+        const res = await window.AdminApi.getErrorIncident(incidentId);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to fetch incident details');
+        }
+
+        const inc = res.data?.incident;
+        if (!inc) throw new Error('Incident not found');
+
+        const fp = inc.fingerprint || {};
+        const occurrences = inc.occurrences || [];
+        const canManage = window.AdminAuth.hasPermission('errors.manage');
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <!-- Header Summary Card -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    ${this._renderSeverityBadge(inc.severity)}
+                    ${this._renderIncidentStatusBadge(inc.status)}
+                    <span class="admin-badge admin-badge-neutral">${this._escape(fp.component || 'BACKEND')}</span>
+                  </div>
+                  <h3 style="font-size:1.125rem;font-weight:700;margin:0.25rem 0;color:var(--admin-text-primary);font-family:'JetBrains Mono',monospace;">
+                    ${this._escape(fp.errorCode || 'UNKNOWN_ERROR')}
+                  </h3>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-size:1.25rem;font-weight:700;color:var(--admin-text-primary);font-family:'JetBrains Mono',monospace;">
+                    ${(inc.occurrenceCount || 1).toLocaleString()}
+                  </div>
+                  <div style="font-size:0.6875rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Occurrences</div>
+                </div>
+              </div>
+
+              <div style="font-size:0.875rem;color:var(--admin-text-secondary);background:var(--admin-bg-subtle);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-family:'JetBrains Mono',monospace;word-break:break-all;line-height:1.4;">
+                ${this._escape(fp.normalizedMessage || inc.title || 'No normalized message')}
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem;margin-top:0.875rem;font-size:0.8125rem;">
+                <div><strong>Incident ID:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(inc.id)}</code> <button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyErrorText('${this._escape(inc.id)}', 'Incident ID')">Copy</button></div>
+                <div><strong>Fingerprint Hash:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(fp.fingerprintHash ? fp.fingerprintHash.substring(0, 12) + '...' : 'N/A')}</code> <button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.inspectFingerprint('${fp.id}')">Inspect FP</button></div>
+                <div><strong>First Seen:</strong> ${inc.firstSeenAt ? new Date(inc.firstSeenAt).toLocaleString() : 'N/A'}</div>
+                <div><strong>Last Seen:</strong> ${inc.lastSeenAt ? new Date(inc.lastSeenAt).toLocaleString() : 'N/A'}</div>
+              </div>
+            </div>
+
+            <!-- Triage & Management Actions -->
+            ${canManage ? `
+              <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+                <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.75rem;color:var(--admin-text-primary);">Incident Lifecycle Management</div>
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                  ${inc.status === 'OPEN' ? `
+                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.acknowledgeIncident('${inc.id}')">
+                      👁️ Acknowledge
+                    </button>
+                  ` : ''}
+
+                  ${inc.status !== 'RESOLVED' ? `
+                    <button class="admin-btn admin-btn-success admin-btn-sm" onclick="AdminShell.showResolveIncidentModal('${inc.id}')">
+                      ✓ Resolve Incident
+                    </button>
+                  ` : `
+                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.acknowledgeIncident('${inc.id}')">
+                      🔄 Reopen / Acknowledge
+                    </button>
+                  `}
+
+                  ${inc.status !== 'MUTED' ? `
+                    <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.showMuteIncidentModal('${inc.id}')">
+                      🔇 Mute Incident
+                    </button>
+                  ` : `
+                    <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.confirmUnmuteIncident('${inc.id}')">
+                      🔊 Unmute Incident
+                    </button>
+                  `}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Lifecycle Details Card -->
+            ${(inc.acknowledgedAt || inc.resolvedAt || inc.mutedAt) ? `
+              <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;font-size:0.8125rem;">
+                <div style="font-size:0.8125rem;font-weight:700;margin-bottom:0.5rem;color:var(--admin-text-primary);">Audit &amp; Triage History</div>
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${inc.acknowledgedAt ? `
+                    <div style="background:var(--admin-bg-subtle);border-left:3px solid var(--admin-primary);padding:0.5rem 0.75rem;border-radius:var(--radius-xs);">
+                      <strong>Acknowledged</strong> by <code>${this._escape(inc.acknowledgedBy || 'Operator')}</code> at ${new Date(inc.acknowledgedAt).toLocaleString()}
+                    </div>
+                  ` : ''}
+                  ${inc.resolvedAt ? `
+                    <div style="background:var(--admin-bg-subtle);border-left:3px solid var(--admin-success);padding:0.5rem 0.75rem;border-radius:var(--radius-xs);">
+                      <strong>Resolved</strong> by <code>${this._escape(inc.resolvedBy || 'Operator')}</code> at ${new Date(inc.resolvedAt).toLocaleString()}
+                      ${inc.resolutionNotes ? `<div style="margin-top:0.25rem;color:var(--admin-text-secondary);font-size:0.75rem;"><strong>Notes:</strong> ${this._escape(inc.resolutionNotes)}</div>` : ''}
+                    </div>
+                  ` : ''}
+                  ${inc.mutedAt ? `
+                    <div style="background:var(--admin-bg-subtle);border-left:3px solid var(--admin-text-muted);padding:0.5rem 0.75rem;border-radius:var(--radius-xs);">
+                      <strong>Muted</strong> by <code>${this._escape(inc.mutedBy || 'Operator')}</code> at ${new Date(inc.mutedAt).toLocaleString()}
+                      ${inc.mutedUntil ? ` &bull; <strong>Until:</strong> ${new Date(inc.mutedUntil).toLocaleString()}` : ''}
+                      ${inc.muteReason ? `<div style="margin-top:0.25rem;color:var(--admin-text-secondary);font-size:0.75rem;"><strong>Reason:</strong> ${this._escape(inc.muteReason)}</div>` : ''}
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Recent Occurrences List -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Recent Occurrences (${occurrences.length})</div>
+              </div>
+
+              ${occurrences.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${occurrences.map(occ => `
+                    <div class="admin-occurrence-card" style="display:flex;justify-content:space-between;align-items:center;">
+                      <div>
+                        <div style="font-size:0.75rem;font-weight:600;color:var(--admin-text-primary);font-family:'JetBrains Mono',monospace;">
+                          ${occ.httpMethod ? `<span style="color:var(--admin-primary);">${this._escape(occ.httpMethod)}</span> ` : ''}${this._escape(occ.httpPath || occ.rawErrorMessage?.substring(0, 50) || 'Direct Error')}
+                        </div>
+                        <div style="font-size:0.6875rem;color:var(--admin-text-muted);margin-top:2px;">
+                          ${new Date(occ.createdAt).toLocaleString()} &bull; Req: <code>${this._escape(occ.requestId ? occ.requestId.substring(0, 8) + '...' : 'N/A')}</code>
+                        </div>
+                      </div>
+                      <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.inspectOccurrence('${occ.id}')">
+                        Inspect
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No recent occurrence records attached to this incident.</div>
+              `}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Incident: ${inc.id.substring(0, 8)}...`, html);
+      } catch (err) {
+        this._showDrawer('Incident Inspection Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
+    async inspectOccurrence(occurrenceId) {
+      try {
+        const res = await window.AdminApi.getErrorOccurrence(occurrenceId);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to fetch occurrence details');
+        }
+
+        const occ = res.data?.occurrence;
+        if (!occ) throw new Error('Occurrence not found');
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <!-- Metadata Card -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Occurrence Diagnostic Profile</div>
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.inspectIncident('${occ.incidentId}')">
+                  &larr; Back to Incident
+                </button>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8125rem;">
+                <div><strong>Occurrence ID:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(occ.id)}</code> <button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyErrorText('${this._escape(occ.id)}', 'Occurrence ID')">Copy</button></div>
+                <div><strong>Timestamp:</strong> ${new Date(occ.createdAt).toLocaleString()}</div>
+                <div><strong>Request ID:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(occ.requestId || 'N/A')}</code> ${occ.requestId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyErrorText('${this._escape(occ.requestId)}', 'Request ID')">Copy</button>` : ''}</div>
+                <div><strong>Trace / Span:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(occ.traceId || 'N/A')}</code></div>
+                <div><strong>HTTP Route:</strong> <code>${this._escape(occ.httpMethod || '-')} ${this._escape(occ.httpPath || '-')}</code></div>
+                <div><strong>HTTP Status:</strong> <span class="admin-badge admin-badge-${occ.httpStatusCode >= 500 ? 'danger' : 'warning'}">${this._escape(occ.httpStatusCode || '-')}</span></div>
+                <div><strong>User ID:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(occ.userId || 'N/A')}</code></div>
+                <div><strong>Device / Server:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(occ.deviceId || occ.serverId || 'N/A')}</code></div>
+                <div><strong>Client IP:</strong> <code>${this._escape(occ.ipAddress || 'N/A')}</code></div>
+                <div><strong>Client Version:</strong> <code>${this._escape(occ.clientVersion || occ.appVersion || 'N/A')}</code></div>
+              </div>
+            </div>
+
+            <!-- Raw Error Message -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Raw Error Message</div>
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.copyErrorText('${this._escape(occ.rawErrorMessage || '')}', 'Error Message')">
+                  ${ICONS.copy} Copy
+                </button>
+              </div>
+              <div style="font-size:0.8125rem;color:var(--admin-danger);background:var(--admin-bg-subtle);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-family:'JetBrains Mono',monospace;word-break:break-all;line-height:1.4;">
+                ${this._escape(occ.rawErrorMessage || 'No raw error message captured')}
+              </div>
+            </div>
+
+            <!-- Sanitized Stack Trace -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Sanitized Stack Trace</div>
+                ${occ.sanitizedStackTrace ? `
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.copyErrorText('${this._escape(occ.sanitizedStackTrace)}', 'Stack Trace')">
+                    ${ICONS.copy} Copy Stack
+                  </button>
+                ` : ''}
+              </div>
+              ${occ.sanitizedStackTrace ? `
+                <pre class="admin-stack-trace-box"><code>${this._escape(occ.sanitizedStackTrace)}</code></pre>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No stack trace available for this occurrence.</div>
+              `}
+            </div>
+
+            <!-- Metadata & Context JSON -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);">Sanitized Metadata &amp; Context</div>
+                ${occ.sanitizedMetadata ? `
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.copyErrorText('${this._escape(JSON.stringify(occ.sanitizedMetadata, null, 2))}', 'Metadata JSON')">
+                    ${ICONS.copy} Copy JSON
+                  </button>
+                ` : ''}
+              </div>
+              ${occ.sanitizedMetadata ? `
+                <pre class="admin-json-box"><code>${this._escape(JSON.stringify(occ.sanitizedMetadata, null, 2))}</code></pre>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No metadata captured.</div>
+              `}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Occurrence: ${occ.id.substring(0, 8)}...`, html);
+      } catch (err) {
+        this._showDrawer('Occurrence Inspection Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
+    async inspectFingerprint(fingerprintId) {
+      try {
+        const res = await window.AdminApi.getErrorFingerprint(fingerprintId);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to fetch fingerprint details');
+        }
+
+        const fp = res.data?.fingerprint;
+        if (!fp) throw new Error('Fingerprint not found');
+
+        const incidents = fp.incidents || [];
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);margin-bottom:0.75rem;">Fingerprint Identity Profile</div>
+              
+              <div style="display:grid;grid-template-columns:1fr;gap:0.5rem;font-size:0.8125rem;">
+                <div><strong>Fingerprint ID:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(fp.id)}</code></div>
+                <div><strong>Hash:</strong> <code style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;">${this._escape(fp.fingerprintHash)}</code> <button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyErrorText('${this._escape(fp.fingerprintHash)}', 'Fingerprint Hash')">Copy</button></div>
+                <div><strong>Component:</strong> <span class="admin-badge admin-badge-neutral">${this._escape(fp.component)}</span></div>
+                <div><strong>Error Code:</strong> <code style="font-family:'JetBrains Mono',monospace;">${this._escape(fp.errorCode || 'UNKNOWN_ERROR')}</code></div>
+                <div><strong>Exception Type:</strong> <code>${this._escape(fp.exceptionType || 'N/A')}</code></div>
+                <div><strong>First Seen:</strong> ${fp.firstSeenAt ? new Date(fp.firstSeenAt).toLocaleString() : 'N/A'}</div>
+                <div><strong>Last Seen:</strong> ${fp.lastSeenAt ? new Date(fp.lastSeenAt).toLocaleString() : 'N/A'}</div>
+                <div><strong>Total Historical Occurrences:</strong> <strong>${(fp.totalOccurrences || 0).toLocaleString()}</strong></div>
+              </div>
+
+              <div style="margin-top:0.75rem;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--admin-text-secondary);margin-bottom:0.25rem;">Normalized Message Pattern:</div>
+                <div style="font-size:0.8125rem;background:var(--admin-bg-subtle);border-radius:var(--radius-xs);padding:0.5rem 0.75rem;font-family:'JetBrains Mono',monospace;word-break:break-all;">
+                  ${this._escape(fp.normalizedMessage)}
+                </div>
+              </div>
+            </div>
+
+            <!-- Linked Incidents -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="font-size:0.8125rem;font-weight:700;color:var(--admin-text-primary);margin-bottom:0.75rem;">Linked Incidents (${incidents.length})</div>
+              ${incidents.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${incidents.map(inc => `
+                    <div class="admin-occurrence-card" style="display:flex;justify-content:space-between;align-items:center;">
+                      <div>
+                        <div style="display:flex;align-items:center;gap:0.375rem;">
+                          ${this._renderSeverityBadge(inc.severity)}
+                          ${this._renderIncidentStatusBadge(inc.status)}
+                        </div>
+                        <div style="font-size:0.6875rem;color:var(--admin-text-muted);margin-top:2px;">
+                          ID: <code>${this._escape(inc.id.substring(0, 8))}...</code> &bull; Updated: ${new Date(inc.updatedAt).toLocaleString()}
+                        </div>
+                      </div>
+                      <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.inspectIncident('${inc.id}')">
+                        Inspect
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No incidents linked to this fingerprint.</div>
+              `}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Fingerprint: ${fp.fingerprintHash.substring(0, 10)}...`, html);
+      } catch (err) {
+        this._showDrawer('Fingerprint Inspection Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
+    async acknowledgeIncident(incidentId) {
+      try {
+        const res = await window.AdminApi.acknowledgeErrorIncident(incidentId);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to acknowledge incident');
+        }
+        this.toast('Incident marked as ACKNOWLEDGED', 'success');
+        this.inspectIncident(incidentId);
+        this.loadErrorIncidents(this.errorCenterState.page);
+      } catch (err) {
+        this.toast(err.message, 'danger');
+      }
+    }
+
+    showResolveIncidentModal(incidentId) {
+      this.showConfirmModal({
+        title: 'Resolve Error Incident',
+        message: 'Are you sure you want to mark this incident as RESOLVED? Future identical errors will automatically reopen the incident or create a new lifecycle tracking record.',
+        confirmLabel: 'Resolve Incident',
+        confirmType: 'success',
+        requireReason: true,
+        onConfirm: async (resolutionNotes) => {
+          const res = await window.AdminApi.resolveErrorIncident(incidentId, { resolutionNotes });
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to resolve incident');
+          }
+          this.toast('Incident marked as RESOLVED', 'success');
+          this.inspectIncident(incidentId);
+          this.loadErrorIncidents(this.errorCenterState.page);
+        }
+      });
+    }
+
+    showMuteIncidentModal(incidentId) {
+      const existing = document.getElementById('adminMuteModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminMuteModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">Mute Error Incident</h3>
+            <button class="admin-btn-icon" id="adminMuteCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            <p style="margin-bottom:1rem;font-size:0.875rem;color:var(--admin-text-secondary);">
+              Muting suppresses notifications and separates this incident from active alerts for a bounded duration.
+            </p>
+            <div style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Mute Duration:
+              </label>
+              <select id="adminMuteDurationSelect" class="admin-select" style="width:100%;">
+                <option value="60">1 Hour (60 minutes)</option>
+                <option value="360">6 Hours</option>
+                <option value="1440" selected>24 Hours (1 Day)</option>
+                <option value="4320">3 Days</option>
+                <option value="10080">7 Days (1 Week)</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:0.8125rem;font-weight:600;margin-bottom:0.375rem;color:var(--admin-text-secondary);">
+                Mute Reason (Required):
+              </label>
+              <input type="text" id="adminMuteReasonInput" class="admin-search-input" maxlength="255" placeholder="e.g. Known upstream dependency outage, fix in progress..." style="padding-left:0.875rem;">
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminMuteCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-primary" id="adminMuteConfirmBtn">Confirm Mute</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminMuteCloseBtn');
+      const cancelBtn = document.getElementById('adminMuteCancelBtn');
+      const confirmBtn = document.getElementById('adminMuteConfirmBtn');
+      const reasonInput = document.getElementById('adminMuteReasonInput');
+      const durationSelect = document.getElementById('adminMuteDurationSelect');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          const reason = reasonInput ? reasonInput.value.trim() : '';
+          if (!reason) {
+            this.toast('Please provide a reason for muting this incident', 'warning');
+            return;
+          }
+          const durationMinutes = parseInt(durationSelect ? durationSelect.value : '1440', 10);
+          const mutedUntil = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
+
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Muting...';
+
+          try {
+            const res = await window.AdminApi.muteErrorIncident(incidentId, { reason, mutedUntil });
+            if (!res.success) {
+              throw new Error(res.error?.message || 'Failed to mute incident');
+            }
+            closeModal();
+            this.toast('Incident muted successfully', 'success');
+            this.inspectIncident(incidentId);
+            this.loadErrorIncidents(this.errorCenterState.page);
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm Mute';
+            this.toast(err.message || 'Operation failed', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    confirmUnmuteIncident(incidentId) {
+      this.showConfirmModal({
+        title: 'Unmute Error Incident',
+        message: 'Are you sure you want to unmute this incident? It will return to active status and resume normal triage tracking.',
+        confirmLabel: 'Unmute Incident',
+        confirmType: 'primary',
+        onConfirm: async () => {
+          const res = await window.AdminApi.unmuteErrorIncident(incidentId);
+          if (!res.success) {
+            throw new Error(res.error?.message || 'Failed to unmute incident');
+          }
+          this.toast('Incident unmuted successfully', 'success');
+          this.inspectIncident(incidentId);
+          this.loadErrorIncidents(this.errorCenterState.page);
         }
       });
     }

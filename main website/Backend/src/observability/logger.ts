@@ -1,6 +1,8 @@
 import { config } from '../config/env.js';
+import { RequestContextStore } from './request_context.js';
 
 export interface StructuredLogPayload {
+
   level?: 'info' | 'warn' | 'error' | 'debug' | 'trace';
   service?: string;
   environment?: string;
@@ -103,7 +105,7 @@ export class StructuredLogger {
       level,
       service: payload.service || this.serviceName,
       environment,
-      requestId: payload.requestId,
+      requestId: payload.requestId || RequestContextStore.getRequestId(),
       operation: payload.operation,
       event: payload.event,
       resourceType: payload.resourceType,

@@ -1,4 +1,6 @@
 import { appLogger, gatewayLogger, sanitizeLogMetadata } from './logger.js';
+import { ErrorIngestionService } from '../services/error_ingestion_service.js';
+import { ErrorSeverity } from '@prisma/client';
 
 export type ConnectionComponent =
   | 'android_service'
@@ -109,10 +111,11 @@ export interface ConnectionMetricsSnapshot {
 }
 
 /**
- * Authoritative Connection Observability Engine (Phase 11A Batch 11A.15)
+ * Authoritative Connection Observability Engine (Phase 11A Batch 11A.15 / Phase 12.7)
  *
  * Provides structured telemetry, low-cardinality operational metrics, and
  * lifecycle correlation for ZdexCloud gateway and control-plane connections.
+ * Ingests meaningful operational failures into ErrorIngestionService.
  *
  * Key Invariants:
  * - Telemetry is strictly observational; failures in telemetry NEVER interrupt connection operations.
@@ -184,8 +187,101 @@ export class ConnectionObservability {
       } else {
         gatewayLogger.info(message, logContext);
       }
+
+      // 3. Ingest meaningful operational failures into Central ErrorIngestionService (Phase 12.7)
+      this.ingestOperationalFailure(event).catch(() => {});
     } catch {
       // Hard Invariant: Telemetry failure must never break reliability!
+    }
+  }
+
+  /**
+   * Evaluates if a connection event represents a meaningful operational failure
+   * and dispatches it to ErrorIngestionService asynchronously.
+   */
+  private static async ingestOperationalFailure(event: StructuredConnectionEvent): Promise<void> {
+    try {
+      const isFailureEvent =
+        event.outcome === 'failed' ||
+        event.outcome === 'rejected' ||
+        event.outcome === 'timeout' ||
+        event.event === 'auth_failed' ||
+        event.event === 'connection_failed' ||
+        event.event === 'heartbeat_timeout' ||
+        event.event === 'session_stale' ||
+        event.event === 'self_heal_failed' ||
+        event.event === 'gateway_failover_started' ||
+        event.event === 'registration_failed' ||
+        Boolean(event.errorCategory && event.errorCategory !== 'unknown' && event.outcome !== 'success');
+
+      // Filter out healthy / normal lifecycle events
+      if (!isFailureEvent) return;
+
+      let component = 'GATEWAY';
+      if (event.component === 'android_tunnel' || event.component === 'android_service' || event.component === 'network_watcher') {
+        component = 'ANDROID';
+      } else if (event.component === 'backend_connection' || event.component === 'backend_reconciliation') {
+        component = 'BACKEND';
+      }
+
+      const errorCode = (
+        event.authFailureCategory ||
+        event.errorCategory ||
+        `GATEWAY_${event.event.toUpperCase()}`
+      ).toUpperCase();
+
+      let severity: ErrorSeverity = ErrorSeverity.WARNING;
+      if (
+        event.event === 'auth_failed' ||
+        event.errorCategory === 'account_suspended' ||
+        event.errorCategory === 'device_not_owned' ||
+        event.event === 'gateway_startup_failed' ||
+        event.event === 'gateway_shutdown_failed' ||
+        event.event === 'self_heal_failed'
+      ) {
+        severity = ErrorSeverity.ERROR;
+      } else if (
+        event.event === 'heartbeat_timeout' ||
+        event.event === 'session_stale' ||
+        event.event === 'gateway_failover_started'
+      ) {
+        severity = ErrorSeverity.WARNING;
+      }
+
+      const rawMessage =
+        event.metadata?.errorMessage ||
+        event.reason ||
+        `Operational connection event '${event.event}' resulted in ${event.outcome || 'failure'} (category: ${event.errorCategory || event.authFailureCategory || 'none'})`;
+
+      await ErrorIngestionService.getInstance().ingest({
+        component,
+        severity,
+        errorCode,
+        errorType: event.authFailureCategory ? 'AuthenticationFailure' : 'ConnectionLifecycleError',
+        message: String(rawMessage),
+        deviceId: event.deviceId,
+        gatewayNodeId: event.gatewayNodeId,
+        connectionId: event.connectionId,
+        sessionId: event.sessionId,
+        metadata: {
+          event: event.event,
+          outcome: event.outcome,
+          reason: event.reason,
+          errorCategory: event.errorCategory,
+          authFailureCategory: event.authFailureCategory,
+          durationMs: event.durationMs,
+          connectionGeneration: event.connectionGeneration,
+          sessionEpoch: event.sessionEpoch,
+          gatewayRegion: event.gatewayRegion,
+          transport: event.transport,
+          previousState: event.previousState,
+          newState: event.newState,
+          retryAttempt: event.retryAttempt,
+          ...event.metadata
+        }
+      });
+    } catch {
+      // Invariant: Failures in error ingestion MUST NEVER interrupt connection lifecycle
     }
   }
 

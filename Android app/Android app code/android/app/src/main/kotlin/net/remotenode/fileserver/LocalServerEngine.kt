@@ -429,6 +429,24 @@ class LocalServerEngine {
         } catch (e: Exception) {
             isRunning = false
             server = null
+            if (context is android.content.Context || androidContext is android.content.Context) {
+                val ctx = (context as? android.content.Context) ?: (androidContext as android.content.Context)
+                val cfg = RemoteNodeServerService.getPersistedTunnelConfig(ctx)
+                AndroidErrorTelemetry.reportError(
+                    cfg["apiBaseUrl"],
+                    cfg["sessionToken"],
+                    AndroidErrorTelemetry.ErrorTelemetryPayload(
+                        component = "ANDROID_LOCAL_SERVER",
+                        errorCode = "LOCAL_SERVER_BIND_FAILED",
+                        errorType = e.javaClass.simpleName,
+                        severity = "ERROR",
+                        message = "Local embedded HTTP file server failed to bind port $activePort: ${e.message}",
+                        throwable = e,
+                        deviceId = cfg["deviceId"],
+                        metadata = mapOf("port" to activePort)
+                    )
+                )
+            }
             mapOf(
                 "success" to false,
                 "error" to (e.message ?: "Failed to bind local HTTP server port")

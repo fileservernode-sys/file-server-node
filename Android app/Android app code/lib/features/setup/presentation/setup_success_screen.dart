@@ -100,15 +100,15 @@ class SetupSuccessScreen extends ConsumerWidget {
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               StatusBadge(
-                                status: setup.isGatewayConnected
-                                    ? DeviceServerStatus.online
-                                    : DeviceServerStatus.offline,
+                                status: setup.serverStatus,
                               ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          const Text(
-                            'Your server is running and connected. Sign in to your account on the ZdexCloud website to access your server and file manager.',
+                          Text(
+                            setup.isServerRunning
+                                ? 'Your server is running and connected. Sign in to your account on the ZdexCloud website to access your server and file manager.'
+                                : 'Server engine initialized. Establishing encrypted outbound tunnel to remote gateway...',
                             style: AppTypography.bodySmall,
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -170,7 +170,9 @@ class SetupSuccessScreen extends ConsumerWidget {
                           const SizedBox(height: AppSpacing.xs),
                           _SuccessRow(
                             label: 'Node Status',
-                            value: setup.isLocalOnline ? 'ACTIVE' : 'STOPPED',
+                            value: setup.isServerRunning
+                                ? 'RUNNING'
+                                : (setup.isLocalOnline ? 'CONNECTING' : 'STOPPED'),
                           ),
                         ],
                       ),

@@ -83,14 +83,18 @@ class MainActivity : FlutterActivity() {
                     tunnelListener = listener
                     RemoteNodeTunnelManager.addListener(listener)
                     try {
+                        val status = RemoteNodeTunnelManager.getStatus()
                         events?.success(mapOf(
                             "type" to "TUNNEL_STATE_CHANGED",
-                            "state" to RemoteNodeTunnelManager.currentState,
-                            "connectionId" to RemoteNodeTunnelManager.activeConnectionId,
-                            "remoteEndpoint" to RemoteNodeTunnelManager.activeRemoteEndpoint,
-                            "hostname" to RemoteNodeTunnelManager.activeHostname,
-                            "publicUrl" to RemoteNodeTunnelManager.activePublicUrl,
-                            "errorMessage" to RemoteNodeTunnelManager.lastErrorMessage
+                            "state" to (status["state"] ?: RemoteNodeTunnelManager.currentState),
+                            "connectionId" to status["connectionId"],
+                            "remoteEndpoint" to status["remoteEndpoint"],
+                            "hostname" to status["hostname"],
+                            "publicUrl" to status["publicUrl"],
+                            "errorMessage" to status["errorMessage"],
+                            "generation" to status["generation"],
+                            "lastHeartbeatAt" to status["lastHeartbeatAt"],
+                            "timestamp" to System.currentTimeMillis()
                         ))
                     } catch (_: Exception) {}
                 }

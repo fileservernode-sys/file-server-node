@@ -3,33 +3,100 @@ import { AppError } from '../errors/app-error.js';
 import { createErrorResponse } from '../schemas/response.js';
 import { config } from '../config/env.js';
 import { reconnectDatabase } from '../config/database.js';
+import { errorIngestionService } from '../services/error_ingestion_service.js';
 
 export function globalErrorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
-  // Operational App Errors
+  const reqId = request.id;
+  if (reqId) {
+    reply.header('x-request-id', reqId);
+  }
+
+  // 1. Operational App Errors
   if (error instanceof AppError) {
-    request.log.warn({ err: error, url: request.url }, error.message);
-    return reply.status(error.statusCode).send(createErrorResponse(error.errorCode, error.message));
+    request.log.warn({ err: error, url: request.url, reqId }, error.message);
+
+    // Ingest into Observability Error Center
+    errorIngestionService.ingest({
+      error,
+      component: 'BACKEND_API',
+      errorCode: error.errorCode,
+      httpMethod: request.method,
+      httpPath: request.url,
+      httpStatus: error.statusCode,
+      requestId: reqId,
+      userId: (request as any).user?.id || (request as any).userId,
+      metadata: {
+        adminId: (request as any).admin?.id || (request as any).adminId,
+        url: request.url,
+        params: request.params,
+        query: request.query
+      }
+    }).catch(() => {/* fail-safe non-blocking */});
+
+    return reply.status(error.statusCode).send(createErrorResponse(error.errorCode, error.message, reqId));
   }
 
-  // Rate Limiting Errors
+  // 2. Rate Limiting Errors
   if ((error as any).statusCode === 429 || (error as any).code === 'FST_ERR_RATE_LIMIT' || (error as any).error?.code === 'TOO_MANY_REQUESTS') {
-    request.log.warn({ err: error, url: request.url }, 'Rate limit exceeded');
-    return reply.status(429).send(createErrorResponse('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded. Please try again later.'));
+    request.log.warn({ err: error, url: request.url, reqId }, 'Rate limit exceeded');
+
+    errorIngestionService.ingest({
+      error,
+      component: 'BACKEND_API',
+      severity: 'WARNING',
+      errorCode: 'RATE_LIMIT_EXCEEDED',
+      httpMethod: request.method,
+      httpPath: request.url,
+      httpStatus: 429,
+      requestId: reqId,
+      userId: (request as any).user?.id || (request as any).userId,
+      metadata: { url: request.url }
+    }).catch(() => {/* fail-safe */});
+
+    return reply.status(429).send(createErrorResponse('RATE_LIMIT_EXCEEDED', 'Rate limit exceeded. Please try again later.', reqId));
   }
 
-  // Fastify Schema Validation Error
+  // 3. Fastify Schema Validation Error
   if (error.validation) {
-    request.log.warn({ validation: error.validation, url: request.url }, 'Request validation failed');
-    return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', error.message || 'Invalid request payload'));
+    request.log.warn({ validation: error.validation, url: request.url, reqId }, 'Request validation failed');
+
+    errorIngestionService.ingest({
+      error,
+      component: 'BACKEND_API',
+      severity: 'WARNING',
+      errorCode: 'VALIDATION_ERROR',
+      httpMethod: request.method,
+      httpPath: request.url,
+      httpStatus: 400,
+      requestId: reqId,
+      userId: (request as any).user?.id || (request as any).userId,
+      metadata: { validation: error.validation, url: request.url }
+    }).catch(() => {/* fail-safe */});
+
+    return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', error.message || 'Invalid request payload', reqId));
   }
 
-  // Client Errors with explicit 4xx status code (e.g. malformed JSON in body parser)
+  // 4. Client Errors with explicit 4xx status code (e.g. malformed JSON in body parser)
   if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
-    request.log.warn({ err: error, url: request.url }, error.message);
-    return reply.status(error.statusCode).send(createErrorResponse((error as any).code || 'BAD_REQUEST', error.message));
+    request.log.warn({ err: error, url: request.url, reqId }, error.message);
+
+    errorIngestionService.ingest({
+      error,
+      component: 'BACKEND_API',
+      severity: 'WARNING',
+      errorCode: (error as any).code || 'BAD_REQUEST',
+      httpMethod: request.method,
+      httpPath: request.url,
+      httpStatus: error.statusCode,
+      requestId: reqId,
+      userId: (request as any).user?.id || (request as any).userId,
+      metadata: { url: request.url }
+    }).catch(() => {/* fail-safe */});
+
+    return reply.status(error.statusCode).send(createErrorResponse((error as any).code || 'BAD_REQUEST', error.message, reqId));
   }
 
-  // All Prisma Database Errors (connection lost, pool timeout, rust panic, unknown)
+  // 5. All Prisma Database Errors (connection lost, pool timeout, rust panic, unknown)
   const isPrismaError =
     error.name === 'PrismaClientInitializationError' ||
     error.name === 'PrismaClientKnownRequestError' ||
@@ -39,18 +106,48 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     (error.message && error.message.includes('connection') && error.message.includes('database'));
 
   if (isPrismaError) {
-    request.log.error({ err: error, url: request.url }, 'Database service connection error');
+    request.log.error({ err: error, url: request.url, reqId }, 'Database service connection error');
     // Attempt a non-blocking disconnect + reconnect so subsequent requests succeed
     reconnectDatabase().catch(() => {/* ignore */});
-    return reply.status(503).send(createErrorResponse('DATABASE_ERROR', 'Database service is currently unavailable'));
+
+    errorIngestionService.ingest({
+      error,
+      component: 'DATABASE',
+      severity: 'ERROR',
+      errorCode: (error as any).code || 'DATABASE_ERROR',
+      httpMethod: request.method,
+      httpPath: request.url,
+      httpStatus: 503,
+      requestId: reqId,
+      userId: (request as any).user?.id || (request as any).userId,
+      metadata: { url: request.url }
+    }).catch(() => {/* fail-safe */});
+
+    return reply.status(503).send(createErrorResponse('DATABASE_ERROR', 'Database service is currently unavailable', reqId));
   }
 
-  // Log unexpected internal errors
-  request.log.error({ err: error, url: request.url }, 'Unhandled application exception');
+  // 6. Log unexpected internal errors
+  request.log.error({ err: error, url: request.url, reqId }, 'Unhandled application exception');
+
+  errorIngestionService.ingest({
+    error,
+    component: 'BACKEND_API',
+    severity: 'CRITICAL',
+    errorCode: 'INTERNAL_SERVER_ERROR',
+    httpMethod: request.method,
+    httpPath: request.url,
+    httpStatus: 500,
+    requestId: reqId,
+    userId: (request as any).user?.id || (request as any).userId,
+    metadata: {
+      adminId: (request as any).admin?.id || (request as any).adminId,
+      url: request.url
+    }
+  }).catch(() => {/* fail-safe */});
 
   // Safe Production Error (No stack trace leakage)
   const isDev = config.NODE_ENV === 'development';
   const responseMessage = isDev ? error.message : 'An unexpected internal error occurred';
 
-  return reply.status(500).send(createErrorResponse('INTERNAL_SERVER_ERROR', responseMessage));
+  return reply.status(500).send(createErrorResponse('INTERNAL_SERVER_ERROR', responseMessage, reqId));
 }

@@ -295,6 +295,21 @@ class RemoteNodeServerService : Service() {
                 isServiceRunning = false
                 currentServerState = "ERROR"
                 releaseWakeLock()
+                val tunnelConfig = getPersistedTunnelConfig(this)
+                AndroidErrorTelemetry.reportError(
+                    tunnelConfig["apiBaseUrl"],
+                    tunnelConfig["sessionToken"],
+                    AndroidErrorTelemetry.ErrorTelemetryPayload(
+                        component = "ANDROID_SERVICE",
+                        errorCode = "SERVICE_START_EXCEPTION",
+                        errorType = e.javaClass.simpleName,
+                        severity = "ERROR",
+                        message = "Android foreground service failed during startup: ${e.message}",
+                        throwable = e,
+                        deviceId = tunnelConfig["deviceId"],
+                        metadata = mapOf("port" to port)
+                    )
+                )
             }
         }
     }

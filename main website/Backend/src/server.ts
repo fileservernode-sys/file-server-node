@@ -62,6 +62,13 @@ async function startServer() {
       app.log.info(`🔔 Background Notification Delivery Worker (${defaultDeliveryWorker.getWorkerId()}) & Retention Worker initialized.`);
     }
 
+    // Start background Error Retention & Cleanup Worker (Phase 12.8)
+    const { defaultErrorRetentionWorker } = await import('./observability/error_retention_worker.js');
+    if (config.ERROR_CLEANUP_ENABLED) {
+      defaultErrorRetentionWorker.start();
+      app.log.info('🛡️ Background Observability Error Retention Worker initialized.');
+    }
+
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probes available at ${address}/health and ${address}/api/v1/health`);
 
@@ -81,6 +88,11 @@ async function startServer() {
           await defaultDeliveryWorker.stop();
           defaultRetentionWorker.stop();
           app.log.info('Notification background workers stopped.');
+        }
+
+        if (config.ERROR_CLEANUP_ENABLED) {
+          defaultErrorRetentionWorker.stop();
+          app.log.info('Observability error retention worker stopped.');
         }
 
         // 1. Close Gateway WebSocket Relay Server

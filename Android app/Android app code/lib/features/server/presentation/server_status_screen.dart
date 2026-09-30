@@ -117,7 +117,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('File server & background persistent service started.')),
+            content: Text('Starting server engine and connecting to remote gateway...')),
       );
     }
   }
@@ -133,7 +133,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('File server & background service restarted.')),
+            content: Text('Restarting server engine and reconnecting remote gateway...')),
       );
     }
   }
@@ -304,15 +304,25 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             StatusBadge(
-                              status: setup.isGatewayConnected
+                              status: setup.isServerRunning
                                   ? DeviceServerStatus.online
-                                  : DeviceServerStatus.offline,
+                                  : (setup.isLocalOnline
+                                      ? setup.serverStatus
+                                      : DeviceServerStatus.offline),
                             ),
                           ],
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        const Text(
-                          'Your server is running and active. Visit the ZdexCloud website to access your file manager and manage storage.',
+                        Text(
+                          setup.isServerRunning
+                              ? 'Your server is running and active. Visit the ZdexCloud website to access your file manager and manage storage.'
+                              : (setup.isLocalOnline
+                                  ? (setup.endpointStatus == 'RECONNECTING'
+                                      ? 'Server local engine is running. Reconnecting to remote gateway...'
+                                      : (setup.endpointStatus == 'FAILED'
+                                          ? 'Server local engine is running. Remote gateway connection failed.'
+                                          : 'Server local engine is running. Connecting to remote gateway...'))
+                                  : 'Your server is stopped. Start the server engine to enable local hosting and remote access.'),
                           style: AppTypography.bodySmall,
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -468,9 +478,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             StatusBadge(
-                              status: _isLocalRunning
-                                  ? DeviceServerStatus.online
-                                  : DeviceServerStatus.offline,
+                              status: setup.serverStatus,
                             ),
                           ],
                         ),
@@ -492,6 +500,11 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
+                          label: 'Server Status',
+                          value: setup.serverStatusLabel.toUpperCase(),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
                           label: 'Local Engine Status',
                           value: _isLocalRunning ? 'ONLINE' : 'STOPPED',
                         ),
@@ -510,7 +523,13 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                           label: 'Connection Service',
                           value: setup.isGatewayConnected
                               ? 'CONNECTED'
-                              : 'DISCONNECTED',
+                              : (setup.isLocalOnline
+                                  ? (setup.endpointStatus == 'RECONNECTING'
+                                      ? 'RECONNECTING'
+                                      : (setup.endpointStatus == 'FAILED'
+                                          ? 'FAILED'
+                                          : 'CONNECTING'))
+                                  : 'DISCONNECTED'),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
@@ -529,7 +548,9 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                       style: AppTypography.sectionTitle),
                   const SizedBox(height: AppSpacing.sm),
                   PrimaryButton(
-                    label: 'Start Local Server',
+                    label: setup.isLocalOnline
+                        ? (setup.isServerRunning ? 'Server Running' : 'Connecting to Gateway...')
+                        : 'Start Local Server',
                     icon: Icons.play_arrow_outlined,
                     isLoading: _isLoading,
                     onPressed: _isLocalRunning ? null : _handleStart,

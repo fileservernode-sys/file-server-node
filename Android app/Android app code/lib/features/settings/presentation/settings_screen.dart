@@ -148,11 +148,7 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             const SizedBox(width: AppSpacing.xs),
                             StatusBadge(
-                              status: setupState.isGatewayConnected
-                                  ? DeviceServerStatus.online
-                                  : (setupState.isLocalOnline
-                                      ? DeviceServerStatus.connecting
-                                      : DeviceServerStatus.offline),
+                              status: setupState.serverStatus,
                             ),
                           ],
                         ),

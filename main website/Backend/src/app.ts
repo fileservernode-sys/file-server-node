@@ -11,6 +11,8 @@ import { defaultGatewayService } from './gateway/gateway_service.js';
 import { getAdminCspHeader } from './utils/security.js';
 import { metricsCollector } from './observability/metrics.js';
 import { checkDatabaseReadiness } from './config/database.js';
+import { RequestContextStore } from './observability/request_context.js';
+
 
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -64,6 +66,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       }
       return crypto.randomUUID();
     },
+    requestIdHeader: 'x-request-id',
     logger: {
       level: config.LOG_LEVEL,
       redact: [
@@ -91,9 +94,13 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   // Metrics and Request Correlation Hooks
-  app.addHook('onRequest', async (request) => {
+  app.addHook('onRequest', (request, _reply, done) => {
     (request.raw as any).__startTime = Date.now();
+    RequestContextStore.run({ requestId: request.id }, () => {
+      done();
+    });
   });
+
 
   app.addHook('onResponse', async (request, reply) => {
     const start = (request.raw as any).__startTime || Date.now();
@@ -160,8 +167,9 @@ export async function buildApp(): Promise<FastifyInstance> {
 
     // If it's a non-existent /api/ route, return standard 404 JSON
     if (urlPath.startsWith('/api/')) {
-      return reply.status(404).send(createErrorResponse('NOT_FOUND', `Route ${request.method}:${request.url} not found`));
+      return reply.status(404).send(createErrorResponse('NOT_FOUND', `Route ${request.method}:${request.url} not found`, request.id));
     }
+
 
     // Storage proxy API routes for phone file server
     if (
@@ -283,8 +291,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.status(404).send('<!DOCTYPE html><html><head><meta charset="utf-8"><title>404 Not Found - ZdexCloud</title><style>body{font-family:sans-serif;background:#0B0F19;color:#F9FAFB;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}</style></head><body><div style="text-align:center;"><h1>404</h1><p>Resource not found</p><a href="/" style="color:#3B82F6;">Return Home</a></div></body></html>');
     }
 
-    return reply.status(404).send(createErrorResponse('NOT_FOUND', `Resource not found`));
+    return reply.status(404).send(createErrorResponse('NOT_FOUND', `Resource not found`, request.id));
   });
+
 
   return app;
 }

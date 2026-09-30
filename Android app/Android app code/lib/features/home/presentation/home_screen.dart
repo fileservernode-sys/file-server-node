@@ -37,7 +37,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isConfigured = setup.deviceId != null ||
         setup.isLocalOnline ||
         setup.assignedSubdomain != null;
-    final isOnline = setup.isLocalOnline;
+    final isOnline = setup.isServerRunning;
+    final isTransitioning = setup.serverStatus == DeviceServerStatus.connecting ||
+        setup.serverStatus == DeviceServerStatus.reconnecting;
 
     final displayName = setup.serverName.isNotEmpty
         ? setup.serverName
@@ -144,13 +146,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Container(
                                 padding: const EdgeInsets.all(AppSpacing.xs),
                                 decoration: BoxDecoration(
-                                  color: isOnline ? AppColors.statusOnlineBg : AppColors.surfaceSubtle,
+                                  color: isOnline
+                                      ? AppColors.statusOnlineBg
+                                      : (isTransitioning
+                                          ? AppColors.statusConnectingBg
+                                          : AppColors.surfaceSubtle),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.phone_android,
                                   size: 24,
-                                  color: isOnline ? AppColors.statusOnline : AppColors.textSecondary,
+                                  color: isOnline
+                                      ? AppColors.statusOnline
+                                      : (isTransitioning
+                                          ? AppColors.statusConnecting
+                                          : AppColors.textSecondary),
                                 ),
                               ),
                               const SizedBox(width: AppSpacing.md),
@@ -172,9 +182,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                               ),
                               StatusBadge(
-                                status: isOnline
-                                    ? DeviceServerStatus.online
-                                    : DeviceServerStatus.offline,
+                                status: setup.serverStatus,
                               ),
                             ],
                           ),
@@ -195,9 +203,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Expanded(
                                   child: Text(
                                     isConfigured
-                                        ? (isOnline
+                                        ? (setup.isServerRunning
                                             ? 'Local Interface: ${setup.localServerUrl}'
-                                            : 'Server configured on this Android host (Currently stopped).')
+                                            : (setup.isLocalOnline
+                                                ? (setup.endpointStatus == 'RECONNECTING'
+                                                    ? 'Reconnecting to remote gateway relay...'
+                                                    : (setup.endpointStatus == 'FAILED'
+                                                        ? 'Remote gateway connection failed.'
+                                                        : 'Starting server... Connecting to remote gateway.'))
+                                                : 'Server configured on this Android host (Currently stopped).'))
                                         : 'Turn this phone into your remotely accessible personal file server.',
                                     style: AppTypography.bodySmall,
                                   ),
@@ -360,8 +374,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Text(
                                   setup.isGatewayConnected
                                       ? 'Connected'
-                                      : (setup.endpointStatus == 'CONNECTING'
-                                          ? 'Connecting'
+                                      : (setup.isLocalOnline
+                                          ? (setup.endpointStatus == 'RECONNECTING'
+                                              ? 'Reconnecting'
+                                              : (setup.endpointStatus == 'FAILED'
+                                                  ? 'Failed'
+                                                  : 'Connecting'))
                                           : 'Disconnected'),
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                                   overflow: TextOverflow.ellipsis,

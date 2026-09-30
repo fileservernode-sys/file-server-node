@@ -70,6 +70,9 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
   final StreamController<RemoteConnectionInfo> _statusController =
       StreamController<RemoteConnectionInfo>.broadcast();
   StreamSubscription? _eventSubscription;
+  Timer? _reconciliationTimer;
+  int _reconciliationPollCount = 0;
+  static const int _maxReconciliationPolls = 60; // Max 60 seconds of transitional polling
 
   RemoteConnectionInfo _currentInfo = const RemoteConnectionInfo(
     status: RemoteConnectionState.disconnected,
@@ -89,20 +92,81 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
           if (event is Map) {
             final map = Map<String, dynamic>.from(event);
             final info = _parseNativeInfo(map);
-            _currentInfo = info;
-            AppLogger.info('[NativeRemoteConnection] Inbound native tunnel state: ${info.status} (endpoint: ${info.remoteEndpoint})');
-            if (!_statusController.isClosed) {
-              _statusController.add(info);
-            }
+            _applyStateUpdate(info, source: 'EventChannel');
           }
         },
         onError: (err) {
           AppLogger.warning('[NativeRemoteConnection] EventChannel error: $err');
+          _startReconciliation();
         },
       );
     } catch (e) {
       AppLogger.warning('[NativeRemoteConnection] Failed to bind EventChannel: $e');
+      _startReconciliation();
     }
+  }
+
+  void _applyStateUpdate(RemoteConnectionInfo info, {required String source}) {
+    final changed = _shouldUpdateInfo(info);
+    if (changed) {
+      _currentInfo = info;
+      AppLogger.info('[NativeRemoteConnection] State update via $source: ${info.status} (endpoint: ${info.remoteEndpoint})');
+      if (!_statusController.isClosed) {
+        _statusController.add(info);
+      }
+    }
+
+    if (_isTerminalState(info.status)) {
+      _stopReconciliation();
+    } else {
+      _startReconciliation();
+    }
+  }
+
+  bool _isTerminalState(RemoteConnectionState state) {
+    return state == RemoteConnectionState.connected ||
+        state == RemoteConnectionState.failed ||
+        state == RemoteConnectionState.disconnected;
+  }
+
+  bool _shouldUpdateInfo(RemoteConnectionInfo newInfo) {
+    if (_currentInfo.status != newInfo.status) return true;
+    if (_currentInfo.connectionId != newInfo.connectionId) return true;
+    if (_currentInfo.remoteEndpoint != newInfo.remoteEndpoint) return true;
+    if (_currentInfo.hostname != newInfo.hostname) return true;
+    if (_currentInfo.publicUrl != newInfo.publicUrl) return true;
+    if (_currentInfo.errorMessage != newInfo.errorMessage) return true;
+    return false;
+  }
+
+  void _startReconciliation() {
+    if (_reconciliationTimer != null && _reconciliationTimer!.isActive) {
+      return;
+    }
+    _reconciliationPollCount = 0;
+    _reconciliationTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      _reconciliationPollCount++;
+      if (_statusController.isClosed || _reconciliationPollCount > _maxReconciliationPolls) {
+        _stopReconciliation();
+        return;
+      }
+
+      try {
+        final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('getTunnelStatus');
+        if (res != null) {
+          final info = _parseNativeInfo(Map<String, dynamic>.from(res));
+          _applyStateUpdate(info, source: 'ReconciliationPoll');
+        }
+      } catch (e) {
+        // Communication error or method channel busy; keep timer active until terminal state or max polls
+      }
+    });
+  }
+
+  void _stopReconciliation() {
+    _reconciliationTimer?.cancel();
+    _reconciliationTimer = null;
+    _reconciliationPollCount = 0;
   }
 
   RemoteConnectionInfo _parseNativeInfo(Map<String, dynamic> map) {
@@ -154,6 +218,13 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
     required String deviceId,
     required String sessionToken,
   }) async {
+    // Defensive guard: if already actively connecting or connected, return current status without dispatching duplicate MethodChannel start
+    if (_currentInfo.status == RemoteConnectionState.connecting ||
+        _currentInfo.status == RemoteConnectionState.connected) {
+      AppLogger.info('[NativeRemoteConnection] Already in ${_currentInfo.status.name} state, skipping redundant startTunnel dispatch');
+      return _currentInfo;
+    }
+
     try {
       AppLogger.info('[NativeRemoteConnection] Requesting native tunnel start for device: $deviceId');
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('startTunnel', {
@@ -164,12 +235,14 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
       });
 
       if (res != null) {
-        _currentInfo = _parseNativeInfo(Map<String, dynamic>.from(res));
+        final info = _parseNativeInfo(Map<String, dynamic>.from(res));
+        _applyStateUpdate(info, source: 'startTunnel');
       } else {
         _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.connecting);
-      }
-      if (!_statusController.isClosed) {
-        _statusController.add(_currentInfo);
+        if (!_statusController.isClosed) {
+          _statusController.add(_currentInfo);
+        }
+        _startReconciliation();
       }
       return _currentInfo;
     } catch (e) {
@@ -181,6 +254,7 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
       if (!_statusController.isClosed) {
         _statusController.add(_currentInfo);
       }
+      _stopReconciliation();
       return _currentInfo;
     }
   }
@@ -190,16 +264,18 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
     required String connectionId,
     required String sessionToken,
   }) async {
+    _stopReconciliation();
     try {
       AppLogger.info('[NativeRemoteConnection] Requesting native tunnel stop');
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('stopTunnel');
       if (res != null) {
-        _currentInfo = _parseNativeInfo(Map<String, dynamic>.from(res));
+        final info = _parseNativeInfo(Map<String, dynamic>.from(res));
+        _applyStateUpdate(info, source: 'stopTunnel');
       } else {
         _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
-      }
-      if (!_statusController.isClosed) {
-        _statusController.add(_currentInfo);
+        if (!_statusController.isClosed) {
+          _statusController.add(_currentInfo);
+        }
       }
       return _currentInfo;
     } catch (e) {
@@ -220,6 +296,7 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
       if (!_statusController.isClosed) {
         _statusController.add(_currentInfo);
       }
+      _startReconciliation();
       return _currentInfo;
     } catch (e) {
       return _currentInfo;
@@ -231,7 +308,8 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
     try {
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('getTunnelStatus');
       if (res != null) {
-        _currentInfo = _parseNativeInfo(Map<String, dynamic>.from(res));
+        final info = _parseNativeInfo(Map<String, dynamic>.from(res));
+        _applyStateUpdate(info, source: 'getStatus');
       }
     } catch (_) {}
     return _currentInfo.status;
@@ -242,7 +320,8 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
     try {
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('getTunnelStatus');
       if (res != null) {
-        _currentInfo = _parseNativeInfo(Map<String, dynamic>.from(res));
+        final info = _parseNativeInfo(Map<String, dynamic>.from(res));
+        _applyStateUpdate(info, source: 'getConnectionInfo');
       }
     } catch (_) {}
     return _currentInfo;
@@ -250,6 +329,7 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
 
   @override
   void dispose() {
+    _stopReconciliation();
     _eventSubscription?.cancel();
     _statusController.close();
   }

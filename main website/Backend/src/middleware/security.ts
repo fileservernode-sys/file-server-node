@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { config } from '../config/env.js';
 import { isOriginAllowed } from '../utils/security.js';
+import { createErrorResponse } from '../schemas/response.js';
 
 export async function registerSecurityPlugins(app: FastifyInstance): Promise<void> {
   // 1. Security Headers (HSTS, Content-Type-Options, Frameguard, etc.)
@@ -33,20 +34,15 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token'],
-    exposedHeaders: ['x-admin-session-token', 'content-disposition']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token', 'X-Request-Id', 'x-request-id'],
+    exposedHeaders: ['x-admin-session-token', 'content-disposition', 'x-request-id', 'X-Request-Id']
   });
 
   // 3. Rate Limiting Foundation (Prevents abuse / DOS)
   await app.register(rateLimit, {
     max: 120,
     timeWindow: '1 minute',
-    errorResponseBuilder: () => ({
-      success: false,
-      error: {
-        code: 'TOO_MANY_REQUESTS',
-        message: 'Rate limit exceeded. Please try again later.'
-      }
-    })
+    errorResponseBuilder: (req) => createErrorResponse('TOO_MANY_REQUESTS', 'Rate limit exceeded. Please try again later.', (req as any)?.id)
   });
 }
+

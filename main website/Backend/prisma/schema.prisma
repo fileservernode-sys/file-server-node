@@ -361,6 +361,24 @@ enum SupportCaseCategory {
 }
 
 // -----------------------------------------------------------------------------
+// OBSERVABILITY & ERROR CENTER ENUMS (PHASE 12)
+// -----------------------------------------------------------------------------
+
+enum ErrorSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  MUTED
+}
+
+// -----------------------------------------------------------------------------
 // CORE ENTITIES
 // -----------------------------------------------------------------------------
 
@@ -391,6 +409,7 @@ model User {
   planChanges             SubscriptionPlanChange[]
   upgradeReconciliations  SubscriptionUpgradeReconciliation[]
   supportCases            SupportCase[]
+  errorOccurrences        ErrorOccurrence[]
 
   @@index([email])
 }
@@ -441,12 +460,13 @@ model Device {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  servers       ServerInstance[]
-  connections   DeviceConnection[]
-  auditEvents   AuditEvent[]
-  notifications NotificationRecord[]
-  pushTokens    DevicePushToken[]
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  servers          ServerInstance[]
+  connections      DeviceConnection[]
+  auditEvents      AuditEvent[]
+  notifications    NotificationRecord[]
+  pushTokens       DevicePushToken[]
+  errorOccurrences ErrorOccurrence[]
 
   @@unique([userId, installationId])
   @@index([userId])
@@ -468,8 +488,9 @@ model ServerInstance {
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
 
-  device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  endpoints         ServerEndpoint[]
+  device           Device           @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  endpoints        ServerEndpoint[]
+  errorOccurrences ErrorOccurrence[]
 
   @@index([deviceId])
   @@index([status])
@@ -499,7 +520,8 @@ model GatewayNode {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  connections     DeviceConnection[]
+  connections      DeviceConnection[]
+  errorOccurrences ErrorOccurrence[]
 
   @@index([hostname])
   @@index([status])
@@ -1562,5 +1584,111 @@ model SupportCaseNote {
   @@index([createdAt])
   @@map("support_case_notes")
 }
+
+// -----------------------------------------------------------------------------
+// OBSERVABILITY & ERROR CENTER MODELS (PHASE 12 - BATCH 12.2)
+// -----------------------------------------------------------------------------
+
+/// Durable Normalized Identity & Aggregate Statistics for Operational Errors
+model ErrorFingerprint {
+  id               String         @id @default(cuid())
+  fingerprint      String         @unique(map: "error_fingerprint_hash_uniq")
+  errorCode        String?
+  errorType        String?
+  component        String         // e.g. API, DATABASE, GATEWAY, ANDROID, FLUTTER, AUTH, BILLING, EMAIL, BACKGROUND_WORKER
+  severity         ErrorSeverity  @default(ERROR)
+  firstSeenAt      DateTime       @default(now())
+  lastSeenAt       DateTime       @default(now())
+  totalOccurrences Int            @default(1)
+  status           IncidentStatus @default(OPEN)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  incidents        ErrorIncident[]
+  occurrences      ErrorOccurrence[]
+
+  @@index([status], map: "error_fingerprint_status_idx")
+  @@index([severity], map: "error_fingerprint_severity_idx")
+  @@index([component], map: "error_fingerprint_component_idx")
+  @@index([lastSeenAt], map: "error_fingerprint_last_seen_idx")
+  @@map("error_fingerprints")
+}
+
+/// Operational Triage & Lifecycle State for an Error Fingerprint
+model ErrorIncident {
+  id              String         @id @default(cuid())
+  fingerprintId   String
+  status          IncidentStatus @default(OPEN)
+  severity        ErrorSeverity  @default(ERROR)
+  title           String?
+  summary         String?        @db.Text
+  acknowledgedAt  DateTime?
+  acknowledgedBy  String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  resolutionNotes String?        @db.Text
+  mutedAt         DateTime?
+  mutedUntil      DateTime?
+  mutedBy         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  fingerprint     ErrorFingerprint  @relation(fields: [fingerprintId], references: [id], onDelete: Cascade)
+  occurrences     ErrorOccurrence[]
+
+  @@index([fingerprintId], map: "error_incident_fingerprint_idx")
+  @@index([status], map: "error_incident_status_idx")
+  @@index([severity], map: "error_incident_severity_idx")
+  @@index([updatedAt], map: "error_incident_updated_idx")
+  @@index([createdAt], map: "error_incident_created_idx")
+  @@map("error_incidents")
+}
+
+/// Granular Operational Error Event Record
+model ErrorOccurrence {
+  id               String        @id @default(cuid())
+  fingerprintId    String
+  incidentId       String?
+  occurredAt       DateTime      @default(now())
+  component        String        // e.g. API, DATABASE, GATEWAY, ANDROID, FLUTTER, AUTH, BILLING, EMAIL, BACKGROUND_WORKER
+  severity         ErrorSeverity @default(ERROR)
+  errorCode        String?
+  errorType        String?
+  message          String        @db.Text // Sanitized operational error message (zero secrets / file contents)
+  stackTrace       String?       @db.Text // Sanitized stack trace
+  httpMethod       String?
+  httpPath         String?
+  httpStatus       Int?
+  requestId        String?       // Reserved for Phase 12.4 correlation
+  userId           String?
+  deviceId         String?
+  serverInstanceId String?
+  gatewayNodeId    String?
+  connectionId     String?
+  sessionId        String?
+  metadata         Json?         // Sanitized diagnostic context only
+  createdAt        DateTime      @default(now())
+
+  fingerprint      ErrorFingerprint @relation(fields: [fingerprintId], references: [id], onDelete: Cascade)
+  incident         ErrorIncident?   @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+  user             User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  device           Device?          @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  serverInstance   ServerInstance?  @relation(fields: [serverInstanceId], references: [id], onDelete: SetNull)
+  gatewayNode      GatewayNode?     @relation(fields: [gatewayNodeId], references: [id], onDelete: SetNull)
+
+  @@index([fingerprintId], map: "error_occurrence_fingerprint_idx")
+  @@index([incidentId], map: "error_occurrence_incident_idx")
+  @@index([occurredAt], map: "error_occurrence_occurred_idx")
+  @@index([component], map: "error_occurrence_component_idx")
+  @@index([severity], map: "error_occurrence_severity_idx")
+  @@index([errorCode], map: "error_occurrence_code_idx")
+  @@index([requestId], map: "error_occurrence_request_id_idx")
+  @@index([userId], map: "error_occurrence_user_idx")
+  @@index([deviceId], map: "error_occurrence_device_idx")
+  @@index([serverInstanceId], map: "error_occurrence_server_idx")
+  @@index([gatewayNodeId], map: "error_occurrence_gateway_idx")
+  @@map("error_occurrences")
+}
+
 
 

@@ -6,7 +6,8 @@ import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } fro
 import { EndpointService } from '../services/endpoint.js';
 import { ConnectionStateMachine } from '../services/connection_state_machine.js';
 import { ConnectionObservability } from '../observability/connection_observability.js';
-import { ConnectionStatus } from '@prisma/client';
+import { ErrorIngestionService } from '../services/error_ingestion_service.js';
+import { ConnectionStatus, ErrorSeverity } from '@prisma/client';
 
 const registerConnectionSchema = z.object({
   deviceId: z.string().min(1),
@@ -20,6 +21,23 @@ const updateHeartbeatSchema = z.object({
 
 const connectionParamSchema = z.object({
   connectionId: z.string().min(1)
+});
+
+const reportTelemetryErrorSchema = z.object({
+  component: z.string().max(64).default('ANDROID'),
+  errorCode: z.string().max(128).optional(),
+  errorType: z.string().max(128).optional(),
+  severity: z.enum(['INFO', 'WARNING', 'ERROR', 'CRITICAL']).optional(),
+  message: z.string().min(1).max(4000),
+  stackTrace: z.string().max(8000).optional(),
+  occurredAt: z.string().optional(),
+  deviceId: z.string().max(128).optional(),
+  serverInstanceId: z.string().max(128).optional(),
+  gatewayNodeId: z.string().max(128).optional(),
+  connectionId: z.string().max(128).optional(),
+  sessionId: z.string().max(128).optional(),
+  requestId: z.string().max(128).optional(),
+  metadata: z.record(z.any()).optional()
 });
 
 // Helper: Extract authenticated platform user
@@ -410,4 +428,64 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     }));
   });
+
+  /**
+   * POST /api/v1/connections/telemetry/errors
+   * Authenticated, rate-limited endpoint for Android edge and native client operational error telemetry.
+   * Ingests error telemetry directly into ErrorIngestionService (Phase 12.7).
+   */
+  app.post(
+    '/connections/telemetry/errors',
+    {
+      config: {
+        rateLimit: {
+          max: 30,
+          timeWindow: '1 minute'
+        }
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const parsed = reportTelemetryErrorSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        throw new ValidationError('Invalid telemetry error payload format');
+      }
+
+      const data = parsed.data;
+
+      // Fail-safe ingestion
+      try {
+        const component = (data.component || 'ANDROID').toUpperCase().trim();
+        const severity = data.severity ? (data.severity as ErrorSeverity) : ErrorSeverity.WARNING;
+
+        await ErrorIngestionService.getInstance().ingest({
+          component,
+          severity,
+          errorCode: data.errorCode || 'ANDROID_RUNTIME_ERROR',
+          errorType: data.errorType || 'AndroidClientException',
+          message: data.message,
+          stackTrace: data.stackTrace,
+          occurredAt: data.occurredAt ? new Date(data.occurredAt) : new Date(),
+          userId: user.id,
+          deviceId: data.deviceId,
+          serverInstanceId: data.serverInstanceId,
+          gatewayNodeId: data.gatewayNodeId,
+          connectionId: data.connectionId,
+          sessionId: data.sessionId,
+          requestId: data.requestId || (request as any).requestId,
+          metadata: {
+            ...data.metadata,
+            source: 'android_telemetry_client',
+            authenticatedUserId: user.id
+          }
+        });
+
+        return reply.status(200).send(createSuccessResponse({ ingested: true }));
+      } catch (err: any) {
+        // Telemetry failure is fail-safe; returns clean failure acknowledgment without leaking stack traces
+        return reply.status(200).send(createSuccessResponse({ ingested: false }));
+      }
+    }
+  );
 }

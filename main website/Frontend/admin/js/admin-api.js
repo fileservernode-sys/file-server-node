@@ -109,6 +109,10 @@
         }
 
         if (!response.ok) {
+          const reqId = data?.error?.requestId || response.headers.get('x-request-id') || null;
+          const errCode = data?.error?.code || data?.code || 'API_ERROR';
+          const errMsg = data?.error?.message || data?.message || `Request failed with status ${response.status}`;
+
           // Handle 401 Unauthorized -> Force redirect to login
           if (response.status === 401) {
             this.clearSession();
@@ -117,8 +121,9 @@
             }
             throw {
               status: 401,
-              code: data?.code || 'UNAUTHORIZED',
-              message: data?.message || 'Admin session expired or invalid. Please sign in again.'
+              code: errCode || 'UNAUTHORIZED',
+              message: errMsg || 'Admin session expired or invalid. Please sign in again.',
+              requestId: reqId
             };
           }
 
@@ -126,24 +131,26 @@
           if (response.status === 403) {
             throw {
               status: 403,
-              code: data?.code || 'FORBIDDEN',
-              message: data?.message || 'You do not possess the required admin permissions for this operation.',
-              requiredPermission: data?.requiredPermission || null
+              code: errCode || 'FORBIDDEN',
+              message: errMsg || 'You do not possess the required admin permissions for this operation.',
+              requiredPermission: data?.requiredPermission || null,
+              requestId: reqId
             };
           }
 
           // Handle other HTTP errors
           throw {
             status: response.status,
-            code: data?.code || 'API_ERROR',
-            message: data?.message || `Request failed with status ${response.status}`,
+            code: errCode,
+            message: errMsg,
+            requestId: reqId,
             data
           };
         }
 
         return data;
       } catch (err) {
-        if (err.status) {
+        if (err.status !== undefined) {
           throw err;
         }
         // Network or fetch crash
@@ -151,7 +158,8 @@
         throw {
           status: 0,
           code: 'NETWORK_ERROR',
-          message: 'Unable to connect to ZdexCloud Admin server. Please verify your connection.'
+          message: 'Unable to connect to ZdexCloud Admin server. Please verify your connection.',
+          requestId: null
         };
       }
     }
@@ -178,6 +186,48 @@
 
     delete(endpoint, options = {}) {
       return this.request(endpoint, { ...options, method: 'DELETE' });
+    }
+
+    // =========================================================================
+    // Error Center API Methods (Phase 12.5 & Phase 12.6)
+    // =========================================================================
+    listErrorIncidents(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/errors/incidents${qs ? `?${qs}` : ''}`);
+    }
+
+    getErrorIncident(incidentId) {
+      return this.get(`/admin/errors/incidents/${encodeURIComponent(incidentId)}`);
+    }
+
+    getErrorOccurrence(occurrenceId) {
+      return this.get(`/admin/errors/occurrences/${encodeURIComponent(occurrenceId)}`);
+    }
+
+    getErrorFingerprint(fingerprintId) {
+      return this.get(`/admin/errors/fingerprints/${encodeURIComponent(fingerprintId)}`);
+    }
+
+    acknowledgeErrorIncident(incidentId) {
+      return this.post(`/admin/errors/incidents/${encodeURIComponent(incidentId)}/acknowledge`, {});
+    }
+
+    resolveErrorIncident(incidentId, body = {}) {
+      return this.post(`/admin/errors/incidents/${encodeURIComponent(incidentId)}/resolve`, body);
+    }
+
+    muteErrorIncident(incidentId, body = {}) {
+      return this.post(`/admin/errors/incidents/${encodeURIComponent(incidentId)}/mute`, body);
+    }
+
+    unmuteErrorIncident(incidentId) {
+      return this.post(`/admin/errors/incidents/${encodeURIComponent(incidentId)}/unmute`, {});
     }
   }
 

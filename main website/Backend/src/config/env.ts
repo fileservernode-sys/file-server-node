@@ -110,7 +110,22 @@ const envSchema = z.object({
   RAZORPAY_REQUEST_TIMEOUT_MS: z.coerce.number().default(10000),
 
   // Merchant Tax / Legal Entity Configuration (Phase 6.5-Corrective)
-  MERCHANT_GSTIN: z.string().nullable().optional().default(null)
+  MERCHANT_GSTIN: z.string().nullable().optional().default(null),
+
+  // Observability & Error Center Retention Configuration (Phase 12.8)
+  ERROR_CLEANUP_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean()
+  ).default(true),
+  ERROR_CLEANUP_DRY_RUN: z.preprocess(
+    (val) => (val === undefined ? false : val === 'true' || val === true),
+    z.boolean()
+  ).default(false),
+  ERROR_OCCURRENCE_RETENTION_DAYS: z.coerce.number().min(1).max(365).default(30),
+  ERROR_RESOLVED_INCIDENT_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
+  ERROR_MUTED_INCIDENT_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
+  ERROR_CLEANUP_BATCH_SIZE: z.coerce.number().min(10).max(1000).default(100),
+  ERROR_CLEANUP_INTERVAL_MINUTES: z.coerce.number().min(5).max(10080).default(1440)
 });
 
 function loadConfig() {

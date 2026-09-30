@@ -45,7 +45,15 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
         title: 'Server Control',
         showBrandMark: true,
         subtitle: isConfigured
-            ? (setup.isLocalOnline ? 'Node Online' : 'Node Stopped')
+            ? (setup.isServerRunning
+                ? 'Node Online'
+                : (setup.isLocalOnline
+                    ? (setup.endpointStatus == 'RECONNECTING'
+                        ? 'Node Reconnecting'
+                        : (setup.endpointStatus == 'FAILED'
+                            ? 'Connection Failed'
+                            : 'Node Connecting'))
+                    : 'Node Stopped'))
             : 'Unconfigured Node',
       ),
       body: SafeArea(
@@ -162,9 +170,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               StatusBadge(
-                                status: setup.isLocalOnline
-                                    ? DeviceServerStatus.online
-                                    : DeviceServerStatus.offline,
+                                status: setup.serverStatus,
                               ),
                             ],
                           ),
@@ -180,7 +186,13 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                                 child: Text(
                                   setup.isGatewayConnected
                                       ? 'Secure Remote Relay Connected'
-                                      : 'Remote Gateway Transport Ready',
+                                      : (setup.isLocalOnline
+                                          ? (setup.endpointStatus == 'RECONNECTING'
+                                              ? 'Reconnecting Remote Gateway Relay...'
+                                              : (setup.endpointStatus == 'FAILED'
+                                                  ? 'Remote Gateway Connection Failed'
+                                                  : 'Connecting to Remote Gateway Relay...'))
+                                          : 'Remote Gateway Transport Inactive'),
                                   style: AppTypography.caption.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.primary,
@@ -232,7 +244,13 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                               StatusBadge(
                                 status: setup.isGatewayConnected
                                     ? DeviceServerStatus.online
-                                    : DeviceServerStatus.offline,
+                                    : (setup.isLocalOnline
+                                        ? (setup.endpointStatus == 'RECONNECTING'
+                                            ? DeviceServerStatus.reconnecting
+                                            : (setup.endpointStatus == 'FAILED'
+                                                ? DeviceServerStatus.offline
+                                                : DeviceServerStatus.connecting))
+                                        : DeviceServerStatus.offline),
                               ),
                             ],
                           ),
@@ -240,7 +258,13 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                           Text(
                             setup.isGatewayConnected
                                 ? 'Encrypted WebSocket tunnel active. Remote file manager is accessible via your secure account on ZdexCloud.'
-                                : 'Gateway connection inactive. Start the local server engine to establish remote transport.',
+                                : (setup.isLocalOnline
+                                    ? (setup.endpointStatus == 'RECONNECTING'
+                                        ? 'Reconnecting WebSocket tunnel to remote gateway...'
+                                        : (setup.endpointStatus == 'FAILED'
+                                            ? 'Remote gateway connection failed. Restart server or reconnect relay.'
+                                            : 'Establishing secure WebSocket tunnel to remote gateway...'))
+                                    : 'Gateway connection inactive. Start the local server engine to establish remote transport.'),
                             style: AppTypography.bodySmall,
                           ),
                         ],
