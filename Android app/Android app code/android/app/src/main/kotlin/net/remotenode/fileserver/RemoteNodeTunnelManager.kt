@@ -90,9 +90,10 @@ object RemoteNodeTunnelManager {
     private var pingFuture: java.util.concurrent.ScheduledFuture<*>? = null
     private var okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(10, TimeUnit.SECONDS)
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS) // Keep-alive socket
+        .retryOnConnectionFailure(true)
         .build()
 
     private val workerExecutor = Executors.newCachedThreadPool()
@@ -335,8 +336,8 @@ object RemoteNodeTunnelManager {
                         conn.requestMethod = "POST"
                         conn.setRequestProperty("Authorization", "Bearer $sessionTok")
                         conn.setRequestProperty("Content-Type", "application/json")
-                        conn.connectTimeout = 10000
-                        conn.readTimeout = 15000
+                        conn.connectTimeout = 30000
+                        conn.readTimeout = 35000
                         conn.doOutput = true
 
                         val reqBody = JSONObject().apply {
@@ -386,13 +387,14 @@ object RemoteNodeTunnelManager {
                         }
 
                         if (respCode >= 500 && registrationAttempts < maxRegAttempts) {
-                            Thread.sleep(3000)
+                            Thread.sleep(2000)
                         } else {
                             break
                         }
                     } catch (e: Exception) {
+                        android.util.Log.w(TAG, "Registration attempt $registrationAttempts failed: ${e.message}")
                         if (registrationAttempts < maxRegAttempts) {
-                            Thread.sleep(3000)
+                            Thread.sleep(2000)
                         }
                     }
                 }
@@ -400,6 +402,7 @@ object RemoteNodeTunnelManager {
                 if (!registerSuccess || connectionToken.isNullOrEmpty() || generation != connectionGeneration.get() || isExplicitlyStopped) {
                     if (!isExplicitlyStopped && generation == connectionGeneration.get()) {
                         reconnectAttempts++
+                        emitState(STATE_RECONNECTING, "Control plane connection pending. Reconnecting...")
                         triggerReconnect()
                     }
                     isConnectingOrReconnecting = false
