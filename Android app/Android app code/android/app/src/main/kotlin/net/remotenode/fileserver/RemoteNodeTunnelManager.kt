@@ -406,8 +406,10 @@ object RemoteNodeTunnelManager {
                     return@execute
                 }
 
+                val targetGatewayWs = gatewayWs ?: storedGatewayWsUrl ?: return@execute
+
                 // 2. Validate Gateway WebSocket Endpoint Safety
-                val uri = URI(gatewayWs)
+                val uri = URI(targetGatewayWs)
                 if (uri.scheme != "ws" && uri.scheme != "wss") {
                     emitState(STATE_ERROR, "Invalid gateway scheme: ${uri.scheme}")
                     isConnectingOrReconnecting = false
@@ -418,7 +420,7 @@ object RemoteNodeTunnelManager {
                 emitState(STATE_AUTHENTICATING)
 
                 val wsRequest = Request.Builder()
-                    .url(gatewayWs)
+                    .url(targetGatewayWs)
                     .build()
 
                 val wsListener = object : WebSocketListener() {

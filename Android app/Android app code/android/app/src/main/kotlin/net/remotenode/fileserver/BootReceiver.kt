@@ -18,7 +18,7 @@ class BootReceiver : BroadcastReceiver() {
             val isDesiredEnabled = RemoteNodeServerService.getDesiredServerEnabled(context)
             if (isDesiredEnabled) {
                 val serviceIntent = Intent(context, RemoteNodeServerService::class.java).apply {
-                    action = RemoteNodeServerService.ACTION_START_SERVER
+                    this.action = RemoteNodeServerService.ACTION_START_SERVER
                     putExtra(RemoteNodeServerService.EXTRA_PORT, RemoteNodeServerService.getPersistedPort(context))
                 }
                 try {
