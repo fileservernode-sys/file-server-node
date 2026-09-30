@@ -66,7 +66,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Deep Slate Navy Dark Background
+      backgroundColor: AppColors.surface, // Clean White Background
       body: SafeArea(
         child: Center(
           child: AnimatedBuilder(
@@ -83,22 +83,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Server Brand Icon with Soft Glow
+                // Server Brand Icon with Soft Light Theme Styling
                 Container(
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primarySubtle,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.4),
+                      color: AppColors.primary.withValues(alpha: 0.25),
                       width: 2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        blurRadius: 32,
+                        color: AppColors.primary.withValues(alpha: 0.10),
+                        blurRadius: 28,
                         spreadRadius: 4,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
@@ -106,7 +107,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     child: Icon(
                       Icons.dns_rounded,
                       size: 48,
-                      color: Color(0xFF60A5FA), // Light Blue
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -119,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     Text(
                       'Zdex',
                       style: AppTypography.heading1.copyWith(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         letterSpacing: -0.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -127,7 +128,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     Text(
                       'Cloud',
                       style: AppTypography.heading1.copyWith(
-                        color: const Color(0xFF60A5FA),
+                        color: AppColors.primary,
                         letterSpacing: -0.5,
                         fontWeight: FontWeight.w700,
                       ),
@@ -140,7 +141,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 Text(
                   'Personal Storage & Local Server Host',
                   style: AppTypography.bodySmall.copyWith(
-                    color: const Color(0xFF94A3B8),
+                    color: AppColors.textSecondary,
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -152,7 +153,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   height: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF60A5FA)),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -161,7 +162,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 Text(
                   'Starting secure server engine...',
                   style: AppTypography.caption.copyWith(
-                    color: const Color(0xFF64748B),
+                    color: AppColors.textMuted,
                   ),
                 ),
               ],
