@@ -54,13 +54,15 @@ class MainActivity : FlutterActivity() {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                     networkEventSink = events
                     val current = NetworkWatcher.getCurrentNetworkInfo(context)
-                    events?.success(mapOf(
-                        "type" to "INITIAL_STATE",
-                        "networkId" to current["networkId"],
-                        "transport" to current["transport"],
-                        "hasInternet" to current["hasInternet"],
-                        "isValidated" to current["isValidated"]
-                    ))
+                    try {
+                        events?.success(mapOf(
+                            "type" to "INITIAL_STATE",
+                            "networkId" to current["networkId"],
+                            "transport" to current["transport"],
+                            "hasInternet" to current["hasInternet"],
+                            "isValidated" to current["isValidated"]
+                        ))
+                    } catch (_: Exception) {}
                 }
 
                 override fun onCancel(arguments: Any?) {
@@ -74,19 +76,23 @@ class MainActivity : FlutterActivity() {
                 override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
                     tunnelEventSink = events
                     val listener: (Map<String, Any?>) -> Unit = { ev ->
-                        events?.success(ev)
+                        try {
+                            tunnelEventSink?.success(ev)
+                        } catch (_: Exception) {}
                     }
                     tunnelListener = listener
                     RemoteNodeTunnelManager.addListener(listener)
-                    events?.success(mapOf(
-                        "type" to "TUNNEL_STATE_CHANGED",
-                        "state" to RemoteNodeTunnelManager.currentState,
-                        "connectionId" to RemoteNodeTunnelManager.activeConnectionId,
-                        "remoteEndpoint" to RemoteNodeTunnelManager.activeRemoteEndpoint,
-                        "hostname" to RemoteNodeTunnelManager.activeHostname,
-                        "publicUrl" to RemoteNodeTunnelManager.activePublicUrl,
-                        "errorMessage" to RemoteNodeTunnelManager.lastErrorMessage
-                    ))
+                    try {
+                        events?.success(mapOf(
+                            "type" to "TUNNEL_STATE_CHANGED",
+                            "state" to RemoteNodeTunnelManager.currentState,
+                            "connectionId" to RemoteNodeTunnelManager.activeConnectionId,
+                            "remoteEndpoint" to RemoteNodeTunnelManager.activeRemoteEndpoint,
+                            "hostname" to RemoteNodeTunnelManager.activeHostname,
+                            "publicUrl" to RemoteNodeTunnelManager.activePublicUrl,
+                            "errorMessage" to RemoteNodeTunnelManager.lastErrorMessage
+                        ))
+                    } catch (_: Exception) {}
                 }
 
                 override fun onCancel(arguments: Any?) {
@@ -422,5 +428,13 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        tunnelListener?.let { RemoteNodeTunnelManager.removeListener(it) }
+        tunnelListener = null
+        tunnelEventSink = null
+        networkEventSink = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 }
