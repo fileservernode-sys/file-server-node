@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import {
   BillingReconciliationService,
   billingReconciliationService,
@@ -66,7 +67,7 @@ describe('Phase 7.2F: Billing Operations, Reconciliation Monitoring & State-Drif
     await prisma.userSession.create({
       data: {
         userId: testUser.id,
-        token: testUserAuthToken,
+        tokenHash: hashSessionToken(testUserAuthToken),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });

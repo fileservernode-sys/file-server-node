@@ -8,6 +8,7 @@ import { adminAuthenticate, extractAdminToken } from '../../middleware/admin-aut
 import { requirePermission } from '../../middleware/admin-rbac.js';
 import { createSuccessResponse, createErrorResponse } from '../../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../../errors/app-error.js';
+import { resolveClientIp } from '../../utils/ip.js';
 
 // Input Schemas
 const adminLoginSchema = z.object({
@@ -48,8 +49,8 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
           max: 10,
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `admin_login_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `admin_login_${clientIp}`;
           }
         }
       }
@@ -61,7 +62,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const { email, password, otp } = parsed.data;
-      const clientIp = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
       const result = await AdminAuthService.login({
@@ -97,7 +98,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const { challengeToken, otp } = parsed.data;
-      const clientIp = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
       const result = await AdminAuthService.verifyOtpAndLogin({
@@ -119,7 +120,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
     '/admin/auth/logout',
     async (request: FastifyRequest, reply: FastifyReply) => {
       const token = extractAdminToken(request);
-      const clientIp = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
       if (token) {
@@ -146,7 +147,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         throw new UnauthorizedError('Admin identity not found');
       }
 
-      const clientIp = (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
 
       const [roles, permissions] = await Promise.all([
         AdminRbacService.resolveAdminRoles(request.admin.id),
@@ -158,7 +159,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         adminId: request.admin.id,
         action: AdminAuditAction.ADMIN_SESSION_BOOTSTRAP,
         status: 'SUCCESS',
-        ipAddress: clientIp,
+        ipAddress: clientIp || null,
         userAgent: request.headers['user-agent'] as string | undefined,
         metadata: {
           rolesCount: roles.length,
@@ -189,8 +190,8 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `admin_pwd_change_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `admin_pwd_change_${adminId}_${clientIp}`;
           }
         }
       },
@@ -202,7 +203,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid password change payload');
       }
 
-      const clientIp = request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
       const result = await AdminAuthService.updatePassword({
@@ -236,7 +237,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError(bodyParsed.error.errors[0]?.message || 'Invalid status payload');
       }
 
-      const clientIp = request.ip || '127.0.0.1';
+      const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
       const result = await AdminAuthService.updateAdminStatus({

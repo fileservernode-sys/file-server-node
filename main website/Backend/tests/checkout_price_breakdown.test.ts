@@ -1,6 +1,7 @@
 import { describe, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { BillingCountryService } from '../src/services/billing/billing_country_service.js';
@@ -76,32 +77,32 @@ describe('ZC-BILLING-4.2 Checkout Price Breakdown Test Suite', () => {
     await BillingStateService.getBillingState(testUserUnconfirmed.id);
 
     // Create userSession tokens for HTTP route verification
-    const sessionIn = await prisma.userSession.create({
+    authTokenIn = `mock_session_token_in_${timestamp}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserIn.id,
-        token: `mock_session_token_in_${timestamp}`,
+        tokenHash: hashSessionToken(authTokenIn),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
-    authTokenIn = sessionIn.token;
 
-    const sessionUs = await prisma.userSession.create({
+    authTokenUs = `mock_session_token_us_${timestamp}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserUs.id,
-        token: `mock_session_token_us_${timestamp}`,
+        tokenHash: hashSessionToken(authTokenUs),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
-    authTokenUs = sessionUs.token;
 
-    const sessionUnconf = await prisma.userSession.create({
+    authTokenUnconfirmed = `mock_session_token_unconf_${timestamp}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserUnconfirmed.id,
-        token: `mock_session_token_unconf_${timestamp}`,
+        tokenHash: hashSessionToken(authTokenUnconfirmed),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
-    authTokenUnconfirmed = sessionUnconf.token;
   });
 
   after(async () => {

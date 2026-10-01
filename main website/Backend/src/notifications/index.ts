@@ -32,4 +32,4 @@ export * from './workers/retention_worker.js';
 export * from './routes/push_token_routes.js';
 export * from './routes/preference_routes.js';
 export * from './routes/notification_routes.js';
-export { NotificationRecordStatus, ChannelDeliveryStatus, PushPlatform } from '@prisma/client';
+export { NotificationRecordStatus, ChannelDeliveryStatus, PushPlatform, EmailMessageStatus, EmailSourcePipeline, EmailTransport } from '@prisma/client';

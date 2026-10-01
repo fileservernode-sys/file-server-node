@@ -6,6 +6,7 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 
 import {
   CentralNotificationService,
@@ -75,7 +76,7 @@ describe('Track 4 — Batch NT-1.7 End-to-End & Production Readiness Verificatio
     await withDbRetry(() => prisma.userSession.create({
       data: {
         userId: testUserA.id,
-        token: sessionTokenA,
+        tokenHash: hashSessionToken(sessionTokenA),
         expiresAt: new Date(Date.now() + 86400000)
       }
     }));
@@ -94,7 +95,7 @@ describe('Track 4 — Batch NT-1.7 End-to-End & Production Readiness Verificatio
     await withDbRetry(() => prisma.userSession.create({
       data: {
         userId: testUserB.id,
-        token: sessionTokenB,
+        tokenHash: hashSessionToken(sessionTokenB),
         expiresAt: new Date(Date.now() + 86400000)
       }
     }));
@@ -473,7 +474,7 @@ describe('Track 4 — Batch NT-1.7 End-to-End & Production Readiness Verificatio
   });
 
   test('TEST 24 — Authorization check enforces session validation', async () => {
-    const session = await withDbRetry(() => prisma.userSession.findFirst({ where: { token: sessionTokenA } }));
+    const session = await withDbRetry(() => prisma.userSession.findFirst({ where: { tokenHash: hashSessionToken(sessionTokenA) } }));
     assert.ok(session);
     assert.strictEqual(session!.userId, testUserA.id);
   });

@@ -8,6 +8,7 @@ import { ConnectionStateMachine } from '../services/connection_state_machine.js'
 import { ConnectionObservability } from '../observability/connection_observability.js';
 import { ErrorIngestionService } from '../services/error_ingestion_service.js';
 import { ConnectionStatus, ErrorSeverity } from '@prisma/client';
+import { hashSessionToken } from '../utils/crypto.js';
 
 const registerConnectionSchema = z.object({
   deviceId: z.string().min(1),
@@ -48,8 +49,9 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   const token = authHeader.substring(7).trim();
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
 

@@ -1,6 +1,7 @@
 import { describe, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { EntitlementService } from '../src/services/billing/entitlement_service.js';
@@ -237,30 +238,30 @@ describe('ZC-BILLING-4.3 Checkout Security Hardening Test Suite', () => {
       }
     });
 
-    const sIn = await prisma.userSession.create({
-      data: { userId: testUserIn.id, token: `mock_session_in_${timestamp}`, expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
+    authTokenIn = `mock_session_in_${timestamp}`;
+    await prisma.userSession.create({
+      data: { userId: testUserIn.id, tokenHash: hashSessionToken(authTokenIn), expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
     });
-    authTokenIn = sIn.token;
 
-    const sUs = await prisma.userSession.create({
-      data: { userId: testUserUs.id, token: `mock_session_us_${timestamp}`, expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
+    authTokenUs = `mock_session_us_${timestamp}`;
+    await prisma.userSession.create({
+      data: { userId: testUserUs.id, tokenHash: hashSessionToken(authTokenUs), expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
     });
-    authTokenUs = sUs.token;
 
-    const sAtk = await prisma.userSession.create({
-      data: { userId: testUserAttacker.id, token: `mock_session_atk_${timestamp}`, expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
+    authTokenAttacker = `mock_session_atk_${timestamp}`;
+    await prisma.userSession.create({
+      data: { userId: testUserAttacker.id, tokenHash: hashSessionToken(authTokenAttacker), expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
     });
-    authTokenAttacker = sAtk.token;
 
-    const sUnconf = await prisma.userSession.create({
-      data: { userId: testUserUnconfirmed.id, token: `mock_session_unconf_${timestamp}`, expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
+    authTokenUnconfirmed = `mock_session_unconf_${timestamp}`;
+    await prisma.userSession.create({
+      data: { userId: testUserUnconfirmed.id, tokenHash: hashSessionToken(authTokenUnconfirmed), expiresAt: new Date(Date.now() + 24 * 3600 * 1000) }
     });
-    authTokenUnconfirmed = sUnconf.token;
 
-    const sExp = await prisma.userSession.create({
-      data: { userId: testUserIn.id, token: `mock_session_exp_${timestamp}`, expiresAt: new Date(Date.now() - 1000) }
+    authTokenExpired = `mock_session_exp_${timestamp}`;
+    await prisma.userSession.create({
+      data: { userId: testUserIn.id, tokenHash: hashSessionToken(authTokenExpired), expiresAt: new Date(Date.now() - 1000) }
     });
-    authTokenExpired = sExp.token;
   });
 
   after(async () => {

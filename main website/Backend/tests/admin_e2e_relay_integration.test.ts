@@ -193,22 +193,22 @@ describe('Phase 8.8 — End-to-End Relay & Hardware Integration Testing', () => 
         emailVerified: true
       }
     });
-    const s1 = await prisma.userSession.create({
+    aliceSessionToken1 = `alice-session-token-1-${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: customerAlice.id,
-        token: `alice-session-token-1-${Date.now()}`,
+        tokenHash: hashSessionToken(aliceSessionToken1),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
-    aliceSessionToken1 = s1.token;
-    const s2 = await prisma.userSession.create({
+    aliceSessionToken2 = `alice-session-token-2-${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: customerAlice.id,
-        token: `alice-session-token-2-${Date.now()}`,
+        tokenHash: hashSessionToken(aliceSessionToken2),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
-    aliceSessionToken2 = s2.token;
 
     deviceAlice1 = await prisma.device.create({
       data: {
@@ -275,14 +275,14 @@ describe('Phase 8.8 — End-to-End Relay & Hardware Integration Testing', () => 
         emailVerified: true
       }
     });
-    const sBob = await prisma.userSession.create({
+    bobSessionToken1 = `bob-session-token-1-${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: customerBob.id,
-        token: `bob-session-token-1-${Date.now()}`,
+        tokenHash: hashSessionToken(bobSessionToken1),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
-    bobSessionToken1 = sBob.token;
 
     deviceBob1 = await prisma.device.create({
       data: {

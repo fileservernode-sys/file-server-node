@@ -14,11 +14,13 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
+import net.remotenode.fileserver.security.AndroidSecureStorage
 import java.util.Locale
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
+    private val SECURE_STORAGE_CHANNEL = "net.remotenode.fileserver/secure_storage"
     private val NETWORK_EVENT_CHANNEL = "net.remotenode.fileserver/network_events"
     private val TUNNEL_EVENT_CHANNEL = "net.remotenode.fileserver/tunnel_events"
     private val REQUEST_POST_NOTIFICATIONS = 101
@@ -106,6 +108,57 @@ class MainActivity : FlutterActivity() {
                 }
             }
         )
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SECURE_STORAGE_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "saveSession" -> {
+                    val sessionJson = call.argument<String>("sessionJson")
+                    if (sessionJson != null) {
+                        val ok = AndroidSecureStorage.saveSession(context, sessionJson)
+                        result.success(ok)
+                    } else {
+                        result.error("INVALID_ARGS", "Missing sessionJson argument", null)
+                    }
+                }
+                "getSession" -> {
+                    val sessionJson = AndroidSecureStorage.getSession(context)
+                    result.success(sessionJson)
+                }
+                "clearSession" -> {
+                    val ok = AndroidSecureStorage.clearSession(context)
+                    result.success(ok)
+                }
+                "writeKv" -> {
+                    val key = call.argument<String>("key")
+                    val value = call.argument<String>("value")
+                    if (key != null && value != null) {
+                        val ok = AndroidSecureStorage.writeKv(context, key, value)
+                        result.success(ok)
+                    } else {
+                        result.error("INVALID_ARGS", "Missing key or value argument", null)
+                    }
+                }
+                "readKv" -> {
+                    val key = call.argument<String>("key")
+                    if (key != null) {
+                        val valStr = AndroidSecureStorage.readKv(context, key)
+                        result.success(valStr)
+                    } else {
+                        result.error("INVALID_ARGS", "Missing key argument", null)
+                    }
+                }
+                "deleteKv" -> {
+                    val key = call.argument<String>("key")
+                    if (key != null) {
+                        val ok = AndroidSecureStorage.deleteKv(context, key)
+                        result.success(ok)
+                    } else {
+                        result.error("INVALID_ARGS", "Missing key argument", null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {

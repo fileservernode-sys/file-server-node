@@ -4,6 +4,7 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
+import { hashSessionToken } from '../utils/crypto.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
@@ -17,8 +18,9 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   const token = authHeader.substring(7).trim();
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
 

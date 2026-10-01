@@ -46,6 +46,10 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   { slug: 'notifications.read', name: 'View Notifications', resource: 'notifications', action: 'read', description: 'View delivery logs and channel preferences' },
   { slug: 'notifications.write', name: 'Send Notifications', resource: 'notifications', action: 'write', description: 'Send system broadcasts and manual alerts' },
 
+  // Email Tracking & Operations (Phase 13)
+  { slug: 'emails.read', name: 'View Emails', resource: 'emails', action: 'read', description: 'Inspect outbound transactional and notification email logs and delivery states' },
+  { slug: 'emails.manage', name: 'Manage Emails', resource: 'emails', action: 'manage', description: 'Manage outbound email operations and deliverability configuration' },
+
   // Gateway & Infrastructure
   { slug: 'gateway.read', name: 'View Gateway Telemetry', resource: 'gateway', action: 'read', description: 'Monitor WebSocket nodes and connected sockets' },
   { slug: 'gateway.write', name: 'Manage Gateway', resource: 'gateway', action: 'write', description: 'Execute ping probes and node maintenance' },
@@ -84,6 +88,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'billing.read', 'billing.write', 'billing.refund', 'billing.reconcile',
       'support.read', 'support.write', 'support.assign', 'support.notes',
       'notifications.read', 'notifications.write',
+      'emails.read', 'emails.manage',
       'gateway.read', 'gateway.write', 'gateway.drain',
       'errors.read', 'errors.manage',
       'audit.read',
@@ -101,7 +106,8 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'servers.read',
       'billing.read',
       'support.read', 'support.write', 'support.assign', 'support.notes',
-      'notifications.read'
+      'notifications.read',
+      'emails.read'
     ]
   },
   {
@@ -113,6 +119,7 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'servers.read', 'servers.write', 'servers.power',
       'gateway.read', 'gateway.write', 'gateway.drain',
       'errors.read', 'errors.manage',
+      'emails.read', 'emails.manage',
       'audit.read',
       'system.read'
     ]

@@ -56,8 +56,19 @@ function getFrontendDir(): string {
   return candidates[0];
 }
 
+function parseTrustProxyConfig(val: string): boolean | string | string[] {
+  const trimmed = (val || '').trim().toLowerCase();
+  if (trimmed === 'false') return false;
+  if (trimmed === 'true') return true;
+  const items = val.split(',').map(s => s.trim()).filter(Boolean);
+  return items.length > 0 ? items : ['loopback', 'linklocal', 'uniquelocal'];
+}
+
 export async function buildApp(): Promise<FastifyInstance> {
+  const trustProxyConfig = parseTrustProxyConfig(config.TRUST_PROXY);
+
   const app = Fastify({
+    trustProxy: trustProxyConfig,
     bodyLimit: 104857600, // 100 MB body limit for file uploads
     genReqId: (req) => {
       const headerId = req.headers['x-request-id'];
@@ -73,6 +84,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         'req.headers.authorization',
         'req.headers.cookie',
         'req.headers["x-razorpay-signature"]',
+        'req.headers["x-brevo-webhook-secret"]',
+        'req.headers["x-webhook-secret"]',
         'body.password',
         'body.passwordHash',
         'body.keySecret',

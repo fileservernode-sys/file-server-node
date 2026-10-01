@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import fs from 'node:fs';
 import path from 'node:path';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { BillingCountryService } from '../src/services/billing/billing_country_service.js';
@@ -193,23 +194,23 @@ describe('ZC-BILLING-4.4 Payment Success UX Test Suite', () => {
       postalCode: '94105'
     });
 
-    const sIn = await prisma.userSession.create({
+    authTokenIn = `mock_session_ux_in_${timestamp}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserIn.id,
-        token: `mock_session_ux_in_${timestamp}`,
+        tokenHash: hashSessionToken(authTokenIn),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
-    authTokenIn = sIn.token;
 
-    const sUs = await prisma.userSession.create({
+    authTokenUs = `mock_session_ux_us_${timestamp}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserUs.id,
-        token: `mock_session_ux_us_${timestamp}`,
+        tokenHash: hashSessionToken(authTokenUs),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
-    authTokenUs = sUs.token;
   });
 
   beforeEach(async () => {

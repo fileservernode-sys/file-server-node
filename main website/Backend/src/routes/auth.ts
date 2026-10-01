@@ -1,11 +1,12 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../config/database.js';
-import { hashPassword, verifyPassword, generateSessionToken } from '../utils/crypto.js';
+import { hashPassword, verifyPassword, generateSessionToken, hashSessionToken } from '../utils/crypto.js';
 import { issueEmailOtp, verifyEmailOtp } from '../utils/otp.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../errors/app-error.js';
 import { accountEventProducer } from '../notifications/producers/account_producer.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 // Input Validation Schemas
 const registerSchema = z.object({
@@ -19,6 +20,9 @@ const verifyOtpSchema = z.object({
   otp: z.string().min(6).max(6).optional(),
   code: z.string().min(6).max(6).optional(),
   otpCode: z.string().min(6).max(6).optional()
+}).refine(data => Boolean((data.otp || data.code || data.otpCode || '').trim()), {
+  message: 'A 6-digit OTP verification code is required',
+  path: ['otp']
 });
 
 const loginSchema = z.object({
@@ -39,6 +43,9 @@ const verifyPasswordResetOtpSchema = z.object({
   otp: z.string().min(6).max(6).optional(),
   code: z.string().min(6).max(6).optional(),
   otpCode: z.string().min(6).max(6).optional()
+}).refine(data => Boolean((data.otp || data.code || data.otpCode || '').trim()), {
+  message: 'A 6-digit OTP verification code is required',
+  path: ['otp']
 });
 
 const resetPasswordSchema = z.object({
@@ -47,6 +54,9 @@ const resetPasswordSchema = z.object({
   code: z.string().min(6).max(6).optional(),
   otpCode: z.string().min(6).max(6).optional(),
   newPassword: z.string().min(8, 'New password must be at least 8 characters')
+}).refine(data => Boolean((data.otp || data.code || data.otpCode || '').trim()), {
+  message: 'A 6-digit OTP verification code is required',
+  path: ['otp']
 });
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
@@ -156,12 +166,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // Create Authenticated Session Token (Strict 24-Hour TTL / 1-Day Policy)
     const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
     const token = generateSessionToken();
+    const tokenHash = hashSessionToken(token);
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
     await prisma.userSession.create({
       data: {
         userId: updatedUser.id,
-        token,
+        tokenHash,
         expiresAt
       }
     });
@@ -177,7 +188,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (regResult.valid) {
       accountEventProducer.emitAccountCreated(updatedUser.id, updatedUser.email, updatedUser.fullName || undefined).catch(() => {});
     }
-    accountEventProducer.emitSignIn(updatedUser.id, updatedUser.email, typeof request.ip === 'string' ? request.ip : undefined, request.headers['user-agent'] as string).catch(() => {});
+    accountEventProducer.emitSignIn(
+      updatedUser.id,
+      updatedUser.email,
+      resolveClientIp(request),
+      request.headers['user-agent'] as string,
+      updatedUser.fullName || undefined
+    ).catch(() => {});
 
     return reply.status(200).send(createSuccessResponse({
       user: {
@@ -366,23 +383,25 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const email = body.data.email.trim().toLowerCase();
     const code = (body.data.otp || body.data.code || body.data.otpCode || '').trim();
 
+    if (code.length !== 6) {
+      throw new ValidationError('A 6-digit OTP verification code is required');
+    }
+
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return reply.status(400).send(createErrorResponse('INVALID_REQUEST', 'Password reset request cannot be completed'));
     }
 
-    // Verify OTP if supplied
-    if (code) {
-      const result = await verifyEmailOtp(email, code, 'PASSWORD_RESET');
-      if (!result.valid) {
-        if (result.error === 'TOO_MANY_ATTEMPTS') {
-          return reply.status(429).send(createErrorResponse('TOO_MANY_ATTEMPTS', 'Too many invalid attempts. Please request a new reset code.'));
-        }
-        if (result.error === 'EXPIRED_OTP') {
-          return reply.status(400).send(createErrorResponse('EXPIRED_OTP', 'Reset code has expired. Please request a new code.'));
-        }
-        return reply.status(400).send(createErrorResponse('INVALID_OTP', 'Invalid or expired password reset code'));
+    // Unconditionally verify OTP for password reset
+    const result = await verifyEmailOtp(email, code, 'PASSWORD_RESET');
+    if (!result.valid) {
+      if (result.error === 'TOO_MANY_ATTEMPTS') {
+        return reply.status(429).send(createErrorResponse('TOO_MANY_ATTEMPTS', 'Too many invalid attempts. Please request a new reset code.'));
       }
+      if (result.error === 'EXPIRED_OTP') {
+        return reply.status(400).send(createErrorResponse('EXPIRED_OTP', 'Reset code has expired. Please request a new code.'));
+      }
+      return reply.status(400).send(createErrorResponse('INVALID_OTP', 'Invalid or expired password reset code'));
     }
 
     // Update password hash & ensure account is active
@@ -425,9 +444,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const token = authHeader.substring(7).trim();
+    const tokenHash = hashSessionToken(token);
     const session = await prisma.userSession.findFirst({
       where: {
-        token,
+        tokenHash,
         expiresAt: { gt: new Date() }
       },
       include: {
@@ -462,7 +482,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const authHeader = request.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7).trim();
-      await prisma.userSession.deleteMany({ where: { token } });
+      const tokenHash = hashSessionToken(token);
+      await prisma.userSession.deleteMany({ where: { tokenHash } });
     }
 
     return reply.status(200).send(createSuccessResponse({ message: 'Logged out successfully' }));

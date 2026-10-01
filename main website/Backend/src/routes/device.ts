@@ -4,13 +4,14 @@ import { Device } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
-import { hashPassword } from '../utils/crypto.js';
+import { hashPassword, hashSessionToken } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { CustomerStatusService } from '../services/customer_status_service.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -35,8 +36,9 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   const token = authHeader.substring(7).trim();
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
 
@@ -196,7 +198,15 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }, { maxWait: 15000, timeout: 30000 });
 
       // Non-blocking notification event emissions
-      deviceEventProducer.emitDeviceLinked(user.id, device.id, device.deviceName).catch(() => {});
+      deviceEventProducer.emitDeviceLinked(
+        user.id,
+        device.id,
+        device.deviceName,
+        resolveClientIp(request),
+        request.headers['user-agent'] as string,
+        user.email,
+        user.fullName || undefined
+      ).catch(() => {});
       serverEventProducer.emitServerCreated(user.id, device.id, `srv_${device.id}`, serverName || device.deviceName, device.deviceName).catch(() => {});
     }
 

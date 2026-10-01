@@ -152,7 +152,7 @@ describe('Admin Role-Based Access Control (Phase 7.3 RBAC)', () => {
     await prisma.userSession.create({
       data: {
         userId: customerUser.id,
-        token: customerToken,
+        tokenHash: hashSessionToken(customerToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });

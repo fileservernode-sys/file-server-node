@@ -73,13 +73,28 @@ export async function issueEmailOtp(
     }
   });
 
-  // Dispatch via Serverbyt SMTP / MockEmailService without logging the secret
+  // Dispatch via Brevo / SMTP / MockEmailService without logging the secret
+  const trackingOptions = {
+    userId,
+    sourcePipeline: 'OTP' as const,
+    emailType: purpose === 'REGISTRATION_VERIFICATION'
+      ? 'REGISTRATION_OTP'
+      : purpose === 'PASSWORD_RESET'
+      ? 'PASSWORD_RESET_OTP'
+      : 'LOGIN_OTP',
+    templateId: purpose === 'REGISTRATION_VERIFICATION'
+      ? 'EMAIL_VERIFICATION'
+      : purpose === 'PASSWORD_RESET'
+      ? 'PASSWORD_RESET'
+      : 'LOGIN_2FA'
+  };
+
   if (purpose === 'REGISTRATION_VERIFICATION') {
-    await emailService.sendVerificationOtp(normalizedEmail, otpCode);
+    await emailService.sendVerificationOtp(normalizedEmail, otpCode, trackingOptions);
   } else if (purpose === 'PASSWORD_RESET') {
-    await emailService.sendPasswordResetOtp(normalizedEmail, otpCode);
+    await emailService.sendPasswordResetOtp(normalizedEmail, otpCode, trackingOptions);
   } else {
-    await emailService.sendLoginOtp(normalizedEmail, otpCode);
+    await emailService.sendLoginOtp(normalizedEmail, otpCode, trackingOptions);
   }
 
   return { otpCode, expiresAt };

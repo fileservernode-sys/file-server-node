@@ -47,6 +47,8 @@ const SENSITIVE_KEY_PATTERNS = [
   /signature/i,
   /databaseurl/i,
   /smtppassword/i,
+  /brevoapikey/i,
+  /webhooksecret/i,
   /payload/i,
   /body/i,
   /rawbody/i,

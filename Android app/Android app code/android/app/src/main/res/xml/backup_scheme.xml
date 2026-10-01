@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  RemoteNode / ZdexCloud Full Backup Scheme (Legacy Android < 12) (Phase 14.5)
+  Excludes sensitive session files and Keystore-backed ciphertext from legacy Auto Backup.
+-->
+<full-backup-content>
+    <exclude domain="file" path="rn_session.enc" />
+    <exclude domain="file" path="rn_session.json" />
+    <exclude domain="file" path="rn_session.enc.tmp" />
+    <exclude domain="sharedpref" path="net.remotenode.device_identity.xml" />
+</full-backup-content>

@@ -5,6 +5,7 @@
 
 import { prisma } from '../../config/database.js';
 import { NotificationChannel } from '../types/channel.js';
+import { EmailMessageStatus } from '@prisma/client';
 import { calculateRetryDecision } from '../services/retry_policy.js';
 import { notificationService, CentralNotificationService } from '../services/notification_service.js';
 import { templateRegistry } from '../services/template_registry.js';
@@ -14,6 +15,7 @@ import { notificationRepository } from '../repositories/notification_repository.
 import { notificationMetrics } from '../services/notification_metrics.js';
 import { providerCircuitBreaker } from '../services/provider_circuit_breaker.js';
 import { failureClassifier } from '../services/failure_classifier.js';
+import { classifyEmailFailure } from '../../services/email_failure_classifier.js';
 
 export interface DeliveryProcessorResult {
   processedCount: number;
@@ -175,6 +177,48 @@ export class DeliveryProcessor {
 
     const channel = delivery.channel as NotificationChannel;
 
+    // Webhook Race Guard: For email channel, re-check if asynchronous webhook already marked message DELIVERED or terminal failure
+    if (channel === NotificationChannel.EMAIL) {
+      const existingEmail = await prisma.emailMessage.findFirst({
+        where: { channelDeliveryRecordId: delivery.id }
+      });
+
+      if (existingEmail) {
+        if (existingEmail.status === EmailMessageStatus.DELIVERED) {
+          await prisma.channelDeliveryRecord.update({
+            where: { id: delivery.id },
+            data: {
+              status: 'DELIVERED',
+              deliveredAt: existingEmail.deliveredAt || now,
+              providerMessageId: existingEmail.providerMessageId || null,
+              processingStartedAt: null,
+              processingWorkerId: workerId
+            }
+          });
+          return 'DELIVERED';
+        }
+
+        if (
+          existingEmail.status === EmailMessageStatus.BOUNCED ||
+          existingEmail.status === EmailMessageStatus.BLOCKED ||
+          existingEmail.status === EmailMessageStatus.SPAM ||
+          existingEmail.status === EmailMessageStatus.PERMANENTLY_FAILED
+        ) {
+          await prisma.channelDeliveryRecord.update({
+            where: { id: delivery.id },
+            data: {
+              status: 'PERMANENTLY_FAILED',
+              failedAt: existingEmail.failedAt || now,
+              failureReason: existingEmail.failureReason || `Terminal provider status (${existingEmail.status})`,
+              processingStartedAt: null,
+              processingWorkerId: workerId
+            }
+          });
+          return 'PERMANENTLY_FAILED';
+        }
+      }
+    }
+
     // Circuit Breaker Guard Check
     if (!providerCircuitBreaker.canExecute(channel)) {
       notificationMetrics.recordCircuitBreakerBlocked();
@@ -228,6 +272,7 @@ export class DeliveryProcessor {
       userId: notifRecord.userId,
       targetAddress: delivery.targetAddress || undefined,
       targetDeviceId: delivery.targetDeviceId || notifRecord.deviceId || undefined,
+      attemptNumber: delivery.attemptCount,
       event: {
         eventId: notifRecord.eventId,
         userId: notifRecord.userId,
@@ -285,7 +330,60 @@ export class DeliveryProcessor {
         return 'DELIVERED';
       } else {
         const rawMsg = providerResult.errorMessage || 'Unknown delivery failure';
-        const classification = failureClassifier.classify(rawMsg, providerResult.externalMessageId);
+
+        // Use specialized classifyEmailFailure for Email channel, or generic failureClassifier for Push
+        const isEmail = channel === NotificationChannel.EMAIL;
+        const currentAttemptNumber = delivery.attemptCount || 1;
+
+        if (isEmail) {
+          const emailClassification = classifyEmailFailure({
+            errorMessage: rawMsg,
+            providerResponseCode: providerResult.externalMessageId,
+            attemptCount: currentAttemptNumber,
+            maxAttempts: delivery.maxAttempts,
+            isCircuitOpen: false
+          });
+
+          if (!emailClassification.shouldRetry) {
+            providerCircuitBreaker.recordFailure(channel);
+
+            await prisma.channelDeliveryRecord.update({
+              where: { id: delivery.id },
+              data: {
+                status: 'PERMANENTLY_FAILED',
+                failedAt: now,
+                failureReason: emailClassification.normalizedReason,
+                providerResponseCode: String(providerResult.externalMessageId || 'FAILED'),
+                correlationId,
+                processingStartedAt: null,
+                processingWorkerId: workerId
+              }
+            });
+
+            notificationMetrics.recordDeliveryFailure(channel, true, emailClassification.normalizedReason);
+            return 'PERMANENTLY_FAILED';
+          } else {
+            providerCircuitBreaker.recordFailure(channel);
+
+            await prisma.channelDeliveryRecord.update({
+              where: { id: delivery.id },
+              data: {
+                status: 'RETRYING',
+                nextRetryAt: emailClassification.nextRetryAt || new Date(Date.now() + 60000),
+                failureReason: emailClassification.normalizedReason,
+                providerResponseCode: String(providerResult.externalMessageId || 'RETRYING'),
+                correlationId,
+                processingStartedAt: null,
+                processingWorkerId: workerId
+              }
+            });
+
+            notificationMetrics.recordDeliveryFailure(channel, false, emailClassification.normalizedReason);
+            return 'RETRYING';
+          }
+        }
+
+        const classification = failureClassifier.classify(rawMsg, providerResult.externalMessageId || undefined);
 
         if (!classification.retryable) {
           providerCircuitBreaker.recordFailure(channel);
@@ -312,7 +410,6 @@ export class DeliveryProcessor {
         } else {
           providerCircuitBreaker.recordFailure(channel);
 
-          const currentAttemptNumber = (delivery.attemptCount || 0) + 1;
           const isExhausted = currentAttemptNumber >= delivery.maxAttempts;
 
           if (isExhausted) {
@@ -356,8 +453,35 @@ export class DeliveryProcessor {
       providerCircuitBreaker.recordFailure(channel);
 
       const rawMsg = err?.message || String(err);
+      const currentAttemptNumber = delivery.attemptCount || 1;
+
+      if (channel === NotificationChannel.EMAIL) {
+        const emailClassification = classifyEmailFailure({
+          errorMessage: rawMsg,
+          attemptCount: currentAttemptNumber,
+          maxAttempts: delivery.maxAttempts,
+          isCircuitOpen: false
+        });
+
+        await prisma.channelDeliveryRecord.update({
+          where: { id: delivery.id },
+          data: {
+            status: emailClassification.shouldRetry ? 'RETRYING' : 'PERMANENTLY_FAILED',
+            failedAt: emailClassification.shouldRetry ? null : now,
+            nextRetryAt: emailClassification.shouldRetry ? (emailClassification.nextRetryAt || new Date(Date.now() + 60000)) : null,
+            failureReason: emailClassification.normalizedReason,
+            providerResponseCode: 'EXCEPTION',
+            correlationId,
+            processingStartedAt: null,
+            processingWorkerId: workerId
+          }
+        });
+
+        notificationMetrics.recordDeliveryFailure(channel, !emailClassification.shouldRetry, emailClassification.normalizedReason);
+        return emailClassification.shouldRetry ? 'RETRYING' : 'PERMANENTLY_FAILED';
+      }
+
       const classification = failureClassifier.classify(rawMsg);
-      const currentAttemptNumber = (delivery.attemptCount || 0) + 1;
       const isExhausted = !classification.retryable || currentAttemptNumber >= delivery.maxAttempts;
 
       await prisma.channelDeliveryRecord.update({

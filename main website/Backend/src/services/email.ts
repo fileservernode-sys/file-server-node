@@ -6,12 +6,46 @@ import {
   getPasswordResetTemplate,
   getLoginOtpTemplate
 } from './email_templates.js';
+import { emailTrackingService } from './email_tracking_service.js';
+import { RequestContextStore } from '../observability/request_context.js';
+import {
+  sanitizeLogString,
+  sanitizeFailureReason,
+  sanitizeJsonPayload
+} from '../utils/email_sanitizer.js';
+
+export interface EmailDispatchResult {
+  success: boolean;
+  provider: string;
+  transport: 'BREVO_API' | 'SMTP_RELAY' | 'MOCK';
+  providerMessageId?: string | null;
+  providerResponseCode?: string | null;
+  providerResponse?: any;
+  errorMessage?: string | null;
+  failureCode?: string | null;
+  durationMs?: number;
+}
+
+export interface EmailDispatchOptions {
+  userId?: string | null;
+  notificationRecordId?: string | null;
+  channelDeliveryRecordId?: string | null;
+  sourcePipeline?: 'OTP' | 'NOTIFICATION' | 'SYSTEM' | 'TRANSACTIONAL';
+  emailType?: string;
+  templateId?: string;
+  requestId?: string | null;
+  correlationId?: string | null;
+  deviceId?: string | null;
+  serverId?: string | null;
+  metadata?: Record<string, any>;
+  attemptNumber?: number;
+}
 
 export interface EmailService {
-  sendVerificationOtp(email: string, otpCode: string): Promise<boolean>;
-  sendPasswordResetOtp(email: string, otpCode: string): Promise<boolean>;
-  sendLoginOtp(email: string, otpCode: string): Promise<boolean>;
-  sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean>;
+  sendVerificationOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
+  sendPasswordResetOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
+  sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
+  sendRawMail(to: string, subject: string, html: string, text: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
 }
 
 /**
@@ -60,10 +94,11 @@ export class BrevoEmailService implements EmailService {
     });
   }
 
-  private async sendMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
+  private async sendMail(to: string, subject: string, html: string, text: string): Promise<EmailDispatchResult> {
     const apiKey = this.getApiKey();
     const fromEmail = (process.env.SMTP_FROM_EMAIL || this.fromEmail).trim();
     const fromName = (process.env.SMTP_FROM_NAME || this.fromName).trim();
+    const startTime = Date.now();
 
     // 1. Primary: Brevo HTTPS REST API
     if (apiKey) {
@@ -84,15 +119,28 @@ export class BrevoEmailService implements EmailService {
           })
         });
 
+        const durationMs = Date.now() - startTime;
+
         if (response.ok) {
-          console.log(`[Brevo Email API] Successfully dispatched transactional email to ${to}`);
-          return true;
+          const responsePayload: any = await response.json().catch(() => ({}));
+          const realMessageId = responsePayload?.messageId ? String(responsePayload.messageId) : undefined;
+          console.log(`[Brevo Email API] Successfully dispatched transactional email to ${sanitizeLogString(to)} (messageId: ${sanitizeLogString(realMessageId) || 'N/A'})`);
+
+          return {
+            success: true,
+            provider: 'BREVO',
+            transport: 'BREVO_API',
+            providerMessageId: realMessageId || null,
+            providerResponseCode: String(response.status),
+            providerResponse: sanitizeJsonPayload(responsePayload),
+            durationMs
+          };
         }
 
         const errorPayload: any = await response.json().catch(() => ({}));
-        console.warn(`[Brevo Email API] REST API rejected delivery (${errorPayload?.message || response.statusText}). Falling back to Brevo SMTP Relay...`);
+        console.warn(`[Brevo Email API] REST API rejected delivery (${sanitizeLogString(errorPayload?.message || response.statusText)}). Falling back to Brevo SMTP Relay...`);
       } catch (err: any) {
-        console.warn(`[Brevo Email API] Network error (${err?.message}). Falling back to Brevo SMTP Relay...`);
+        console.warn(`[Brevo Email API] Network error (${sanitizeLogString(err?.message)}). Falling back to Brevo SMTP Relay...`);
       }
     }
 
@@ -100,45 +148,148 @@ export class BrevoEmailService implements EmailService {
     const transporter = this.getTransporter();
     if (transporter) {
       try {
-        await transporter.sendMail({
+        const sendResult = await transporter.sendMail({
           from: `"${fromName}" <${fromEmail}>`,
           to,
           subject,
           text,
           html
         });
-        console.log(`[Brevo SMTP Relay] Successfully dispatched email to ${to}`);
-        return true;
+
+        const durationMs = Date.now() - startTime;
+        const realMessageId = sendResult?.messageId ? String(sendResult.messageId) : undefined;
+        console.log(`[Brevo SMTP Relay] Successfully dispatched email to ${sanitizeLogString(to)} (messageId: ${sanitizeLogString(realMessageId) || 'N/A'})`);
+
+        return {
+          success: true,
+          provider: 'BREVO',
+          transport: 'SMTP_RELAY',
+          providerMessageId: realMessageId || null,
+          providerResponseCode: '250',
+          providerResponse: sanitizeJsonPayload({ response: sendResult?.response, accepted: sendResult?.accepted }),
+          durationMs
+        };
       } catch (err: any) {
-        console.error(`[Brevo SMTP Relay] Failed to send email to ${to}: ${err?.message || 'SMTP error'}`);
-        return false;
+        const durationMs = Date.now() - startTime;
+        const safeErrMsg = sanitizeFailureReason(err?.message || 'SMTP delivery error');
+        console.error(`[Brevo SMTP Relay] Failed to send email to ${sanitizeLogString(to)}: ${sanitizeLogString(safeErrMsg)}`);
+        return {
+          success: false,
+          provider: 'BREVO',
+          transport: 'SMTP_RELAY',
+          errorMessage: safeErrMsg,
+          durationMs
+        };
       }
     }
 
-    console.warn(`[Brevo Email] Neither BREVO_API_KEY nor SMTP credentials configured. Email dispatch to ${to} deferred.`);
-    return true;
+    const durationMs = Date.now() - startTime;
+    console.warn(`[Brevo Email] Neither BREVO_API_KEY nor SMTP credentials configured. Email dispatch to ${sanitizeLogString(to)} deferred.`);
+    return {
+      success: true,
+      provider: 'BREVO',
+      transport: 'BREVO_API',
+      providerMessageId: null,
+      providerResponseCode: 'DEFERRED',
+      durationMs
+    };
   }
 
-  async sendVerificationOtp(email: string, otpCode: string): Promise<boolean> {
+  async sendVerificationOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
     const expiryMinutes = Math.round(config.EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS / 60);
     const template = getEmailVerificationTemplate(otpCode, expiryMinutes);
-    return this.sendMail(email, template.subject, template.html, template.text);
+    const dispatchResult = await this.sendMail(email, template.subject, template.html, template.text);
+
+    // Track direct OTP email dispatch
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'REGISTRATION_OTP',
+      templateId: options?.templateId || 'EMAIL_VERIFICATION',
+      subject: template.subject,
+      senderEmail: config.SMTP_FROM_EMAIL,
+      senderName: config.SMTP_FROM_NAME,
+      dispatchResult,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return dispatchResult;
   }
 
-  async sendPasswordResetOtp(email: string, otpCode: string): Promise<boolean> {
+  async sendPasswordResetOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
     const expiryMinutes = Math.round(config.PASSWORD_RESET_OTP_EXPIRY_SECONDS / 60);
     const template = getPasswordResetTemplate(otpCode, expiryMinutes);
-    return this.sendMail(email, template.subject, template.html, template.text);
+    const dispatchResult = await this.sendMail(email, template.subject, template.html, template.text);
+
+    // Track direct OTP email dispatch
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'PASSWORD_RESET_OTP',
+      templateId: options?.templateId || 'PASSWORD_RESET',
+      subject: template.subject,
+      senderEmail: config.SMTP_FROM_EMAIL,
+      senderName: config.SMTP_FROM_NAME,
+      dispatchResult,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return dispatchResult;
   }
 
-  async sendLoginOtp(email: string, otpCode: string): Promise<boolean> {
+  async sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
     const expiryMinutes = Math.round(config.EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS / 60);
     const template = getLoginOtpTemplate(otpCode, expiryMinutes);
-    return this.sendMail(email, template.subject, template.html, template.text);
+    const dispatchResult = await this.sendMail(email, template.subject, template.html, template.text);
+
+    // Track direct OTP email dispatch
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'LOGIN_OTP',
+      templateId: options?.templateId || 'LOGIN_2FA',
+      subject: template.subject,
+      senderEmail: config.SMTP_FROM_EMAIL,
+      senderName: config.SMTP_FROM_NAME,
+      dispatchResult,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return dispatchResult;
   }
 
-  async sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
-    return this.sendMail(to, subject, html, text);
+  async sendRawMail(to: string, subject: string, html: string, text: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    const dispatchResult = await this.sendMail(to, subject, html, text);
+
+    // If notification tracking options are provided, record via central tracking
+    if (options && options.sourcePipeline === 'NOTIFICATION') {
+      await emailTrackingService.recordNotificationEmail({
+        userId: options.userId || null,
+        recipientEmail: to,
+        notificationRecordId: options.notificationRecordId || null,
+        channelDeliveryRecordId: options.channelDeliveryRecordId || null,
+        emailType: options.emailType || 'NOTIFICATION',
+        templateId: options.templateId || 'NOTIFICATION',
+        subject,
+        senderEmail: config.SMTP_FROM_EMAIL,
+        senderName: config.SMTP_FROM_NAME,
+        dispatchResult,
+        requestId: options.requestId || RequestContextStore.get()?.requestId || null,
+        correlationId: options.correlationId || null,
+        deviceId: options.deviceId || null,
+        serverId: options.serverId || null,
+        metadata: options.metadata,
+        attemptNumber: options.attemptNumber
+      }).catch(() => {});
+    }
+
+    return dispatchResult;
   }
 }
 
@@ -151,27 +302,114 @@ export const SmtpEmailService = BrevoEmailService;
  * Mock Email Service for Test Environment
  */
 export class MockEmailService implements EmailService {
-  public dispatchedOtps: Array<{ email: string; otpCode: string; type: string }> = [];
-  public dispatchedMails: Array<{ to: string; subject: string; html: string; text: string }> = [];
+  public dispatchedOtps: Array<{ email: string; otpCode: string; type: string; options?: EmailDispatchOptions }> = [];
+  public dispatchedMails: Array<{ to: string; subject: string; html: string; text: string; options?: EmailDispatchOptions }> = [];
 
-  async sendVerificationOtp(email: string, otpCode: string): Promise<boolean> {
-    this.dispatchedOtps.push({ email, otpCode, type: 'VERIFICATION' });
-    return true;
+  async sendVerificationOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    this.dispatchedOtps.push({ email, otpCode, type: 'VERIFICATION', options });
+    const result: EmailDispatchResult = {
+      success: true,
+      provider: 'MOCK',
+      transport: 'MOCK',
+      providerMessageId: `mock_otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      providerResponseCode: '200'
+    };
+
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'REGISTRATION_OTP',
+      templateId: options?.templateId || 'EMAIL_VERIFICATION',
+      subject: '[ZdexCloud] Verify Your Email Address',
+      dispatchResult: result,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return result;
   }
 
-  async sendPasswordResetOtp(email: string, otpCode: string): Promise<boolean> {
-    this.dispatchedOtps.push({ email, otpCode, type: 'PASSWORD_RESET' });
-    return true;
+  async sendPasswordResetOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    this.dispatchedOtps.push({ email, otpCode, type: 'PASSWORD_RESET', options });
+    const result: EmailDispatchResult = {
+      success: true,
+      provider: 'MOCK',
+      transport: 'MOCK',
+      providerMessageId: `mock_otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      providerResponseCode: '200'
+    };
+
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'PASSWORD_RESET_OTP',
+      templateId: options?.templateId || 'PASSWORD_RESET',
+      subject: '[ZdexCloud] Reset Your Password',
+      dispatchResult: result,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return result;
   }
 
-  async sendLoginOtp(email: string, otpCode: string): Promise<boolean> {
-    this.dispatchedOtps.push({ email, otpCode, type: 'LOGIN' });
-    return true;
+  async sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    this.dispatchedOtps.push({ email, otpCode, type: 'LOGIN', options });
+    const result: EmailDispatchResult = {
+      success: true,
+      provider: 'MOCK',
+      transport: 'MOCK',
+      providerMessageId: `mock_otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      providerResponseCode: '200'
+    };
+
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'LOGIN_OTP',
+      templateId: options?.templateId || 'LOGIN_2FA',
+      subject: '[ZdexCloud] Your Login Security Code',
+      dispatchResult: result,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return result;
   }
 
-  async sendRawMail(to: string, subject: string, html: string, text: string): Promise<boolean> {
-    this.dispatchedMails.push({ to, subject, html, text });
-    return true;
+  async sendRawMail(to: string, subject: string, html: string, text: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    this.dispatchedMails.push({ to, subject, html, text, options });
+    const result: EmailDispatchResult = {
+      success: true,
+      provider: 'MOCK',
+      transport: 'MOCK',
+      providerMessageId: `mock_msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      providerResponseCode: '200'
+    };
+
+    if (options && options.sourcePipeline === 'NOTIFICATION') {
+      await emailTrackingService.recordNotificationEmail({
+        userId: options.userId || null,
+        recipientEmail: to,
+        notificationRecordId: options.notificationRecordId || null,
+        channelDeliveryRecordId: options.channelDeliveryRecordId || null,
+        emailType: options.emailType || 'NOTIFICATION',
+        templateId: options.templateId || 'NOTIFICATION',
+        subject,
+        dispatchResult: result,
+        requestId: options.requestId || RequestContextStore.get()?.requestId || null,
+        correlationId: options.correlationId || null,
+        deviceId: options.deviceId || null,
+        serverId: options.serverId || null,
+        metadata: options.metadata,
+        attemptNumber: options.attemptNumber
+      }).catch(() => {});
+    }
+
+    return result;
   }
 }
 

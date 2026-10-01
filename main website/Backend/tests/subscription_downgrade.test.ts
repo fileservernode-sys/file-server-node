@@ -1,6 +1,7 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { prisma } from '../src/config/database.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService, PAID_ENTITLED_STATUSES } from '../src/services/billing/billing_state_service.js';
@@ -168,15 +169,16 @@ describe('ZC-BILLING-6.2 Pro Yearly -> Pro Monthly Downgrade Test Suite', () => 
       }
     });
 
+    const rawToken = `sess_${uniqueId()}`;
     const session = await prisma.userSession.create({
       data: {
         userId: user.id,
-        token: `sess_${uniqueId()}`,
+        tokenHash: hashSessionToken(rawToken),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
 
-    return { user, sub, session, country, currency, providerSubId, periodEnd };
+    return { user, sub, session: { ...session, token: rawToken }, country, currency, providerSubId, periodEnd };
   }
 
   before(async () => {

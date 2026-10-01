@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import {
   BillingInterval,
   CurrencyCode,
@@ -122,15 +123,16 @@ describe('ZC-BILLING-6.4 Billing Receipt Foundation Test Suite', () => {
         }
       });
 
+      const rawToken = `tok_${uniqueId()}`;
       const session = await prisma.userSession.create({
         data: {
           userId: user.id,
-          token: `tok_${uniqueId()}`,
+          tokenHash: hashSessionToken(rawToken),
           expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
         }
       });
 
-      return { user, sub, payment, session, plan, price };
+      return { user, sub, payment, session: { ...session, token: rawToken }, plan, price };
     });
   }
 

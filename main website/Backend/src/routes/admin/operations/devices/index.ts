@@ -4,6 +4,7 @@ import { requireOperationPermission } from '../middleware/require_operation_perm
 import { assertAdminCanOperateOnResource } from '../middleware/object_authorization.js';
 import { createSuccessResponse } from '../../../../schemas/response.js';
 import { ValidationError } from '../../../../errors/app-error.js';
+import { resolveClientIp } from '../../../../utils/ip.js';
 import { AdminDeviceService } from './service.js';
 import {
   deviceListQuerySchema,
@@ -77,8 +78,8 @@ export async function adminDeviceOperationsRoutes(app: FastifyInstance): Promise
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = req.admin?.id || 'anonymous';
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `device_disconnect_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `device_disconnect_${adminId}_${clientIp}`;
           }
         }
       },

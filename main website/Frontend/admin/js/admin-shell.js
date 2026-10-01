@@ -213,6 +213,18 @@
       icon: 'alert-triangle'
     },
     {
+      id: 'email-operations',
+      name: 'Email Operations & Analytics',
+      category: 'Observability & Diagnostics',
+      route: '#email-operations',
+      permission: 'emails.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 13',
+      description: 'Centralized outbound email delivery tracking, daily analytics, failure & bounce breakdowns, and transport telemetry.',
+      apiNamespace: '/api/v1/admin/emails/*',
+      icon: 'mail'
+    },
+    {
       id: 'database-mgmt',
       name: 'Database Management & Migrations',
       category: 'System & Data',
@@ -351,6 +363,12 @@
           label: 'Error & Incident Center',
           icon: 'alert-triangle',
           permission: 'errors.read'
+        },
+        {
+          id: 'email-operations',
+          label: 'Email Operations',
+          icon: 'mail',
+          permission: 'emails.read'
         }
       ]
     },
@@ -374,6 +392,7 @@
   ];
 
   const ICONS = {
+    mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
     'alert-triangle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
     'life-buoy': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" x2="9.17" y1="4.93" y2="9.17"/><line x1="14.83" x2="19.07" y1="14.83" y2="19.07"/><line x1="14.83" x2="19.07" y1="9.17" y2="4.93"/><line x1="14.83" x2="9.17" y1="14.83" y2="19.07"/></svg>',
@@ -454,6 +473,14 @@
         endDate: '',
         sortBy: 'updatedAt',
         sortOrder: 'desc'
+      };
+      this.emailOperationsState = {
+        days: 7,
+        analytics: null,
+        recentEmails: [],
+        recentFailures: [],
+        isLoading: false,
+        error: null
       };
     }
 
@@ -638,6 +665,7 @@
       if (rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') hash = 'reconciliation';
       if (rawHash === 'settlements' || rawHash === 'billing-settlements') hash = 'settlements';
       if (rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') hash = 'observability-center';
+      if (rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') hash = 'email-operations';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -654,7 +682,8 @@
           (rawHash === 'billing-refunds' && itemId === 'refunds') ||
           ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation') ||
           ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements') ||
-          ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center')
+          ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center') ||
+          ((rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') && itemId === 'email-operations')
         ) {
           el.classList.add('active');
         } else {
@@ -682,7 +711,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : 'Dashboard'))))))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : (hash === 'email-operations' ? 'Email Operations' : 'Dashboard')))))))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -758,6 +787,13 @@
         case 'error-center':
         case 'observability':
           this._renderErrorCenterView(container);
+          break;
+        case 'email-operations':
+        case 'emails':
+        case 'email':
+        case 'email-analytics':
+        case 'email-tracking':
+          this._renderEmailOperationsView(container);
           break;
         default:
           this._renderDashboardView(container);
@@ -7392,6 +7428,1145 @@
           this.loadErrorIncidents(this.errorCenterState.page);
         }
       });
+    }
+
+    /* =========================================================================
+       9. EMAIL OPERATIONS & ANALYTICS (Phase 13.11)
+       ========================================================================= */
+    _renderEmailOperationsView(container) {
+      if (!window.AdminAuth.hasPermission('emails.read')) {
+        this._renderForbiddenView({ id: 'email-operations', label: 'Email Operations', permission: 'emails.read' });
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Email Operations &amp; Analytics</h1>
+            <p class="admin-view-subtitle">Real-time outbound email telemetry, delivery rates, failure analysis, provider distribution, and operational activity.</p>
+          </div>
+          <div class="admin-view-actions" style="display:flex;align-items:center;gap:0.75rem;">
+            <div class="admin-btn-group" role="group" aria-label="Time period selector">
+              <button class="admin-btn admin-btn-sm ${this.emailOperationsState.days === 7 ? 'admin-btn-primary' : 'admin-btn-secondary'}" id="btnEmailPeriod7d">7 Days</button>
+              <button class="admin-btn admin-btn-sm ${this.emailOperationsState.days === 30 ? 'admin-btn-primary' : 'admin-btn-secondary'}" id="btnEmailPeriod30d">30 Days</button>
+              <button class="admin-btn admin-btn-sm ${this.emailOperationsState.days === 90 ? 'admin-btn-primary' : 'admin-btn-secondary'}" id="btnEmailPeriod90d">90 Days</button>
+            </div>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btnRefreshEmails">
+              ${ICONS.rotate} Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Retention Policy Info Banner -->
+        <div id="emailRetentionBanner" style="display:none;margin-bottom:1.25rem;padding:0.625rem 1rem;background-color:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.18);border-radius:6px;font-size:0.8125rem;color:var(--admin-text-muted);display:flex;align-items:center;gap:0.5rem;">
+          <span style="color:var(--admin-primary);font-weight:600;display:inline-flex;align-items:center;gap:0.25rem;">${ICONS.info || 'ℹ'} Retention Policy:</span>
+          <span id="emailRetentionNoticeText">Outbound email tracking records are retained for 90 days.</span>
+        </div>
+
+        <!-- Summary KPI Strip -->
+        <div class="admin-summary-strip" id="emailSummaryStrip">
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Total Outbound</div>
+            <div class="admin-summary-value" id="kpiEmailTotal">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Delivered</div>
+            <div class="admin-summary-value" id="kpiEmailDelivered" style="color:var(--admin-success);">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Sent (In Flight)</div>
+            <div class="admin-summary-value" id="kpiEmailSent" style="color:var(--admin-primary);">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Delivery Rate</div>
+            <div class="admin-summary-value" id="kpiEmailDeliveryRate" style="color:var(--admin-success);">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Retrying / Deferred</div>
+            <div class="admin-summary-value" id="kpiEmailDeferred" style="color:var(--admin-warning);">-</div>
+          </div>
+          <div class="admin-summary-card">
+            <div class="admin-summary-label">Failed / Bounced</div>
+            <div class="admin-summary-value" id="kpiEmailFailed" style="color:var(--admin-danger);">-</div>
+          </div>
+        </div>
+
+        <!-- Status Breakdown Strip -->
+        <div class="admin-card" style="margin-bottom:1.5rem;padding:1rem 1.25rem;">
+          <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--admin-text-muted);margin-bottom:0.75rem;">
+            Delivery &amp; Lifecycle Status Breakdown
+          </div>
+          <div id="emailStatusBreakdownPills" style="display:flex;flex-wrap:wrap;gap:0.625rem;align-items:center;">
+            <div style="color:var(--admin-text-muted);font-size:0.8125rem;">Loading status breakdown...</div>
+          </div>
+        </div>
+
+        <!-- Daily Trends & Distribution Grid -->
+        <div class="admin-email-analytics-grid">
+          <!-- Daily Email Volume Trend Chart Card -->
+          <div class="admin-email-chart-card" style="grid-column:1 / -1;">
+            <div class="admin-email-chart-header">
+              <div class="admin-email-chart-title">
+                ${ICONS.dashboard} Daily Outbound Volume Trends
+              </div>
+              <div class="admin-email-chart-legend">
+                <span class="admin-chart-legend-item"><span class="admin-chart-legend-dot" style="background-color:#059669;"></span> Delivered</span>
+                <span class="admin-chart-legend-item"><span class="admin-chart-legend-dot" style="background-color:#2563EB;"></span> Sent</span>
+                <span class="admin-chart-legend-item"><span class="admin-chart-legend-dot" style="background-color:#D97706;"></span> Deferred</span>
+                <span class="admin-chart-legend-item"><span class="admin-chart-legend-dot" style="background-color:#DC2626;"></span> Failed / Bounced</span>
+              </div>
+            </div>
+            <div class="admin-chart-wrapper" id="emailTrendsChartWrapper">
+              <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--admin-text-muted);font-size:0.8125rem;">
+                Loading trend data...
+              </div>
+            </div>
+          </div>
+
+          <!-- Source Pipeline Distribution Card -->
+          <div class="admin-email-chart-card">
+            <div class="admin-email-chart-header">
+              <div class="admin-email-chart-title">
+                ${ICONS.radio} Source Pipeline Distribution
+              </div>
+            </div>
+            <div class="admin-dist-list" id="emailPipelineDistList">
+              <div style="color:var(--admin-text-muted);font-size:0.8125rem;">Loading pipeline metrics...</div>
+            </div>
+          </div>
+
+          <!-- Provider & Transport Distribution Card -->
+          <div class="admin-email-chart-card">
+            <div class="admin-email-chart-header">
+              <div class="admin-email-chart-title">
+                ${ICONS.server} Provider &amp; Transport
+              </div>
+            </div>
+            <div class="admin-dist-list" id="emailProviderDistList">
+              <div style="color:var(--admin-text-muted);font-size:0.8125rem;">Loading provider metrics...</div>
+            </div>
+          </div>
+
+          <!-- Top Email Types Card -->
+          <div class="admin-email-chart-card">
+            <div class="admin-email-chart-header">
+              <div class="admin-email-chart-title">
+                ${ICONS['file-text']} Top Email Types
+              </div>
+            </div>
+            <div class="admin-dist-list" id="emailTypesDistList">
+              <div style="color:var(--admin-text-muted);font-size:0.8125rem;">Loading message types...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Tables: Recent Emails & Recent Failures -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(450px, 1fr));gap:1.5rem;margin-bottom:2rem;">
+          <!-- Recent Emails Table Card -->
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <h2 class="admin-card-title" style="font-size:0.9375rem;margin:0;">Recent Outbound Activity</h2>
+              <span style="font-size:0.75rem;color:var(--admin-text-muted);">Latest 10 emails</span>
+            </div>
+            <div class="admin-card-body" style="padding:0;">
+              <div class="admin-table-wrapper" id="recentEmailsTableWrapper">
+                <div style="padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.8125rem;">Loading recent outbound messages...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Failures Table Card -->
+          <div class="admin-card">
+            <div class="admin-card-header" style="display:flex;justify-content:space-between;align-items:center;">
+              <h2 class="admin-card-title" style="font-size:0.9375rem;margin:0;color:var(--admin-danger);">Recent Delivery Failures &amp; Retries</h2>
+              <span style="font-size:0.75rem;color:var(--admin-text-muted);">Latest 10 exceptions</span>
+            </div>
+            <div class="admin-card-body" style="padding:0;">
+              <div class="admin-table-wrapper" id="recentFailuresTableWrapper">
+                <div style="padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.8125rem;">Loading failure events...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Attach event handlers
+      const btn7d = document.getElementById('btnEmailPeriod7d');
+      const btn30d = document.getElementById('btnEmailPeriod30d');
+      const btn90d = document.getElementById('btnEmailPeriod90d');
+      const btnRefresh = document.getElementById('btnRefreshEmails');
+
+      if (btn7d) {
+        btn7d.addEventListener('click', () => {
+          this.emailOperationsState.days = 7;
+          this._renderEmailOperationsView(container);
+        });
+      }
+      if (btn30d) {
+        btn30d.addEventListener('click', () => {
+          this.emailOperationsState.days = 30;
+          this._renderEmailOperationsView(container);
+        });
+      }
+      if (btn90d) {
+        btn90d.addEventListener('click', () => {
+          this.emailOperationsState.days = 90;
+          this._renderEmailOperationsView(container);
+        });
+      }
+      if (btnRefresh) {
+        btnRefresh.addEventListener('click', () => {
+          this.loadEmailOperationsData();
+        });
+      }
+
+      this.loadEmailOperationsData();
+    }
+
+    async loadEmailOperationsData() {
+      const days = this.emailOperationsState.days || 7;
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      const endDate = new Date().toISOString();
+
+      try {
+        const [analyticsRes, recentRes, failuresRes] = await Promise.all([
+          window.AdminApi.getEmailAnalytics({ startDate, endDate }),
+          window.AdminApi.listEmails({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }),
+          window.AdminApi.listEmails({ limit: 10, sortBy: 'createdAt', sortOrder: 'desc', status: 'FAILED' }).catch(() => null)
+        ]);
+
+        if (!analyticsRes.success) {
+          throw new Error(analyticsRes.error?.message || 'Failed to fetch email analytics');
+        }
+
+        const analytics = analyticsRes.data || {};
+        const kpis = analytics.kpis || {};
+        const recentEmails = recentRes?.success ? (recentRes.data?.emails || recentRes.data?.items || []) : [];
+        
+        let recentFailures = failuresRes?.success ? (failuresRes.data?.emails || failuresRes.data?.items || []) : [];
+        if (recentFailures.length === 0 && recentEmails.length > 0) {
+          recentFailures = recentEmails.filter(e => ['FAILED', 'HARD_BOUNCED', 'SOFT_BOUNCED', 'BLOCKED', 'SPAM_COMPLAINT', 'DEFERRED', 'RETRYING'].includes(e.status));
+        }
+
+        this.emailOperationsState.analytics = analytics;
+        this.emailOperationsState.recentEmails = recentEmails;
+        this.emailOperationsState.recentFailures = recentFailures;
+
+        // 1. Update KPI Strip
+        const totalEl = document.getElementById('kpiEmailTotal');
+        const deliveredEl = document.getElementById('kpiEmailDelivered');
+        const sentEl = document.getElementById('kpiEmailSent');
+        const rateEl = document.getElementById('kpiEmailDeliveryRate');
+        const deferredEl = document.getElementById('kpiEmailDeferred');
+        const failedEl = document.getElementById('kpiEmailFailed');
+
+        if (totalEl) totalEl.textContent = (kpis.totalEmails || 0).toLocaleString();
+        if (deliveredEl) deliveredEl.textContent = (kpis.deliveredCount || 0).toLocaleString();
+        if (sentEl) sentEl.textContent = (kpis.sentCount || 0).toLocaleString();
+        if (rateEl) {
+          const rateVal = typeof kpis.deliveryRatePercent === 'number' ? kpis.deliveryRatePercent : 0;
+          rateEl.textContent = `${rateVal.toFixed(1)}%`;
+        }
+        if (deferredEl) {
+          const defCount = (kpis.deferredCount || 0) + (kpis.retryingCount || 0);
+          deferredEl.textContent = defCount.toLocaleString();
+        }
+        if (failedEl) {
+          const failCount = (kpis.failedCount || 0) + (kpis.bouncedCount || 0) + (kpis.blockedCount || 0) + (kpis.spamCount || 0);
+          failedEl.textContent = failCount.toLocaleString();
+        }
+
+        // 1b. Update Retention Info Banner
+        const retentionBanner = document.getElementById('emailRetentionBanner');
+        const retentionNotice = document.getElementById('emailRetentionNoticeText');
+        if (retentionBanner && analytics.retentionInfo) {
+          const { configuredRetentionDays, isPartialData, oldestRetainedRecordAt } = analytics.retentionInfo;
+          retentionBanner.style.display = 'flex';
+          if (isPartialData && oldestRetainedRecordAt) {
+            const oldestDateStr = new Date(oldestRetainedRecordAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            if (retentionNotice) {
+              retentionNotice.innerHTML = `Showing partial data: records prior to <strong>${oldestDateStr}</strong> have been pruned under the configured <strong>${configuredRetentionDays}-day</strong> retention policy. Active in-flight deliveries are always protected.`;
+            }
+          } else {
+            if (retentionNotice) {
+              retentionNotice.innerHTML = `Email telemetry and tracking records are automatically retained for <strong>${configuredRetentionDays} days</strong>. Active in-flight queues and retries are never pruned.`;
+            }
+          }
+        }
+
+        // 2. Update Status Breakdown Pills
+        this._renderEmailStatusBreakdown(analytics.statusDistribution || {});
+
+        // 3. Update Trends Chart
+        this._renderEmailTrendsChart(analytics.dailyTrends || []);
+
+        // 4. Update Pipeline Distribution
+        this._renderEmailPipelineDist(analytics.pipelineDistribution || {}, kpis.totalEmails || 0);
+
+        // 5. Update Provider & Transport Distribution
+        this._renderEmailProviderDist(analytics.providerDistribution || {}, analytics.transportDistribution || {}, kpis.totalEmails || 0);
+
+        // 6. Update Top Email Types
+        this._renderEmailTypesDist(analytics.topEmailTypes || [], kpis.totalEmails || 0);
+
+        // 7. Update Tables
+        this._renderRecentEmailsTable(recentEmails);
+        this._renderRecentFailuresTable(recentFailures);
+
+      } catch (err) {
+        console.error('[EmailOps] Failed to load dashboard data:', err);
+        const container = document.getElementById('emailTrendsChartWrapper');
+        if (container) {
+          container.innerHTML = `
+            <div style="padding:2rem;text-align:center;color:var(--admin-danger);font-size:0.875rem;">
+              <div>Failed to load email analytics: ${this._escape(err.message)}</div>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" style="margin-top:0.75rem;" onclick="AdminShell.loadEmailOperationsData()">Retry</button>
+            </div>
+          `;
+        }
+        this.toast(err.message || 'Failed to refresh email operations', 'danger');
+      }
+    }
+
+    _renderEmailStatusBreakdown(statusDist) {
+      const el = document.getElementById('emailStatusBreakdownPills');
+      if (!el) return;
+
+      const statuses = [
+        { key: 'DELIVERED', label: 'Delivered', badgeClass: 'admin-badge-status-delivered' },
+        { key: 'SENT', label: 'Sent', badgeClass: 'admin-badge-status-sent' },
+        { key: 'DEFERRED', label: 'Deferred', badgeClass: 'admin-badge-status-deferred' },
+        { key: 'RETRYING', label: 'Retrying', badgeClass: 'admin-badge-status-retrying' },
+        { key: 'SOFT_BOUNCED', label: 'Soft Bounce', badgeClass: 'admin-badge-status-bounced' },
+        { key: 'HARD_BOUNCED', label: 'Hard Bounce', badgeClass: 'admin-badge-status-bounced' },
+        { key: 'BLOCKED', label: 'Blocked', badgeClass: 'admin-badge-status-blocked' },
+        { key: 'SPAM_COMPLAINT', label: 'Spam', badgeClass: 'admin-badge-status-spam' },
+        { key: 'FAILED', label: 'Failed', badgeClass: 'admin-badge-status-failed' },
+        { key: 'PENDING', label: 'Pending', badgeClass: 'admin-badge-status-pending' }
+      ];
+
+      el.innerHTML = statuses.map(s => {
+        const count = statusDist[s.key] || 0;
+        return `
+          <div class="admin-badge ${s.badgeClass}" style="padding:0.375rem 0.75rem;font-size:0.75rem;font-weight:600;">
+            <span class="admin-status-dot"></span>
+            ${s.label}: <strong style="margin-left:4px;font-family:var(--font-mono);">${count.toLocaleString()}</strong>
+          </div>
+        `;
+      }).join('');
+    }
+
+    _renderEmailTrendsChart(dailyTrends) {
+      const wrapper = document.getElementById('emailTrendsChartWrapper');
+      if (!wrapper) return;
+
+      if (!dailyTrends || dailyTrends.length === 0) {
+        wrapper.innerHTML = `
+          <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--admin-text-muted);font-size:0.8125rem;">
+            No outbound email activity recorded in the selected period.
+          </div>
+        `;
+        return;
+      }
+
+      // Calculate max daily volume for scaling
+      const maxVal = Math.max(...dailyTrends.map(d => (d.total || (d.sent + d.delivered + d.failed + d.deferred)) || 1), 10);
+      const svgHeight = 180;
+      const barAreaHeight = 140;
+
+      const columnsHtml = dailyTrends.map(d => {
+        const total = d.total || (d.sent + d.delivered + d.failed + d.deferred) || 0;
+        const delivered = d.delivered || 0;
+        const sent = d.sent || 0;
+        const deferred = d.deferred || 0;
+        const failed = (d.failed || 0) + (d.bounced || 0);
+
+        const totalHeightPx = Math.round((total / maxVal) * barAreaHeight);
+        const deliveredHeightPx = total > 0 ? Math.round((delivered / total) * totalHeightPx) : 0;
+        const sentHeightPx = total > 0 ? Math.round((sent / total) * totalHeightPx) : 0;
+        const deferredHeightPx = total > 0 ? Math.round((deferred / total) * totalHeightPx) : 0;
+        const failedHeightPx = total > 0 ? Math.max(totalHeightPx - deliveredHeightPx - sentHeightPx - deferredHeightPx, 0) : 0;
+
+        const dateStr = d.date ? d.date.split('T')[0].substring(5) : '-';
+        const fullDateStr = d.date ? d.date.split('T')[0] : '';
+
+        return `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;position:relative;" title="${fullDateStr}: Total ${total} (Delivered: ${delivered}, Sent: ${sent}, Deferred: ${deferred}, Failed: ${failed})">
+            <div style="font-size:0.6875rem;font-family:var(--font-mono);color:var(--admin-text-muted);margin-bottom:4px;">
+              ${total > 0 ? total : ''}
+            </div>
+            <div style="width:100%;max-width:32px;display:flex;flex-direction:column-reverse;height:${Math.max(totalHeightPx, total > 0 ? 4 : 2)}px;border-radius:4px 4px 0 0;overflow:hidden;background:${total > 0 ? 'transparent' : 'var(--admin-bg-subtle)'};">
+              ${deliveredHeightPx > 0 ? `<div style="height:${deliveredHeightPx}px;background-color:#059669;" title="Delivered: ${delivered}"></div>` : ''}
+              ${sentHeightPx > 0 ? `<div style="height:${sentHeightPx}px;background-color:#2563EB;" title="Sent: ${sent}"></div>` : ''}
+              ${deferredHeightPx > 0 ? `<div style="height:${deferredHeightPx}px;background-color:#D97706;" title="Deferred: ${deferred}"></div>` : ''}
+              ${failedHeightPx > 0 ? `<div style="height:${failedHeightPx}px;background-color:#DC2626;" title="Failed: ${failed}"></div>` : ''}
+            </div>
+            <div style="font-size:0.6875rem;color:var(--admin-text-secondary);margin-top:6px;white-space:nowrap;font-family:var(--font-mono);">
+              ${dateStr}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      wrapper.innerHTML = `
+        <div style="display:flex;align-items:flex-end;gap:8px;height:${svgHeight}px;padding:0.5rem 0.25rem 0;border-bottom:1px solid var(--admin-border-subtle);width:100%;">
+          ${columnsHtml}
+        </div>
+      `;
+    }
+
+    _renderEmailPipelineDist(pipelineDist, total) {
+      const el = document.getElementById('emailPipelineDistList');
+      if (!el) return;
+
+      const pipelines = [
+        { key: 'OTP', label: 'Authentication OTP', color: '#2563EB' },
+        { key: 'NOTIFICATION', label: 'User Notifications', color: '#059669' },
+        { key: 'SYSTEM', label: 'System & Security Alerts', color: '#7C3AED' },
+        { key: 'TRANSACTIONAL', label: 'Transactional Receipts', color: '#0891B2' }
+      ];
+
+      const validTotal = Math.max(total, 1);
+
+      el.innerHTML = pipelines.map(p => {
+        const count = pipelineDist[p.key] || 0;
+        const pct = ((count / validTotal) * 100).toFixed(1);
+        return `
+          <div class="admin-dist-item">
+            <div class="admin-dist-header">
+              <span class="admin-dist-name">${p.label}</span>
+              <span class="admin-dist-stats"><strong>${count.toLocaleString()}</strong> (${pct}%)</span>
+            </div>
+            <div class="admin-dist-bar-track">
+              <div class="admin-dist-bar-fill" style="width:${pct}%;background-color:${p.color};"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    _renderEmailProviderDist(providerDist, transportDist, total) {
+      const el = document.getElementById('emailProviderDistList');
+      if (!el) return;
+
+      const validTotal = Math.max(total, 1);
+
+      const providers = Object.entries(providerDist).map(([k, v]) => ({
+        label: `Provider: ${k}`,
+        count: v,
+        pct: ((v / validTotal) * 100).toFixed(1),
+        color: k === 'BREVO' ? '#059669' : '#2563EB'
+      }));
+
+      const transports = Object.entries(transportDist).map(([k, v]) => ({
+        label: `Transport: ${k}`,
+        count: v,
+        pct: ((v / validTotal) * 100).toFixed(1),
+        color: k === 'BREVO_API' ? '#10B981' : '#3B82F6'
+      }));
+
+      const allItems = [...providers, ...transports];
+      if (allItems.length === 0) {
+        el.innerHTML = `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No provider data recorded.</div>`;
+        return;
+      }
+
+      el.innerHTML = allItems.map(item => `
+        <div class="admin-dist-item">
+          <div class="admin-dist-header">
+            <span class="admin-dist-name">${this._escape(item.label)}</span>
+            <span class="admin-dist-stats"><strong>${item.count.toLocaleString()}</strong> (${item.pct}%)</span>
+          </div>
+          <div class="admin-dist-bar-track">
+            <div class="admin-dist-bar-fill" style="width:${item.pct}%;background-color:${item.color};"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    _renderEmailTypesDist(topTypes, total) {
+      const el = document.getElementById('emailTypesDistList');
+      if (!el) return;
+
+      if (!topTypes || topTypes.length === 0) {
+        el.innerHTML = `<div style="color:var(--admin-text-muted);font-size:0.8125rem;">No email type breakdown recorded.</div>`;
+        return;
+      }
+
+      const validTotal = Math.max(total, 1);
+
+      el.innerHTML = topTypes.slice(0, 5).map(t => {
+        const typeName = t.emailType || t.type || 'UNKNOWN';
+        const count = t.count || 0;
+        const pct = ((count / validTotal) * 100).toFixed(1);
+        return `
+          <div class="admin-dist-item">
+            <div class="admin-dist-header">
+              <span class="admin-dist-name" style="font-family:var(--font-mono);font-size:0.75rem;">${this._escape(typeName)}</span>
+              <span class="admin-dist-stats"><strong>${count.toLocaleString()}</strong> (${pct}%)</span>
+            </div>
+            <div class="admin-dist-bar-track">
+              <div class="admin-dist-bar-fill" style="width:${pct}%;background-color:#6366F1;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    _renderRecentEmailsTable(emails) {
+      const el = document.getElementById('recentEmailsTableWrapper');
+      if (!el) return;
+
+      if (!emails || emails.length === 0) {
+        el.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.8125rem;">No recent outbound emails found.</div>`;
+        return;
+      }
+
+      el.innerHTML = `
+        <table class="admin-table" style="font-size:0.8125rem;">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Recipient</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th style="text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${emails.map(e => `
+              <tr>
+                <td style="white-space:nowrap;color:var(--admin-text-muted);font-family:var(--font-mono);font-size:0.75rem;">
+                  ${new Date(e.createdAt).toLocaleString()}
+                </td>
+                <td style="font-weight:500;color:var(--admin-text-primary);">
+                  ${this._escape(e.recipientEmail)}
+                </td>
+                <td>
+                  <code style="font-size:0.6875rem;padding:2px 4px;background:var(--admin-bg-subtle);border-radius:3px;">${this._escape(e.emailType)}</code>
+                </td>
+                <td>
+                  ${this._renderEmailStatusBadge(e.status)}
+                </td>
+                <td style="text-align:right;">
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectEmail('${this._escape(e.id)}')">
+                    Inspect
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    _renderRecentFailuresTable(failures) {
+      const el = document.getElementById('recentFailuresTableWrapper');
+      if (!el) return;
+
+      if (!failures || failures.length === 0) {
+        el.innerHTML = `
+          <div style="padding:2rem;text-align:center;color:var(--admin-success);font-size:0.8125rem;">
+            ✓ No recent delivery failures or retry exceptions recorded.
+          </div>
+        `;
+        return;
+      }
+
+      el.innerHTML = `
+        <table class="admin-table" style="font-size:0.8125rem;">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Recipient</th>
+              <th>Error / Reason</th>
+              <th>Status</th>
+              <th style="text-align:right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${failures.map(e => `
+              <tr>
+                <td style="white-space:nowrap;color:var(--admin-text-muted);font-family:var(--font-mono);font-size:0.75rem;">
+                  ${new Date(e.createdAt).toLocaleString()}
+                </td>
+                <td style="font-weight:500;color:var(--admin-text-primary);">
+                  ${this._escape(e.recipientEmail)}
+                </td>
+                <td style="color:var(--admin-danger);font-size:0.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${this._escape(e.lastErrorMessage || e.status)}">
+                  ${this._escape(e.lastErrorMessage || e.status)}
+                </td>
+                <td>
+                  ${this._renderEmailStatusBadge(e.status)}
+                </td>
+                <td style="text-align:right;">
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectEmail('${this._escape(e.id)}')">
+                    Inspect
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    _renderEmailStatusBadge(status) {
+      if (!status) return `<span class="admin-badge admin-badge-neutral">UNKNOWN</span>`;
+      const s = String(status).toUpperCase();
+      switch (s) {
+        case 'DELIVERED':
+          return `<span class="admin-badge admin-badge-status-delivered"><span class="admin-status-dot"></span> DELIVERED</span>`;
+        case 'SENT':
+          return `<span class="admin-badge admin-badge-status-sent"><span class="admin-status-dot"></span> SENT (IN FLIGHT)</span>`;
+        case 'DEFERRED':
+          return `<span class="admin-badge admin-badge-status-deferred"><span class="admin-status-dot"></span> DEFERRED</span>`;
+        case 'RETRYING':
+          return `<span class="admin-badge admin-badge-status-retrying"><span class="admin-status-dot"></span> RETRYING</span>`;
+        case 'SOFT_BOUNCED':
+          return `<span class="admin-badge admin-badge-status-bounced"><span class="admin-status-dot"></span> SOFT BOUNCE</span>`;
+        case 'HARD_BOUNCED':
+        case 'BOUNCED':
+          return `<span class="admin-badge admin-badge-status-bounced"><span class="admin-status-dot"></span> HARD BOUNCE</span>`;
+        case 'BLOCKED':
+          return `<span class="admin-badge admin-badge-status-blocked"><span class="admin-status-dot"></span> BLOCKED</span>`;
+        case 'SPAM':
+        case 'SPAM_COMPLAINT':
+          return `<span class="admin-badge admin-badge-status-spam"><span class="admin-status-dot"></span> SPAM</span>`;
+        case 'PERMANENTLY_FAILED':
+          return `<span class="admin-badge admin-badge-status-failed"><span class="admin-status-dot"></span> PERMANENTLY FAILED</span>`;
+        case 'FAILED':
+          return `<span class="admin-badge admin-badge-status-failed"><span class="admin-status-dot"></span> FAILED</span>`;
+        case 'QUEUED':
+          return `<span class="admin-badge admin-badge-status-pending"><span class="admin-status-dot"></span> QUEUED</span>`;
+        case 'PENDING':
+          return `<span class="admin-badge admin-badge-status-pending"><span class="admin-status-dot"></span> PENDING</span>`;
+        default:
+          return `<span class="admin-badge admin-badge-neutral">${this._escape(s)}</span>`;
+      }
+    }
+
+    copyText(text, label = 'Text') {
+      return this.copyErrorText(text, label);
+    }
+
+    _getEmailStatusMeaning(status) {
+      if (!status) return 'Lifecycle state recorded in ZdexCloud database.';
+      const s = String(status).toUpperCase();
+      switch (s) {
+        case 'DELIVERED':
+          return 'Provider confirmed delivery to recipient mail server.';
+        case 'SENT':
+          return 'Provider accepted / send event recorded. Awaiting downstream delivery confirmation.';
+        case 'DEFERRED':
+          return 'Provider temporarily deferred delivery (remote mail server limit, DNS delay, or greylisting).';
+        case 'RETRYING':
+          return 'ZdexCloud is scheduled to retry delivery in accordance with retry backoff policy.';
+        case 'SOFT_BOUNCED':
+          return 'Temporary delivery failure reported by provider (mailbox full, connection timeout, etc.).';
+        case 'HARD_BOUNCED':
+        case 'BOUNCED':
+          return 'Permanent delivery failure reported by provider (mailbox does not exist or domain rejected).';
+        case 'BLOCKED':
+          return 'Provider blocked delivery due to recipient domain blacklist or provider security policy.';
+        case 'SPAM':
+        case 'SPAM_COMPLAINT':
+          return 'Provider reported a spam complaint event from the recipient mail provider.';
+        case 'FAILED':
+          return 'Send / delivery operation failed during dispatch.';
+        case 'PERMANENTLY_FAILED':
+          return 'ZdexCloud exhausted all applicable retry and fallback attempts without delivery confirmation.';
+        case 'QUEUED':
+          return 'Queued in ZdexCloud message store awaiting worker dispatch.';
+        default:
+          return 'Lifecycle state recorded in ZdexCloud database.';
+      }
+    }
+
+    _getEmailStatusEvidence(email) {
+      if (!email) return 'No status evidence recorded.';
+      const status = String(email.status || '').toUpperCase();
+      const metadata = email.metadata || {};
+      const processedEvents = Array.isArray(metadata.processedEvents) ? metadata.processedEvents : [];
+
+      if (status === 'DELIVERED' && email.deliveredAt) {
+        return `Brevo transactional 'delivered' webhook received and verified at ${new Date(email.deliveredAt).toLocaleString()}.`;
+      }
+      if (status === 'SENT') {
+        if (email.transport === 'SMTP_RELAY') {
+          return `Accepted by SMTP relay server at ${email.sentAt ? new Date(email.sentAt).toLocaleString() : 'N/A'}. (Note: Provider webhook reconciliation is unavailable for SMTP-originated messages).`;
+        }
+        return `Accepted by Brevo REST API at ${email.sentAt ? new Date(email.sentAt).toLocaleString() : 'N/A'}. Webhook delivery event pending.`;
+      }
+      if (status === 'DEFERRED') {
+        return `Provider deferral reported: ${email.failureReason || 'Remote MX temporary limit / greylisting'}.`;
+      }
+      if (status === 'RETRYING') {
+        const nextTime = email.nextRetryAt ? new Date(email.nextRetryAt).toLocaleString() : 'scheduled';
+        return `Retry scheduled for ${nextTime} (Attempt ${email.attemptCount || 1} of ${email.maxAttempts || 5}).`;
+      }
+      if (status === 'SOFT_BOUNCED' || (status === 'BOUNCED' && email.failureReason?.toLowerCase().includes('soft'))) {
+        return `Soft bounce reported by provider: ${email.failureReason || 'Temporary mailbox or routing issue'}.`;
+      }
+      if (status === 'HARD_BOUNCED' || status === 'BOUNCED') {
+        return `Hard bounce reported by provider: ${email.failureReason || 'Permanent mailbox or domain rejection'}.`;
+      }
+      if (status === 'BLOCKED') {
+        return `Provider blocked delivery: ${email.failureReason || 'IP/domain blacklist or policy rejection'}.`;
+      }
+      if (status === 'SPAM' || status === 'SPAM_COMPLAINT') {
+        return `Recipient ISP or user reported a spam complaint event to Brevo.`;
+      }
+      if (status === 'PERMANENTLY_FAILED') {
+        return `Retry attempts exhausted (${email.attemptCount || 0}/${email.maxAttempts || 5}). Final error: ${email.failureReason || 'Transport error'}.`;
+      }
+      if (status === 'FAILED') {
+        return `Operation failure: ${email.failureReason || 'Transport error recorded'}.`;
+      }
+      return 'State transition logged in ZdexCloud database.';
+    }
+
+    _getEmailDeliveryConfirmationState(email) {
+      if (!email) return { label: 'Unknown', badgeClass: 'admin-badge-neutral', desc: 'No delivery confirmation data.' };
+      const status = String(email.status || '').toUpperCase();
+
+      if (status === 'DELIVERED' && email.deliveredAt) {
+        return { label: 'Confirmed', badgeClass: 'admin-badge-success', desc: 'Recipient mail server confirmed receipt.' };
+      }
+      if (['BOUNCED', 'SOFT_BOUNCED', 'HARD_BOUNCED', 'BLOCKED', 'SPAM', 'SPAM_COMPLAINT', 'FAILED', 'PERMANENTLY_FAILED'].includes(status)) {
+        return { label: 'Failed / Terminated', badgeClass: 'admin-badge-danger', desc: 'Delivery terminated unsuccessfully.' };
+      }
+      if (status === 'DEFERRED') {
+        return { label: 'Temporarily Deferred', badgeClass: 'admin-badge-warning', desc: 'Recipient server temporarily deferred acceptance.' };
+      }
+      if (status === 'SENT') {
+        return { label: 'Not Confirmed (In Flight)', badgeClass: 'admin-badge-primary', desc: 'Dispatched to provider; webhook confirmation pending.' };
+      }
+      if (status === 'RETRYING') {
+        return { label: 'Retrying', badgeClass: 'admin-badge-warning', desc: 'Awaiting scheduled retry attempt.' };
+      }
+      return { label: 'Unknown / Incomplete', badgeClass: 'admin-badge-neutral', desc: 'Lifecycle is pending or incomplete.' };
+    }
+
+    _getEmailRetryCondition(email) {
+      if (!email) return { label: 'None', badgeClass: 'admin-badge-neutral', desc: 'N/A' };
+      const status = String(email.status || '').toUpperCase();
+
+      if (status === 'RETRYING' || (email.nextRetryAt && new Date(email.nextRetryAt) > new Date())) {
+        const timeStr = email.nextRetryAt ? new Date(email.nextRetryAt).toLocaleTimeString() : 'scheduled';
+        return { label: 'Scheduled', badgeClass: 'admin-badge-warning', desc: `Next attempt at ${timeStr}` };
+      }
+      if (status === 'PERMANENTLY_FAILED' || (email.attemptCount >= email.maxAttempts && ['FAILED', 'BOUNCED', 'BLOCKED'].includes(status))) {
+        return { label: 'Exhausted', badgeClass: 'admin-badge-danger', desc: `Consumed all ${email.attemptCount || email.maxAttempts} attempts` };
+      }
+      if (status === 'DELIVERED') {
+        return { label: 'None', badgeClass: 'admin-badge-success', desc: 'Delivery successful; no retry required' };
+      }
+      if (email.sourcePipeline === 'OTP') {
+        return { label: 'Not Applicable', badgeClass: 'admin-badge-neutral', desc: 'Single-shot transactional OTP delivery' };
+      }
+      return { label: 'None', badgeClass: 'admin-badge-neutral', desc: 'No active retry scheduled' };
+    }
+
+    _getEmailFailureClassification(email) {
+      if (!email) return 'N/A';
+      if (email.failureCode) return email.failureCode;
+      const status = String(email.status || '').toUpperCase();
+      if (status === 'DELIVERED') return 'ALREADY_DELIVERED';
+      if (status === 'BLOCKED') return 'BLOCKED';
+      if (status === 'SPAM' || status === 'SPAM_COMPLAINT') return 'SPAM';
+      if (status === 'HARD_BOUNCED') return 'PERMANENT';
+      if (status === 'PERMANENTLY_FAILED') return 'EXHAUSTED';
+      if (status === 'RETRYING' || status === 'DEFERRED' || status === 'SOFT_BOUNCED') return 'RETRYABLE';
+      return 'N/A';
+    }
+
+    async inspectEmail(emailId) {
+      try {
+        const res = await window.AdminApi.getEmail(emailId);
+        if (!res.success) {
+          throw new Error(res.error?.message || 'Failed to fetch email details');
+        }
+
+        const email = res.data?.email;
+        if (!email) throw new Error('Email record not found');
+
+        const attempts = email.attempts || [];
+        const metadata = email.metadata || {};
+        const processedEvents = Array.isArray(metadata.processedEvents) ? metadata.processedEvents : [];
+
+        const confirmation = this._getEmailDeliveryConfirmationState(email);
+        const retryCond = this._getEmailRetryCondition(email);
+        const failureClass = this._getEmailFailureClassification(email);
+        const statusMeaning = this._getEmailStatusMeaning(email.status);
+        const statusEvidence = this._getEmailStatusEvidence(email);
+
+        // Build Chronological Timeline Milestones
+        const timelineItems = [];
+
+        // 1. Created
+        if (email.createdAt) {
+          timelineItems.push({
+            title: 'Message Record Created',
+            time: new Date(email.createdAt).toLocaleString(),
+            body: `Initialized in ZdexCloud outbound store via <strong>${this._escape(email.sourcePipeline)}</strong> pipeline.`,
+            dotClass: 'primary'
+          });
+        }
+
+        // 2. Queued
+        if (email.queuedAt) {
+          timelineItems.push({
+            title: 'Enqueued for Delivery',
+            time: new Date(email.queuedAt).toLocaleString(),
+            body: 'Placed into asynchronous delivery worker queue.',
+            dotClass: 'primary'
+          });
+        }
+
+        // 3. Recorded Attempts
+        attempts.forEach(att => {
+          const success = att.success || att.status === 'SENT' || att.status === 'DELIVERED';
+          timelineItems.push({
+            title: `Send Attempt #${att.attemptNumber} (${this._escape(att.transport || email.transport)})`,
+            time: new Date(att.attemptedAt || att.createdAt).toLocaleString(),
+            body: `Result: <strong>${this._escape(att.status)}</strong>${att.durationMs ? ` &bull; Latency: ${att.durationMs}ms` : ''}${att.failureReason ? `<br><span style="color:var(--admin-danger);">${this._escape(att.failureReason)}</span>` : ''}`,
+            dotClass: success ? 'primary' : (att.status === 'DEFERRED' ? 'warning' : 'danger')
+          });
+        });
+
+        // 4. Provider Sent
+        if (email.sentAt) {
+          timelineItems.push({
+            title: 'Provider Accepted & Dispatched',
+            time: new Date(email.sentAt).toLocaleString(),
+            body: `Accepted by <strong>${this._escape(email.provider)}</strong> (${this._escape(email.transport)}). Provider Msg ID: <code>${this._escape(email.providerMessageId || 'N/A')}</code>`,
+            dotClass: 'primary'
+          });
+        }
+
+        // 5. Webhook Events
+        processedEvents.forEach(pe => {
+          let dot = 'primary';
+          const ev = String(pe.event || '').toLowerCase();
+          if (ev === 'delivered') dot = 'success';
+          else if (ev === 'deferred') dot = 'warning';
+          else if (['soft_bounce', 'hard_bounce', 'blocked', 'spam', 'invalid_email', 'error'].includes(ev)) dot = 'danger';
+
+          timelineItems.push({
+            title: `Provider Webhook: ${this._escape(ev.toUpperCase())}`,
+            time: pe.at ? new Date(pe.at).toLocaleString() : 'Timestamp not recorded',
+            body: `Verified Brevo transactional webhook event '<code>${this._escape(pe.event)}</code>'.`,
+            dotClass: dot
+          });
+        });
+
+        // 6. Final State / Next Retry Milestone
+        if (email.deliveredAt) {
+          timelineItems.push({
+            title: 'Confirmed Delivery',
+            time: new Date(email.deliveredAt).toLocaleString(),
+            body: 'Recipient mail server confirmed delivery receipt.',
+            dotClass: 'success'
+          });
+        } else if (email.failedAt) {
+          timelineItems.push({
+            title: 'Terminal Delivery Failure',
+            time: new Date(email.failedAt).toLocaleString(),
+            body: `Final failure state: <strong>${this._escape(email.status)}</strong>.${email.failureReason ? ` Reason: ${this._escape(email.failureReason)}` : ''}`,
+            dotClass: 'danger'
+          });
+        } else if (email.nextRetryAt && email.status === 'RETRYING') {
+          timelineItems.push({
+            title: 'Next Scheduled Retry',
+            time: new Date(email.nextRetryAt).toLocaleString(),
+            body: `ZdexCloud scheduled next attempt (#${(email.attemptCount || 0) + 1} of ${email.maxAttempts || 5}).`,
+            dotClass: 'warning'
+          });
+        }
+
+        const html = `
+          <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            <!-- Header Summary Card -->
+            <div style="background:var(--admin-bg-base);border:1px solid var(--admin-border);border-radius:var(--radius-sm);padding:1rem;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.75rem;">
+                <div>
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-text-muted);text-transform:uppercase;">Email Delivery Investigation</div>
+                  <div style="font-family:var(--font-mono);font-size:0.875rem;font-weight:700;color:var(--admin-text-primary);margin-top:2px;display:flex;align-items:center;gap:0.5rem;">
+                    <span>${this._escape(email.id)}</span>
+                    <button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:1px 6px;" onclick="AdminShell.copyText('${this._escape(email.id)}', 'Message ID')">
+                      ${ICONS.copy}
+                    </button>
+                  </div>
+                </div>
+                <div>${this._renderEmailStatusBadge(email.status)}</div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem;font-size:0.8125rem;border-top:1px solid var(--admin-border-subtle);padding-top:0.75rem;">
+                <div><strong>Recipient:</strong> <code>${this._escape(email.recipientEmail)}</code></div>
+                <div><strong>Email Type:</strong> <code>${this._escape(email.emailType)}</code></div>
+                <div><strong>Pipeline:</strong> <span class="admin-badge admin-badge-neutral">${this._escape(email.sourcePipeline)}</span></div>
+                <div><strong>Transport:</strong> <span class="admin-badge admin-badge-neutral">${this._escape(email.transport || '-')}</span></div>
+              </div>
+            </div>
+
+            <!-- Current State Explanation -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Current State &amp; Semantic Meaning</span>
+                ${this._renderEmailStatusBadge(email.status)}
+              </div>
+              <div style="font-size:0.8125rem;color:var(--admin-text-primary);line-height:1.5;">
+                <div style="margin-bottom:0.375rem;">
+                  <strong>Meaning:</strong> ${this._escape(statusMeaning)}
+                </div>
+                <div style="background:var(--admin-bg-subtle);padding:0.5rem 0.75rem;border-radius:var(--radius-xs);font-size:0.75rem;color:var(--admin-text-secondary);border-left:3px solid var(--admin-primary);">
+                  <strong>Evidence:</strong> ${this._escape(statusEvidence)}
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery Diagnosis Section -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Delivery Diagnosis</span>
+                <span class="admin-badge ${confirmation.badgeClass}">${this._escape(confirmation.label)}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8125rem;">
+                <div style="background:var(--admin-bg-surface);padding:0.625rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-text-muted);text-transform:uppercase;">Delivery Confirmation</div>
+                  <div style="margin-top:2px;font-weight:600;color:var(--admin-text-primary);">${this._escape(confirmation.label)}</div>
+                  <div style="font-size:0.6875rem;color:var(--admin-text-muted);margin-top:2px;">${this._escape(confirmation.desc)}</div>
+                </div>
+
+                <div style="background:var(--admin-bg-surface);padding:0.625rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-text-muted);text-transform:uppercase;">Retry Condition</div>
+                  <div style="margin-top:2px;font-weight:600;color:var(--admin-text-primary);">${this._escape(retryCond.label)}</div>
+                  <div style="font-size:0.6875rem;color:var(--admin-text-muted);margin-top:2px;">${this._escape(retryCond.desc)}</div>
+                </div>
+
+                <div style="background:var(--admin-bg-surface);padding:0.625rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-text-muted);text-transform:uppercase;">Failure Classification</div>
+                  <div style="margin-top:2px;font-weight:600;color:var(--admin-text-primary);">
+                    <code style="font-size:0.75rem;">${this._escape(failureClass)}</code>
+                  </div>
+                </div>
+
+                <div style="background:var(--admin-bg-surface);padding:0.625rem;border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-text-muted);text-transform:uppercase;">Attempts Consumed</div>
+                  <div style="margin-top:2px;font-weight:600;color:var(--admin-text-primary);font-family:var(--font-mono);">
+                    ${email.attemptCount || attempts.length} of ${email.maxAttempts || 5}
+                  </div>
+                </div>
+              </div>
+
+              ${email.failureReason || email.lastErrorMessage ? `
+                <div style="margin-top:0.25rem;">
+                  <div style="font-size:0.6875rem;font-weight:700;color:var(--admin-danger);text-transform:uppercase;margin-bottom:0.25rem;">Sanitized Failure Diagnostic</div>
+                  <div style="font-size:0.75rem;color:var(--admin-danger);font-family:var(--font-mono);background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);padding:0.5rem 0.75rem;border-radius:var(--radius-xs);word-break:break-all;">
+                    ${this._escape(email.failureReason || email.lastErrorMessage)}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Chronological Lifecycle Timeline -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Chronological Lifecycle Timeline</span>
+                <span style="font-size:0.6875rem;color:var(--admin-text-muted);font-weight:normal;">${timelineItems.length} milestone(s)</span>
+              </div>
+              <div class="admin-timeline">
+                ${timelineItems.map(item => `
+                  <div class="admin-timeline-item">
+                    <span class="admin-timeline-dot ${item.dotClass}"></span>
+                    <div class="admin-timeline-title">
+                      <span>${this._escape(item.title)}</span>
+                      <span class="admin-timeline-time">${item.time}</span>
+                    </div>
+                    <div class="admin-timeline-body">${item.body}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Provider Identity & Transport Details -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Provider Identity &amp; Transport</span>
+                <span class="admin-badge admin-badge-neutral">${this._escape(email.transport || '-')}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem;font-size:0.8125rem;">
+                <div><strong>Provider:</strong> <code>${this._escape(email.provider || 'BREVO')}</code></div>
+                <div><strong>Transport:</strong> <code>${this._escape(email.transport || 'BREVO_API')}</code></div>
+                <div style="grid-column:1 / -1;">
+                  <strong>${email.transport === 'SMTP_RELAY' ? 'SMTP / Nodemailer Message ID:' : 'Brevo Provider Message ID:'}</strong>
+                  <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;">
+                    <code style="font-size:0.75rem;padding:0.25rem 0.5rem;background:var(--admin-bg-subtle);border-radius:4px;word-break:break-all;flex:1;">
+                      ${this._escape(email.providerMessageId || 'Not recorded / Not assigned')}
+                    </code>
+                    ${email.providerMessageId ? `
+                      <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.copyText('${this._escape(email.providerMessageId)}', 'Provider Message ID')">
+                        ${ICONS.copy} Copy
+                      </button>
+                    ` : ''}
+                  </div>
+                  ${email.transport === 'SMTP_RELAY' ? `
+                    <div style="font-size:0.6875rem;color:var(--admin-text-muted);margin-top:4px;font-style:italic;">
+                      &bull; Provider webhook reconciliation is unavailable for SMTP-originated messages.
+                    </div>
+                  ` : ''}
+                </div>
+                ${email.providerResponseCode ? `
+                  <div><strong>Provider Response Code:</strong> <code>${this._escape(email.providerResponseCode)}</code></div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Addressing & Sanitized Subject -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Addressing &amp; Message Properties</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.625rem;font-size:0.8125rem;">
+                <div><strong>Recipient Email:</strong> <code>${this._escape(email.recipientEmail)}</code></div>
+                <div><strong>Recipient Name:</strong> ${this._escape(email.recipientName || '(Not specified)')}</div>
+                <div><strong>Sender Email:</strong> <code>${this._escape(email.senderEmail || 'support@zdexcloud.com')}</code></div>
+                <div><strong>Sender Name:</strong> ${this._escape(email.senderName || 'ZdexCloud')}</div>
+                <div><strong>Template ID:</strong> <code>${this._escape(email.templateId || 'N/A')}</code></div>
+                <div><strong>Email Type:</strong> <code>${this._escape(email.emailType)}</code></div>
+                <div style="grid-column:1 / -1;">
+                  <strong>Sanitized Subject Line:</strong>
+                  <div style="font-size:0.8125rem;color:var(--admin-text-primary);background:var(--admin-bg-subtle);padding:0.375rem 0.5rem;border-radius:4px;margin-top:2px;">
+                    ${this._escape(email.sanitizedSubject || email.subject || '(No subject)')}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Provider Webhook Events History & Engagement -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Provider Webhook Events &amp; Engagement</span>
+                <span style="font-size:0.6875rem;color:var(--admin-text-muted);font-weight:normal;">${processedEvents.length} event(s)</span>
+              </div>
+              ${processedEvents.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                  ${processedEvents.map(pe => `
+                    <div style="background:var(--admin-bg-surface);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.5rem 0.75rem;font-size:0.75rem;display:flex;justify-content:space-between;align-items:center;">
+                      <div>
+                        <strong>Event:</strong> <code>${this._escape(pe.event)}</code>
+                      </div>
+                      <div style="font-family:var(--font-mono);color:var(--admin-text-muted);">
+                        ${pe.at ? new Date(pe.at).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.75rem;font-style:italic;">
+                  ${email.transport === 'SMTP_RELAY' ? 'Webhook events are not applicable for SMTP relay transport.' : 'No provider webhook events received yet.'}
+                </div>
+              `}
+
+              ${(metadata.openCount || metadata.clickCount) ? `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--admin-border-subtle);font-size:0.75rem;">
+                  <div><strong>Opens:</strong> <code style="font-family:var(--font-mono);">${metadata.openCount || 0}</code> ${metadata.lastOpenedAt ? `(${new Date(metadata.lastOpenedAt).toLocaleTimeString()})` : ''}</div>
+                  <div><strong>Clicks:</strong> <code style="font-family:var(--font-mono);">${metadata.clickCount || 0}</code> ${metadata.lastClickedAt ? `(${new Date(metadata.lastClickedAt).toLocaleTimeString()})` : ''}</div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Trace & Correlation Identifiers -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Trace &amp; Correlation Identifiers</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8125rem;">
+                <div>
+                  <strong>Request ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.requestId || 'N/A')}</code>
+                    ${email.requestId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyText('${this._escape(email.requestId)}', 'Request ID')">Copy</button>` : ''}
+                  </div>
+                </div>
+                <div>
+                  <strong>Correlation ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.correlationId || 'N/A')}</code>
+                    ${email.correlationId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyText('${this._escape(email.correlationId)}', 'Correlation ID')">Copy</button>` : ''}
+                  </div>
+                </div>
+                <div>
+                  <strong>User ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.userId || 'N/A')}</code>
+                    ${email.userId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyText('${this._escape(email.userId)}', 'User ID')">Copy</button>` : ''}
+                  </div>
+                </div>
+                <div>
+                  <strong>Device ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.deviceId || 'N/A')}</code>
+                  </div>
+                </div>
+                <div>
+                  <strong>Notification ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.notificationRecordId || 'N/A')}</code>
+                    ${email.notificationRecordId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyText('${this._escape(email.notificationRecordId)}', 'Notification ID')">Copy</button>` : ''}
+                  </div>
+                </div>
+                <div>
+                  <strong>Delivery Record ID:</strong>
+                  <div style="display:flex;align-items:center;gap:4px;margin-top:2px;">
+                    <code style="font-size:0.75rem;">${this._escape(email.channelDeliveryRecordId || 'N/A')}</code>
+                    ${email.channelDeliveryRecordId ? `<button class="admin-btn admin-btn-xs admin-btn-secondary" style="padding:0 4px;" onclick="AdminShell.copyText('${this._escape(email.channelDeliveryRecordId)}', 'Delivery Record ID')">Copy</button>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delivery Attempts History -->
+            <div class="admin-investigation-section">
+              <div class="admin-investigation-section-title">
+                <span>Delivery Attempt Log (${attempts.length})</span>
+              </div>
+              ${attempts.length > 0 ? `
+                <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                  ${attempts.map(att => `
+                    <div style="background:var(--admin-bg-surface);border:1px solid var(--admin-border);border-radius:var(--radius-xs);padding:0.625rem 0.75rem;font-size:0.8125rem;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                        <strong>Attempt #${att.attemptNumber} &bull; ${this._escape(att.provider || email.provider)} (${this._escape(att.transport || email.transport)})</strong>
+                        <span class="admin-badge admin-badge-${att.success || att.status === 'SENT' || att.status === 'DELIVERED' ? 'success' : 'danger'}">
+                          <span class="admin-status-dot"></span> ${att.success || att.status === 'SENT' || att.status === 'DELIVERED' ? 'SUCCESS' : 'FAILED'}
+                        </span>
+                      </div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);">
+                        ${new Date(att.attemptedAt || att.createdAt).toLocaleString()} ${att.durationMs ? `&bull; Latency: ${att.durationMs}ms` : ''}
+                      </div>
+                      ${att.providerMessageId ? `
+                        <div style="font-size:0.75rem;margin-top:2px;">Provider Msg ID: <code>${this._escape(att.providerMessageId)}</code></div>
+                      ` : ''}
+                      ${att.failureReason || att.errorMessage ? `
+                        <div style="font-size:0.75rem;color:var(--admin-danger);margin-top:4px;font-family:var(--font-mono);word-break:break-all;">
+                          ${this._escape(att.failureReason || att.errorMessage)} ${att.providerResponseCode || att.errorCode ? `(${this._escape(att.providerResponseCode || att.errorCode)})` : ''}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <div style="color:var(--admin-text-muted);font-size:0.8125rem;font-style:italic;">No recorded delivery attempt logs.</div>
+              `}
+            </div>
+          </div>
+        `;
+
+        this._showDrawer(`Email Investigation: ${email.id.substring(0, 10)}...`, html);
+      } catch (err) {
+        this._showDrawer('Email Investigation Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
     }
 
     toast(message, type = 'info', duration = 4000) {

@@ -5,6 +5,7 @@
 
 import { NotificationChannel } from '../types/channel.js';
 import { config } from '../../config/env.js';
+import { errorIngestionService } from '../../services/error_ingestion_service.js';
 
 export type CircuitBreakerState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
@@ -152,18 +153,37 @@ export class ProviderCircuitBreaker {
     entry.consecutiveFailures++;
     entry.lastFailureAt = new Date();
 
+    let didTrip = false;
     if (entry.state === 'HALF_OPEN') {
       entry.state = 'OPEN';
       entry.openedAt = new Date();
       entry.lastStateChangeAt = new Date();
       entry.probeCount = 0;
+      didTrip = true;
       console.warn(`[CircuitBreaker] HALF_OPEN probe failed for channel ${channel}. Re-opening circuit.`);
     } else if (entry.state === 'CLOSED' && entry.consecutiveFailures >= this.failureThreshold) {
       entry.state = 'OPEN';
       entry.openedAt = new Date();
       entry.lastStateChangeAt = new Date();
       entry.probeCount = 0;
+      didTrip = true;
       console.warn(`[CircuitBreaker] Failure threshold reached for channel ${channel} (${entry.consecutiveFailures}/${this.failureThreshold}). Circuit OPEN.`);
+    }
+
+    if (didTrip) {
+      errorIngestionService.ingest({
+        component: channel === NotificationChannel.EMAIL ? 'EMAIL' : 'BACKGROUND_WORKER',
+        severity: 'CRITICAL',
+        errorCode: channel === NotificationChannel.EMAIL ? 'EMAIL_CIRCUIT_OPEN' : 'PROVIDER_CIRCUIT_OPEN',
+        errorType: 'CircuitBreakerTripError',
+        message: `Circuit breaker tripped to OPEN for channel ${channel} (${entry.consecutiveFailures}/${this.failureThreshold} consecutive failures)`,
+        metadata: {
+          channel,
+          consecutiveFailures: entry.consecutiveFailures,
+          failureThreshold: this.failureThreshold,
+          cooldownMs: this.cooldownMs
+        }
+      }).catch(() => {});
     }
 
     this.stateMap.set(channel, entry);

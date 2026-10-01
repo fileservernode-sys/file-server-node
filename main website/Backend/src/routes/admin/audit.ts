@@ -6,6 +6,7 @@ import { AdminAuditService, MAX_QUERY_LIMIT } from '../../services/admin/admin_a
 import { createSuccessResponse } from '../../schemas/response.js';
 import { ValidationError } from '../../errors/app-error.js';
 import { AdminAuditAction } from '@prisma/client';
+import { resolveClientIp } from '../../utils/ip.js';
 
 const auditQuerySchema = z.object({
   startDate: z.string().optional(),
@@ -48,7 +49,7 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
       const result = await AdminAuditService.queryAuditLogs(
         parsed.data,
         request.admin?.id,
-        request.ip
+        resolveClientIp(request)
       );
 
       return reply.status(200).send(createSuccessResponse(result));
@@ -68,8 +69,8 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `audit_export_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `audit_export_${adminId}_${clientIp}`;
           }
         }
       },
@@ -87,7 +88,7 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
         filters,
         format,
         request.admin?.id,
-        request.ip
+        resolveClientIp(request)
       );
 
       reply.header('Content-Type', exportResult.contentType);
@@ -108,7 +109,7 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
     async (request: FastifyRequest, reply: FastifyReply) => {
       const result = await AdminAuditService.verifyIntegrity(
         request.admin?.id,
-        request.ip
+        resolveClientIp(request)
       );
 
       return reply.status(200).send(createSuccessResponse(result));

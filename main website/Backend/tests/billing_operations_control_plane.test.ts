@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { billingReconciliationService } from '../src/services/billing/billing_reconciliation_service.js';
 import { RazorpayWebhookService } from '../src/services/billing/providers/razorpay/razorpay_webhook_service.js';
 
@@ -55,7 +56,7 @@ describe('Phase 7.2G: Production Billing Operations Control Plane', () => {
     await prisma.userSession.create({
       data: {
         userId: testUser.id,
-        token: testUserAuthToken,
+        tokenHash: hashSessionToken(testUserAuthToken),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
@@ -75,7 +76,7 @@ describe('Phase 7.2G: Production Billing Operations Control Plane', () => {
     await prisma.userSession.create({
       data: {
         userId: operatorUser.id,
-        token: operatorAuthToken,
+        tokenHash: hashSessionToken(operatorAuthToken),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });

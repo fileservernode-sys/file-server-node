@@ -5,6 +5,7 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { buildApp } from '../src/app.js';
 import {
   NotificationSeverity,
@@ -47,7 +48,7 @@ before(async () => {
   await prisma.userSession.create({
     data: {
       userId: testUser1.id,
-      token: testSessionToken1,
+      tokenHash: hashSessionToken(testSessionToken1),
       expiresAt: new Date(Date.now() + 86400000)
     }
   });
@@ -84,7 +85,7 @@ before(async () => {
   await prisma.userSession.create({
     data: {
       userId: testUser2.id,
-      token: testSessionToken2,
+      tokenHash: hashSessionToken(testSessionToken2),
       expiresAt: new Date(Date.now() + 86400000)
     }
   });

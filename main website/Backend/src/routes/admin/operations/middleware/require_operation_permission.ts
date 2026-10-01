@@ -4,6 +4,7 @@ import { AdminRbacService } from '../../../../services/admin/admin_rbac_service.
 import { AdminAuditService } from '../../../../services/admin/admin_audit_service.js';
 import { UnauthorizedError, ForbiddenError } from '../../../../errors/app-error.js';
 import { AdminOperationContext } from '../types.js';
+import { resolveClientIp } from '../../../../utils/ip.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -40,7 +41,7 @@ export async function resolveOperationContext(
     roles,
     permissions,
     requestId: (request.id as string) || `req-op-${Date.now()}`,
-    clientIp: (request.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || request.ip || '127.0.0.1',
+    clientIp: resolveClientIp(request) || 'unknown',
     userAgent: (request.headers['user-agent'] as string) || 'unknown',
     operationName,
     targetResourceType,
@@ -76,7 +77,7 @@ export function requireOperationPermission(permission: string) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredPermission: permission,
@@ -119,7 +120,7 @@ export function requireAnyOperationPermission(permissions: string[]) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredAnyPermissions: permissions,
@@ -161,7 +162,7 @@ export function requireAllOperationPermissions(permissions: string[]) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredAllPermissions: permissions,

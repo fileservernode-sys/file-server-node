@@ -171,25 +171,39 @@ export class EmailNotificationProviderImpl implements EmailNotificationProvider 
     const textBody = `${request.rendered.title}\n\n${request.rendered.body}\n\nZdexCloud Personal File Server Platform`;
 
     try {
-      const dispatched = await this.emailSvc.sendRawMail(targetEmail, subject, htmlBody, textBody);
-      if (dispatched) {
+      const dispatched = await this.emailSvc.sendRawMail(targetEmail, subject, htmlBody, textBody, {
+        userId: request.userId,
+        notificationRecordId: request.notificationId,
+        channelDeliveryRecordId: request.deliveryId,
+        sourcePipeline: 'NOTIFICATION',
+        emailType: request.event?.eventType || 'NOTIFICATION',
+        templateId: request.event?.eventType || 'NOTIFICATION',
+        correlationId: request.event?.idempotencyKey,
+        deviceId: request.event?.deviceId,
+        serverId: request.event?.serverId,
+        attemptNumber: request.attemptNumber
+      });
+
+      if (dispatched.success) {
         return {
           success: true,
           channel: NotificationChannel.EMAIL,
-          providerName: this.providerName,
-          externalMessageId: `email_msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          providerName: dispatched.provider || this.providerName,
+          externalMessageId: dispatched.providerMessageId || null,
           deliveredAt: new Date()
         };
       } else {
         return {
           success: false,
           channel: NotificationChannel.EMAIL,
-          providerName: this.providerName,
-          errorMessage: 'TEMPORARY_ERROR: Email provider dispatch returned false'
+          providerName: dispatched.provider || this.providerName,
+          externalMessageId: dispatched.providerMessageId || null,
+          errorMessage: dispatched.errorMessage || 'TEMPORARY_ERROR: Email provider dispatch returned false'
         };
       }
     } catch (err: any) {
-      const errMsg = err?.message || 'Email dispatch error';
+      const { sanitizeFailureReason } = await import('../../utils/email_sanitizer.js');
+      const errMsg = sanitizeFailureReason(err?.message || 'Email dispatch error');
       const isPermanent = /invalid address/i.test(errMsg) || /recipient rejected/i.test(errMsg) || /bounce/i.test(errMsg);
       return {
         success: false,

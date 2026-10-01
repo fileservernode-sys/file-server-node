@@ -8,7 +8,7 @@ import {
   AuditEventType
 } from '@prisma/client';
 import { prisma } from '../config/database.js';
-import { UnauthorizedError, ForbiddenError, ValidationError } from '../errors/app-error.js';
+import { UnauthorizedError, ValidationError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
 import { BillingRefundService } from '../services/billing/billing_refund_service.js';
 import { BillingReceiptService } from '../services/billing/billing_receipt_service.js';
@@ -16,6 +16,9 @@ import { BillingReconciliationService, billingReconciliationService } from '../s
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { RazorpayCheckoutService, RazorpayWebhookService } from '../services/billing/providers/razorpay/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
+import { adminAuthenticate } from '../middleware/admin-auth.js';
+import { requirePermission } from '../middleware/admin-rbac.js';
+import { hashSessionToken } from '../utils/crypto.js';
 
 // Helper: Extract authenticated user from Bearer token
 async function getAuthUser(request: FastifyRequest) {
@@ -25,8 +28,9 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   const token = authHeader.substring(7).trim();
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
 
@@ -35,29 +39,6 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   return session.user;
-}
-
-// Helper: Extract authenticated operator or enforce administrative/internal authorization
-async function getAuthOperator(request: FastifyRequest) {
-  const adminKey = (request.headers['x-admin-key'] || request.headers['x-internal-token'] || request.headers['x-cron-key']) as string | undefined;
-  const configuredAdminKey = process.env.ADMIN_API_KEY || process.env.INTERNAL_SERVICE_KEY || process.env.CRON_SECRET;
-
-  const hasValidAdminKey = Boolean(configuredAdminKey && adminKey && adminKey === configuredAdminKey);
-  const hasAdminHeader = request.headers['x-admin-authorized'] === 'true' || request.headers['x-role'] === 'admin';
-
-  if (!hasValidAdminKey && !hasAdminHeader) {
-    const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      throw new ForbiddenError('Access denied: Billing operations require administrative privileges');
-    }
-    throw new UnauthorizedError('Missing or invalid administrative authorization');
-  }
-
-  try {
-    return await getAuthUser(request);
-  } catch {
-    return { id: 'SYSTEM_OPERATOR', email: 'operations@zdexcloud.internal' };
-  }
 }
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
@@ -554,234 +535,286 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/billing/operations/reconcile
    * Internal/Admin operational endpoint to trigger drift reconciliation for the account or specified subscription.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.reconcile' RBAC permission.
    * Safe server-side bounds on lookback range (max 90 days).
    */
-  app.post('/billing/operations/reconcile', async (request: FastifyRequest, reply: FastifyReply) => {
-    const operator = await getAuthOperator(request);
-    const body = request.body as Record<string, unknown> | undefined;
+  app.post(
+    '/billing/operations/reconcile',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin!;
+      const body = request.body as Record<string, unknown> | undefined;
 
-    const subscriptionId = body?.subscriptionId ? String(body.subscriptionId) : undefined;
-    const autoRepair = body?.autoRepair !== undefined ? Boolean(body.autoRepair) : true;
-    const providerSubscriptionData = body?.providerSubscriptionData as any;
-    const targetUserId = body?.userId ? String(body.userId) : (operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined);
+      const subscriptionId = body?.subscriptionId ? String(body.subscriptionId) : undefined;
+      const autoRepair = body?.autoRepair !== undefined ? Boolean(body.autoRepair) : true;
+      const providerSubscriptionData = body?.providerSubscriptionData as any;
+      const targetUserId = body?.userId ? String(body.userId) : undefined;
 
-    if (body?.lookbackDays !== undefined) {
-      const lookback = Number(body.lookbackDays);
-      if (isNaN(lookback) || lookback < 1) {
-        throw new ValidationError('lookbackDays must be a positive integer');
-      }
-      if (lookback > 90) {
-        throw new ValidationError('lookbackDays cannot exceed 90 days to prevent unbounded provider API calls');
-      }
-    }
-
-    try {
-      await prisma.auditEvent.create({
-        data: {
-          userId: operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined,
-          eventType: AuditEventType.BILLING_RECONCILIATION_STARTED,
-          metadata: {
-            triggeredBy: operator.id,
-            autoRepair,
-            subscriptionId,
-            targetUserId,
-            lookbackDays: body?.lookbackDays ? Number(body.lookbackDays) : 3
-          }
+      if (body?.lookbackDays !== undefined) {
+        const lookback = Number(body.lookbackDays);
+        if (isNaN(lookback) || lookback < 1) {
+          throw new ValidationError('lookbackDays must be a positive integer');
         }
+        if (lookback > 90) {
+          throw new ValidationError('lookbackDays cannot exceed 90 days to prevent unbounded provider API calls');
+        }
+      }
+
+      try {
+        await prisma.auditEvent.create({
+          data: {
+            userId: targetUserId,
+            eventType: AuditEventType.BILLING_RECONCILIATION_STARTED,
+            metadata: {
+              triggeredByAdminId: admin.id,
+              adminEmail: admin.email,
+              autoRepair,
+              subscriptionId,
+              targetUserId,
+              lookbackDays: body?.lookbackDays ? Number(body.lookbackDays) : 3
+            }
+          }
+        });
+      } catch {
+        // Non-blocking
+      }
+
+      const result = await billingReconciliationService.reconcileSubscriptionDrift({
+        userId: targetUserId,
+        subscriptionId,
+        autoRepair,
+        providerSubscriptionData
       });
-    } catch {
-      // Non-blocking
+
+      return createSuccessResponse(result);
     }
-
-    const result = await billingReconciliationService.reconcileSubscriptionDrift({
-      userId: targetUserId,
-      subscriptionId,
-      autoRepair,
-      providerSubscriptionData
-    });
-
-    return createSuccessResponse(result);
-  });
+  );
 
   /**
    * GET /api/v1/billing/operations/drift
    * Internal/Admin operational endpoint to inspect drift findings (read-only without auto-repair).
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/drift', async (request: FastifyRequest, reply: FastifyReply) => {
-    const operator = await getAuthOperator(request);
-    const query = request.query as Record<string, unknown> | undefined;
-    const targetUserId = query?.userId ? String(query.userId) : (operator.id !== 'SYSTEM_OPERATOR' ? operator.id : undefined);
-    const subscriptionId = query?.subscriptionId ? String(query.subscriptionId) : undefined;
+  app.get(
+    '/billing/operations/drift',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as Record<string, unknown> | undefined;
+      const targetUserId = query?.userId ? String(query.userId) : undefined;
+      const subscriptionId = query?.subscriptionId ? String(query.subscriptionId) : undefined;
 
-    const result = await billingReconciliationService.reconcileSubscriptionDrift({
-      userId: targetUserId,
-      subscriptionId,
-      autoRepair: false
-    });
+      const result = await billingReconciliationService.reconcileSubscriptionDrift({
+        userId: targetUserId,
+        subscriptionId,
+        autoRepair: false
+      });
 
-    return createSuccessResponse(result);
-  });
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * GET /api/v1/billing/operations/metrics
    * Internal/Admin operational endpoint to retrieve reconciliation metrics and pending discrepancy counts.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-
-    const metrics = await billingReconciliationService.getReconciliationMetrics();
-    return createSuccessResponse(metrics);
-  });
+  app.get(
+    '/billing/operations/metrics',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const metrics = await billingReconciliationService.getReconciliationMetrics();
+      return createSuccessResponse(metrics);
+    }
+  );
 
   /**
    * GET /api/v1/billing/operations/runs
    * Internal/Admin operational endpoint to list paginated reconciliation runs with status & date filters.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/runs', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-    const query = request.query as Record<string, unknown> | undefined;
+  app.get(
+    '/billing/operations/runs',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as Record<string, unknown> | undefined;
 
-    const page = query?.page ? Number(query.page) : 1;
-    const limit = query?.limit ? Number(query.limit) : 20;
-    const status = query?.status as ReconciliationRunStatus | undefined;
-    const startDate = query?.startDate ? new Date(String(query.startDate)) : undefined;
-    const endDate = query?.endDate ? new Date(String(query.endDate)) : undefined;
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 20;
+      const status = query?.status as ReconciliationRunStatus | undefined;
+      const startDate = query?.startDate ? new Date(String(query.startDate)) : undefined;
+      const endDate = query?.endDate ? new Date(String(query.endDate)) : undefined;
 
-    const result = await billingReconciliationService.getReconciliationRuns({
-      page,
-      limit,
-      status,
-      startDate,
-      endDate
-    });
+      const result = await billingReconciliationService.getReconciliationRuns({
+        page,
+        limit,
+        status,
+        startDate,
+        endDate
+      });
 
-    return createSuccessResponse(result);
-  });
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * GET /api/v1/billing/operations/discrepancies
    * Internal/Admin operational endpoint to list paginated reconciliation discrepancies with granular filters.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/discrepancies', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-    const query = request.query as Record<string, unknown> | undefined;
+  app.get(
+    '/billing/operations/discrepancies',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as Record<string, unknown> | undefined;
 
-    const page = query?.page ? Number(query.page) : 1;
-    const limit = query?.limit ? Number(query.limit) : 20;
-    const status = query?.status as ReconciliationStatus | undefined;
-    const entityType = query?.entityType as ReconciliationEntityType | undefined;
-    const discrepancyType = query?.discrepancyType as ReconciliationDiscrepancyType | undefined;
-    const runId = query?.runId ? String(query.runId) : undefined;
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 20;
+      const status = query?.status as ReconciliationStatus | undefined;
+      const entityType = query?.entityType as ReconciliationEntityType | undefined;
+      const discrepancyType = query?.discrepancyType as ReconciliationDiscrepancyType | undefined;
+      const runId = query?.runId ? String(query.runId) : undefined;
 
-    const result = await billingReconciliationService.getDiscrepancies({
-      page,
-      limit,
-      status,
-      entityType,
-      discrepancyType,
-      runId
-    });
+      const result = await billingReconciliationService.getDiscrepancies({
+        page,
+        limit,
+        status,
+        entityType,
+        discrepancyType,
+        runId
+      });
 
-    return createSuccessResponse(result);
-  });
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * GET /api/v1/billing/operations/discrepancies/:id
    * Internal/Admin operational endpoint to inspect a single reconciliation discrepancy in detail.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/discrepancies/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-    const { id } = request.params as { id: string };
+  app.get(
+    '/billing/operations/discrepancies/:id',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { id } = request.params as { id: string };
 
-    const result = await billingReconciliationService.getDiscrepancyById(id);
-    return createSuccessResponse(result);
-  });
+      const result = await billingReconciliationService.getDiscrepancyById(id);
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * PATCH /api/v1/billing/operations/discrepancies/:id
    * Internal/Admin operational endpoint to resolve or dismiss a discrepancy record with audit trail.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.reconcile' RBAC permission.
    */
-  app.patch('/billing/operations/discrepancies/:id', async (request: FastifyRequest, reply: FastifyReply) => {
-    const operator = await getAuthOperator(request);
-    const { id } = request.params as { id: string };
-    const body = request.body as Record<string, unknown> | undefined;
+  app.patch(
+    '/billing/operations/discrepancies/:id',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin!;
+      const { id } = request.params as { id: string };
+      const body = request.body as Record<string, unknown> | undefined;
 
-    if (!body || !body.status || !body.resolutionReason) {
-      throw new ValidationError('Both status and resolutionReason are required');
+      if (!body || !body.status || !body.resolutionReason) {
+        throw new ValidationError('Both status and resolutionReason are required');
+      }
+
+      const result = await billingReconciliationService.updateDiscrepancyStatus(id, {
+        status: body.status as ReconciliationStatus,
+        resolutionReason: String(body.resolutionReason),
+        operatorUserId: admin.id
+      });
+
+      return createSuccessResponse(result);
     }
-
-    const result = await billingReconciliationService.updateDiscrepancyStatus(id, {
-      status: body.status as ReconciliationStatus,
-      resolutionReason: String(body.resolutionReason),
-      operatorUserId: operator.id
-    });
-
-    return createSuccessResponse(result);
-  });
+  );
 
   /**
    * GET /api/v1/billing/operations/webhooks
    * Internal/Admin operational endpoint to inspect paginated webhook event ledger for stuck/failed event diagnosis.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/webhooks', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-    const query = request.query as Record<string, unknown> | undefined;
+  app.get(
+    '/billing/operations/webhooks',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = request.query as Record<string, unknown> | undefined;
 
-    const page = query?.page ? Number(query.page) : 1;
-    const limit = query?.limit ? Number(query.limit) : 20;
-    const status = query?.status as WebhookEventStatus | undefined;
-    const eventType = query?.eventType ? String(query.eventType) : undefined;
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 20;
+      const status = query?.status as WebhookEventStatus | undefined;
+      const eventType = query?.eventType ? String(query.eventType) : undefined;
 
-    const result = await billingReconciliationService.getWebhookEvents({
-      page,
-      limit,
-      status,
-      eventType
-    });
+      const result = await billingReconciliationService.getWebhookEvents({
+        page,
+        limit,
+        status,
+        eventType
+      });
 
-    return createSuccessResponse(result);
-  });
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * GET /api/v1/billing/operations/webhooks/health
    * Internal/Admin operational endpoint to check webhook pipeline health, stuck events, and processing latency.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.read' RBAC permission.
    */
-  app.get('/billing/operations/webhooks/health', async (request: FastifyRequest, reply: FastifyReply) => {
-    await getAuthOperator(request);
-
-    const health = await RazorpayWebhookService.getWebhookProcessingHealth();
-    return createSuccessResponse(health);
-  });
+  app.get(
+    '/billing/operations/webhooks/health',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const health = await RazorpayWebhookService.getWebhookProcessingHealth();
+      return createSuccessResponse(health);
+    }
+  );
 
   /**
    * POST /api/v1/billing/operations/webhooks/replay
    * Internal/Admin operational endpoint to safely replay a verified webhook event.
-   * Enforces administrative authorization (normal customer access blocked with 403).
+   * Enforces administrative authentication and 'billing.reconcile' RBAC permission.
    */
-  app.post('/billing/operations/webhooks/replay', async (request: FastifyRequest, reply: FastifyReply) => {
-    const operator = await getAuthOperator(request);
-    const body = request.body as Record<string, unknown> | undefined;
+  app.post(
+    '/billing/operations/webhooks/replay',
+    {
+      preHandler: [adminAuthenticate, requirePermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin!;
+      const body = request.body as Record<string, unknown> | undefined;
 
-    if (!body || !body.providerEventId || typeof body.providerEventId !== 'string') {
-      throw new ValidationError('providerEventId is required for webhook replay');
+      if (!body || !body.providerEventId || typeof body.providerEventId !== 'string') {
+        throw new ValidationError('providerEventId is required for webhook replay');
+      }
+
+      const result = await RazorpayWebhookService.replayWebhookEvent(String(body.providerEventId), {
+        payload: body.payload,
+        actorUserId: admin.id
+      });
+
+      return createSuccessResponse(result);
     }
-
-    const result = await RazorpayWebhookService.replayWebhookEvent(String(body.providerEventId), {
-      payload: body.payload,
-      actorUserId: operator.id
-    });
-
-    return createSuccessResponse(result);
-  });
+  );
 }
 
 

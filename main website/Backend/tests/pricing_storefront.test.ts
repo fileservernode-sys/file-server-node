@@ -5,6 +5,7 @@ import path from 'path';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { CurrencyCode, BillingStatus } from '@prisma/client';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingCountryService } from '../src/services/billing/billing_country_service.js';
@@ -36,14 +37,14 @@ describe('ZC-BILLING-2.4 Pricing Page & Regional Storefront Test Suite', () => {
         emailVerified: true
       }
     });
-    const sessionIndia = await prisma.userSession.create({
+    tokenIndia = `tok_pricing_india_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: userIndia.id,
-        token: `tok_pricing_india_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenIndia),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenIndia = sessionIndia.token;
     await BillingCountryService.confirmBillingCountry(userIndia.id, { country: 'IN', postalCode: '392001' });
 
     // 2. Confirmed US User
@@ -55,14 +56,14 @@ describe('ZC-BILLING-2.4 Pricing Page & Regional Storefront Test Suite', () => {
         emailVerified: true
       }
     });
-    const sessionUS = await prisma.userSession.create({
+    tokenUS = `tok_pricing_us_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: userUS.id,
-        token: `tok_pricing_us_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenUS),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenUS = sessionUS.token;
     await BillingCountryService.confirmBillingCountry(userUS.id, { country: 'US', postalCode: '90210' });
 
     // 3. Unconfirmed User
@@ -74,14 +75,14 @@ describe('ZC-BILLING-2.4 Pricing Page & Regional Storefront Test Suite', () => {
         emailVerified: true
       }
     });
-    const sessionUnconfirmed = await prisma.userSession.create({
+    tokenUnconfirmed = `tok_pricing_unconfirmed_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: userUnconfirmed.id,
-        token: `tok_pricing_unconfirmed_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenUnconfirmed),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenUnconfirmed = sessionUnconfirmed.token;
   });
 
   after(async () => {

@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { EntitlementService } from '../src/services/billing/entitlement_service.js';
 
 describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Concurrency Tests', () => {
@@ -33,14 +34,14 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
       userIdA = userA.id;
       EntitlementService.setTestUserPlan(userA.id, 'PRO_MONTHLY');
 
-      const sessionA = await prisma.userSession.create({
+      userTokenA = `token-limit-a-${Date.now()}`;
+      await prisma.userSession.create({
         data: {
           userId: userA.id,
-          token: `token-limit-a-${Date.now()}`,
+          tokenHash: hashSessionToken(userTokenA),
           expiresAt: new Date(Date.now() + 3600000)
         }
       });
-      userTokenA = sessionA.token;
 
       // Create User B
       const userB = await prisma.user.create({
@@ -54,14 +55,14 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
       userIdB = userB.id;
       EntitlementService.setTestUserPlan(userB.id, 'PRO_MONTHLY');
 
-      const sessionB = await prisma.userSession.create({
+      userTokenB = `token-limit-b-${Date.now()}`;
+      await prisma.userSession.create({
         data: {
           userId: userB.id,
-          token: `token-limit-b-${Date.now()}`,
+          tokenHash: hashSessionToken(userTokenB),
           expiresAt: new Date(Date.now() + 3600000)
         }
       });
-      userTokenB = sessionB.token;
     } catch (e) {
       console.warn('DB initialization in test before hook:', e);
     }
@@ -371,10 +372,10 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
       data: { email: emailC, passwordHash: 'hash', status: 'ACTIVE', emailVerified: true }
     });
     EntitlementService.setTestUserPlan(userC.id, 'PRO_MONTHLY');
-    const sessionC = await prisma.userSession.create({
-      data: { userId: userC.id, token: `token-concurrent-${Date.now()}`, expiresAt: new Date(Date.now() + 3600000) }
+    const tokenC = `token-concurrent-${Date.now()}`;
+    await prisma.userSession.create({
+      data: { userId: userC.id, tokenHash: hashSessionToken(tokenC), expiresAt: new Date(Date.now() + 3600000) }
     });
-    const tokenC = sessionC.token;
 
     // Seed User C with exactly 4 servers
     for (let i = 1; i <= 4; i++) {
@@ -455,8 +456,9 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
     const userOver = await prisma.user.create({
       data: { email: emailOver, passwordHash: 'hash', status: 'ACTIVE', emailVerified: true }
     });
-    const sessionOver = await prisma.userSession.create({
-      data: { userId: userOver.id, token: `token-over-${Date.now()}`, expiresAt: new Date(Date.now() + 3600000) }
+    const tokenOver = `token-over-${Date.now()}`;
+    await prisma.userSession.create({
+      data: { userId: userOver.id, tokenHash: hashSessionToken(tokenOver), expiresAt: new Date(Date.now() + 3600000) }
     });
 
     // Seed 6 servers directly in DB
@@ -481,7 +483,7 @@ describe('Batch 4 — Server Limits (Max 5 Per Account, Max 1 Per Device) & Conc
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
-      headers: { authorization: `Bearer ${sessionOver.token}` },
+      headers: { authorization: `Bearer ${tokenOver}` },
       payload: {
         deviceName: 'Attempt 7th Phone',
         platform: 'Android',

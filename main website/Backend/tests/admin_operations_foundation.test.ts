@@ -187,7 +187,7 @@ describe('Admin Operations Architecture & Middleware Foundation (Phase 8.2)', ()
     await prisma.userSession.create({
       data: {
         userId: customerUser.id,
-        token: customerToken,
+        tokenHash: hashSessionToken(customerToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });

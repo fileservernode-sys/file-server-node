@@ -2,6 +2,7 @@ import { notificationService } from '../services/notification_service.js';
 import { NotificationType } from '../types/type_registry.js';
 import { NotificationCategory } from '../types/category.js';
 import { NotificationSeverity } from '../types/severity.js';
+import { normalizeIp } from '../../utils/ip.js';
 
 export class AccountEventProducer {
   public async emitAccountCreated(userId: string, userEmail: string, userName?: string): Promise<void> {
@@ -22,8 +23,15 @@ export class AccountEventProducer {
     }
   }
 
-  public async emitSignIn(userId: string, userEmail: string, ipAddress?: string, userAgent?: string): Promise<void> {
+  public async emitSignIn(
+    userId: string,
+    userEmail: string,
+    ipAddress?: string,
+    userAgent?: string,
+    userName?: string
+  ): Promise<void> {
     try {
+      const cleanIp = ipAddress ? normalizeIp(ipAddress) : undefined;
       await notificationService.dispatchEvent({
         eventType: NotificationType.SIGN_IN,
         userId,
@@ -31,7 +39,8 @@ export class AccountEventProducer {
         severity: NotificationSeverity.SECURITY,
         metadata: {
           userEmail,
-          ipAddress: ipAddress || '127.0.0.1',
+          userName: userName || userEmail.split('@')[0],
+          ipAddress: cleanIp,
           userAgent: userAgent || 'RemoteNode Client'
         },
         source: 'account-producer'

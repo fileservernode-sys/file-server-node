@@ -15,7 +15,9 @@ import { adminAuthRoutes } from './admin/auth.js';
 import { adminRbacRoutes } from './admin/rbac.js';
 import { adminAuditRoutes } from './admin/audit.js';
 import { adminErrorRoutes } from './admin/errors.js';
+import { adminEmailRoutes } from './admin/emails.js';
 import { adminOperationsRoutes } from './admin/operations/index.js';
+import { emailWebhookRoutes } from './email-webhooks.js';
 import { pushTokenRoutes, preferenceRoutes, notificationRoutes } from '../notifications/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
 
@@ -37,6 +39,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(adminRbacRoutes);
   await app.register(adminAuditRoutes);
   await app.register(adminErrorRoutes);
+  await app.register(adminEmailRoutes);
   await app.register(adminOperationsRoutes);
   await app.register(deviceRoutes);
   await app.register(serverRoutes);
@@ -47,6 +50,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(planRoutes);
   await app.register(billingRoutes);
   await app.register(storefrontRoutes);
+  await app.register(emailWebhookRoutes);
   await app.register(pushTokenRoutes);
   await app.register(preferenceRoutes);
   await app.register(notificationRoutes);

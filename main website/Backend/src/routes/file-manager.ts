@@ -5,6 +5,7 @@ import { createSuccessResponse, createErrorResponse } from '../schemas/response.
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { fileEventProducer } from '../notifications/producers/file_producer.js';
+import { hashSessionToken } from '../utils/crypto.js';
 
 const serverIdParamSchema = z.object({
   serverId: z.string().min(1)
@@ -29,8 +30,9 @@ async function getAuthUser(request: FastifyRequest) {
     throw new UnauthorizedError('Missing or invalid Authorization Bearer header or token parameter');
   }
 
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
   if (!session || !session.user) {
@@ -240,8 +242,12 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
     }
 
-    if (!body.path) {
+    if (!body.path || typeof body.path !== 'string') {
       throw new ValidationError('path is required');
+    }
+
+    if (body.path.includes('..') || body.path.includes('\0')) {
+      return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
     }
 
     const result = await proxyToGateway(device.id, 'DELETE', { path: body.path });
@@ -267,12 +273,17 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const folderName = typeof body.name === 'string' ? body.name.trim() : '';
-    if (!folderName) {
-      return reply.status(400).send(createErrorResponse('INVALID_FOLDER_NAME', 'Folder name cannot be empty or whitespace only'));
+    if (!folderName || folderName === '.' || folderName === '..' || folderName.includes('/') || folderName.includes('\\') || folderName.includes('\0') || folderName.length > 255) {
+      return reply.status(400).send(createErrorResponse('INVALID_FOLDER_NAME', 'Folder name cannot be empty, contain path separators, or exceed 255 characters'));
+    }
+
+    const parentPath = typeof body.path === 'string' ? body.path : '/';
+    if (parentPath.includes('..') || parentPath.includes('\0')) {
+      return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
     }
 
     const result = await proxyToGateway(device.id, 'CREATE_FOLDER', {
-      path: body.path || '/',
+      path: parentPath,
       name: folderName
     });
     return reply.status(result?.success === false ? 400 : 200).send(result);
@@ -296,13 +307,22 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
     }
 
-    if (!body.oldPath || !body.newName) {
+    if (!body.oldPath || !body.newName || typeof body.oldPath !== 'string' || typeof body.newName !== 'string') {
       throw new ValidationError('oldPath and newName are required');
+    }
+
+    const newName = body.newName.trim();
+    if (!newName || newName === '.' || newName === '..' || newName.includes('/') || newName.includes('\\') || newName.includes('\0') || newName.length > 255) {
+      return reply.status(400).send(createErrorResponse('INVALID_NAME', 'New name cannot be empty, contain path separators, or exceed 255 characters'));
+    }
+
+    if (body.oldPath.includes('..') || body.oldPath.includes('\0')) {
+      return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
     }
 
     const result = await proxyToGateway(device.id, 'RENAME', {
       oldPath: body.oldPath,
-      newName: body.newName
+      newName
     });
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
@@ -310,10 +330,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/file-manager/:serverId/upload
    * Proxies an UPLOAD initiation to the Android device.
-   * The actual file data streaming uses the gateway WebSocket directly.
-   * This endpoint authenticates, verifies ownership, and returns connection info
-   * needed by the frontend to initiate the upload transfer.
-   * Accepts JSON body: { path: string, name: string, size?: number }
+   * Accepts JSON body: { path: string, name: string, dataBase64?: string }
    */
   app.post('/file-manager/:serverId/upload', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
@@ -328,26 +345,28 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
     }
 
-    if (!body.name) {
+    if (!body.name || typeof body.name !== 'string') {
       throw new ValidationError('name is required for upload');
     }
 
-    const rawPath = body.path || '/';
+    const rawName = body.name.trim();
+    if (!rawName || rawName === '.' || rawName === '..' || rawName.includes('/') || rawName.includes('\\') || rawName.includes('\0') || rawName.length > 255) {
+      throw new ValidationError('Invalid upload filename: path separators and control characters are prohibited, and length cannot exceed 255 characters');
+    }
+
+    const rawPath = typeof body.path === 'string' ? body.path : '/';
     if (rawPath.includes('..') || rawPath.includes('\0')) {
       return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
     }
 
     const result = await proxyToGateway(device.id, 'UPLOAD', {
       path: rawPath,
-      name: body.name,
+      name: rawName,
       dataBase64: body.dataBase64
     });
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 
-  /**
-   * GET /api/v1/file-manager/:serverId/download
-   * Proxies a file download through the gateway.
   /**
    * GET /api/v1/file-manager/:serverId/download
    * Proxies a file download / media stream through the gateway.
@@ -366,8 +385,12 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
     }
 
-    if (!query.path) {
+    if (!query.path || typeof query.path !== 'string') {
       throw new ValidationError('path query parameter is required');
+    }
+
+    if (query.path.includes('..') || query.path.includes('\0')) {
+      return reply.status(403).send(createErrorResponse('FORBIDDEN', 'Invalid path traversal detected'));
     }
 
     const result = await proxyToGateway(device.id, 'DOWNLOAD', { path: query.path });
@@ -397,6 +420,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       reply
         .header('Content-Type', mimeType)
         .header('Content-Disposition', `${dispositionType}; filename="${encodeURIComponent(filename)}"`)
+        .header('X-Content-Type-Options', 'nosniff')
         .header('Accept-Ranges', 'bytes')
         .header('Access-Control-Allow-Origin', '*')
         .header('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type')
@@ -406,12 +430,16 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       if (rangeHeader && rangeHeader.startsWith('bytes=')) {
         const rangeSpec = rangeHeader.substring(6).trim();
         const parts = rangeSpec.split('-');
-        const start = parseInt(parts[0], 10) || 0;
+        let start = parseInt(parts[0], 10);
+        if (isNaN(start) || start < 0) start = 0;
         let end = parts[1] && parts[1].length > 0 ? parseInt(parts[1], 10) : buffer.length - 1;
-        if (start >= buffer.length) {
+        if (isNaN(end) || end < 0) end = buffer.length - 1;
+
+        if (start > end || start >= buffer.length) {
           return reply
             .status(416)
             .header('Content-Range', `bytes */${buffer.length}`)
+            .header('X-Content-Type-Options', 'nosniff')
             .send();
         }
         if (end >= buffer.length) end = buffer.length - 1;
@@ -420,6 +448,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
           .status(206)
           .header('Content-Range', `bytes ${start}-${end}/${buffer.length}`)
           .header('Content-Length', chunk.length)
+          .header('X-Content-Type-Options', 'nosniff')
           .send(chunk);
       }
 

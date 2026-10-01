@@ -124,10 +124,10 @@ class TemplateRegistry {
     this.registerTemplate({
       type: NotificationType.SIGN_IN,
       titleTemplate: () => 'New Sign-In Detected',
-      bodyTemplate: (ctx) => `New sign-in to your ZdexCloud account from IP ${ctx.ipAddress}.`,
-      emailSubjectTemplate: () => 'Security Alert: New Sign-In to ZdexCloud',
-      emailHtmlTemplate: (ctx) => `<h2>Security Alert: New Sign-In</h2><p>Hello ${ctx.userName},</p><p>A new sign-in to your ZdexCloud account occurred at ${ctx.timestamp} from IP address ${ctx.ipAddress} (${ctx.userAgent}).</p><p>If this was not you, please secure your account immediately.</p>`,
-      emailTextTemplate: (ctx) => `Security Alert: New sign-in to ZdexCloud at ${ctx.timestamp} from IP ${ctx.ipAddress}.`,
+      bodyTemplate: (ctx) => `New sign-in to your ZdexCloud account from IP ${ctx.ipAddress || 'unknown'}.`,
+      emailSubjectTemplate: () => '[ZdexCloud] Security Alert: New Sign-In',
+      emailHtmlTemplate: (ctx) => `<h2>Security Alert: New Sign-In</h2><p>Hello ${ctx.userName || ctx.userEmail || 'Customer'},</p><p>A new sign-in to your ZdexCloud account occurred at ${ctx.timestamp} from IP address ${ctx.ipAddress || 'unknown'} (${ctx.userAgent || 'unknown'}).</p><p>If this was not you, please secure your account immediately.</p>`,
+      emailTextTemplate: (ctx) => `Security Alert: New sign-in to ZdexCloud at ${ctx.timestamp} from IP ${ctx.ipAddress || 'unknown'}.`,
       defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
       defaultSeverity: NotificationSeverity.SECURITY,
       defaultDeepLink: () => createDeepLink('security', 'https://zdexcloud.com/pages/dashboard#security', '/pages/dashboard')
@@ -138,8 +138,8 @@ class TemplateRegistry {
       type: NotificationType.SECURITY_EVENT,
       titleTemplate: () => 'Account Security Alert',
       bodyTemplate: (ctx) => ctx.customSummary || 'Important security event detected on your ZdexCloud account.',
-      emailSubjectTemplate: () => 'Important Security Alert — ZdexCloud',
-      emailHtmlTemplate: (ctx) => `<h2>Security Alert</h2><p>Hello ${ctx.userName},</p><p>${ctx.customSummary || 'A security setting or password change occurred on your account.'}</p>`,
+      emailSubjectTemplate: () => '[ZdexCloud] Important Security Alert',
+      emailHtmlTemplate: (ctx) => `<h2>Security Alert</h2><p>Hello ${ctx.userName || ctx.userEmail || 'Customer'},</p><p>${ctx.customSummary || 'A security setting or password change occurred on your account.'}</p>`,
       emailTextTemplate: (ctx) => `Security Alert: ${ctx.customSummary || 'A security setting changed on your account.'}`,
       defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
       defaultSeverity: NotificationSeverity.SECURITY,
@@ -150,13 +150,13 @@ class TemplateRegistry {
     this.registerTemplate({
       type: NotificationType.DEVICE_LINKED,
       titleTemplate: () => 'New Device Linked',
-      bodyTemplate: (ctx) => `Device "${ctx.deviceName}" was linked to your ZdexCloud account.`,
-      emailSubjectTemplate: (ctx) => `Device Linked: ${ctx.deviceName}`,
-      emailHtmlTemplate: (ctx) => `<h2>Device Linked</h2><p>Android phone "${ctx.deviceName}" has been registered as a storage node.</p>`,
-      emailTextTemplate: (ctx) => `Device "${ctx.deviceName}" was linked to your ZdexCloud account.`,
+      bodyTemplate: (ctx) => `Device "${ctx.deviceName || 'Android Device'}" was linked to your ZdexCloud account from IP ${ctx.ipAddress || 'unknown'}.`,
+      emailSubjectTemplate: () => '[ZdexCloud] Security Alert: New Device Linked',
+      emailHtmlTemplate: (ctx) => `<h2>Security Alert: New Device Linked</h2><p>Hello ${ctx.userName || ctx.userEmail || 'Customer'},</p><p>A new Android phone "${ctx.deviceName || 'Android Device'}" was linked to your ZdexCloud account at ${ctx.timestamp} from IP address ${ctx.ipAddress || 'unknown'} (${ctx.userAgent || 'RemoteNode Client'}).</p><p>If you did not authorize this device, please navigate to your dashboard and remove it immediately.</p>`,
+      emailTextTemplate: (ctx) => `Security Alert: Device "${ctx.deviceName || 'Android Device'}" was linked to your ZdexCloud account at ${ctx.timestamp} from IP ${ctx.ipAddress || 'unknown'}.`,
       defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
       defaultSeverity: NotificationSeverity.SUCCESS,
-      defaultDeepLink: (ctx) => createDeepLink('device', `https://zdexcloud.com/pages/dashboard`, '/pages/dashboard')
+      defaultDeepLink: () => createDeepLink('device', `https://zdexcloud.com/pages/dashboard`, '/pages/dashboard')
     });
 
     // 6. DEVICE_ONLINE

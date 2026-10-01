@@ -18,15 +18,16 @@ export class AdminLockoutService {
   /**
    * Constructs composite storage key for lockout tracking
    */
-  static getLockoutKey(ip: string, email: string): string {
-    return `${ip.trim()}_${email.trim().toLowerCase()}`;
+  static getLockoutKey(ip: string | null | undefined, email: string): string {
+    const normalizedIp = ip && typeof ip === 'string' && ip.trim().length > 0 ? ip.trim() : 'direct';
+    return `${normalizedIp}_${email.trim().toLowerCase()}`;
   }
 
   /**
    * Checks whether the given IP / Email combination is currently locked out.
    * Throws 429 Too Many Requests if currently locked.
    */
-  static async checkLockout(ip: string, email: string): Promise<void> {
+  static async checkLockout(ip: string | null | undefined, email: string): Promise<void> {
     const key = this.getLockoutKey(ip, email);
     const now = new Date();
 
@@ -50,7 +51,7 @@ export class AdminLockoutService {
    * Records a failed login attempt in a persistent, distributed manner.
    * Atomically increments failed attempts and triggers lockout threshold.
    */
-  static async recordFailure(ip: string, email: string): Promise<{ locked: boolean; attempts: number }> {
+  static async recordFailure(ip: string | null | undefined, email: string): Promise<{ locked: boolean; attempts: number }> {
     const key = this.getLockoutKey(ip, email);
     const now = new Date();
     const maxAttempts = this.getMaxAttempts();
@@ -101,7 +102,7 @@ export class AdminLockoutService {
   /**
    * Clears failed attempt counters upon successful authentication.
    */
-  static async clearLockout(ip: string, email: string): Promise<void> {
+  static async clearLockout(ip: string | null | undefined, email: string): Promise<void> {
     const key = this.getLockoutKey(ip, email);
     await prisma.adminLockout.deleteMany({
       where: { key }

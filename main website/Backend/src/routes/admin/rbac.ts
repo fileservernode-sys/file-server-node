@@ -5,6 +5,7 @@ import { requirePermission } from '../../middleware/admin-rbac.js';
 import { AdminRbacService } from '../../services/admin/admin_rbac_service.js';
 import { createSuccessResponse } from '../../schemas/response.js';
 import { ValidationError } from '../../errors/app-error.js';
+import { resolveClientIp } from '../../utils/ip.js';
 
 const adminIdParamSchema = z.object({
   adminId: z.string().trim().min(1, 'adminId cannot be empty').max(64, 'adminId too long')
@@ -112,8 +113,8 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `rbac_mutation_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `rbac_mutation_${adminId}_${clientIp}`;
           }
         }
       },
@@ -134,7 +135,7 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
         actor: request.admin!,
         targetAdminId: paramParsed.data.adminId,
         roleSlug: parsed.data.roleSlug,
-        ipAddress: request.ip,
+        ipAddress: resolveClientIp(request),
         userAgent: request.headers['user-agent'] as string
       });
 
@@ -155,8 +156,8 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
           timeWindow: '1 minute',
           keyGenerator: (req: FastifyRequest) => {
             const adminId = (req as any).admin?.id || 'anonymous';
-            const forwarded = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim();
-            return `rbac_mutation_${adminId}_${forwarded || req.ip || '127.0.0.1'}`;
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `rbac_mutation_${adminId}_${clientIp}`;
           }
         }
       },
@@ -174,7 +175,7 @@ export async function adminRbacRoutes(app: FastifyInstance): Promise<void> {
         actor: request.admin!,
         targetAdminId: adminId,
         roleSlug,
-        ipAddress: request.ip,
+        ipAddress: resolveClientIp(request),
         userAgent: request.headers['user-agent'] as string
       });
 

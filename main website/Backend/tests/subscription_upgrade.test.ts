@@ -1,6 +1,7 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { prisma } from '../src/config/database.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService, PAID_ENTITLED_STATUSES } from '../src/services/billing/billing_state_service.js';
@@ -251,11 +252,12 @@ describe('ZC-BILLING-6.1 Pro Upgrade & Provider Financial Reconciliation Test Su
       }
     });
 
+    const rawTok = uniqueId('tok');
     const session = await prisma.userSession.create({
       data: {
         id: uniqueId('sess'),
         userId: user.id,
-        token: uniqueId('tok'),
+        tokenHash: hashSessionToken(rawTok),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });

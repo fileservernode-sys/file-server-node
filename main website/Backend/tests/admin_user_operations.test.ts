@@ -149,7 +149,7 @@ describe('Admin User Operations Management (Phase 8.3)', () => {
     await prisma.userSession.create({
       data: {
         userId: activeCustomer.id,
-        token: activeCustomerToken,
+        tokenHash: hashSessionToken(activeCustomerToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });

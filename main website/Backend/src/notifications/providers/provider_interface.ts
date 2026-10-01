@@ -13,6 +13,7 @@ export interface ProviderDeliveryRequest {
   userId: string;
   targetAddress?: string;
   targetDeviceId?: string;
+  attemptNumber?: number;
   event: NotificationEvent;
   rendered: RenderedTemplate;
 }
@@ -21,7 +22,7 @@ export interface ProviderDeliveryResult {
   success: boolean;
   channel: NotificationChannel;
   providerName: string;
-  externalMessageId?: string;
+  externalMessageId?: string | null;
   errorMessage?: string;
   deliveredAt?: Date;
 }

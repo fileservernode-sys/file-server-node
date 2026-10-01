@@ -1796,4 +1796,293 @@ button, input, select, textarea {
   background-color: var(--admin-bg-subtle);
 }
 
+/* =========================================================================
+   18. EMAIL OPERATIONS & ANALYTICS (Phase 13.11)
+   ========================================================================= */
+
+.admin-email-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.admin-email-chart-card {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-email-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.admin-email-chart-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-email-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.875rem;
+  font-size: 0.75rem;
+  color: var(--admin-text-secondary);
+}
+
+.admin-chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.admin-chart-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.admin-chart-wrapper {
+  width: 100%;
+  min-height: 220px;
+  position: relative;
+}
+
+.admin-dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-dist-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.admin-dist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.admin-dist-name {
+  font-weight: 500;
+  color: var(--admin-text-primary);
+}
+
+.admin-dist-stats {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+.admin-dist-bar-track {
+  width: 100%;
+  height: 6px;
+  background: var(--admin-bg-subtle);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.admin-dist-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
+}
+
+/* Status Badges for Email */
+.admin-badge-status-sent {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: #2563EB;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+.admin-badge-status-sent .admin-status-dot { background-color: #2563EB; }
+
+.admin-badge-status-delivered {
+  background-color: rgba(5, 150, 105, 0.1);
+  color: #059669;
+  border: 1px solid rgba(5, 150, 105, 0.25);
+}
+.admin-badge-status-delivered .admin-status-dot { background-color: #059669; }
+
+.admin-badge-status-deferred {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #D97706;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+.admin-badge-status-deferred .admin-status-dot { background-color: #D97706; }
+
+.admin-badge-status-failed {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+.admin-badge-status-failed .admin-status-dot { background-color: #DC2626; }
+
+.admin-badge-status-bounced {
+  background-color: rgba(234, 88, 12, 0.1);
+  color: #EA580C;
+  border: 1px solid rgba(234, 88, 12, 0.25);
+}
+.admin-badge-status-bounced .admin-status-dot { background-color: #EA580C; }
+
+.admin-badge-status-blocked {
+  background-color: rgba(147, 51, 234, 0.1);
+  color: #9333EA;
+  border: 1px solid rgba(147, 51, 234, 0.25);
+}
+.admin-badge-status-blocked .admin-status-dot { background-color: #9333EA; }
+
+.admin-badge-status-spam {
+  background-color: rgba(190, 18, 60, 0.1);
+  color: #BE123C;
+  border: 1px solid rgba(190, 18, 60, 0.25);
+}
+.admin-badge-status-spam .admin-status-dot { background-color: #BE123C; }
+
+.admin-badge-status-retrying {
+  background-color: rgba(14, 165, 233, 0.1);
+  color: #0284C7;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+}
+.admin-badge-status-retrying .admin-status-dot { background-color: #0284C7; }
+
+.admin-badge-status-pending {
+  background-color: rgba(100, 116, 139, 0.1);
+  color: #64748B;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+}
+.admin-badge-status-pending .admin-status-dot { background-color: #64748B; }
+
+/* =========================================================================
+   19. EMAIL DELIVERY INVESTIGATION (Phase 13.12)
+   ========================================================================= */
+
+.admin-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.admin-timeline::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 6px;
+  width: 2px;
+  background: var(--admin-border);
+}
+
+.admin-timeline-item {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.admin-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.admin-timeline-dot {
+  position: absolute;
+  left: -1.5rem;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--admin-bg-surface);
+  border: 2px solid var(--admin-text-muted);
+  z-index: 1;
+}
+
+.admin-timeline-dot.success {
+  border-color: #059669;
+  background-color: #059669;
+}
+
+.admin-timeline-dot.primary {
+  border-color: #2563EB;
+  background-color: #2563EB;
+}
+
+.admin-timeline-dot.warning {
+  border-color: #D97706;
+  background-color: #D97706;
+}
+
+.admin-timeline-dot.danger {
+  border-color: #DC2626;
+  background-color: #DC2626;
+}
+
+.admin-timeline-dot.neutral {
+  border-color: var(--admin-border);
+  background-color: var(--admin-bg-subtle);
+}
+
+.admin-timeline-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.admin-timeline-time {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--admin-text-muted);
+  font-weight: normal;
+}
+
+.admin-timeline-body {
+  font-size: 0.75rem;
+  color: var(--admin-text-secondary);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.admin-investigation-section {
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.admin-investigation-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--admin-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+
 

@@ -69,6 +69,13 @@ async function startServer() {
       app.log.info('🛡️ Background Observability Error Retention Worker initialized.');
     }
 
+    // Start background Email Tracking Retention Worker (Phase 13.13)
+    const { defaultEmailRetentionWorker } = await import('./services/email_retention_worker.js');
+    if (config.EMAIL_TRACKING_RETENTION_ENABLED) {
+      defaultEmailRetentionWorker.start();
+      app.log.info('✉️ Background Email Tracking Retention Worker initialized.');
+    }
+
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probes available at ${address}/health and ${address}/api/v1/health`);
 
@@ -91,8 +98,13 @@ async function startServer() {
         }
 
         if (config.ERROR_CLEANUP_ENABLED) {
-          defaultErrorRetentionWorker.stop();
+          await defaultErrorRetentionWorker.stop();
           app.log.info('Observability error retention worker stopped.');
+        }
+
+        if (config.EMAIL_TRACKING_RETENTION_ENABLED) {
+          await defaultEmailRetentionWorker.stop();
+          app.log.info('Email tracking retention worker stopped.');
         }
 
         // 1. Close Gateway WebSocket Relay Server

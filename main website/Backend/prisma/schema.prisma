@@ -80,6 +80,32 @@ enum PushPlatform {
   WEB
 }
 
+enum EmailMessageStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  RETRYING
+  FAILED
+  PERMANENTLY_FAILED
+  BOUNCED
+  BLOCKED
+  SPAM
+  DEFERRED
+}
+
+enum EmailSourcePipeline {
+  OTP
+  NOTIFICATION
+  SYSTEM
+  TRANSACTIONAL
+}
+
+enum EmailTransport {
+  BREVO_API
+  SMTP_RELAY
+  MOCK
+}
+
 enum BillingInterval {
   FREE
   MONTHLY
@@ -410,6 +436,7 @@ model User {
   upgradeReconciliations  SubscriptionUpgradeReconciliation[]
   supportCases            SupportCase[]
   errorOccurrences        ErrorOccurrence[]
+  emailMessages           EmailMessage[]
 
   @@index([email])
 }
@@ -436,14 +463,14 @@ model EmailOtp {
 model UserSession {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique
+  tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
+  @@index([tokenHash])
 }
 
 /// Registered Android Phone Device Node
@@ -594,9 +621,10 @@ model NotificationRecord {
   createdAt      DateTime                 @default(now())
   updatedAt      DateTime                 @updatedAt
 
-  user       User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  device     Device?                 @relation(fields: [deviceId], references: [id], onDelete: SetNull)
-  deliveries ChannelDeliveryRecord[]
+  user          User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device        Device?                 @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  deliveries    ChannelDeliveryRecord[]
+  emailMessages EmailMessage[]
 
   @@index([userId, createdAt])
   @@index([userId, status])
@@ -628,7 +656,8 @@ model ChannelDeliveryRecord {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
-  notification NotificationRecord @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  notification  NotificationRecord @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  emailMessages EmailMessage[]
 
   @@index([notificationId])
   @@index([channel, status])
@@ -648,6 +677,86 @@ model UserNotificationPreferences {
   updatedAt           DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------------------------------------------
+// CENTRAL EMAIL EVENT TRACKING ENTITIES (Phase 13.2)
+// -----------------------------------------------------------------------------
+
+/// Central Outbound Email Audit and Lifecycle Tracking Entity
+model EmailMessage {
+  id                      String              @id @default(cuid())
+  userId                  String?
+  notificationRecordId    String?
+  channelDeliveryRecordId String?
+  emailType               String
+  templateId              String
+  recipientEmail          String
+  recipientName           String?
+  senderEmail             String
+  senderName              String?
+  subject                 String
+  sourcePipeline          EmailSourcePipeline @default(OTP)
+  status                  EmailMessageStatus  @default(SENT)
+  provider                String              @default("BREVO")
+  transport               EmailTransport      @default(BREVO_API)
+  providerMessageId       String?
+  providerResponseCode    String?
+  providerResponse        Json?
+  failureCode             String?
+  failureReason           String?             @db.Text
+  attemptCount            Int                 @default(1)
+  maxAttempts             Int                 @default(5)
+  queuedAt                DateTime?
+  sentAt                  DateTime?
+  deliveredAt             DateTime?
+  failedAt                DateTime?
+  lastAttemptAt           DateTime?
+  nextRetryAt             DateTime?
+  requestId               String?
+  correlationId           String?
+  deviceId                String?
+  serverId                String?
+  metadata                Json?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  user                  User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  notificationRecord    NotificationRecord?    @relation(fields: [notificationRecordId], references: [id], onDelete: SetNull)
+  channelDeliveryRecord ChannelDeliveryRecord? @relation(fields: [channelDeliveryRecordId], references: [id], onDelete: SetNull)
+  attempts              EmailDeliveryAttempt[]
+
+  @@index([userId, createdAt])
+  @@index([recipientEmail, createdAt])
+  @@index([status, createdAt])
+  @@index([emailType, createdAt])
+  @@index([providerMessageId])
+  @@index([notificationRecordId])
+  @@index([channelDeliveryRecordId])
+  @@index([requestId])
+  @@index([correlationId])
+  @@index([createdAt])
+}
+
+/// Persistent Attempt Log for Email Deliveries & Retries
+model EmailDeliveryAttempt {
+  id                   String             @id @default(cuid())
+  emailMessageId       String
+  attemptNumber        Int
+  transport            EmailTransport
+  status               EmailMessageStatus
+  providerMessageId    String?
+  providerResponseCode String?
+  providerResponse     Json?
+  failureReason        String?            @db.Text
+  attemptedAt          DateTime           @default(now())
+  durationMs           Int?
+
+  emailMessage EmailMessage @relation(fields: [emailMessageId], references: [id], onDelete: Cascade)
+
+  @@index([emailMessageId, attemptNumber])
+  @@index([status])
+  @@index([providerMessageId])
 }
 
 /// Persistent FCM Device Push Token Entity

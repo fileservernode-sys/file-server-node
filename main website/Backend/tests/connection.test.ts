@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 
 describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1/connections, /api/v1/endpoints)', () => {
   let app: FastifyInstance;
@@ -25,14 +26,14 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
           emailVerified: true
         }
       });
-      const session = await prisma.userSession.create({
+      userToken = `remote-session-token-${Date.now()}`;
+      await prisma.userSession.create({
         data: {
           userId: user.id,
-          token: `remote-session-token-${Date.now()}`,
+          tokenHash: hashSessionToken(userToken),
           expiresAt: new Date(Date.now() + 3600000)
         }
       });
-      userToken = session.token;
 
       const device = await prisma.device.create({
         data: {

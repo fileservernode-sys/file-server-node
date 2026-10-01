@@ -414,7 +414,7 @@ export class CentralNotificationService {
                   : result.errorMessage?.includes('INVALID_TOKEN')
                   ? ('PERMANENTLY_FAILED' as any)
                   : ('FAILED' as any),
-                providerMessageId: result.externalMessageId,
+                providerMessageId: result.externalMessageId || undefined,
                 failureReason: result.errorMessage,
                 correlationId,
                 deliveredAt: result.deliveredAt

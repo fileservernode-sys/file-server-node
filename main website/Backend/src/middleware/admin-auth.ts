@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { AdminStatus } from '@prisma/client';
 import { AdminAuthService, AdminUserSanitized } from '../services/admin/admin_auth_service.js';
 import { UnauthorizedError } from '../errors/app-error.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 export interface AdminContext extends AdminUserSanitized {
   sessionId: string;
@@ -61,7 +62,7 @@ export async function adminAuthenticate(
     throw new UnauthorizedError('Missing admin session token');
   }
 
-  const clientIp = request.ip || '127.0.0.1';
+  const clientIp = resolveClientIp(request);
   const validationResult = await AdminAuthService.validateSession(token, clientIp);
 
   if (!validationResult) {

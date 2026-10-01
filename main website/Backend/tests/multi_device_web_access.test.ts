@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 
 describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests', () => {
   let app: FastifyInstance;
@@ -31,14 +32,14 @@ describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests
       }
     });
     userIdA = userA.id;
-    const sessionA = await prisma.userSession.create({
+    userTokenA = `token-web-a-${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: userA.id,
-        token: `token-web-a-${Date.now()}`,
+        tokenHash: hashSessionToken(userTokenA),
         expiresAt: new Date(Date.now() + 3600000)
       }
     });
-    userTokenA = sessionA.token;
 
     // Create User B
     const userB = await prisma.user.create({
@@ -50,14 +51,14 @@ describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests
       }
     });
     userIdB = userB.id;
-    const sessionB = await prisma.userSession.create({
+    userTokenB = `token-web-b-${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: userB.id,
-        token: `token-web-b-${Date.now()}`,
+        tokenHash: hashSessionToken(userTokenB),
         expiresAt: new Date(Date.now() + 3600000)
       }
     });
-    userTokenB = sessionB.token;
 
     // Seed 5 devices and 5 servers for User A
     for (let i = 1; i <= 5; i++) {

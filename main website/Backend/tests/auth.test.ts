@@ -3,7 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
-import { hashPassword, verifyPassword, hashOtp, verifyOtpCode, generateOtpCode } from '../src/utils/crypto.js';
+import { hashPassword, verifyPassword, hashOtp, verifyOtpCode, generateOtpCode, hashSessionToken } from '../src/utils/crypto.js';
 import {
   getEmailVerificationTemplate,
   getPasswordResetTemplate,
@@ -146,7 +146,7 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
     await prisma.userSession.create({
       data: {
         userId: (await prisma.user.findUnique({ where: { email: testEmail } }))!.id,
-        token: expiredToken,
+        tokenHash: hashSessionToken(expiredToken),
         expiresAt: new Date(Date.now() - 1000) // Expired in the past
       }
     });

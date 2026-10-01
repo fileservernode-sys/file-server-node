@@ -229,6 +229,54 @@
     unmuteErrorIncident(incidentId) {
       return this.post(`/admin/errors/incidents/${encodeURIComponent(incidentId)}/unmute`, {});
     }
+
+    // =========================================================================
+    // Email Operations & Analytics API Methods (Phase 13.3, 13.4, 13.11)
+    // =========================================================================
+    getEmailAnalytics(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/emails/analytics${qs ? `?${qs}` : ''}`);
+    }
+
+    listEmails(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/emails${qs ? `?${qs}` : ''}`);
+    }
+
+    getEmail(emailId) {
+      return this.get(`/admin/emails/${encodeURIComponent(emailId)}`);
+    }
+
+    getEmailAttempts(emailId) {
+      return this.get(`/admin/emails/${encodeURIComponent(emailId)}/attempts`);
+    }
+
+    getUserEmailHistory(userId, params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/users/${encodeURIComponent(userId)}/emails${qs ? `?${qs}` : ''}`);
+    }
+
+    getEmailRetentionMetrics() {
+      return this.get('/admin/emails/retention');
+    }
   }
 
   window.AdminApi = new AdminApiClient();

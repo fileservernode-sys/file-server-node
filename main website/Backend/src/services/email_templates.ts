@@ -13,7 +13,7 @@ export interface EmailTemplatePayload {
  * Generates the Registration Email Verification OTP template
  */
 export function getEmailVerificationTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[ZdexCloud] Your Verification Code: ${otpCode}`;
+  const subject = '[ZdexCloud] Verify Your Email Address';
 
   const text = `
 ZdexCloud Personal File Server
@@ -93,7 +93,7 @@ https://zdexcloud.com
  * Generates the Password Reset OTP template
  */
 export function getPasswordResetTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[ZdexCloud] Password Reset Code: ${otpCode}`;
+  const subject = '[ZdexCloud] Reset Your Password';
 
   const text = `
 ZdexCloud Personal File Server
@@ -178,7 +178,7 @@ https://zdexcloud.com
  * Generates the Login 2FA OTP template
  */
 export function getLoginOtpTemplate(otpCode: string, expiryMinutes: number = 10): EmailTemplatePayload {
-  const subject = `[ZdexCloud] Your Login Security Code: ${otpCode}`;
+  const subject = '[ZdexCloud] Your Login Security Code';
 
   const text = `
 ZdexCloud Personal File Server

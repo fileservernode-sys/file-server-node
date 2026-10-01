@@ -6,6 +6,7 @@ import { AdminErrorService } from '../../services/admin/admin_error_service.js';
 import { createSuccessResponse } from '../../schemas/response.js';
 import { ValidationError } from '../../errors/app-error.js';
 import { ErrorSeverity, IncidentStatus } from '@prisma/client';
+import { resolveClientIp } from '../../utils/ip.js';
 
 const queryIncidentsSchema = z.object({
   status: z.nativeEnum(IncidentStatus).optional(),
@@ -151,7 +152,7 @@ export async function adminErrorRoutes(app: FastifyInstance): Promise<void> {
       const result = await AdminErrorService.acknowledgeIncident(
         params.data.incidentId,
         request.admin!,
-        request.ip,
+        resolveClientIp(request),
         request.headers['user-agent'] as string
       );
 
@@ -183,7 +184,7 @@ export async function adminErrorRoutes(app: FastifyInstance): Promise<void> {
         params.data.incidentId,
         body.data,
         request.admin!,
-        request.ip,
+        resolveClientIp(request),
         request.headers['user-agent'] as string
       );
 
@@ -215,7 +216,7 @@ export async function adminErrorRoutes(app: FastifyInstance): Promise<void> {
         params.data.incidentId,
         body.data,
         request.admin!,
-        request.ip,
+        resolveClientIp(request),
         request.headers['user-agent'] as string
       );
 
@@ -241,7 +242,7 @@ export async function adminErrorRoutes(app: FastifyInstance): Promise<void> {
       const result = await AdminErrorService.unmuteIncident(
         params.data.incidentId,
         request.admin!,
-        request.ip,
+        resolveClientIp(request),
         request.headers['user-agent'] as string
       );
 

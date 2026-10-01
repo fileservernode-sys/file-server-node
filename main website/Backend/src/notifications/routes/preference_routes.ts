@@ -6,6 +6,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../config/database.js';
+import { hashSessionToken } from '../../utils/crypto.js';
 import { createSuccessResponse, createErrorResponse } from '../../schemas/response.js';
 import { UnauthorizedError } from '../../errors/app-error.js';
 import { notificationRepository } from '../repositories/notification_repository.js';
@@ -26,8 +27,9 @@ async function getAuthUser(request: FastifyRequest) {
   }
 
   const token = authHeader.substring(7).trim();
+  const tokenHash = hashSessionToken(token);
   const session = await prisma.userSession.findFirst({
-    where: { token, expiresAt: { gt: new Date() } },
+    where: { tokenHash, expiresAt: { gt: new Date() } },
     include: { user: true }
   });
 

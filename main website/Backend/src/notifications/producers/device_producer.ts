@@ -2,10 +2,20 @@ import { notificationService } from '../services/notification_service.js';
 import { NotificationType } from '../types/type_registry.js';
 import { NotificationCategory } from '../types/category.js';
 import { NotificationSeverity } from '../types/severity.js';
+import { normalizeIp } from '../../utils/ip.js';
 
 export class DeviceEventProducer {
-  public async emitDeviceLinked(userId: string, deviceId: string, deviceName: string): Promise<void> {
+  public async emitDeviceLinked(
+    userId: string,
+    deviceId: string,
+    deviceName: string,
+    ipAddress?: string,
+    userAgent?: string,
+    userEmail?: string,
+    userName?: string
+  ): Promise<void> {
     try {
+      const cleanIp = ipAddress ? normalizeIp(ipAddress) : undefined;
       await notificationService.dispatchEvent({
         eventType: NotificationType.DEVICE_LINKED,
         userId,
@@ -13,7 +23,11 @@ export class DeviceEventProducer {
         category: NotificationCategory.DEVICE_SERVER,
         severity: NotificationSeverity.SUCCESS,
         metadata: {
-          deviceName
+          deviceName,
+          ipAddress: cleanIp,
+          userAgent: userAgent || 'RemoteNode Client',
+          userEmail,
+          userName: userName || (userEmail ? userEmail.split('@')[0] : undefined)
         },
         source: 'device-producer'
       });

@@ -5,6 +5,7 @@ import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
 import { EntitlementService, DEFAULT_FREE_ENTITLEMENTS } from '../src/services/billing/entitlement_service.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 
 describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
   let app: FastifyInstance;
@@ -28,14 +29,14 @@ describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
       }
     });
     freeUserId = freeUser.id;
-    const freeSession = await prisma.userSession.create({
+    freeUserToken = 'token-ent-free-' + Date.now();
+    await prisma.userSession.create({
       data: {
         userId: freeUser.id,
-        token: 'token-ent-free-' + Date.now(),
+        tokenHash: hashSessionToken(freeUserToken),
         expiresAt: new Date(Date.now() + 3600000)
       }
     });
-    freeUserToken = freeSession.token;
 
     // Create a Pro test user
     const proUser = await prisma.user.create({
@@ -49,14 +50,14 @@ describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
     proUserId = proUser.id;
     EntitlementService.setTestUserPlan(proUser.id, 'PRO_MONTHLY');
 
-    const proSession = await prisma.userSession.create({
+    proUserToken = 'token-ent-pro-' + Date.now();
+    await prisma.userSession.create({
       data: {
         userId: proUser.id,
-        token: 'token-ent-pro-' + Date.now(),
+        tokenHash: hashSessionToken(proUserToken),
         expiresAt: new Date(Date.now() + 3600000)
       }
     });
-    proUserToken = proSession.token;
   });
 
   after(async () => {
@@ -143,10 +144,11 @@ describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
         emailVerified: true
       }
     });
-    const sessionManip = await prisma.userSession.create({
+    const rawTokenManip = 'token-ent-manip-' + Date.now();
+    await prisma.userSession.create({
       data: {
         userId: userManip.id,
-        token: 'token-ent-manip-' + Date.now(),
+        tokenHash: hashSessionToken(rawTokenManip),
         expiresAt: new Date(Date.now() + 3600000)
       }
     });
@@ -155,7 +157,7 @@ describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
     const res1 = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
-      headers: { authorization: 'Bearer ' + sessionManip.token },
+      headers: { authorization: 'Bearer ' + rawTokenManip },
       payload: {
         deviceName: 'Phone Host 1',
         platform: 'Android',
@@ -171,7 +173,7 @@ describe('ZC-BILLING-1.2 Entitlement Engine Test Suite', () => {
     const res2 = await app.inject({
       method: 'POST',
       url: '/api/v1/devices/register',
-      headers: { authorization: 'Bearer ' + sessionManip.token },
+      headers: { authorization: 'Bearer ' + rawTokenManip },
       payload: {
         deviceName: 'Phone Host 2',
         platform: 'Android',

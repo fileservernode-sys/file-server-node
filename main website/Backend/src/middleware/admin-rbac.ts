@@ -3,6 +3,7 @@ import { AdminStatus, AdminAuditAction } from '@prisma/client';
 import { AdminRbacService } from '../services/admin/admin_rbac_service.js';
 import { AdminAuditService } from '../services/admin/admin_audit_service.js';
 import { UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 /**
  * Creates a route-level preHandler middleware enforcing a single required permission.
@@ -32,7 +33,7 @@ export function requirePermission(permission: string) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredPermission: permission,
@@ -68,7 +69,7 @@ export function requireAnyPermission(permissions: string[]) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredAnyPermissions: permissions,
@@ -104,7 +105,7 @@ export function requireAllPermissions(permissions: string[]) {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTHZ_DENIED,
         status: 'DENIED',
-        ipAddress: request.ip || null,
+        ipAddress: resolveClientIp(request) || null,
         userAgent: (request.headers['user-agent'] as string) || null,
         metadata: {
           requiredAllPermissions: permissions,

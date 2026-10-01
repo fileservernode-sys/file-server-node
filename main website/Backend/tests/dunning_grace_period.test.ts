@@ -1,6 +1,7 @@
 import { describe, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { prisma } from '../src/config/database.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
@@ -253,13 +254,15 @@ describe('ZC-BILLING-5.3 Dunning, Past Due & Grace Period Foundation Test Suite'
       }
     });
 
-    testSessionIn = await prisma.userSession.create({
+    const rawDunningToken = `tok_dunning_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const sessionIn = await prisma.userSession.create({
       data: {
         userId: testUserIn.id,
-        token: `tok_dunning_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        tokenHash: hashSessionToken(rawDunningToken),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
+    testSessionIn = { ...sessionIn, token: rawDunningToken };
 
     testDeviceIn = await prisma.device.create({
       data: {
@@ -1137,10 +1140,11 @@ describe('ZC-BILLING-5.3 Dunning, Past Due & Grace Period Foundation Test Suite'
           emailVerified: true
         }
       });
-      const zeroSession = await prisma.userSession.create({
+      const rawZeroToken = uniqueId('tok_zero');
+      await prisma.userSession.create({
         data: {
           userId: zeroUser.id,
-          token: uniqueId('tok_zero'),
+          tokenHash: hashSessionToken(rawZeroToken),
           expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
         }
       });
@@ -1157,7 +1161,7 @@ describe('ZC-BILLING-5.3 Dunning, Past Due & Grace Period Foundation Test Suite'
         method: 'POST',
         url: '/api/v1/servers',
         headers: {
-          authorization: `Bearer ${zeroSession.token}`
+          authorization: `Bearer ${rawZeroToken}`
         },
         payload: {
           deviceId: zeroDevice.id

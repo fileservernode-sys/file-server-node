@@ -32,6 +32,10 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
 
+  // Configurable Trusted Proxy Strategy for Fastify (Phase 13.6)
+  // Supports: comma-separated IP/CIDRs, 'loopback', 'linklocal', 'uniquelocal', or boolean string 'true'/'false'
+  TRUST_PROXY: z.string().default('loopback,linklocal,uniquelocal'),
+
   // Configurable Base Domain (Default: zdexcloud.com)
   REMOTENODE_BASE_DOMAIN: z
     .string()
@@ -58,6 +62,11 @@ const envSchema = z.object({
 
   // Brevo & SMTP Email Configuration Schema Parameters
   BREVO_API_KEY: z.string().default(''),
+  BREVO_WEBHOOK_SECRET: z.string().default(''),
+  BREVO_WEBHOOK_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean()
+  ).default(true),
   SMTP_HOST: z.string().default('smtp-relay.brevo.com'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USERNAME: z.string().default(''),
@@ -125,7 +134,20 @@ const envSchema = z.object({
   ERROR_RESOLVED_INCIDENT_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
   ERROR_MUTED_INCIDENT_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
   ERROR_CLEANUP_BATCH_SIZE: z.coerce.number().min(10).max(1000).default(100),
-  ERROR_CLEANUP_INTERVAL_MINUTES: z.coerce.number().min(5).max(10080).default(1440)
+  ERROR_CLEANUP_INTERVAL_MINUTES: z.coerce.number().min(5).max(10080).default(1440),
+
+  // Email Tracking Retention & Cleanup Configuration (Phase 13.13)
+  EMAIL_TRACKING_RETENTION_ENABLED: z.preprocess(
+    (val) => (val === undefined ? true : val === 'true' || val === true),
+    z.boolean()
+  ).default(true),
+  EMAIL_TRACKING_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
+  EMAIL_TRACKING_CLEANUP_BATCH_SIZE: z.coerce.number().min(10).max(1000).default(100),
+  EMAIL_TRACKING_CLEANUP_INTERVAL_MINUTES: z.coerce.number().min(5).max(10080).default(1440),
+  EMAIL_TRACKING_CLEANUP_DRY_RUN: z.preprocess(
+    (val) => (val === undefined ? false : val === 'true' || val === true),
+    z.boolean()
+  ).default(false)
 });
 
 function loadConfig() {

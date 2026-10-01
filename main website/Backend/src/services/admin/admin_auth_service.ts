@@ -24,15 +24,15 @@ export const MAX_FAILED_ATTEMPTS = DEFAULT_MAX_FAILED_ATTEMPTS;
 export const LOCKOUT_DURATION_MS = DEFAULT_LOCKOUT_DURATION_MS;
 
 // Backward-compatible delegates to distributed AdminLockoutService
-export async function checkBruteForceLock(ip: string, email: string): Promise<void> {
+export async function checkBruteForceLock(ip: string | null | undefined, email: string): Promise<void> {
   return await AdminLockoutService.checkLockout(ip, email);
 }
 
-export async function recordFailedAttempt(ip: string, email: string): Promise<void> {
+export async function recordFailedAttempt(ip: string | null | undefined, email: string): Promise<void> {
   await AdminLockoutService.recordFailure(ip, email);
 }
 
-export async function clearFailedAttempts(ip: string, email: string): Promise<void> {
+export async function clearFailedAttempts(ip: string | null | undefined, email: string): Promise<void> {
   await AdminLockoutService.clearLockout(ip, email);
 }
 
@@ -110,7 +110,7 @@ export class AdminAuthService {
   }): Promise<AdminLoginResult> {
     const { email, password, otp, ipAddress, userAgent } = params;
     const normalizedEmail = email.trim().toLowerCase();
-    const clientIp = ipAddress || '127.0.0.1';
+    const clientIp = ipAddress;
 
     // 1. Check Distributed Brute-Force Lockout
     await AdminLockoutService.checkLockout(clientIp, normalizedEmail);
@@ -131,7 +131,7 @@ export class AdminAuthService {
         adminId: admin?.id || null,
         action: lockResult.locked ? AdminAuditAction.ADMIN_LOCKOUT_TRIGGERED : AdminAuditAction.ADMIN_LOGIN_FAILURE,
         status: 'FAILED',
-        ipAddress: clientIp,
+        ipAddress: clientIp || null,
         userAgent: userAgent || null,
         metadata: {
           email: normalizedEmail,
@@ -150,7 +150,7 @@ export class AdminAuthService {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_AUTH_BLOCKED,
         status: 'BLOCKED',
-        ipAddress: clientIp,
+        ipAddress: clientIp || null,
         userAgent: userAgent || null,
         metadata: { email: normalizedEmail, status: admin.status, reason: 'ACCOUNT_DISABLED' }
       });
@@ -197,7 +197,12 @@ export class AdminAuthService {
 
     // Send email with OTP
     try {
-      await emailService.sendLoginOtp(normalizedEmail, otpCode);
+      await emailService.sendLoginOtp(normalizedEmail, otpCode, {
+        userId: admin.id,
+        sourcePipeline: 'OTP',
+        emailType: 'ADMIN_LOGIN_OTP',
+        templateId: 'LOGIN_2FA'
+      });
     } catch {
       // Allow delivery fallback without leaking secret
     }
@@ -206,7 +211,7 @@ export class AdminAuthService {
       adminId: admin.id,
       action: AdminAuditAction.ADMIN_OTP_SENT,
       status: 'SUCCESS',
-      ipAddress: clientIp,
+      ipAddress: clientIp || null,
       userAgent: userAgent || null,
       metadata: { email: normalizedEmail }
     });
@@ -230,7 +235,7 @@ export class AdminAuthService {
     userAgent?: string;
   }): Promise<AdminLoginResult> {
     const { challengeToken, otp, ipAddress, userAgent } = params;
-    const clientIp = ipAddress || '127.0.0.1';
+    const clientIp = ipAddress;
 
     const { adminId, email } = this.verifyChallengeToken(challengeToken);
 
@@ -258,7 +263,7 @@ export class AdminAuthService {
   private static async completeLoginWithOtp(params: {
     admin: any;
     otp: string;
-    ipAddress: string;
+    ipAddress?: string;
     userAgent?: string;
   }): Promise<AdminLoginResult> {
     const { admin, otp, ipAddress, userAgent } = params;
@@ -279,7 +284,7 @@ export class AdminAuthService {
         adminId: admin.id,
         action: AdminAuditAction.ADMIN_OTP_FAILED,
         status: 'FAILED',
-        ipAddress,
+        ipAddress: ipAddress || null,
         userAgent: userAgent || null,
         metadata: { reason: 'NO_ACTIVE_OTP' }
       });
@@ -310,7 +315,7 @@ export class AdminAuthService {
         adminId: admin.id,
         action: lockResult.locked ? AdminAuditAction.ADMIN_LOCKOUT_TRIGGERED : AdminAuditAction.ADMIN_OTP_FAILED,
         status: 'FAILED',
-        ipAddress,
+        ipAddress: ipAddress || null,
         userAgent: userAgent || null,
         metadata: { attempt: activeOtp.attempts + 1, locked: lockResult.locked }
       });
@@ -328,7 +333,7 @@ export class AdminAuthService {
       adminId: admin.id,
       action: AdminAuditAction.ADMIN_OTP_VERIFIED,
       status: 'SUCCESS',
-      ipAddress,
+      ipAddress: ipAddress || null,
       userAgent: userAgent || null
     });
 
@@ -347,7 +352,7 @@ export class AdminAuthService {
         sessionTokenHash,
         expiresAt,
         lastActivityAt: now,
-        ipAddress,
+        ipAddress: ipAddress || null,
         userAgent: userAgent || null
       }
     });
@@ -363,7 +368,7 @@ export class AdminAuthService {
       adminId: admin.id,
       action: AdminAuditAction.ADMIN_LOGIN_SUCCESS,
       status: 'SUCCESS',
-      ipAddress,
+      ipAddress: ipAddress || null,
       userAgent: userAgent || null,
       metadata: { sessionId: session.id }
     });

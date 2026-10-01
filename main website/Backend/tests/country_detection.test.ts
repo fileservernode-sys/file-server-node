@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { CountryDetectionService } from '../src/services/billing/country_detection_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
@@ -35,14 +36,14 @@ describe('ZC-BILLING-2.1 Country Detection & Storefront Geolocation Test Suite',
     });
     authUserId = user1.id;
 
-    const session1 = await prisma.userSession.create({
+    authUserToken = `tok_country_auth_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: user1.id,
-        token: `tok_country_auth_${Date.now()}`,
+        tokenHash: hashSessionToken(authUserToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    authUserToken = session1.token;
 
     // Create test user 2 with confirmed billing country US
     const user2 = await prisma.user.create({
@@ -55,14 +56,14 @@ describe('ZC-BILLING-2.1 Country Detection & Storefront Geolocation Test Suite',
     });
     usUserId = user2.id;
 
-    const session2 = await prisma.userSession.create({
+    usUserToken = `tok_country_us_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: user2.id,
-        token: `tok_country_us_${Date.now()}`,
+        tokenHash: hashSessionToken(usUserToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    usUserToken = session2.token;
 
     await prisma.accountBillingState.create({
       data: {

@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { PricingCatalogService, PriceFormatter } from '../src/services/billing/pricing_catalog_service.js';
 import { CountryDetectionService } from '../src/services/billing/country_detection_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
@@ -34,14 +35,14 @@ describe('ZC-BILLING-2.2 Currency-Aware Pricing & Regional Catalog Resolution Te
     });
     usUserId = user.id;
 
-    const session = await prisma.userSession.create({
+    usUserToken = `tok_pricing_us_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: user.id,
-        token: `tok_pricing_us_${Date.now()}`,
+        tokenHash: hashSessionToken(usUserToken),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    usUserToken = session.token;
 
     // Create an active USD subscription with confirmed billingCountry 'US'
     await BillingStateService.createSubscription({

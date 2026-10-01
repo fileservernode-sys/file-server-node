@@ -3,6 +3,7 @@ import { test, describe, before, after } from 'node:test';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { EntitlementService } from '../src/services/billing/entitlement_service.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
@@ -46,14 +47,15 @@ describe('ZC-BILLING-1.3 Account Billing State & Subscription Foundation Test Su
           emailVerified: true
         }
       });
-      const session = await prisma.userSession.create({
+      const rawTok = `token-${Date.now()}-${Math.random()}`;
+      await prisma.userSession.create({
         data: {
           userId: user.id,
-          token: `token-${Date.now()}-${Math.random()}`,
+          tokenHash: hashSessionToken(rawTok),
           expiresAt: new Date(Date.now() + 86400000)
         }
       });
-      return { id: user.id, token: session.token };
+      return { id: user.id, token: rawTok };
     };
 
     const userFree = await createTestUser(testEmailFree);

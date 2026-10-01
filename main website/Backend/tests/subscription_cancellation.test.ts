@@ -1,6 +1,7 @@
 import { describe, test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import crypto from 'node:crypto';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { prisma } from '../src/config/database.js';
 import { PlanService } from '../src/services/billing/plan_service.js';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
@@ -69,13 +70,15 @@ describe('ZC-BILLING-5.4 Subscription Cancellation & Period-End Cancellation Tes
       }
     });
 
-    testSession = await prisma.userSession.create({
+    const rawCancelToken = `sess_cancel_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    const sessionRes = await prisma.userSession.create({
       data: {
         userId: testUser.id,
-        token: `sess_cancel_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`,
+        tokenHash: hashSessionToken(rawCancelToken),
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000)
       }
     });
+    testSession = { ...sessionRes, token: rawCancelToken };
 
     testDevice = await prisma.device.create({
       data: {

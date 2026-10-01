@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
+import { hashSessionToken } from '../src/utils/crypto.js';
 import { BillingStatus, CurrencyCode, AuditEventType } from '@prisma/client';
 import { BillingStateService } from '../src/services/billing/billing_state_service.js';
 import { BillingCountryService } from '../src/services/billing/billing_country_service.js';
@@ -32,14 +33,14 @@ describe('ZC-BILLING-2.3 & 2.3-CORRECTIVE Billing Country and Unconfirmed Curren
       }
     });
 
-    const sessionA = await prisma.userSession.create({
+    tokenA = `tok_billing_country_a_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserA.id,
-        token: `tok_billing_country_a_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenA),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenA = sessionA.token;
 
     // Create Test User B
     testUserB = await prisma.user.create({
@@ -51,14 +52,14 @@ describe('ZC-BILLING-2.3 & 2.3-CORRECTIVE Billing Country and Unconfirmed Curren
       }
     });
 
-    const sessionB = await prisma.userSession.create({
+    tokenB = `tok_billing_country_b_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserB.id,
-        token: `tok_billing_country_b_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenB),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenB = sessionB.token;
 
     // Create Unconfirmed Test User
     testUserUnconfirmed = await prisma.user.create({
@@ -70,14 +71,14 @@ describe('ZC-BILLING-2.3 & 2.3-CORRECTIVE Billing Country and Unconfirmed Curren
       }
     });
 
-    const sessionUnconfirmed = await prisma.userSession.create({
+    tokenUnconfirmed = `tok_billing_unconfirmed_${Date.now()}`;
+    await prisma.userSession.create({
       data: {
         userId: testUserUnconfirmed.id,
-        token: `tok_billing_unconfirmed_${Date.now()}`,
+        tokenHash: hashSessionToken(tokenUnconfirmed),
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
       }
     });
-    tokenUnconfirmed = sessionUnconfirmed.token;
   });
 
   after(async () => {
