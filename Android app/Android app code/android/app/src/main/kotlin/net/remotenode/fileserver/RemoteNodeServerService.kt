@@ -38,6 +38,7 @@ class RemoteNodeServerService : Service() {
         const val EXTRA_SESSION_TOKEN = "extra_session_token"
         const val EXTRA_API_BASE_URL = "extra_api_base_url"
         const val EXTRA_GATEWAY_WS_URL = "extra_gateway_ws_url"
+        const val EXTRA_DEVICE_CREDENTIAL = "extra_device_credential"
 
         private const val PREFS_NAME = "net.remotenode.server_prefs"
         private const val KEY_SERVER_ENABLED = "server_enabled"
@@ -91,7 +92,8 @@ class RemoteNodeServerService : Service() {
             deviceId: String,
             sessionToken: String,
             apiBaseUrl: String,
-            gatewayWsUrl: String
+            gatewayWsUrl: String,
+            deviceCredential: String? = null
         ) {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit()
@@ -101,6 +103,9 @@ class RemoteNodeServerService : Service() {
                 .putString(KEY_GATEWAY_WS_URL, gatewayWsUrl)
                 .putBoolean(KEY_TUNNEL_ENABLED, true)
                 .apply()
+            if (!deviceCredential.isNullOrEmpty()) {
+                net.remotenode.fileserver.security.AndroidSecureStorage.writeKv(context, "device_credential", deviceCredential)
+            }
         }
 
         fun getPersistedTunnelConfig(context: Context): Map<String, String?> {
@@ -109,7 +114,8 @@ class RemoteNodeServerService : Service() {
                 "deviceId" to prefs.getString(KEY_DEVICE_ID, null),
                 "sessionToken" to prefs.getString(KEY_SESSION_TOKEN, null),
                 "apiBaseUrl" to prefs.getString(KEY_API_BASE_URL, null),
-                "gatewayWsUrl" to prefs.getString(KEY_GATEWAY_WS_URL, null)
+                "gatewayWsUrl" to prefs.getString(KEY_GATEWAY_WS_URL, null),
+                "deviceCredential" to net.remotenode.fileserver.security.AndroidSecureStorage.readKv(context, "device_credential")
             )
         }
 
@@ -122,6 +128,7 @@ class RemoteNodeServerService : Service() {
                 .remove(KEY_GATEWAY_WS_URL)
                 .putBoolean(KEY_TUNNEL_ENABLED, false)
                 .apply()
+            net.remotenode.fileserver.security.AndroidSecureStorage.deleteKv(context, "device_credential")
             RemoteNodeTunnelManager.stopTunnel()
         }
 
@@ -144,7 +151,10 @@ class RemoteNodeServerService : Service() {
     private val tunnelListener: (Map<String, Any?>) -> Unit = { event ->
         if (isServiceRunning) {
             val tunnelState = event["state"] as? String ?: "DISCONNECTED"
-            val text = "Personal file server on port $activePort | Gateway: $tunnelState"
+            val text = when (tunnelState) {
+                RemoteNodeTunnelManager.STATE_AUTH_FAILED -> "ZdexCloud — Sign-in Required"
+                else -> "Personal file server on port $activePort | Gateway: $tunnelState"
+            }
             val runningNotif = buildNotification(text)
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(NOTIFICATION_ID, runningNotif)
@@ -219,9 +229,10 @@ class RemoteNodeServerService : Service() {
                 val token = intent.getStringExtra(EXTRA_SESSION_TOKEN)
                 val apiBase = intent.getStringExtra(EXTRA_API_BASE_URL)
                 val gatewayWs = intent.getStringExtra(EXTRA_GATEWAY_WS_URL)
+                val deviceCredential = intent.getStringExtra(EXTRA_DEVICE_CREDENTIAL) ?: net.remotenode.fileserver.security.AndroidSecureStorage.readKv(this, "device_credential")
                 if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
-                    persistTunnelConfig(this, devId, token, apiBase, gatewayWs)
-                    RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs)
+                    persistTunnelConfig(this, devId, token, apiBase, gatewayWs, deviceCredential)
+                    RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs, deviceCredential)
                 }
             }
             ACTION_STOP_TUNNEL -> {
@@ -279,8 +290,9 @@ class RemoteNodeServerService : Service() {
                         val token = tunnelConfig["sessionToken"]
                         val apiBase = tunnelConfig["apiBaseUrl"]
                         val gatewayWs = tunnelConfig["gatewayWsUrl"]
+                        val cred = tunnelConfig["deviceCredential"]
                         if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
-                            RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs)
+                            RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs, cred)
                         }
                     }
                 } else {

@@ -4,7 +4,7 @@ import { Device } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
-import { hashPassword, hashSessionToken } from '../utils/crypto.js';
+import { hashPassword, hashSessionToken, generateSessionToken } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { EndpointService } from '../services/endpoint.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
@@ -26,6 +26,10 @@ const registerDeviceSchema = z.object({
 
 const heartbeatSchema = z.object({
   deviceId: z.string().min(1)
+});
+
+const refreshDeviceSessionSchema = z.object({
+  deviceCredential: z.string().min(16)
 });
 
 // Helper: Extract authenticated user from Bearer token
@@ -210,6 +214,36 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       serverEventProducer.emitServerCreated(user.id, device.id, `srv_${device.id}`, serverName || device.deviceName, device.deviceName).catch(() => {});
     }
 
+    // Provision or refresh persistent DeviceAuthCredential for unattended Server Mode
+    const rawDeviceCredential = generateSessionToken();
+    const deviceCredentialHash = hashSessionToken(rawDeviceCredential);
+
+    await prisma.deviceAuthCredential.upsert({
+      where: { deviceId: device.id },
+      update: {
+        credentialHash: deviceCredentialHash,
+        revokedAt: null,
+        lastUsedAt: new Date(),
+        lastRefreshAt: new Date()
+      },
+      create: {
+        deviceId: device.id,
+        userId: user.id,
+        credentialHash: deviceCredentialHash,
+        lastUsedAt: new Date(),
+        lastRefreshAt: new Date()
+      }
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        eventType: 'DEVICE_CREDENTIAL_CREATED',
+        metadata: { action: 'DEVICE_REGISTRATION_PROVISIONING' }
+      }
+    });
+
     return reply.status(200).send(createSuccessResponse({
       device: {
         id: device.id,
@@ -220,7 +254,230 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         appVersion: device.appVersion,
         status: device.status,
         lastSeenAt: device.lastSeenAt?.toISOString()
+      },
+      deviceCredential: rawDeviceCredential
+    }));
+  });
+
+  /**
+   * POST /api/v1/devices/:deviceId/credentials/issue
+   * Explicitly provisions a persistent device authentication credential for an authorized server device.
+   */
+  app.post('/devices/:deviceId/credentials/issue', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const params = heartbeatSchema.safeParse(request.params);
+
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const deviceId = params.data.deviceId;
+    const device = await prisma.device.findUnique({
+      where: { id: deviceId },
+      include: { servers: true }
+    });
+
+    if (!device) {
+      return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
+    }
+
+    if (device.userId !== user.id) {
+      throw new ForbiddenError('You do not have permission to provision credentials for this device');
+    }
+
+    const rawCredential = generateSessionToken();
+    const credentialHash = hashSessionToken(rawCredential);
+
+    const cred = await prisma.deviceAuthCredential.upsert({
+      where: { deviceId: device.id },
+      update: {
+        credentialHash,
+        revokedAt: null,
+        lastUsedAt: new Date(),
+        lastRefreshAt: new Date()
+      },
+      create: {
+        deviceId: device.id,
+        userId: user.id,
+        credentialHash,
+        lastUsedAt: new Date(),
+        lastRefreshAt: new Date()
       }
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: user.id,
+        deviceId: device.id,
+        eventType: 'DEVICE_CREDENTIAL_CREATED',
+        metadata: { credentialId: cred.id }
+      }
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      deviceId: device.id,
+      deviceCredential: rawCredential,
+      createdAt: cred.createdAt.toISOString()
+    }));
+  });
+
+  /**
+   * POST /api/v1/devices/:deviceId/session/refresh
+   * Exchanges a persistent device authentication credential for a fresh normal customer access session.
+   * Rate limited and protected against cross-device or revoked credential abuse.
+   */
+  app.post('/devices/:deviceId/session/refresh', async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = heartbeatSchema.safeParse(request.params);
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const body = refreshDeviceSessionSchema.safeParse(request.body);
+    if (!body.success) {
+      throw new ValidationError('Valid deviceCredential is required for session refresh');
+    }
+
+    const deviceId = params.data.deviceId;
+    const { deviceCredential } = body.data;
+    const credentialHash = hashSessionToken(deviceCredential);
+
+    const cred = await prisma.deviceAuthCredential.findUnique({
+      where: { deviceId },
+      include: {
+        device: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!cred || cred.credentialHash !== credentialHash) {
+      await prisma.auditEvent.create({
+        data: {
+          userId: cred?.userId || 'unknown',
+          deviceId,
+          eventType: 'DEVICE_SESSION_REFRESH_FAILED',
+          metadata: { reason: 'invalid_credential_hash' }
+        }
+      });
+      return reply.status(401).send(createErrorResponse('INVALID_CREDENTIAL', 'Invalid or expired device credential'));
+    }
+
+    if (cred.revokedAt) {
+      await prisma.auditEvent.create({
+        data: {
+          userId: cred.userId,
+          deviceId,
+          eventType: 'DEVICE_SESSION_REFRESH_FAILED',
+          metadata: { reason: 'credential_revoked', revokedAt: cred.revokedAt.toISOString() }
+        }
+      });
+      return reply.status(401).send(createErrorResponse('CREDENTIAL_REVOKED', 'Device credential has been revoked. Reauthorization required.'));
+    }
+
+    if (cred.expiresAt && cred.expiresAt <= new Date()) {
+      await prisma.auditEvent.create({
+        data: {
+          userId: cred.userId,
+          deviceId,
+          eventType: 'DEVICE_SESSION_REFRESH_FAILED',
+          metadata: { reason: 'credential_expired', expiresAt: cred.expiresAt.toISOString() }
+        }
+      });
+      return reply.status(401).send(createErrorResponse('CREDENTIAL_EXPIRED', 'Device credential has expired. Reauthorization required.'));
+    }
+
+    if (!cred.device || cred.device.userId !== cred.userId) {
+      return reply.status(403).send(createErrorResponse('DEVICE_OWNERSHIP_MISMATCH', 'Device authorization is invalid'));
+    }
+
+    if (cred.device.user.status !== 'ACTIVE') {
+      return reply.status(403).send(createErrorResponse('USER_NOT_ACTIVE', 'User account is suspended or unverified'));
+    }
+
+    const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+    const newAccessToken = generateSessionToken();
+    const tokenHash = hashSessionToken(newAccessToken);
+    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
+    await prisma.$transaction(async (tx) => {
+      await tx.userSession.create({
+        data: {
+          userId: cred.userId,
+          tokenHash,
+          expiresAt
+        }
+      });
+
+      await tx.deviceAuthCredential.update({
+        where: { id: cred.id },
+        data: {
+          lastUsedAt: new Date(),
+          lastRefreshAt: new Date()
+        }
+      });
+
+      await tx.auditEvent.create({
+        data: {
+          userId: cred.userId,
+          deviceId,
+          eventType: 'DEVICE_SESSION_REFRESHED',
+          metadata: { credentialId: cred.id, issuedAt: new Date().toISOString() }
+        }
+      });
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      session: {
+        accessToken: newAccessToken,
+        refreshToken: newAccessToken,
+        expiresAt: expiresAt.toISOString()
+      },
+      token: newAccessToken
+    }));
+  });
+
+  /**
+   * POST /api/v1/devices/:deviceId/credentials/revoke
+   * Revokes the persistent device credential for an Android device node.
+   */
+  app.post('/devices/:deviceId/credentials/revoke', async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const params = heartbeatSchema.safeParse(request.params);
+
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const deviceId = params.data.deviceId;
+    const device = await prisma.device.findUnique({ where: { id: deviceId } });
+
+    if (!device) {
+      return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
+    }
+
+    if (device.userId !== user.id) {
+      throw new ForbiddenError('You do not have permission to revoke credentials for this device');
+    }
+
+    const now = new Date();
+    await prisma.deviceAuthCredential.updateMany({
+      where: { deviceId },
+      data: { revokedAt: now }
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: user.id,
+        deviceId,
+        eventType: 'DEVICE_CREDENTIAL_REVOKED',
+        metadata: { revokedAt: now.toISOString() }
+      }
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      message: 'Device credential revoked successfully.'
     }));
   });
 

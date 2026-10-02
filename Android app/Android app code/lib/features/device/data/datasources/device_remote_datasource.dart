@@ -38,6 +38,21 @@ abstract class DeviceRemoteDataSource {
   Future<Map<String, dynamic>> getBillingState({
     required String sessionToken,
   });
+
+  Future<Map<String, dynamic>> issueDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  });
+
+  Future<Map<String, dynamic>> refreshDeviceSession({
+    required String deviceId,
+    required String deviceCredential,
+  });
+
+  Future<Map<String, dynamic>> revokeDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  });
 }
 
 /// HTTP Implementation targeting Main Website Backend Device Endpoint
@@ -203,7 +218,76 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         'success': false,
         'error': {
           'code': 'NETWORK_ERROR',
-          'message': 'Failed to get billing state: ${e.toString()}'
+  @override
+  Future<Map<String, dynamic>> issueDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices/$deviceId/credentials/issue');
+      final req = await _httpClient.postUrl(url);
+      req.headers.set('authorization', 'Bearer $sessionToken');
+      req.headers.set('content-type', 'application/json');
+
+      final res = await req.close().timeout(const Duration(seconds: 15));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to issue device credential: ${e.toString()}'
+        }
+      };
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> refreshDeviceSession({
+    required String deviceId,
+    required String deviceCredential,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices/$deviceId/session/refresh');
+      final req = await _httpClient.postUrl(url);
+      req.headers.set('content-type', 'application/json');
+      req.write(jsonEncode({'deviceCredential': deviceCredential}));
+
+      final res = await req.close().timeout(const Duration(seconds: 15));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to refresh device session: ${e.toString()}'
+        }
+      };
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> revokeDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl/devices/$deviceId/credentials/revoke');
+      final req = await _httpClient.postUrl(url);
+      req.headers.set('authorization', 'Bearer $sessionToken');
+      req.headers.set('content-type', 'application/json');
+
+      final res = await req.close().timeout(const Duration(seconds: 15));
+      final body = await res.transform(utf8.decoder).join();
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (e) {
+      return {
+        'success': false,
+        'error': {
+          'code': 'NETWORK_ERROR',
+          'message': 'Failed to revoke device credential: ${e.toString()}'
         }
       };
     }
@@ -355,6 +439,48 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
     return {
       'success': true,
       'data': {'message': 'Device deleted successfully'}
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> issueDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return {
+      'success': true,
+      'data': {
+        'deviceCredential': 'mock_device_cred_${deviceId.hashCode.abs()}',
+        'deviceId': deviceId,
+      }
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> refreshDeviceSession({
+    required String deviceId,
+    required String deviceCredential,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return {
+      'success': true,
+      'data': {
+        'accessToken': 'mock_refreshed_access_token_${DateTime.now().millisecondsSinceEpoch}',
+        'expiresAt': DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+      }
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> revokeDeviceCredential({
+    required String deviceId,
+    required String sessionToken,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return {
+      'success': true,
+      'data': {'message': 'Device credential revoked successfully'}
     };
   }
 }

@@ -227,11 +227,13 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
 
     try {
       AppLogger.info('[NativeRemoteConnection] Requesting native tunnel start for device: $deviceId');
+      final cred = await FileSecureStorageService().read(key: 'device_credential');
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('startTunnel', {
         'deviceId': deviceId,
         'sessionToken': sessionToken,
         'apiBaseUrl': AppConfig.current.apiBaseUrl,
         'gatewayWsUrl': AppConfig.current.gatewayWsUrl,
+        if (cred != null) 'deviceCredential': cred,
       });
 
       if (res != null) {

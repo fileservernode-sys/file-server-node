@@ -110,10 +110,18 @@ object RemoteNodeTunnelManager {
     private var storedSessionToken: String? = null
 
     @Volatile
+    private var storedDeviceCredential: String? = null
+
+    @Volatile
     private var storedApiBaseUrl: String? = null
 
     @Volatile
     private var storedGatewayWsUrl: String? = null
+
+    @Volatile
+    private var appContext: Context? = null
+
+    private val sessionRefreshLock = Any()
 
     @Volatile
     private var isExplicitlyStopped: Boolean = true
@@ -204,8 +212,16 @@ object RemoteNodeTunnelManager {
         deviceId: String,
         sessionToken: String,
         apiBaseUrl: String,
-        gatewayWsUrl: String
+        gatewayWsUrl: String,
+        deviceCredential: String? = null
     ) {
+        appContext = context.applicationContext
+        if (!deviceCredential.isNullOrEmpty()) {
+            storedDeviceCredential = deviceCredential
+        } else if (storedDeviceCredential == null) {
+            storedDeviceCredential = net.remotenode.fileserver.security.AndroidSecureStorage.readKv(context, "device_credential")
+        }
+
         val isActiveState = currentState == STATE_STARTING ||
             currentState == STATE_CONNECTING ||
             currentState == STATE_AUTHENTICATING ||
@@ -234,9 +250,70 @@ object RemoteNodeTunnelManager {
         missedPings = 0
         lastErrorMessage = null
 
-        Log.i(TAG, "[START_TUNNEL] gen=$currentGen devId=${safeDeviceIdSuffix(deviceId)} apiHost=${extractHost(apiBaseUrl)} gwHost=${extractHost(gatewayWsUrl)}")
+        Log.i(TAG, "[START_TUNNEL] gen=$currentGen devId=${safeDeviceIdSuffix(deviceId)} apiHost=${extractHost(apiBaseUrl)} gwHost=${extractHost(gatewayWsUrl)} credPresent=${!storedDeviceCredential.isNullOrEmpty()}")
         emitState(STATE_STARTING)
         executeConnectSequence(currentGen)
+    }
+
+    fun executeSessionRefresh(devId: String, apiBase: String): String? {
+        synchronized(sessionRefreshLock) {
+            val cred = storedDeviceCredential
+                ?: appContext?.let { net.remotenode.fileserver.security.AndroidSecureStorage.readKv(it, "device_credential") }
+
+            if (cred.isNullOrEmpty()) {
+                Log.w(TAG, "[SESSION_REFRESH_ABORTED] No persistent device credential available for device ${safeDeviceIdSuffix(devId)}")
+                return null
+            }
+
+            Log.i(TAG, "[SESSION_REFRESH_START] Attempting persistent session renewal for device ${safeDeviceIdSuffix(devId)}")
+            try {
+                val refreshUrl = URL("$apiBase/devices/$devId/session/refresh")
+                val conn = refreshUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+                conn.doOutput = true
+
+                val reqBody = JSONObject().apply {
+                    put("deviceCredential", cred)
+                }
+                conn.outputStream.write(reqBody.toString().toByteArray(StandardCharsets.UTF_8))
+
+                val respCode = conn.responseCode
+                val respStream = if (respCode in 200..299) conn.inputStream else conn.errorStream
+                val rawBody = respStream?.bufferedReader()?.use { it.readText() } ?: "{}"
+                conn.disconnect()
+
+                if (respCode == 200) {
+                    val json = JSONObject(rawBody)
+                    if (json.optBoolean("success")) {
+                        val data = json.getJSONObject("data")
+                        val newAccessToken = data.optString("accessToken")
+                        if (!newAccessToken.isNullOrEmpty()) {
+                            storedSessionToken = newAccessToken
+                            appContext?.let { ctx ->
+                                RemoteNodeServerService.persistTunnelConfig(
+                                    ctx,
+                                    storedDeviceId ?: devId,
+                                    newAccessToken,
+                                    storedApiBaseUrl ?: apiBase,
+                                    storedGatewayWsUrl ?: "",
+                                    cred
+                                )
+                            }
+                            Log.i(TAG, "[SESSION_REFRESH_SUCCESS] Successfully refreshed session token for device ${safeDeviceIdSuffix(devId)}")
+                            return newAccessToken
+                        }
+                    }
+                } else {
+                    Log.e(TAG, "[SESSION_REFRESH_REJECTED] HTTP $respCode: $rawBody")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "[SESSION_REFRESH_ERROR] ${e.javaClass.simpleName}: ${e.message}")
+            }
+            return null
+        }
     }
 
     @Synchronized
@@ -425,7 +502,15 @@ object RemoteNodeTunnelManager {
                                 Log.w(TAG, "[REGISTRATION_REJECTED] gen=$generation attempt=$registrationAttempts durationMs=$regDurationMs err=$err")
                             }
                         } else if (respCode == 401) {
-                            Log.e(TAG, "[REGISTRATION_AUTH_FAILURE] gen=$generation attempt=$registrationAttempts status=401 durationMs=$regDurationMs")
+                            Log.w(TAG, "[REGISTRATION_AUTH_401] Control plane session expired (HTTP 401). Attempting persistent session renewal...")
+                            val refreshedToken = executeSessionRefresh(devId, apiBase)
+                            if (refreshedToken != null && refreshedToken != sessionTok) {
+                                sessionTok = refreshedToken
+                                Log.i(TAG, "[REGISTRATION_AUTH_RENEWED] Retrying registration with renewed token...")
+                                continue
+                            }
+
+                            Log.e(TAG, "[REGISTRATION_AUTH_FAILURE] Persistent renewal failed or credential revoked (HTTP 401). Signing out.")
                             AndroidErrorTelemetry.reportError(
                                 apiBase, sessionTok,
                                 AndroidErrorTelemetry.ErrorTelemetryPayload(
@@ -433,12 +518,12 @@ object RemoteNodeTunnelManager {
                                     errorCode = "REGISTRATION_AUTH_EXPIRED",
                                     errorType = "AuthenticationException",
                                     severity = "ERROR",
-                                    message = "Platform session expired during control plane registration (HTTP 401)",
+                                    message = "Platform session expired and persistent renewal failed (HTTP 401)",
                                     deviceId = devId,
                                     metadata = mapOf("httpStatus" to 401, "attempt" to registrationAttempts, "generation" to generation)
                                 )
                             )
-                            emitState(STATE_AUTH_FAILED, "Platform session expired. Please sign in again.")
+                            emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
                             isConnectingOrReconnecting = false
                             return@execute
                         } else if (respCode == 403) {

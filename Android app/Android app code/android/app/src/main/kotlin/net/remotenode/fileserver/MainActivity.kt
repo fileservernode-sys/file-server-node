@@ -167,6 +167,7 @@ class MainActivity : FlutterActivity() {
                     val sessionToken = call.argument<String>("sessionToken")
                     val apiBaseUrl = call.argument<String>("apiBaseUrl")
                     val gatewayWsUrl = call.argument<String>("gatewayWsUrl")
+                    val deviceCredential = call.argument<String>("deviceCredential") ?: AndroidSecureStorage.readKv(context, "device_credential")
 
                     if (!deviceId.isNullOrEmpty() && !sessionToken.isNullOrEmpty() && !apiBaseUrl.isNullOrEmpty() && !gatewayWsUrl.isNullOrEmpty()) {
                         val intent = Intent(context, RemoteNodeServerService::class.java).apply {
@@ -175,11 +176,14 @@ class MainActivity : FlutterActivity() {
                             putExtra(RemoteNodeServerService.EXTRA_SESSION_TOKEN, sessionToken)
                             putExtra(RemoteNodeServerService.EXTRA_API_BASE_URL, apiBaseUrl)
                             putExtra(RemoteNodeServerService.EXTRA_GATEWAY_WS_URL, gatewayWsUrl)
+                            if (!deviceCredential.isNullOrEmpty()) {
+                                putExtra(RemoteNodeServerService.EXTRA_DEVICE_CREDENTIAL, deviceCredential)
+                            }
                         }
                         try {
                             ContextCompat.startForegroundService(context, intent)
                         } catch (_: Exception) {
-                            RemoteNodeTunnelManager.startTunnel(context, deviceId, sessionToken, apiBaseUrl, gatewayWsUrl)
+                            RemoteNodeTunnelManager.startTunnel(context, deviceId, sessionToken, apiBaseUrl, gatewayWsUrl, deviceCredential)
                         }
                         result.success(RemoteNodeTunnelManager.getStatus())
                     } else {

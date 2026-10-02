@@ -590,6 +590,18 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       final registeredDeviceId = dev['id'] as String;
       state = state.copyWith(deviceId: registeredDeviceId);
 
+      // Persist long-lived device credential in secure storage for automatic background session renewal
+      final deviceCredential = regResult['data']['deviceCredential'] as String?;
+      if (deviceCredential != null && deviceCredential.isNotEmpty) {
+        try {
+          final secureStorage = _ref.read(secureStorageProvider);
+          await secureStorage.write(key: 'device_credential', value: deviceCredential);
+          AppLogger.info('[SetupState] Saved persistent device credential for unattended renewal');
+        } catch (e) {
+          AppLogger.warning('[SetupState] Failed to persist device credential: $e');
+        }
+      }
+
       // Register device FCM push token with backend control plane
       try {
         final pushTokenManager = _ref.read(pushTokenManagerProvider);

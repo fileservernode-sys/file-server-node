@@ -237,6 +237,10 @@ enum AuditEventType {
   BILLING_SETTLEMENT_RECORDED
   BILLING_SETTLEMENT_RECONCILED
   BILLING_STATE_UPDATED
+  DEVICE_CREDENTIAL_CREATED
+  DEVICE_SESSION_REFRESHED
+  DEVICE_CREDENTIAL_REVOKED
+  DEVICE_SESSION_REFRESH_FAILED
 }
 
 enum TaxType {
@@ -437,6 +441,7 @@ model User {
   supportCases            SupportCase[]
   errorOccurrences        ErrorOccurrence[]
   emailMessages           EmailMessage[]
+  deviceCredentials       DeviceAuthCredential[]
 
   @@index([email])
 }
@@ -473,6 +478,27 @@ model UserSession {
   @@index([tokenHash])
 }
 
+/// Persistent Device Authentication Credential for Unattended Server Mode (Phase 14.7)
+model DeviceAuthCredential {
+  id             String    @id @default(cuid())
+  deviceId       String    @unique
+  userId         String
+  credentialHash String    @unique
+  lastUsedAt     DateTime?
+  lastRefreshAt  DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  device         Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([credentialHash])
+}
+
 /// Registered Android Phone Device Node
 model Device {
   id             String       @id @default(cuid())
@@ -487,13 +513,14 @@ model Device {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   servers          ServerInstance[]
   connections      DeviceConnection[]
   auditEvents      AuditEvent[]
   notifications    NotificationRecord[]
   pushTokens       DevicePushToken[]
   errorOccurrences ErrorOccurrence[]
+  credential       DeviceAuthCredential?
 
   @@unique([userId, installationId])
   @@index([userId])
