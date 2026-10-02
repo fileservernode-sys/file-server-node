@@ -138,7 +138,7 @@ Content-Type: application/json
         "deviceName": "Pixel 6a",
         "status": "ONLINE",
         "lastSeenAt": "2026-08-15T20:55:00.000Z",
-        "endpoint": "https://pixel6a.remotenode.net"
+        "endpoint": "https://pixel6a.zdexcloud.com"
       }
     ]
   }

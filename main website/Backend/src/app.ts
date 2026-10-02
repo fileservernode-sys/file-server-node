@@ -204,10 +204,6 @@ export async function buildApp(): Promise<FastifyInstance> {
       'zdexcloud.com',
       'www.zdexcloud.com',
       'app.zdexcloud.com',
-      'viewduration.com',
-      'www.viewduration.com',
-      'remotenode.net',
-      'www.remotenode.net',
       'localhost',
       '127.0.0.1'
     ]);

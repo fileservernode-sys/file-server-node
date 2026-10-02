@@ -50,7 +50,7 @@ void main() {
 
       final connected = RemoteConnectionInfo(
         connectionId: 'conn-100',
-        remoteEndpoint: 'https://node-100.remotenode.net',
+        remoteEndpoint: 'https://node-100.zdexcloud.com',
         status: RemoteConnectionState.connected,
         lastHeartbeatAt: DateTime.now(),
       );

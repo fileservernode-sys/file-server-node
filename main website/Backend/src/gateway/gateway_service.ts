@@ -420,7 +420,7 @@ export class GatewayService {
       }
 
       // =======================================================================
-      // HTTP REVERSE PROXY ROUTING FOR *.remotenode.net SUBDOMAINS
+      // HTTP REVERSE PROXY ROUTING FOR *.zdexcloud.com SUBDOMAINS
       // =======================================================================
       const hostHeader = (req.headers.host || '').split(':')[0].toLowerCase();
       const endpointQuery = parsedUrl.searchParams.get('endpoint');
@@ -940,7 +940,7 @@ export class GatewayService {
 
           const remoteEndpoint =
             connRecord.remoteEndpoint ||
-            `https://node-${deviceId.substring(0, 8)}.remotenode.net`;
+            `https://node-${deviceId.substring(0, 8)}.${this.config.REMOTENODE_BASE_DOMAIN || 'zdexcloud.com'}`;
           const hostname = remoteEndpoint.replace(/^https?:\/\//, '').replace(/:\d+$/, '').toLowerCase();
 
           const activeConn: ActiveGatewayConnection = {

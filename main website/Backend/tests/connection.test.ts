@@ -69,14 +69,14 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
     const response = await app.inject({
       method: 'POST',
       url: '/api/v1/gateway/heartbeat',
-      payload: { hostname: 'gw-us-east-1.remotenode.net', region: 'us-east', status: 'ACTIVE' }
+      payload: { hostname: 'gw-us-east-1.zdexcloud.com', region: 'us-east', status: 'ACTIVE' }
     });
 
     assert.ok([200, 503].includes(response.statusCode));
     const body = JSON.parse(response.payload);
     if (response.statusCode === 200) {
       assert.strictEqual(body.success, true);
-      assert.strictEqual(body.data.gatewayNode.hostname, 'gw-us-east-1.remotenode.net');
+      assert.strictEqual(body.data.gatewayNode.hostname, 'gw-us-east-1.zdexcloud.com');
     }
   });
 
@@ -154,9 +154,6 @@ describe('Gateway & Remote Connection Architecture API (/api/v1/gateway, /api/v1
     const body = JSON.parse(response.payload);
     assert.strictEqual(body.success, true);
     assert.ok(
-      body.data.endpoint.hostname.includes('remotenode.net') ||
-      body.data.endpoint.hostname.includes('viewduration.com') ||
-      body.data.endpoint.hostname.includes('zdex.cloud') ||
       body.data.endpoint.hostname.includes('zdexcloud.com')
     );
   });

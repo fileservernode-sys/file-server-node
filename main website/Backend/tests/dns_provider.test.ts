@@ -5,8 +5,8 @@ import { EndpointService } from '../src/services/endpoint.js';
 
 describe('DNS Provider Abstraction & Dynamic Gateway Subdomain Integration', () => {
   beforeEach(() => {
-    EndpointService.setBaseDomain('viewduration.com');
-    EndpointService.setGatewayDomain('gateway.viewduration.com');
+    EndpointService.setBaseDomain('zdexcloud.com');
+    EndpointService.setGatewayDomain('gateway.zdexcloud.com');
     EndpointService.setDnsProvider(new MockDnsProvider());
   });
 
@@ -14,16 +14,16 @@ describe('DNS Provider Abstraction & Dynamic Gateway Subdomain Integration', () 
     const provider = new MockDnsProvider();
 
     const res = await provider.provisionRecord({
-      hostname: 'srv-test123.gateway.viewduration.com',
-      target: 'gateway.viewduration.com',
+      hostname: 'srv-test123.gateway.zdexcloud.com',
+      target: 'gateway.zdexcloud.com',
       type: 'CNAME'
     });
 
     assert.strictEqual(res.success, true);
-    assert.strictEqual(res.hostname, 'srv-test123.gateway.viewduration.com');
+    assert.strictEqual(res.hostname, 'srv-test123.gateway.zdexcloud.com');
     assert.ok(res.recordId);
 
-    const verified = await provider.verifyRecord('srv-test123.gateway.viewduration.com');
+    const verified = await provider.verifyRecord('srv-test123.gateway.zdexcloud.com');
     assert.strictEqual(verified, true);
   });
 
@@ -31,21 +31,21 @@ describe('DNS Provider Abstraction & Dynamic Gateway Subdomain Integration', () 
     const provider = new MockDnsProvider();
 
     await provider.provisionRecord({
-      hostname: 'srv-delete.gateway.viewduration.com',
-      target: 'gateway.viewduration.com',
+      hostname: 'srv-delete.gateway.zdexcloud.com',
+      target: 'gateway.zdexcloud.com',
       type: 'CNAME'
     });
 
-    const deleted = await provider.removeRecord('srv-delete.gateway.viewduration.com');
+    const deleted = await provider.removeRecord('srv-delete.gateway.zdexcloud.com');
     assert.strictEqual(deleted.success, true);
 
-    const exists = await provider.verifyRecord('srv-delete.gateway.viewduration.com');
+    const exists = await provider.verifyRecord('srv-delete.gateway.zdexcloud.com');
     assert.strictEqual(exists, false);
   });
 
   test('EndpointService generates clean deterministic node hostnames with gateway testing subdomain', () => {
     const hostname = EndpointService.generateHostname('srv_123456');
-    assert.strictEqual(hostname, 'srv_123456.viewduration.com');
+    assert.strictEqual(hostname, 'srv_123456.zdexcloud.com');
   });
 
   test('EndpointService allows seamless production domain substitution without code changes', () => {
@@ -62,16 +62,16 @@ describe('DNS Provider Abstraction & Dynamic Gateway Subdomain Integration', () 
 
   test('EndpointService strictly validates hostname safety and rejects protocol prefixes and paths', () => {
     // Valid subdomains
-    assert.strictEqual(EndpointService.validateHostname('srv-12345678.gateway.viewduration.com'), true);
-    assert.strictEqual(EndpointService.validateHostname('node_device_1.gateway.viewduration.com'), true);
-    assert.strictEqual(EndpointService.validateHostname('srv-123.viewduration.com'), true);
+    assert.strictEqual(EndpointService.validateHostname('srv-12345678.gateway.zdexcloud.com'), true);
+    assert.strictEqual(EndpointService.validateHostname('node_device_1.gateway.zdexcloud.com'), true);
+    assert.strictEqual(EndpointService.validateHostname('srv-123.zdexcloud.com'), true);
 
     // Invalid: protocol prefixes, slashes, spaces, trailing slashes, external domains
-    assert.strictEqual(EndpointService.validateHostname('https://srv-123.gateway.viewduration.com'), false);
-    assert.strictEqual(EndpointService.validateHostname('http://srv-123.gateway.viewduration.com'), false);
-    assert.strictEqual(EndpointService.validateHostname('srv-123.gateway.viewduration.com/'), false);
-    assert.strictEqual(EndpointService.validateHostname('srv-123.gateway.viewduration.com/path'), false);
-    assert.strictEqual(EndpointService.validateHostname('srv 123.gateway.viewduration.com'), false);
+    assert.strictEqual(EndpointService.validateHostname('https://srv-123.gateway.zdexcloud.com'), false);
+    assert.strictEqual(EndpointService.validateHostname('http://srv-123.gateway.zdexcloud.com'), false);
+    assert.strictEqual(EndpointService.validateHostname('srv-123.gateway.zdexcloud.com/'), false);
+    assert.strictEqual(EndpointService.validateHostname('srv-123.gateway.zdexcloud.com/path'), false);
+    assert.strictEqual(EndpointService.validateHostname('srv 123.gateway.zdexcloud.com'), false);
     assert.strictEqual(EndpointService.validateHostname('evil-hacker.com'), false);
     assert.strictEqual(EndpointService.validateHostname('subdomain.otherdomain.net'), false);
   });

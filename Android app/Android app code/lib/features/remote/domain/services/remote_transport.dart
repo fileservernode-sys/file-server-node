@@ -211,7 +211,7 @@ class MockRemoteTransport implements RemoteTransport {
         _controller.add({
           'type': 'AUTH_SUCCESS',
           'connectionId': 'conn-mock-123',
-          'remoteEndpoint': 'https://node-123.remotenode.net'
+          'remoteEndpoint': 'https://node-123.zdexcloud.com'
         });
       }
     } else if (type == 'PING') {

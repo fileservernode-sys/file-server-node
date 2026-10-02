@@ -151,9 +151,6 @@ export function isOriginAllowed(
     'api.zdexcloud.com',
     'admin.zdexcloud.com',
     'gateway.zdexcloud.com',
-    'viewduration.com',
-    'www.viewduration.com',
-    'gateway.viewduration.com',
     normalizedBase,
     `www.${normalizedBase}`,
     `app.${normalizedBase}`,
@@ -173,7 +170,7 @@ export function isOriginAllowed(
   };
 
   if (protocol === 'https:') {
-    if (isSubdomainOf(hostname, 'zdexcloud.com') || isSubdomainOf(hostname, 'viewduration.com')) {
+    if (isSubdomainOf(hostname, 'zdexcloud.com')) {
       return true;
     }
     if (normalizedBase && isSubdomainOf(hostname, normalizedBase)) {

@@ -25,7 +25,7 @@ class MockTokenValidator implements TokenValidator {
         id: VALID_CONN_ID,
         deviceId,
         userId: VALID_USER_ID,
-        remoteEndpoint: 'https://srv-mockdevi.viewduration.com'
+        remoteEndpoint: 'https://srv-mockdevi.zdexcloud.com'
       };
     }
     if (deviceId === VALID_DEVICE_2 && connectionToken === VALID_TOKEN_2) {
@@ -33,7 +33,7 @@ class MockTokenValidator implements TokenValidator {
         id: VALID_CONN_ID_2,
         deviceId: VALID_DEVICE_2,
         userId: VALID_USER_ID_2,
-        remoteEndpoint: 'https://srv-mockdev2.viewduration.com'
+        remoteEndpoint: 'https://srv-mockdev2.zdexcloud.com'
       };
     }
     return null;
@@ -71,7 +71,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     const customConfig = loadGatewayConfig({
       GATEWAY_PORT: 5000,
       GATEWAY_MAX_CONNECTIONS: 200,
-      GATEWAY_WS_URL: 'wss://gateway.remotenode.net',
+      GATEWAY_WS_URL: 'wss://gateway.zdexcloud.com',
       NODE_ENV: 'production'
     });
     assert.strictEqual(customConfig.GATEWAY_PORT, 5000);
@@ -83,7 +83,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     assert.throws(
       () => {
         loadGatewayConfig({
-          GATEWAY_WS_URL: 'ws://insecure-gateway.remotenode.net',
+          GATEWAY_WS_URL: 'ws://insecure-gateway.zdexcloud.com',
           NODE_ENV: 'production'
         });
       },
@@ -595,7 +595,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
     // Send HTTP GET request with target endpoint query
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${testPort}/api/files?endpoint=srv-mockdevi.viewduration.com`, (resp) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=srv-mockdevi.zdexcloud.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {
@@ -616,7 +616,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
   test('Gateway rejects HTTP reverse-proxy requests targeting unknown subdomains', async () => {
     const res = await new Promise<{ statusCode: number; data: any }>((resolve, reject) => {
-      http.get(`http://localhost:${testPort}/api/files?endpoint=unknown-host.viewduration.com`, (resp) => {
+      http.get(`http://localhost:${testPort}/api/files?endpoint=unknown-host.zdexcloud.com`, (resp) => {
         let raw = '';
         resp.on('data', (c) => (raw += c));
         resp.on('end', () => {

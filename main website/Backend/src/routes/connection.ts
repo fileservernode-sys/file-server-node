@@ -112,7 +112,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const serverInstance = await prisma.serverInstance.findFirst({ where: { deviceId } });
-    let remoteEndpointStr = 'https://pending-allocation.remotenode.net';
+    let remoteEndpointStr = 'https://pending-allocation.zdexcloud.com';
 
     if (serverInstance) {
       const endpoint = await EndpointService.reserveEndpoint(serverInstance.id);

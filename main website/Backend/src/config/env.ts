@@ -28,7 +28,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(4000),
   HOST: z.string().default('0.0.0.0'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL environment variable is required'),
-  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080,https://zdexcloud.com,https://www.zdexcloud.com,https://app.zdexcloud.com,https://api.zdexcloud.com,https://gateway.zdexcloud.com,https://viewduration.com,https://gateway.viewduration.com'),
+  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080,https://zdexcloud.com,https://www.zdexcloud.com,https://app.zdexcloud.com,https://api.zdexcloud.com,https://gateway.zdexcloud.com'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
 

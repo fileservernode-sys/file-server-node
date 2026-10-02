@@ -10,7 +10,7 @@ The Android application converts an unused or spare Android smartphone into a re
 
 ### Key Architectural Guidelines
 - **Mobile-First Foundation**: Designed for fluid adaptiveness across Android phone screen sizes (`320dp`, `360dp`, `375dp`, `390dp`, `414dp`, `480dp+`).
-- **Enforced Account Policy**: The Android application provides **LOGIN ONLY**. Account registration is hosted exclusively on the Main Website (`https://remotenode.net/pages/get-started.html`).
+- **Enforced Account Policy**: The Android application provides **LOGIN ONLY**. Account registration is hosted exclusively on the Main Website (`https://zdexcloud.com/pages/get-started.html`).
 - **Final Authentication Model**: Platform authentication uses **Email + Password + OTP** exclusively. OTP email delivery is handled by the backend using the **Serverbyt SMTP** service. Google authentication is NOT supported and has been completely eliminated from the product.
 - **Strict Credential Separation**: Platform Account (Email + Password + OTP) is used for control plane access and device ownership. Dedicated File-Server Credentials created during server setup are used only for accessing files via the Android-hosted File Managing Website.
 

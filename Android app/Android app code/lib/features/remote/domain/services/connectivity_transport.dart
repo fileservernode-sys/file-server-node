@@ -128,7 +128,7 @@ class MockConnectivityTransport implements ConnectivityTransport {
       _messageController.add({
         'type': 'AUTH_SUCCESS',
         'connectionId': 'mock-conn-999',
-        'remoteEndpoint': 'https://node-mock.remotenode.net'
+        'remoteEndpoint': 'https://node-mock.zdexcloud.com'
       });
     }
   }
