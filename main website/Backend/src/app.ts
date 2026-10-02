@@ -89,7 +89,8 @@ export async function buildApp(): Promise<FastifyInstance> {
         'body.password',
         'body.passwordHash',
         'body.keySecret',
-        'body.webhookSecret'
+        'body.webhookSecret',
+        'body.deviceCredential'
       ]
     }
   });

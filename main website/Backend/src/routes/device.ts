@@ -326,7 +326,17 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * Exchanges a persistent device authentication credential for a fresh normal customer access session.
    * Rate limited and protected against cross-device or revoked credential abuse.
    */
-  app.post('/devices/:deviceId/session/refresh', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/devices/:deviceId/session/refresh',
+    {
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: '1 minute'
+        }
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const params = heartbeatSchema.safeParse(request.params);
     if (!params.success) {
       throw new ValidationError('Invalid device ID parameter');

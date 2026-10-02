@@ -404,28 +404,56 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send(createErrorResponse('INVALID_OTP', 'Invalid or expired password reset code'));
     }
 
-    // Update password hash & ensure account is active
+    // Update password hash & ensure account is active, invalidate sessions, and revoke device credentials atomically
     const newPasswordHash = hashPassword(body.data.newPassword);
+    const now = new Date();
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: newPasswordHash,
-        status: 'ACTIVE',
-        emailVerified: true
-      }
-    });
+    await prisma.$transaction(async (tx) => {
+      // 1. Update User password and activation state
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: newPasswordHash,
+          status: 'ACTIVE',
+          emailVerified: true
+        }
+      });
 
-    // Invalidate all active user sessions on password change
-    await prisma.userSession.deleteMany({
-      where: { userId: user.id }
-    });
+      // 2. Invalidate all active user sessions on password change
+      await tx.userSession.deleteMany({
+        where: { userId: user.id }
+      });
 
-    await prisma.auditEvent.create({
-      data: {
-        userId: user.id,
-        eventType: 'PASSWORD_RESET_SUCCESS'
-      }
+      // 3. SEC-14.7-01: Revoke all active device credentials for the user
+      await tx.deviceAuthCredential.updateMany({
+        where: {
+          userId: user.id,
+          revokedAt: null
+        },
+        data: {
+          revokedAt: now
+        }
+      });
+
+      // 4. Audit Log for Password Reset
+      await tx.auditEvent.create({
+        data: {
+          userId: user.id,
+          eventType: 'PASSWORD_RESET_SUCCESS'
+        }
+      });
+
+      // 5. Audit Log for Device Credential Revocation
+      await tx.auditEvent.create({
+        data: {
+          userId: user.id,
+          eventType: 'DEVICE_CREDENTIAL_REVOKED',
+          metadata: {
+            reason: 'PASSWORD_RESET',
+            revokedAt: now.toISOString()
+          }
+        }
+      });
     });
 
     return reply.status(200).send(createSuccessResponse({
