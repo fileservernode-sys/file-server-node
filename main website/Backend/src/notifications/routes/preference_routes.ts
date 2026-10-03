@@ -20,25 +20,7 @@ const updatePreferencesSchema = z.object({
   })).optional()
 });
 
-async function getAuthUser(request: FastifyRequest) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
-  }
-
-  const token = authHeader.substring(7).trim();
-  const tokenHash = hashSessionToken(token);
-  const session = await prisma.userSession.findFirst({
-    where: { tokenHash, expiresAt: { gt: new Date() } },
-    include: { user: true }
-  });
-
-  if (!session || !session.user) {
-    throw new UnauthorizedError('Session expired or invalid token');
-  }
-
-  return session.user;
-}
+import { getAuthUser } from '../../middleware/customer-auth.js';
 
 export async function preferenceRoutes(app: FastifyInstance): Promise<void> {
 
