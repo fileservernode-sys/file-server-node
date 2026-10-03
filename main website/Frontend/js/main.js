@@ -47,9 +47,9 @@ function initAppRedirectNotice() {
   const header = document.querySelector('.site-header') || document.body.firstChild;
   if (!header) return;
 
-  const authToken = localStorage.getItem('rn_auth_token');
-  const targetUrl = authToken ? 'pages/dashboard.html' : 'pages/login.html';
-  const buttonLabel = authToken ? 'Go to Dashboard' : 'Sign In to Access Dashboard';
+  const isAuth = typeof AuthService !== 'undefined' ? AuthService.isSessionValid() : Boolean(localStorage.getItem('rn_user_data'));
+  const targetUrl = isAuth ? 'pages/dashboard.html' : 'pages/login.html';
+  const buttonLabel = isAuth ? 'Go to Dashboard' : 'Sign In to Access Dashboard';
 
   const banner = document.createElement('div');
   banner.id = 'app-access-guidance-banner';
@@ -238,28 +238,17 @@ function initActiveNavigation() {
  * 4. Dynamic Authenticated Header State Sync (Strict 24-Hour Policy)
  */
 function initAuthHeaderState() {
-  const isAuth = typeof AuthService !== 'undefined' ? AuthService.isSessionValid() : Boolean(localStorage.getItem('rn_auth_token'));
-  const userDataRaw = localStorage.getItem('rn_user_data');
+  const isAuth = typeof AuthService !== 'undefined' ? AuthService.isSessionValid() : false;
+  const user = typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null;
 
   const headerActions = document.querySelector('.header-actions');
   const userEmailSpan = document.getElementById('user-email-header');
   const logoutBtn = document.getElementById('btn-logout');
 
-  // If token is expired or invalid, scrub stale state
-  if (!isAuth && localStorage.getItem('rn_auth_token')) {
-    if (typeof AuthService !== 'undefined') {
-      AuthService.clearSession();
-    } else {
-      localStorage.removeItem('rn_auth_token');
-      localStorage.removeItem('rn_user_data');
-    }
-  }
-
   // Populate user data if elements exist and session is valid
-  if (isAuth && userDataRaw && userEmailSpan) {
+  if (isAuth && user && userEmailSpan) {
     try {
-      const userData = JSON.parse(userDataRaw);
-      const email = userData.email || 'User';
+      const email = user.email || 'User';
       userEmailSpan.textContent = email;
 
       const avatarElem = document.getElementById('user-avatar-initial');
@@ -277,9 +266,6 @@ function initAuthHeaderState() {
       if (typeof AuthService !== 'undefined') {
         AuthService.logoutUser();
       } else {
-        localStorage.removeItem('rn_auth_token');
-        localStorage.removeItem('rn_user_data');
-        sessionStorage.clear();
         const isInnerPage = window.location.pathname.includes('/pages/');
         window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
       }
@@ -310,9 +296,6 @@ function initAuthHeaderState() {
         if (typeof AuthService !== 'undefined') {
           AuthService.logoutUser();
         } else {
-          localStorage.removeItem('rn_auth_token');
-          localStorage.removeItem('rn_user_data');
-          sessionStorage.clear();
           window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
         }
       });
@@ -327,14 +310,10 @@ function initSessionLifecycleMonitor() {
   if (typeof AuthService === 'undefined') return;
 
   const checkSession = () => {
-    const hasStoredToken = Boolean(localStorage.getItem('zdexcloud_token') || localStorage.getItem('rn_auth_token'));
-    if (!hasStoredToken) return;
-
     if (!AuthService.isSessionValid()) {
-      AuthService.handleSessionExpired('Your session has expired. Please sign in again.');
-    } else {
-      AuthService.checkSessionWarning();
+      return;
     }
+    AuthService.checkSessionWarning();
   };
 
   // Immediate check on page load

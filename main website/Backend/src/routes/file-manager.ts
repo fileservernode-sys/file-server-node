@@ -4,42 +4,11 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
-import { fileEventProducer } from '../notifications/producers/file_producer.js';
-import { hashSessionToken } from '../utils/crypto.js';
+import { getAuthUser } from '../middleware/customer-auth.js';
 
 const serverIdParamSchema = z.object({
   serverId: z.string().min(1)
 });
-
-// ---------------------------------------------------------------------------
-// Helper: Resolve authenticated ZdexCloud user from Bearer token
-// ---------------------------------------------------------------------------
-async function getAuthUser(request: FastifyRequest) {
-  let token: string | null = null;
-  const authHeader = request.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7).trim();
-  } else {
-    const query = request.query as Record<string, string> | undefined;
-    if (query?.token) {
-      token = query.token.trim();
-    }
-  }
-
-  if (!token) {
-    throw new UnauthorizedError('Missing or invalid Authorization Bearer header or token parameter');
-  }
-
-  const tokenHash = hashSessionToken(token);
-  const session = await prisma.userSession.findFirst({
-    where: { tokenHash, expiresAt: { gt: new Date() } },
-    include: { user: true }
-  });
-  if (!session || !session.user) {
-    throw new UnauthorizedError('Session expired or invalid token');
-  }
-  return session.user;
-}
 
 // ---------------------------------------------------------------------------
 // Helper: Resolve and authorise a server + active device connection
@@ -421,10 +390,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
         .header('Content-Type', mimeType)
         .header('Content-Disposition', `${dispositionType}; filename="${encodeURIComponent(filename)}"`)
         .header('X-Content-Type-Options', 'nosniff')
-        .header('Accept-Ranges', 'bytes')
-        .header('Access-Control-Allow-Origin', '*')
-        .header('Access-Control-Allow-Headers', 'Range, Authorization, Content-Type')
-        .header('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
+        .header('Accept-Ranges', 'bytes');
 
       const rangeHeader = request.headers.range;
       if (rangeHeader && rangeHeader.startsWith('bytes=')) {

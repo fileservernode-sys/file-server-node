@@ -218,6 +218,12 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
         'success': false,
         'error': {
           'code': 'NETWORK_ERROR',
+          'message': 'Failed to get billing state: ${e.toString()}',
+        },
+      };
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> issueDeviceCredential({
     required String deviceId,

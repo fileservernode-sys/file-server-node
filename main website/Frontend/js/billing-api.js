@@ -392,19 +392,11 @@
         };
       }
 
-      const token = (typeof window !== 'undefined' && window.AuthService && typeof window.AuthService.getAuthToken === 'function')
-        ? window.AuthService.getAuthToken()
-        : (typeof localStorage !== 'undefined' ? (localStorage.getItem('zdexcloud_token') || localStorage.getItem('rn_auth_token')) : null);
-
       const base = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '/api/v1';
       const url = base + '/billing/receipts/' + encodeURIComponent(receiptId) + '/html';
 
       try {
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = 'Bearer ' + token;
-        }
-        const res = await fetch(url, { method: 'GET', headers });
+        const res = await fetch(url, { method: 'GET', credentials: 'include' });
         if (!res.ok) {
           return { ok: false, status: res.status, error: { code: 'FETCH_ERROR', message: 'Failed to retrieve receipt HTML.' } };
         }
@@ -434,19 +426,11 @@
         };
       }
 
-      const token = (typeof window !== 'undefined' && window.AuthService && typeof window.AuthService.getAuthToken === 'function')
-        ? window.AuthService.getAuthToken()
-        : (typeof localStorage !== 'undefined' ? (localStorage.getItem('zdexcloud_token') || localStorage.getItem('rn_auth_token')) : null);
-
       const base = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '/api/v1';
       const url = base + '/billing/receipts/' + encodeURIComponent(receiptId) + '/download';
 
       try {
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = 'Bearer ' + token;
-        }
-        const res = await fetch(url, { method: 'GET', headers });
+        const res = await fetch(url, { method: 'GET', credentials: 'include' });
         if (!res.ok) {
           return { ok: false, status: res.status, error: { code: 'DOWNLOAD_FAILED', message: 'Failed to download receipt.' } };
         }

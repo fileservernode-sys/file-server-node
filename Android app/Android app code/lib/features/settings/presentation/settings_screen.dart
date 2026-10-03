@@ -345,8 +345,11 @@ class SettingsScreen extends ConsumerWidget {
                               'Are you sure you want to sign out of the control app?',
                           primaryActionLabel: 'Sign Out',
                           isDestructive: true,
-                          onPrimaryAction: () {
-                            Navigator.pushReplacementNamed(context, '/auth');
+                          onPrimaryAction: () async {
+                            await ref.read(authStateProvider.notifier).logout();
+                            if (context.mounted) {
+                              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                            }
                           },
                           secondaryActionLabel: 'Cancel',
                         );

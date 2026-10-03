@@ -1,12 +1,20 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../config/database.js';
+import { config } from '../config/env.js';
 import { hashPassword, verifyPassword, generateSessionToken, hashSessionToken } from '../utils/crypto.js';
 import { issueEmailOtp, verifyEmailOtp } from '../utils/otp.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../errors/app-error.js';
 import { accountEventProducer } from '../notifications/producers/account_producer.js';
 import { resolveClientIp } from '../utils/ip.js';
+import {
+  CUSTOMER_SESSION_COOKIE_NAME,
+  getCustomerSessionCookieOptions,
+  getCustomerSessionCookieClearOptions
+} from '../config/cookie.js';
+import { extractCustomerToken, resolveCustomerSession } from '../middleware/customer-auth.js';
+import { generateCsrfToken } from '../utils/csrf.js';
 
 // Input Validation Schemas
 const registerSchema = z.object({
@@ -169,12 +177,17 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const tokenHash = hashSessionToken(token);
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-    await prisma.userSession.create({
+    const userSession = await prisma.userSession.create({
       data: {
         userId: updatedUser.id,
         tokenHash,
         expiresAt
       }
+    });
+
+    const csrfToken = generateCsrfToken({
+      id: userSession.id,
+      tokenHash: userSession.tokenHash
     });
 
     await prisma.auditEvent.create({
@@ -196,6 +209,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       updatedUser.fullName || undefined
     ).catch(() => {});
 
+    // Attach HttpOnly, Secure, SameSite=Lax __Host-zdex_session cookie for browser clients
+    reply.setCookie(
+      CUSTOMER_SESSION_COOKIE_NAME,
+      token,
+      getCustomerSessionCookieOptions(config.NODE_ENV === 'production')
+    );
+
     return reply.status(200).send(createSuccessResponse({
       user: {
         id: updatedUser.id,
@@ -210,7 +230,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
         refreshToken: token,
         expiresAt: expiresAt.toISOString()
       },
-      token
+      token,
+      csrfToken
     }));
   };
 
@@ -456,6 +477,12 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       });
     });
 
+    // Clear any active browser session cookie upon password reset
+    reply.clearCookie(
+      CUSTOMER_SESSION_COOKIE_NAME,
+      getCustomerSessionCookieClearOptions(config.NODE_ENV === 'production')
+    );
+
     return reply.status(200).send(createSuccessResponse({
       message: 'Password has been reset successfully. You can now log in with your new password.'
     }));
@@ -463,39 +490,44 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/v1/auth/me & POST /api/v1/auth/session/verify
-   * Resolves currently authenticated user from Bearer Token
+   * Resolves currently authenticated user from Dual-Mode Credential (Bearer Token or HttpOnly Cookie)
    */
   const handleVerifySession = async (request: FastifyRequest) => {
-    const authHeader = request.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
+    const { token, source } = extractCustomerToken(request);
+    if (!token) {
+      throw new UnauthorizedError('Missing or invalid authentication credential');
     }
 
-    const token = authHeader.substring(7).trim();
-    const tokenHash = hashSessionToken(token);
-    const session = await prisma.userSession.findFirst({
-      where: {
-        tokenHash,
-        expiresAt: { gt: new Date() }
-      },
-      include: {
-        user: true
-      }
-    });
-
-    if (!session || !session.user) {
+    const resolved = await resolveCustomerSession(token);
+    if (!resolved) {
       throw new UnauthorizedError('Session expired or invalid');
     }
 
+    request.customerAuthSource = source || undefined;
+    request.customerSession = resolved.session;
+
+    const csrfToken = generateCsrfToken({
+      id: resolved.session.id,
+      tokenHash: resolved.session.tokenHash
+    });
+
     return createSuccessResponse({
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        fullName: session.user.fullName,
-        status: session.user.status,
-        emailVerified: session.user.emailVerified,
-        createdAt: session.user.createdAt.toISOString()
-      }
+        id: resolved.user.id,
+        email: resolved.user.email,
+        fullName: resolved.user.fullName,
+        status: resolved.user.status,
+        emailVerified: resolved.user.emailVerified,
+        createdAt: resolved.user.createdAt.toISOString()
+      },
+      session: {
+        accessToken: token,
+        refreshToken: token,
+        expiresAt: resolved.session.expiresAt.toISOString(),
+        issuedAt: resolved.session.createdAt?.toISOString() || resolved.session.expiresAt.toISOString()
+      },
+      token,
+      csrfToken
     });
   };
 
@@ -504,15 +536,20 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * POST /api/v1/auth/logout
-   * Invalidates active session token
+   * Invalidates active session token in database and clears browser session cookie
    */
   app.post('/auth/logout', async (request: FastifyRequest, reply: FastifyReply) => {
-    const authHeader = request.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7).trim();
+    const { token } = extractCustomerToken(request);
+    if (token) {
       const tokenHash = hashSessionToken(token);
       await prisma.userSession.deleteMany({ where: { tokenHash } });
     }
+
+    // Always clear the customer browser session cookie upon logout
+    reply.clearCookie(
+      CUSTOMER_SESSION_COOKIE_NAME,
+      getCustomerSessionCookieClearOptions(config.NODE_ENV === 'production')
+    );
 
     return reply.status(200).send(createSuccessResponse({ message: 'Logged out successfully' }));
   });

@@ -1,10 +1,12 @@
 /**
  * Frontend Authentication State & API Client — ZdexCloud Control Plane
- * STRICT 24-HOUR AUTHENTICATED SESSION POLICY (PHASE ZD-GROWTH-1.1)
+ * COOKIE-AUTHENTICATED BROWSER SESSION ARCHITECTURE (PHASE 14.14)
  *
  * POLICY INVARIANTS:
- * - Authenticated session maximum age = exactly 24 hours (86,400,000 ms).
- * - No sliding expiration: active navigation does not extend session lifespan.
+ * - Browser authentication exclusively uses HttpOnly __Host-zdex_session cookie.
+ * - Zero session tokens stored in localStorage, sessionStorage, or Web Storage.
+ * - In-memory CSRF token management (x-zdex-csrf-token) for state-changing operations.
+ * - Automatic credentials: 'include' across all API requests.
  * - Server authority preserved: backend 401 triggers instant local invalidation.
  * - Absolute Epoch timestamps (UTC) used for timezone independence.
  */
@@ -29,125 +31,192 @@ if (typeof window !== 'undefined') {
   window.API_BASE_URL = API_BASE_URL;
 }
 
-// Storage Keys
-const AUTH_STORAGE_KEY = 'rn_auth_token';
-const TOKEN_PRIMARY_KEY = 'zdexcloud_token';
+// Storage Keys (Only safe, non-sensitive UI cache)
 const USER_STORAGE_KEY = 'rn_user_data';
-const SESSION_ISSUED_KEY = 'zdexcloud_session_issued_at';
-const SESSION_EXPIRES_KEY = 'zdexcloud_session_expires_at';
-const SESSION_LEGACY_EXPIRES_KEY = 'rn_session_expires_at';
+
+// Legacy keys to purge for migration security
+const LEGACY_STORAGE_KEYS = [
+  'zdexcloud_token',
+  'rn_auth_token',
+  'token',
+  'accessToken',
+  'sessionToken',
+  'zdexcloud_session_issued_at',
+  'zdexcloud_session_expires_at',
+  'rn_session_expires_at'
+];
 
 // Strict Session Timing Constants
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 Hours
 const SESSION_WARNING_THRESHOLD_MS = 15 * 60 * 1000; // 15 Minutes before expiry
 
-// Helper: Check if Current Session is Valid under Strict 24h Policy
+// -----------------------------------------------------------------------------
+// IN-MEMORY AUTHENTICATION STATE (Zero credentials in Web Storage)
+// -----------------------------------------------------------------------------
+let _inMemoryCsrfToken = null;
+let _currentUser = null;
+let _sessionExpiresAt = null;
+let _sessionIssuedAt = null;
+let _isAuthenticated = false;
+let _initSessionPromise = null;
+let _authBroadcastChannel = null;
+
+// Clean up legacy credential keys immediately on script evaluation
+function cleanupLegacyStorage() {
+  if (typeof localStorage !== 'undefined') {
+    for (const key of LEGACY_STORAGE_KEYS) {
+      try {
+        localStorage.removeItem(key);
+      } catch (_) {}
+    }
+  }
+  if (typeof sessionStorage !== 'undefined') {
+    for (const key of LEGACY_STORAGE_KEYS) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch (_) {}
+    }
+  }
+}
+cleanupLegacyStorage();
+
+// Multi-Tab Session Synchronization via BroadcastChannel
+if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+  try {
+    _authBroadcastChannel = new BroadcastChannel('zdexcloud_auth_channel');
+    _authBroadcastChannel.onmessage = (event) => {
+      if (event.data?.type === 'CUSTOMER_LOGGED_OUT') {
+        _currentUser = null;
+        _isAuthenticated = false;
+        _inMemoryCsrfToken = null;
+        _sessionExpiresAt = null;
+        _sessionIssuedAt = null;
+        cleanupLegacyStorage();
+        try { localStorage.removeItem(USER_STORAGE_KEY); } catch (_) {}
+        const currentPath = window.location.pathname;
+        const isProtectedPage = currentPath.includes('dashboard') ||
+                                currentPath.includes('server-access') ||
+                                currentPath.includes('notifications') ||
+                                currentPath.includes('file-manager');
+        if (isProtectedPage) {
+          const isPagesDir = currentPath.includes('/pages/');
+          window.location.href = isPagesDir ? 'login.html?logout=true' : 'pages/login.html?logout=true';
+        }
+      } else if (event.data?.type === 'CUSTOMER_LOGGED_IN') {
+        initSession(true);
+      }
+    };
+  } catch (_) {}
+}
+
+function broadcastAuthEvent(type) {
+  if (_authBroadcastChannel) {
+    try {
+      _authBroadcastChannel.postMessage({ type, timestamp: Date.now() });
+    } catch (_) {}
+  }
+}
+
+// -----------------------------------------------------------------------------
+// SESSION STATE HELPERS
+// -----------------------------------------------------------------------------
+
+// Helper: Check if Current In-Memory Session is Valid
 function isSessionValid() {
-  const token = localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!token) return false;
-
-  let issuedAtRaw = localStorage.getItem(SESSION_ISSUED_KEY);
-  let expiresAtRaw = localStorage.getItem(SESSION_EXPIRES_KEY) || localStorage.getItem(SESSION_LEGACY_EXPIRES_KEY);
-
-  // If token exists without timestamps, safely initialize strict 24h boundary once from now
-  if (!issuedAtRaw || !expiresAtRaw) {
-    const now = Date.now();
-    issuedAtRaw = now.toString();
-    expiresAtRaw = (now + SESSION_MAX_AGE_MS).toString();
-    localStorage.setItem(SESSION_ISSUED_KEY, issuedAtRaw);
-    localStorage.setItem(SESSION_EXPIRES_KEY, expiresAtRaw);
-    localStorage.setItem(SESSION_LEGACY_EXPIRES_KEY, expiresAtRaw);
-    return true;
+  if (!_isAuthenticated || !_currentUser) {
+    return false;
   }
 
-  const issuedAt = parseInt(issuedAtRaw, 10);
-  const expiresAt = parseInt(expiresAtRaw, 10);
   const now = Date.now();
-
-  if (isNaN(issuedAt) || isNaN(expiresAt)) return false;
-
-  // Strict check: current time must be before expiresAt AND within 24h of issuance
-  if (now >= expiresAt) return false;
-  if (now - issuedAt >= SESSION_MAX_AGE_MS) return false;
+  if (_sessionExpiresAt && now >= _sessionExpiresAt) {
+    return false;
+  }
+  if (_sessionIssuedAt && (now - _sessionIssuedAt >= SESSION_MAX_AGE_MS)) {
+    return false;
+  }
 
   return true;
 }
 
 // Helper: Get Milliseconds Remaining in Session
 function getSessionTimeRemaining() {
-  const expiresAtRaw = localStorage.getItem(SESSION_EXPIRES_KEY) || localStorage.getItem(SESSION_LEGACY_EXPIRES_KEY);
-  if (!expiresAtRaw) return 0;
-  const expiresAt = parseInt(expiresAtRaw, 10);
-  if (isNaN(expiresAt)) return 0;
-  const remaining = expiresAt - Date.now();
+  if (!_sessionExpiresAt) return 0;
+  const remaining = _sessionExpiresAt - Date.now();
   return remaining > 0 ? remaining : 0;
 }
 
-// Helper: Get Saved Auth Token (Enforces Strict 24h Expiry)
+// Helper: Get Saved Auth Token (In Phase 14.14, browser relies on HttpOnly cookie; returns null)
 function getAuthToken() {
-  const token = localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!token) return null;
-
-  if (!isSessionValid()) {
-    handleSessionExpired('Your session has expired. Please sign in again.');
-    return null;
-  }
-
-  return token;
+  return null;
 }
 
-// Helper: Get Saved User Object
+// Helper: Get In-Memory CSRF Token
+function getCsrfToken() {
+  return _inMemoryCsrfToken;
+}
+
+// Helper: Set In-Memory CSRF Token
+function setCsrfToken(token) {
+  _inMemoryCsrfToken = token || null;
+}
+
+// Helper: Get Saved User Object (In-memory or safe cached profile)
 function getSavedUser() {
-  if (!isSessionValid()) return null;
-  const data = localStorage.getItem(USER_STORAGE_KEY);
-  try {
-    return data ? JSON.parse(data) : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-// Helper: Save Session (Records Absolute 24h Issued & Expiry Epoch Timestamps; No Sliding Expiration)
-function saveSession(token, user, expiresAtIso = null) {
-  const existingToken = localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
-  const existingIssuedAt = localStorage.getItem(SESSION_ISSUED_KEY);
-  const existingExpiresAt = localStorage.getItem(SESSION_EXPIRES_KEY);
-  const isSameSession = existingToken === token && existingIssuedAt && existingExpiresAt;
-
-  localStorage.setItem(TOKEN_PRIMARY_KEY, token);
-  localStorage.setItem(AUTH_STORAGE_KEY, token);
-
-  // Only establish new timestamps on fresh login/token or when explicit server expiresAt is supplied
-  if (!isSameSession || expiresAtIso) {
-    const now = Date.now();
-    const issuedAt = isSameSession ? parseInt(existingIssuedAt, 10) : now;
-    localStorage.setItem(SESSION_ISSUED_KEY, issuedAt.toString());
-
-    let calculatedExpiresAt = issuedAt + SESSION_MAX_AGE_MS;
-    if (expiresAtIso) {
-      const serverExp = new Date(expiresAtIso).getTime();
-      if (!isNaN(serverExp) && serverExp > now) {
-        calculatedExpiresAt = Math.min(serverExp, issuedAt + SESSION_MAX_AGE_MS);
-      }
+  if (_currentUser) return _currentUser;
+  if (typeof localStorage !== 'undefined') {
+    const data = localStorage.getItem(USER_STORAGE_KEY);
+    try {
+      return data ? JSON.parse(data) : null;
+    } catch (_) {
+      return null;
     }
+  }
+  return null;
+}
 
-    localStorage.setItem(SESSION_EXPIRES_KEY, calculatedExpiresAt.toString());
-    localStorage.setItem(SESSION_LEGACY_EXPIRES_KEY, calculatedExpiresAt.toString());
+// Helper: Save Session In Memory (No Token Stored in Web Storage)
+function saveSession(token, user, expiresAtIso = null) {
+  if (user) {
+    _currentUser = user;
+    _isAuthenticated = true;
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        plan: user.plan
+      }));
+    } catch (_) {}
   }
 
-  if (user) {
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+  const now = Date.now();
+  if (!_sessionIssuedAt) {
+    _sessionIssuedAt = now;
+  }
+
+  if (expiresAtIso) {
+    const serverExp = new Date(expiresAtIso).getTime();
+    if (!isNaN(serverExp) && serverExp > now) {
+      _sessionExpiresAt = Math.min(serverExp, _sessionIssuedAt + SESSION_MAX_AGE_MS);
+    } else {
+      _sessionExpiresAt = _sessionIssuedAt + SESSION_MAX_AGE_MS;
+    }
+  } else if (!_sessionExpiresAt) {
+    _sessionExpiresAt = _sessionIssuedAt + SESSION_MAX_AGE_MS;
   }
 }
 
-// Helper: Clear Session Storage
+// Helper: Clear In-Memory and Storage Session
 function clearSession() {
-  localStorage.removeItem(TOKEN_PRIMARY_KEY);
-  localStorage.removeItem(AUTH_STORAGE_KEY);
-  localStorage.removeItem(USER_STORAGE_KEY);
-  localStorage.removeItem(SESSION_ISSUED_KEY);
-  localStorage.removeItem(SESSION_EXPIRES_KEY);
-  localStorage.removeItem(SESSION_LEGACY_EXPIRES_KEY);
+  _currentUser = null;
+  _isAuthenticated = false;
+  _inMemoryCsrfToken = null;
+  _sessionExpiresAt = null;
+  _sessionIssuedAt = null;
+  cleanupLegacyStorage();
+  try {
+    localStorage.removeItem(USER_STORAGE_KEY);
+  } catch (_) {}
   if (typeof sessionStorage !== 'undefined') {
     sessionStorage.clear();
   }
@@ -160,6 +229,7 @@ function handleSessionExpired(reason = 'Your session has expired. Please sign in
   window._isHandlingSessionExpired = true;
 
   clearSession();
+  broadcastAuthEvent('CUSTOMER_LOGGED_OUT');
 
   const currentPath = window.location.pathname;
   const isProtectedPage = currentPath.includes('dashboard') ||
@@ -223,30 +293,90 @@ function checkSessionWarning() {
   }
 }
 
-// API Call Wrapper with Automatic Multi-Base Fallback & 401 Interception
-async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
-  const headers = { 'Content-Type': 'application/json' };
-  const rawToken = token || localStorage.getItem(TOKEN_PRIMARY_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
-  
-  if (rawToken) {
-    // If token exists but has expired by client clock, intercept immediately
-    if (!isSessionValid()) {
-      handleSessionExpired('Your session has expired. Please sign in again.');
-      return {
-        ok: false,
-        status: 401,
-        data: {
-          success: false,
-          error: { code: 'SESSION_EXPIRED', message: 'Your session has expired. Please sign in again.' }
-        }
-      };
-    }
-    headers['Authorization'] = `Bearer ${rawToken}`;
+// -----------------------------------------------------------------------------
+// SESSION INITIALIZATION & RESTORATION (GET /auth/me via HttpOnly Cookie)
+// -----------------------------------------------------------------------------
+async function initSession(forceRefresh = false) {
+  if (_initSessionPromise && !forceRefresh) {
+    return _initSessionPromise;
   }
 
-  const options = { method, headers };
+  _initSessionPromise = (async () => {
+    try {
+      const res = await apiRequestInternal('/auth/me', 'GET');
+      if (res.ok && res.data && res.data.success && res.data.data?.user) {
+        _currentUser = res.data.data.user;
+        _isAuthenticated = true;
+        if (res.data.data.csrfToken) {
+          _inMemoryCsrfToken = res.data.data.csrfToken;
+        }
+        if (res.data.data.session?.expiresAt) {
+          _sessionExpiresAt = new Date(res.data.data.session.expiresAt).getTime();
+        } else {
+          _sessionExpiresAt = Date.now() + SESSION_MAX_AGE_MS;
+        }
+        if (res.data.data.session?.issuedAt) {
+          _sessionIssuedAt = new Date(res.data.data.session.issuedAt).getTime();
+        } else {
+          _sessionIssuedAt = Date.now();
+        }
+
+        try {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify({
+            id: _currentUser.id,
+            email: _currentUser.email,
+            fullName: _currentUser.fullName,
+            plan: _currentUser.plan
+          }));
+        } catch (_) {}
+
+        return { authenticated: true, user: _currentUser, csrfToken: _inMemoryCsrfToken };
+      } else {
+        _currentUser = null;
+        _isAuthenticated = false;
+        _inMemoryCsrfToken = null;
+        _sessionExpiresAt = null;
+        _sessionIssuedAt = null;
+        try { localStorage.removeItem(USER_STORAGE_KEY); } catch (_) {}
+        return { authenticated: false, user: null };
+      }
+    } catch (err) {
+      _currentUser = null;
+      _isAuthenticated = false;
+      _inMemoryCsrfToken = null;
+      _sessionExpiresAt = null;
+      _sessionIssuedAt = null;
+      return { authenticated: false, user: null };
+    } finally {
+      _initSessionPromise = null;
+    }
+  })();
+
+  return _initSessionPromise;
+}
+
+// -----------------------------------------------------------------------------
+// CENTRAL API CLIENT WRAPPER (HttpOnly Cookies + CSRF Header + 401 Interception)
+// -----------------------------------------------------------------------------
+
+async function apiRequestInternal(endpoint, method = 'GET', body = null, isRetry = false) {
+  const headers = { 'Content-Type': 'application/json' };
+  const upperMethod = method.toUpperCase();
+  const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(upperMethod);
+
+  // Attach CSRF synchronizer token for cookie-authenticated mutations
+  if (isStateChanging && _inMemoryCsrfToken) {
+    headers['x-zdex-csrf-token'] = _inMemoryCsrfToken;
+  }
+
+  const options = {
+    method: upperMethod,
+    headers,
+    credentials: 'include' // Transmits HttpOnly __Host-zdex_session cookie
+  };
+
   if (body) {
-    options.body = JSON.stringify(body);
+    options.body = typeof body === 'string' ? body : JSON.stringify(body);
   }
 
   const candidates = [
@@ -257,8 +387,6 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
     'http://localhost:4000/api/v1'
   ].filter((url, index, self) => url && self.indexOf(url) === index);
 
-  let lastError = null;
-
   for (let i = 0; i < candidates.length; i++) {
     const base = candidates[i];
     try {
@@ -267,20 +395,38 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
         continue;
       }
 
-      // Authoritative 401 Interception: If server declares session invalid/expired, purge client
-      if (res.status === 401 && rawToken && endpoint !== '/auth/login' && endpoint !== '/auth/register') {
-        handleSessionExpired('Your session has expired or is invalid. Please sign in again.');
-      }
-
       let json = {};
       try {
         json = await res.json();
       } catch {
         json = { success: res.ok };
       }
+
+      // Capture fresh CSRF token if returned by server
+      if (json?.data?.csrfToken) {
+        _inMemoryCsrfToken = json.data.csrfToken;
+      } else if (json?.csrfToken) {
+        _inMemoryCsrfToken = json.csrfToken;
+      }
+
+      // CSRF Failure Recovery: Retry once after refreshing CSRF token via /auth/me
+      if (res.status === 403 && isStateChanging && !isRetry && endpoint !== '/auth/login' && endpoint !== '/auth/register') {
+        const errCode = json?.error?.code;
+        if (errCode === 'FORBIDDEN' || errCode === 'CSRF_TOKEN_MISSING' || errCode === 'CSRF_TOKEN_INVALID') {
+          const authCheck = await initSession(true);
+          if (authCheck.authenticated && _inMemoryCsrfToken) {
+            return apiRequestInternal(endpoint, method, body, true);
+          }
+        }
+      }
+
+      // Authoritative 401 Interception: If server declares session invalid/expired, purge client
+      if (res.status === 401 && _isAuthenticated && endpoint !== '/auth/login' && endpoint !== '/auth/register' && endpoint !== '/auth/verify-otp') {
+        handleSessionExpired('Your session has expired or is invalid. Please sign in again.');
+      }
+
       return { ok: res.ok, status: res.status, data: json };
     } catch (err) {
-      lastError = err;
       if (i < candidates.length - 1) {
         continue;
       }
@@ -298,6 +444,15 @@ async function apiRequest(endpoint, method = 'GET', body = null, token = null) {
       } 
     } 
   };
+}
+
+// Public API Request Wrapper
+async function apiRequest(endpoint, method = 'GET', body = null) {
+  return apiRequestInternal(endpoint, method, body, false);
+}
+
+if (typeof window !== 'undefined') {
+  window.apiRequest = apiRequest;
 }
 
 // -----------------------------------------------------------------------------
@@ -336,16 +491,21 @@ async function loginUser(email, password) {
   return { success: false, error: result.data?.error?.message || 'Invalid email or password' };
 }
 
-// 3. Verify 6-Digit Email OTP (Registration / Login) -> Establishes Strict 24h Session
+// 3. Verify 6-Digit Email OTP (Registration / Login) -> Establishes Strict 24h Session Cookie
 async function verifyOtp(email, code) {
   const result = await apiRequest('/auth/verify-otp', 'POST', { email, otp: code, code });
   if (result.ok && result.data && result.data.success) {
-    const token = result.data.data?.token || result.data.data?.session?.accessToken;
     const user = result.data.data?.user;
     const expiresAt = result.data.data?.session?.expiresAt;
-    if (token) {
-      saveSession(token, user, expiresAt);
+    const csrfToken = result.data.data?.csrfToken;
+
+    if (csrfToken) {
+      _inMemoryCsrfToken = csrfToken;
     }
+
+    // Save session in memory (No token stored in Web Storage)
+    saveSession(null, user, expiresAt);
+    broadcastAuthEvent('CUSTOMER_LOGGED_IN');
 
     // Return to redirect target or plan if present
     const urlParams = new URLSearchParams(window.location.search);
@@ -399,23 +559,27 @@ async function resendOtp(email) {
   return { success: false, error: result.data?.error?.message || 'Failed to resend verification code' };
 }
 
-// 8. Sign Out
+// 8. Sign Out (Clears Backend Cookie & In-Memory State)
 async function logoutUser() {
   try {
     await apiRequest('/auth/logout', 'POST');
   } catch (_) {}
   clearSession();
+  broadcastAuthEvent('CUSTOMER_LOGGED_OUT');
   const isInnerPage = window.location.pathname.includes('/pages/');
-  window.location.href = isInnerPage ? 'login.html' : 'pages/login.html';
+  window.location.href = isInnerPage ? 'login.html?logout=true' : 'pages/login.html?logout=true';
 }
 
 // Expose globally
 window.AuthService = {
   getAuthToken,
+  getCsrfToken,
+  setCsrfToken,
   getSavedUser,
   saveSession,
   clearSession,
   isSessionValid,
+  initSession,
   getSessionTimeRemaining,
   handleSessionExpired,
   checkSessionWarning,

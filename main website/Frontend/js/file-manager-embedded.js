@@ -44,26 +44,15 @@ const EmbeddedFileManager = {
     // Read serverId from URL (support ?server=, ?id=, ?serverId=)
     const params = new URLSearchParams(window.location.search);
     this.serverId = params.get('server') || params.get('id') || params.get('serverId');
-
-    // Read ZdexCloud auth token from localStorage / AuthService
-    this.zdexCloudToken = localStorage.getItem('zdexcloud_token') || 
-                          localStorage.getItem('rn_auth_token') || 
-                          (typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null) || 
-                          localStorage.getItem('token');
-
-    return !!this.serverId && !!this.zdexCloudToken;
+    return !!this.serverId;
   },
 
-  // Build request headers with ZdexCloud Bearer token
+  // Build request headers with in-memory CSRF token
   getHeaders(extra = {}) {
     const headers = { 'Content-Type': 'application/json', ...extra };
-    const token = this.zdexCloudToken || 
-                  (typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null) || 
-                  localStorage.getItem('zdexcloud_token') || 
-                  localStorage.getItem('rn_auth_token') || 
-                  localStorage.getItem('token');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    const csrfToken = typeof AuthService !== 'undefined' ? AuthService.getCsrfToken() : null;
+    if (csrfToken) {
+      headers['x-zdex-csrf-token'] = csrfToken;
     }
     return headers;
   },
@@ -91,7 +80,8 @@ const ApiService = {
   async checkHealth() {
     try {
       const res = await fetch(EmbeddedFileManager.url('access'), {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       const data = await res.json();
       return { status: data?.data?.online ? 'ok' : 'offline', ...data };
@@ -103,7 +93,8 @@ const ApiService = {
   async getStorageStats() {
     try {
       const res = await fetch(EmbeddedFileManager.url('storage'), {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       return await res.json();
     } catch (e) {
@@ -114,7 +105,8 @@ const ApiService = {
   async getRecentFiles() {
     try {
       const res = await fetch(EmbeddedFileManager.url('files/recent'), {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       return await res.json();
     } catch (e) {
@@ -125,7 +117,8 @@ const ApiService = {
   async getPhotos() {
     try {
       const res = await fetch(`${EmbeddedFileManager.url('files')}?type=photos`, {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       return await res.json();
     } catch (e) {
@@ -136,7 +129,8 @@ const ApiService = {
   async getVideos() {
     try {
       const res = await fetch(`${EmbeddedFileManager.url('files')}?type=videos`, {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       return await res.json();
     } catch (e) {
@@ -151,7 +145,8 @@ const ApiService = {
         ? `path=${encodedPath}&type=${encodeURIComponent(typeFilter)}`
         : `path=${encodedPath}`;
       const res = await fetch(`${EmbeddedFileManager.url('files')}?${query}`, {
-        headers: EmbeddedFileManager.getHeaders()
+        headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include'
       });
       return await res.json();
     } catch (e) {
@@ -164,6 +159,7 @@ const ApiService = {
       const res = await fetch(EmbeddedFileManager.url('folders'), {
         method: 'POST',
         headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ path: parentPath || '/', name: folderName })
       });
       const data = await res.json();
@@ -181,6 +177,7 @@ const ApiService = {
       const res = await fetch(EmbeddedFileManager.url('rename'), {
         method: 'POST',
         headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ oldPath, newName })
       });
       return await res.json();
@@ -194,6 +191,7 @@ const ApiService = {
       const res = await fetch(EmbeddedFileManager.url('files'), {
         method: 'DELETE',
         headers: EmbeddedFileManager.getHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ path: itemPath })
       });
       return await res.json();
@@ -293,10 +291,9 @@ const ApiService = {
 
   getDownloadUrl(filePath) {
     // Build the authenticated download URL via the ZdexCloud backend proxy
-    const token = EmbeddedFileManager.zdexCloudToken || '';
     const base = EmbeddedFileManager.getApiBase();
     const sid = EmbeddedFileManager.serverId;
-    return `${base}/file-manager/${sid}/download?path=${encodeURIComponent(filePath)}&token=${encodeURIComponent(token)}`;
+    return `${base}/file-manager/${sid}/download?path=${encodeURIComponent(filePath)}`;
   }
 };
 
@@ -306,29 +303,24 @@ const ApiService = {
 // No secondary username/password prompt is presented to the user.
 // ---------------------------------------------------------------------------
 const FileServerAuth = {
-  TOKEN_KEY: 'rn_auth_token',
-
   getToken() {
-    return localStorage.getItem(this.TOKEN_KEY) || EmbeddedFileManager.zdexCloudToken;
+    return null;
   },
 
   setToken(token) {
-    // Session managed via ZdexCloud auth
+    // Session managed via ZdexCloud HttpOnly cookie auth
   },
 
   logout() {
     if (window.AuthService && window.AuthService.logoutUser) {
       window.AuthService.logoutUser();
     } else {
-      localStorage.removeItem('rn_auth_token');
-      localStorage.removeItem('rn_user_data');
       window.location.href = 'login.html';
     }
   },
 
   isAuthenticated() {
-    const token = this.getToken();
-    return !!token && token.length > 5;
+    return typeof AuthService !== 'undefined' ? AuthService.isSessionValid() : true;
   },
 
   async login(username, password) {

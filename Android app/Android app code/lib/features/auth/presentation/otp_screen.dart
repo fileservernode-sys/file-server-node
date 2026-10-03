@@ -72,7 +72,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         } catch (_) {}
 
         if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       }
     }

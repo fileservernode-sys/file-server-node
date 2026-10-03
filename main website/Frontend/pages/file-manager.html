@@ -857,18 +857,20 @@
       const offlineState = document.getElementById('vd-offline-state');
       const wrapper = document.getElementById('file-manager-wrapper');
       const serverBreadcrumb = document.getElementById('vd-server-name-breadcrumb');
-      const userBadge = document.getElementById('vd-user-email');
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
 
-      const token = typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : localStorage.getItem('rn_auth_token');
-      const user = typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null;
+      if (!authResult.authenticated) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
 
       if (user && user.email && userBadge) {
         userBadge.textContent = user.email;
-      }
-
-      if (!token) {
-        window.location.href = 'login.html';
-        return;
       }
 
       if (typeof EmbeddedFileManager !== 'undefined') {
@@ -881,7 +883,7 @@
         try {
           const apiBase = EmbeddedFileManager.getApiBase();
           const res = await fetch(`${apiBase}/file-manager/${EmbeddedFileManager.serverId}/access`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            credentials: 'include'
           });
           const data = await res.json();
 

@@ -21,9 +21,9 @@ class AuthSession {
       issuedAt ?? expiresAt.subtract(maxSessionDuration);
 
   bool get isExpired {
-    final now = DateTime.now();
-    return now.isAfter(expiresAt) ||
-        now.difference(effectiveIssuedAt) >= maxSessionDuration;
+    final nowUtc = DateTime.now().toUtc();
+    final expUtc = expiresAt.toUtc();
+    return nowUtc.isAfter(expUtc);
   }
 
   Map<String, dynamic> toJson() {

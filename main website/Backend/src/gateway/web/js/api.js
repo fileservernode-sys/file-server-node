@@ -139,9 +139,7 @@ const LocalApiAdapter = {
   },
 
   getDownloadUrl(filePath) {
-    const token = typeof FileServerAuth !== 'undefined' ? FileServerAuth.getToken() : '';
-    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
-    return `${this.baseUrl}/download?path=${encodeURIComponent(filePath)}${tokenParam}`;
+    return `${this.baseUrl}/download?path=${encodeURIComponent(filePath)}`;
   }
 };
 

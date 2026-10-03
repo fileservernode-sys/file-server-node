@@ -943,6 +943,9 @@
       let lastFocusedElement = null;
 
       document.addEventListener('DOMContentLoaded', async () => {
+        if (typeof AuthService !== 'undefined') {
+          await AuthService.initSession();
+        }
         isAuthenticated = typeof AuthService !== 'undefined' && AuthService.isSessionValid();
         
         // Listen for reactive billing state changes

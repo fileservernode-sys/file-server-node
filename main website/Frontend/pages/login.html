@@ -426,12 +426,15 @@
       const isExplicitExpired = urlParams.get('expired') === 'true';
       const isExplicitLogout = urlParams.get('logout') === 'true';
 
-      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined' && AuthService.isSessionValid()) {
-        const redirectTarget = urlParams.get('redirect') || 'dashboard.html';
-        if (!redirectTarget.startsWith('http') && !redirectTarget.startsWith('//')) {
-          window.location.href = redirectTarget;
-          return;
-        }
+      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined') {
+        AuthService.initSession().then(authRes => {
+          if (authRes && authRes.authenticated) {
+            const redirectTarget = urlParams.get('redirect') || 'dashboard.html';
+            if (!redirectTarget.startsWith('http') && !redirectTarget.startsWith('//')) {
+              window.location.href = redirectTarget;
+            }
+          }
+        }).catch(() => {});
       }
 
       // Check for expired session notice in URL params

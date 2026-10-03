@@ -7,18 +7,15 @@
  * 1. Discover Real Registered Devices via Authenticated Backend API
  */
 async function findUserDevices() {
-  const token = typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null;
-
-  if (!token) {
-    return {
-      authenticated: false,
-      devices: []
-    };
-  }
-
   try {
     const res = await apiRequest('/devices', 'GET');
     if (!res.ok || !res.data || !res.data.success) {
+      if (res.status === 401) {
+        return {
+          authenticated: false,
+          devices: []
+        };
+      }
       throw new Error(res.data?.error?.message || 'Failed to query servers');
     }
 
@@ -138,13 +135,6 @@ function initServerDiscoveryUI() {
   // Form Submit Handler
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = typeof AuthService !== 'undefined' ? AuthService.getAuthToken() : null;
-
-    if (!token) {
-      // Must be authenticated to access server list
-      window.location.href = 'login.html';
-      return;
-    }
 
     showState(containerLoading);
 

@@ -890,9 +890,12 @@
       const isExplicitExpired = urlParams.get('expired') === 'true';
       const isExplicitLogout = urlParams.get('logout') === 'true';
 
-      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined' && AuthService.isSessionValid()) {
-        window.location.href = 'dashboard.html';
-        return;
+      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined') {
+        AuthService.initSession().then(authRes => {
+          if (authRes && authRes.authenticated) {
+            window.location.href = 'dashboard.html';
+          }
+        }).catch(() => {});
       }
 
       // Registration Submit -> Sends Email OTP

@@ -2,11 +2,15 @@ import { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 import { config } from '../config/env.js';
 import { isOriginAllowed } from '../utils/security.js';
 import { createErrorResponse } from '../schemas/response.js';
 
 export async function registerSecurityPlugins(app: FastifyInstance): Promise<void> {
+  // 0. Cookie Parser Foundation (HttpOnly Browser Sessions)
+  await app.register(cookie);
+
   // 1. Security Headers (HSTS, Content-Type-Options, Frameguard, etc.)
   await app.register(helmet, {
     contentSecurityPolicy: false, // Managed granularly per route context (e.g. /admin/* has dedicated strict CSP hook)
@@ -34,8 +38,8 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token', 'X-Request-Id', 'x-request-id'],
-    exposedHeaders: ['x-admin-session-token', 'content-disposition', 'x-request-id', 'X-Request-Id']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token', 'X-Request-Id', 'x-request-id', 'x-zdex-csrf-token', 'X-Zdex-Csrf-Token', 'Range', 'range'],
+    exposedHeaders: ['x-admin-session-token', 'content-disposition', 'x-request-id', 'X-Request-Id', 'x-zdex-csrf-token', 'Content-Range', 'Accept-Ranges', 'Content-Length']
   });
 
   // 3. Rate Limiting Foundation (Prevents abuse / DOS)

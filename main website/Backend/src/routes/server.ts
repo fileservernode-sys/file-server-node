@@ -4,32 +4,11 @@ import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
-import { hashSessionToken } from '../utils/crypto.js';
+import { getAuthUser } from '../middleware/customer-auth.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
 });
-
-// Helper: Extract authenticated user from Bearer token
-async function getAuthUser(request: FastifyRequest) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
-  }
-
-  const token = authHeader.substring(7).trim();
-  const tokenHash = hashSessionToken(token);
-  const session = await prisma.userSession.findFirst({
-    where: { tokenHash, expiresAt: { gt: new Date() } },
-    include: { user: true }
-  });
-
-  if (!session || !session.user) {
-    throw new UnauthorizedError('Session expired or invalid token');
-  }
-
-  return session.user;
-}
 
 export async function serverRoutes(app: FastifyInstance): Promise<void> {
 

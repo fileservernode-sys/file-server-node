@@ -578,7 +578,10 @@
       };
 
       // Initialization on DOMContentLoaded
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', async () => {
+        if (typeof AuthService !== 'undefined') {
+          await AuthService.initSession();
+        }
         const urlParams = new URLSearchParams(window.location.search);
         const planParam = urlParams.get('plan');
         if (planParam) {

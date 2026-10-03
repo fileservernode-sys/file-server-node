@@ -37,6 +37,14 @@ const SENSITIVE_KEYS = new Set([
   'otphash',
   'authorization',
   'cookie',
+  'set-cookie',
+  'setcookie',
+  '__host-zdex_session',
+  'zdex_session',
+  'x-zdex-csrf-token',
+  'csrftoken',
+  'csrf_token',
+  'csrf',
   'apikey',
   'secret',
   'privatekey',
@@ -62,6 +70,9 @@ export function sanitizeLogMetadata(obj: unknown, depth = 0): any {
     }
     return obj
       .replace(/Bearer\s+[A-Za-z0-9-_.]+/gi, 'Bearer [REDACTED_TOKEN]')
+      .replace(/__Host-zdex_session=[A-Za-z0-9-_.]+/gi, '__Host-zdex_session=[REDACTED_COOKIE]')
+      .replace(/x-zdex-csrf-token:\s*[^\r\n]+/gi, 'x-zdex-csrf-token: [REDACTED_CSRF]')
+      .replace(/([?&](?:token|accessToken|sessionToken|authToken|connectionToken)=)[^&\s]+/gi, '$1[REDACTED_URL_TOKEN]')
       .replace(/mysql:\/\/[^@\s]+@[^\s/]+/gi, 'mysql://[REDACTED_DB_CREDENTIALS]@***')
       .replace(/password=[^\s&]+/gi, 'password=[REDACTED]');
   }

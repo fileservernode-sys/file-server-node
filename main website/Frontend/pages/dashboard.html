@@ -1005,14 +1005,18 @@
     let isFetchingServers = false;
     let currentServerCount = 0;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const user = AuthService.getSavedUser();
-      const token = AuthService.getAuthToken();
+    document.addEventListener('DOMContentLoaded', async () => {
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
 
-      if (!token) {
+      if (!authResult.authenticated) {
         window.location.href = 'login.html';
         return;
       }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
 
       function updateUserUI(userData) {
         if (!userData) return;
@@ -1034,15 +1038,6 @@
       if (user) {
         updateUserUI(user);
       }
-
-      // Fetch fresh profile from /auth/me
-      apiRequest('/auth/me', 'GET').then(res => {
-        if (res.ok && res.data && res.data.success && res.data.data?.user) {
-          const freshUser = res.data.data.user;
-          AuthService.saveSession(token, freshUser);
-          updateUserUI(freshUser);
-        }
-      }).catch(() => {});
 
       document.getElementById('btn-logout')?.addEventListener('click', () => {
         AuthService.logoutUser();

@@ -16,9 +16,21 @@
     return '/api/v1';
   }
 
-  function getAuthHeader() {
-    const token = localStorage.getItem('rn_auth_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  function getAuthHeader(extra = {}) {
+    const headers = { 'Content-Type': 'application/json', ...extra };
+    const csrfToken = typeof AuthService !== 'undefined' ? AuthService.getCsrfToken() : null;
+    if (csrfToken) {
+      headers['x-zdex-csrf-token'] = csrfToken;
+    }
+    return headers;
+  }
+
+  async function notifFetch(url, options = {}) {
+    return fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: getAuthHeader(options.headers || {})
+    });
   }
 
   function formatTimeAgo(isoString) {
@@ -86,9 +98,11 @@
       this.currentPage = 1;
     }
 
-    init() {
-      const authToken = localStorage.getItem('rn_auth_token');
-      if (!authToken) return;
+    async init() {
+      if (typeof AuthService !== 'undefined') {
+        const auth = await AuthService.initSession();
+        if (!auth.authenticated) return;
+      }
 
       this.injectBellButton();
       this.fetchUnreadCount();
@@ -193,9 +207,7 @@
 
     async fetchUnreadCount() {
       try {
-        const res = await fetch(`${getApiBase()}/notifications/unread-count`, {
-          headers: getAuthHeader()
-        });
+        const res = await notifFetch(`${getApiBase()}/notifications/unread-count`);
         if (!res.ok) return;
         const json = await res.json();
         if (json.success && typeof json.data?.unreadCount === 'number') {
@@ -267,9 +279,7 @@
       `;
 
       try {
-        const res = await fetch(`${getApiBase()}/notifications?page=1&limit=5`, {
-          headers: getAuthHeader()
-        });
+        const res = await notifFetch(`${getApiBase()}/notifications?page=1&limit=5`);
 
         if (!res.ok) {
           body.innerHTML = `
@@ -373,9 +383,8 @@
 
     async markAsRead(notificationId) {
       try {
-        const res = await fetch(`${getApiBase()}/notifications/${notificationId}/read`, {
-          method: 'PATCH',
-          headers: getAuthHeader()
+        const res = await notifFetch(`${getApiBase()}/notifications/${notificationId}/read`, {
+          method: 'PATCH'
         });
         if (res.ok) {
           this.fetchUnreadCount();
@@ -385,9 +394,8 @@
 
     async markAllAsRead() {
       try {
-        const res = await fetch(`${getApiBase()}/notifications/read-all`, {
-          method: 'POST',
-          headers: getAuthHeader()
+        const res = await notifFetch(`${getApiBase()}/notifications/read-all`, {
+          method: 'POST'
         });
         if (res.ok) {
           this.updateBadge(0);
@@ -416,9 +424,8 @@
 
     async markAsArchived(notificationId) {
       try {
-        const res = await fetch(`${getApiBase()}/notifications/${notificationId}/archive`, {
-          method: 'PATCH',
-          headers: getAuthHeader()
+        const res = await notifFetch(`${getApiBase()}/notifications/${notificationId}/archive`, {
+          method: 'PATCH'
         });
         if (res.ok) {
           this.fetchUnreadCount();
@@ -512,7 +519,7 @@
           url += `&category=${encodeURIComponent(this.activeCategoryFilter)}`;
         }
 
-        const res = await fetch(url, { headers: getAuthHeader() });
+        const res = await notifFetch(url);
         if (!res.ok) {
           listEl.innerHTML = `
             <div class="rn-notif-state-box">
@@ -658,9 +665,7 @@
       `;
 
       try {
-        const res = await fetch(`${getApiBase()}/notifications/preferences`, {
-          headers: getAuthHeader()
-        });
+        const res = await notifFetch(`${getApiBase()}/notifications/preferences`);
 
         if (!res.ok) {
           container.innerHTML = `
@@ -759,12 +764,8 @@
           const updatedGlobalEmail = document.getElementById('pref-global-email').checked;
 
           try {
-            const patchRes = await fetch(`${getApiBase()}/notifications/preferences`, {
+            const patchRes = await notifFetch(`${getApiBase()}/notifications/preferences`, {
               method: 'PATCH',
-              headers: {
-                ...getAuthHeader(),
-                'Content-Type': 'application/json'
-              },
               body: JSON.stringify({
                 globalPushEnabled: updatedGlobalPush,
                 globalEmailEnabled: updatedGlobalEmail
@@ -816,9 +817,8 @@
           }
 
           try {
-            const res = await fetch(`${getApiBase()}/notifications/test-push`, {
-              method: 'POST',
-              headers: getAuthHeader()
+            const res = await notifFetch(`${getApiBase()}/notifications/test-push`, {
+              method: 'POST'
             });
 
             if (res.ok) {

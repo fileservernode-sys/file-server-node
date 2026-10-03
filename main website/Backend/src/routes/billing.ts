@@ -18,28 +18,7 @@ import { RazorpayCheckoutService, RazorpayWebhookService } from '../services/bil
 import { createSuccessResponse } from '../schemas/response.js';
 import { adminAuthenticate } from '../middleware/admin-auth.js';
 import { requirePermission } from '../middleware/admin-rbac.js';
-import { hashSessionToken } from '../utils/crypto.js';
-
-// Helper: Extract authenticated user from Bearer token
-async function getAuthUser(request: FastifyRequest) {
-  const authHeader = request.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Missing or invalid Authorization Bearer header');
-  }
-
-  const token = authHeader.substring(7).trim();
-  const tokenHash = hashSessionToken(token);
-  const session = await prisma.userSession.findFirst({
-    where: { tokenHash, expiresAt: { gt: new Date() } },
-    include: { user: true }
-  });
-
-  if (!session || !session.user) {
-    throw new UnauthorizedError('Session expired or invalid token');
-  }
-
-  return session.user;
-}
+import { getAuthUser } from '../middleware/customer-auth.js';
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
   /**
