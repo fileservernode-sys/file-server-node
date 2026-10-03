@@ -3,8 +3,14 @@ import { hashPassword } from '../src/utils/crypto.js';
 import { AdminStatus } from '@prisma/client';
 
 async function main() {
-  const targetEmail = 'filenodeserver@gmail.com';
-  const targetPassword = 'zdexcloud@2020';
+  const targetEmail = process.env.SUPER_ADMIN_EMAIL || process.argv[2];
+  const targetPassword = process.env.SUPER_ADMIN_PASSWORD || process.argv[3];
+
+  if (!targetEmail || !targetPassword) {
+    console.error('ERROR: Missing required SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD environment variables or arguments.');
+    console.error('Usage: SUPER_ADMIN_EMAIL="admin@zdex.cloud" SUPER_ADMIN_PASSWORD="<secure-password>" npx tsx scripts/setup_super_admin.ts');
+    process.exit(1);
+  }
 
   const existingUser = await prisma.user.findUnique({
     where: { email: targetEmail }

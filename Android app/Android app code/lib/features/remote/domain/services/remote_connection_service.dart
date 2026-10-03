@@ -86,9 +86,26 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
   @override
   Stream<RemoteConnectionInfo> get statusStream => _statusController.stream;
 
-  void _initEventListener() {
+  bool get _canListenToPlatform {
     try {
-      _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
+      ServicesBinding.instance;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _initEventListener() {
+    if (!_canListenToPlatform) {
+      return;
+    }
+    try {
+      _eventSubscription = _eventChannel
+          .receiveBroadcastStream()
+          .handleError((dynamic err) {
+            AppLogger.warning('[NativeRemoteConnection] EventChannel stream error: $err');
+          })
+          .listen(
         (dynamic event) {
           if (event is Map) {
             final map = Map<String, dynamic>.from(event);
@@ -96,14 +113,14 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
             _applyStateUpdate(info, source: 'EventChannel');
           }
         },
-        onError: (err) {
+        onError: (dynamic err) {
           AppLogger.warning('[NativeRemoteConnection] EventChannel error: $err');
           _startReconciliation();
         },
+        cancelOnError: false,
       );
     } catch (e) {
-      AppLogger.warning('[NativeRemoteConnection] Failed to bind EventChannel: $e');
-      _startReconciliation();
+      AppLogger.warning('[NativeRemoteConnection] Platform EventChannel unavailable: $e');
     }
   }
 
@@ -159,7 +176,10 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
           _applyStateUpdate(info, source: 'ReconciliationPoll');
         }
       } catch (e) {
-        // Communication error or method channel busy; keep timer active until terminal state or max polls
+        // Stop reconciliation if platform channel is unavailable in test/headless environment
+        if (e is MissingPluginException || e.toString().contains('Binding has not yet been initialized')) {
+          _stopReconciliation();
+        }
       }
     });
   }

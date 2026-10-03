@@ -23,7 +23,8 @@ class AuthSession {
   bool get isExpired {
     final nowUtc = DateTime.now().toUtc();
     final expUtc = expiresAt.toUtc();
-    return nowUtc.isAfter(expUtc);
+    final issuedUtc = effectiveIssuedAt.toUtc();
+    return nowUtc.isAfter(expUtc) || nowUtc.difference(issuedUtc) > maxSessionDuration;
   }
 
   Map<String, dynamic> toJson() {

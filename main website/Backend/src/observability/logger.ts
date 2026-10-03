@@ -33,21 +33,29 @@ const SENSITIVE_KEYS = new Set([
   'sessiontoken',
   'sessiontokenhash',
   'connectiontoken',
+  'connectiontokenhash',
+  'devicecredential',
+  'credential',
+  'credentialhash',
   'otp',
   'otphash',
   'authorization',
   'cookie',
-  'set-cookie',
   'setcookie',
-  '__host-zdex_session',
-  'zdex_session',
-  'x-zdex-csrf-token',
+  'hostzdexsession',
+  'zdexsession',
+  'hostzdexadminsession',
+  'zdexadminsession',
+  'xzdexcsrftoken',
   'csrftoken',
-  'csrf_token',
   'csrf',
   'apikey',
   'secret',
+  'keysecret',
+  'webhooksecret',
+  'clientsecret',
   'privatekey',
+  'databaseurl',
   'database64',
   'filecontent',
   'content',
@@ -64,14 +72,15 @@ export function sanitizeLogMetadata(obj: unknown, depth = 0): any {
   if (obj === null || obj === undefined) return obj;
 
   if (typeof obj === 'string') {
-    // Mask potential token/secret patterns
     if (obj.length > 300) {
       return `${obj.substring(0, 50)}...[Truncated ${obj.length} bytes]`;
     }
     return obj
       .replace(/Bearer\s+[A-Za-z0-9-_.]+/gi, 'Bearer [REDACTED_TOKEN]')
       .replace(/__Host-zdex_session=[A-Za-z0-9-_.]+/gi, '__Host-zdex_session=[REDACTED_COOKIE]')
+      .replace(/__Host-zdex_admin_session=[A-Za-z0-9-_.]+/gi, '__Host-zdex_admin_session=[REDACTED_COOKIE]')
       .replace(/x-zdex-csrf-token:\s*[^\r\n]+/gi, 'x-zdex-csrf-token: [REDACTED_CSRF]')
+      .replace(/x-zdex-admin-csrf-token:\s*[^\r\n]+/gi, 'x-zdex-admin-csrf-token: [REDACTED_CSRF]')
       .replace(/([?&](?:token|accessToken|sessionToken|authToken|connectionToken)=)[^&\s]+/gi, '$1[REDACTED_URL_TOKEN]')
       .replace(/mysql:\/\/[^@\s]+@[^\s/]+/gi, 'mysql://[REDACTED_DB_CREDENTIALS]@***')
       .replace(/password=[^\s&]+/gi, 'password=[REDACTED]');

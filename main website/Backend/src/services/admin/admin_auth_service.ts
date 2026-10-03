@@ -57,13 +57,24 @@ export interface AdminLoginResult {
   message?: string;
 }
 
+function getAdminHmacSecret(): string {
+  const secret = process.env.ADMIN_AUTH_SECRET || process.env.INTERNAL_SERVICE_KEY || process.env.ZDEX_CSRF_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('Fatal Security Configuration: ADMIN_AUTH_SECRET or INTERNAL_SERVICE_KEY must be defined in production');
+    }
+    return 'zdex-admin-hmac-secret-development-fallback';
+  }
+  return secret;
+}
+
 export class AdminAuthService {
   /**
    * Generates a signed challenge token for 2FA OTP verification
    */
   private static generateChallengeToken(adminId: string, email: string): string {
     const payload = `${adminId}:${email.toLowerCase()}:${Date.now() + ADMIN_OTP_EXPIRY_MS}`;
-    const hmacSecret = process.env.ADMIN_AUTH_SECRET || process.env.INTERNAL_SERVICE_KEY || 'zdex-admin-hmac-secret';
+    const hmacSecret = getAdminHmacSecret();
     const signature = crypto.createHmac('sha256', hmacSecret).update(payload).digest('hex');
     return Buffer.from(`${payload}:${signature}`).toString('base64url');
   }
@@ -81,7 +92,7 @@ export class AdminAuthService {
 
       const [adminId, email, expiresAtStr, signature] = parts;
       const payload = `${adminId}:${email}:${expiresAtStr}`;
-      const hmacSecret = process.env.ADMIN_AUTH_SECRET || process.env.INTERNAL_SERVICE_KEY || 'zdex-admin-hmac-secret';
+      const hmacSecret = getAdminHmacSecret();
       const expectedSignature = crypto.createHmac('sha256', hmacSecret).update(payload).digest('hex');
 
       if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {

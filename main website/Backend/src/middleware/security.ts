@@ -38,8 +38,8 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token', 'X-Request-Id', 'x-request-id', 'x-zdex-csrf-token', 'X-Zdex-Csrf-Token', 'Range', 'range'],
-    exposedHeaders: ['x-admin-session-token', 'content-disposition', 'x-request-id', 'X-Request-Id', 'x-zdex-csrf-token', 'Content-Range', 'Accept-Ranges', 'Content-Length']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Admin-Session-Token', 'x-admin-session-token', 'X-Request-Id', 'x-request-id', 'x-zdex-csrf-token', 'X-Zdex-Csrf-Token', 'x-admin-csrf-token', 'X-Admin-Csrf-Token', 'x-zdex-admin-csrf-token', 'X-Zdex-Admin-Csrf-Token', 'Range', 'range'],
+    exposedHeaders: ['x-admin-session-token', 'content-disposition', 'x-request-id', 'X-Request-Id', 'x-zdex-csrf-token', 'x-admin-csrf-token', 'x-zdex-admin-csrf-token', 'Content-Range', 'Accept-Ranges', 'Content-Length']
   });
 
   // 3. Rate Limiting Foundation (Prevents abuse / DOS)

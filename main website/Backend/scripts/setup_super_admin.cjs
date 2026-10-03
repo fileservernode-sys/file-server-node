@@ -9,8 +9,16 @@ function hashPassword(password) {
 }
 
 async function run() {
-  const emails = ['filenodeserver@gmail.com', 'fileservernode@gmail.com'];
-  const targetPassword = 'zdexcloud@2020';
+  const envEmail = process.env.SUPER_ADMIN_EMAIL || process.argv[2];
+  const targetPassword = process.env.SUPER_ADMIN_PASSWORD || process.argv[3];
+
+  if (!envEmail || !targetPassword) {
+    console.error('ERROR: Missing required SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD environment variables or arguments.');
+    console.error('Usage: SUPER_ADMIN_EMAIL="admin@zdex.cloud" SUPER_ADMIN_PASSWORD="<secure-password>" node scripts/setup_super_admin.cjs');
+    process.exit(1);
+  }
+
+  const emails = envEmail.split(',').map(e => e.trim()).filter(Boolean);
   const pwdHash = hashPassword(targetPassword);
 
   let superRole = await prisma.adminRole.findUnique({ where: { slug: 'SUPER_ADMIN' } });
