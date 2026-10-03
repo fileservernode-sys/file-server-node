@@ -430,7 +430,7 @@ object RemoteNodeTunnelManager {
         workerExecutor.execute {
             try {
                 val devId = storedDeviceId
-                val sessionTok = storedSessionToken
+                var sessionTok = storedSessionToken
                 val apiBase = storedApiBaseUrl
                 var gatewayWs = storedGatewayWsUrl
 
@@ -485,7 +485,7 @@ object RemoteNodeTunnelManager {
                                 activeConnectionId = connData.optString("id")
                                 activeRemoteEndpoint = connData.optString("remoteEndpoint")
                                 activeHostname = connData.optString("hostname")
-                                activePublicUrl = connData.optString("publicUrl", activeRemoteEndpoint)
+                                activePublicUrl = connData.optString("publicUrl", activeRemoteEndpoint ?: "")
                                 connectionToken = connData.optString("connectionToken")
                                 
                                 val returnedGatewayWs = connData.optString("gatewayWsUrl")
