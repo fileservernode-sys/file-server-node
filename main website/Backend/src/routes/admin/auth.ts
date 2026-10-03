@@ -4,11 +4,14 @@ import { AdminAuditAction } from '@prisma/client';
 import { AdminAuthService } from '../../services/admin/admin_auth_service.js';
 import { AdminRbacService } from '../../services/admin/admin_rbac_service.js';
 import { AdminAuditService } from '../../services/admin/admin_audit_service.js';
-import { adminAuthenticate, extractAdminToken } from '../../middleware/admin-auth.js';
+import { adminAuthenticate, extractAdminTokenContext } from '../../middleware/admin-auth.js';
 import { requirePermission } from '../../middleware/admin-rbac.js';
 import { createSuccessResponse, createErrorResponse } from '../../schemas/response.js';
 import { ValidationError, UnauthorizedError } from '../../errors/app-error.js';
 import { resolveClientIp } from '../../utils/ip.js';
+import { ADMIN_SESSION_COOKIE_NAME, getAdminSessionCookieOptions, getAdminSessionCookieClearOptions } from '../../config/cookie.js';
+import { generateCsrfToken } from '../../utils/csrf.js';
+import { hashSessionToken } from '../../utils/crypto.js';
 
 // Input Schemas
 const adminLoginSchema = z.object({
@@ -40,6 +43,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
   /**
    * POST /api/v1/admin/auth/login
    * Initiates admin authentication. Returns either a session token or a 2FA challenge.
+   * Sets __Host-zdex_admin_session HttpOnly cookie and returns in-memory CSRF token.
    */
   app.post(
     '/admin/auth/login',
@@ -73,13 +77,26 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         userAgent
       });
 
-      return reply.status(200).send(createSuccessResponse(result));
+      let csrfToken: string | undefined = undefined;
+      if (result.sessionToken) {
+        reply.setCookie(ADMIN_SESSION_COOKIE_NAME, result.sessionToken, getAdminSessionCookieOptions());
+        const tokenHash = result.sessionTokenHash || hashSessionToken(result.sessionToken);
+        csrfToken = generateCsrfToken({
+          id: result.sessionId || 'admin-session',
+          tokenHash
+        });
+      }
+
+      return reply.status(200).send(createSuccessResponse({
+        ...result,
+        ...(csrfToken ? { csrfToken } : {})
+      }));
     }
   );
 
   /**
    * POST /api/v1/admin/auth/verify-otp
-   * Completes 2FA OTP verification and returns active AdminSession.
+   * Completes 2FA OTP verification, issues __Host-zdex_admin_session HttpOnly cookie, and returns CSRF token.
    */
   app.post(
     '/admin/auth/verify-otp',
@@ -108,24 +125,40 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         userAgent
       });
 
-      return reply.status(200).send(createSuccessResponse(result));
+      let csrfToken: string | undefined = undefined;
+      if (result.sessionToken) {
+        reply.setCookie(ADMIN_SESSION_COOKIE_NAME, result.sessionToken, getAdminSessionCookieOptions());
+        const tokenHash = result.sessionTokenHash || hashSessionToken(result.sessionToken);
+        csrfToken = generateCsrfToken({
+          id: result.sessionId || 'admin-session',
+          tokenHash
+        });
+      }
+
+      return reply.status(200).send(createSuccessResponse({
+        ...result,
+        ...(csrfToken ? { csrfToken } : {})
+      }));
     }
   );
 
   /**
    * POST /api/v1/admin/auth/logout
-   * Revokes the current AdminSession immediately. Safe to call repeatedly.
+   * Revokes the current AdminSession immediately and clears admin session cookies.
    */
   app.post(
     '/admin/auth/logout',
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const token = extractAdminToken(request);
+      const authContext = extractAdminTokenContext(request);
       const clientIp = resolveClientIp(request);
       const userAgent = request.headers['user-agent'] as string | undefined;
 
-      if (token) {
-        await AdminAuthService.logout(token, clientIp, userAgent);
+      if (authContext.token) {
+        await AdminAuthService.logout(authContext.token, clientIp, userAgent);
       }
+
+      reply.clearCookie(ADMIN_SESSION_COOKIE_NAME, getAdminSessionCookieClearOptions());
+      reply.clearCookie('zdex_admin_session', getAdminSessionCookieClearOptions());
 
       return reply.status(200).send(createSuccessResponse({
         message: 'Admin logged out successfully'
@@ -135,7 +168,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/v1/admin/auth/me
-   * Returns current authenticated Admin identity along with effective roles and permissions.
+   * Returns current authenticated Admin identity along with effective roles, permissions, and fresh CSRF token.
    */
   app.get(
     '/admin/auth/me',
@@ -153,6 +186,12 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
         AdminRbacService.resolveAdminRoles(request.admin.id),
         AdminRbacService.resolveAdminPermissions(request.admin.id)
       ]);
+
+      const tokenHash = request.adminSession?.tokenHash || hashSessionToken(extractAdminTokenContext(request).token || '');
+      const csrfToken = generateCsrfToken({
+        id: request.admin.sessionId,
+        tokenHash
+      });
 
       // SEC-MED-05: Session Bootstrap Audit Logging
       await AdminAuditService.logEvent({
@@ -172,7 +211,8 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
           ...request.admin,
           roles,
           permissions
-        }
+        },
+        csrfToken
       }));
     }
   );

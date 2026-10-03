@@ -1,33 +1,47 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AdminStatus } from '@prisma/client';
 import { AdminAuthService, AdminUserSanitized } from '../services/admin/admin_auth_service.js';
-import { UnauthorizedError } from '../errors/app-error.js';
+import { UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
 import { resolveClientIp } from '../utils/ip.js';
+import { ADMIN_SESSION_COOKIE_NAME } from '../config/cookie.js';
+import { CSRF_HEADER_NAME, validateCsrfToken } from '../utils/csrf.js';
 
 export interface AdminContext extends AdminUserSanitized {
   sessionId: string;
 }
 
+export interface AdminAuthContext {
+  token: string | null;
+  source: 'bearer' | 'cookie' | null;
+}
+
 declare module 'fastify' {
   interface FastifyRequest {
     admin?: AdminContext;
+    adminAuthSource?: 'bearer' | 'cookie';
+    adminSession?: {
+      id: string;
+      adminId: string;
+      tokenHash: string;
+      expiresAt: Date;
+      createdAt: Date;
+    };
   }
 }
 
 /**
- * Extracts raw admin token from request headers with strict dual-header standardization.
- * If both 'x-admin-session-token' and 'Authorization: Bearer' are supplied:
+ * Extracts raw admin token from request headers or HttpOnly cookies with strict dual-mode resolution.
+ * If both headers and cookies are supplied:
  * - If identical: returns the token deterministically.
  * - If conflicting: fails closed by throwing UnauthorizedError.
  */
-export function extractAdminToken(request: FastifyRequest): string | null {
-  let customToken: string | null = null;
+export function extractAdminTokenContext(request: FastifyRequest): AdminAuthContext {
+  let bearerToken: string | null = null;
   const customHeader = (request.headers['x-admin-session-token'] || request.headers['X-Admin-Session-Token']) as string | undefined;
   if (customHeader && typeof customHeader === 'string' && customHeader.trim().length > 0) {
-    customToken = customHeader.trim();
+    bearerToken = customHeader.trim();
   }
 
-  let bearerToken: string | null = null;
   const authHeader = request.headers.authorization;
   if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const raw = authHeader.substring(7).trim();
@@ -36,34 +50,62 @@ export function extractAdminToken(request: FastifyRequest): string | null {
     }
   }
 
-  // Conflict Detection: fail closed if conflicting credentials are provided
-  if (customToken && bearerToken) {
-    if (customToken !== bearerToken) {
-      throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided');
+  let cookieToken: string | null = null;
+  const cookies = request.cookies;
+  if (cookies) {
+    const cookieVal = cookies[ADMIN_SESSION_COOKIE_NAME] ||
+                      cookies['__Host-zdex_admin_session'] ||
+                      cookies['zdex_admin_session'] ||
+                      (cookies as Record<string, string | undefined>)['__Host_zdex_admin_session'];
+    if (cookieVal && typeof cookieVal === 'string' && cookieVal.trim().length > 0) {
+      cookieToken = cookieVal.trim();
     }
-    return customToken;
   }
 
-  return customToken || bearerToken || null;
+  // Conflict Detection: fail closed if conflicting credentials are provided
+  if (bearerToken && cookieToken) {
+    if (bearerToken !== cookieToken) {
+      throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided');
+    }
+    return { token: cookieToken, source: 'cookie' };
+  }
+
+  if (cookieToken) {
+    return { token: cookieToken, source: 'cookie' };
+  }
+
+  if (bearerToken) {
+    return { token: bearerToken, source: 'bearer' };
+  }
+
+  return { token: null, source: null };
+}
+
+/**
+ * Backward-compatible helper extracting raw token string.
+ */
+export function extractAdminToken(request: FastifyRequest): string | null {
+  return extractAdminTokenContext(request).token;
 }
 
 /**
  * Dedicated Admin Authentication Middleware
  * Validates session token hash, revocation, absolute expiration, 15-min idle timeout, and ACTIVE status.
  * Attaches resolved identity to request.admin (NEVER request.user).
+ * Enforces Anti-CSRF on cookie-authenticated mutations.
  */
 export async function adminAuthenticate(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
-  const token = extractAdminToken(request);
+  const authContext = extractAdminTokenContext(request);
 
-  if (!token) {
+  if (!authContext.token) {
     throw new UnauthorizedError('Missing admin session token');
   }
 
   const clientIp = resolveClientIp(request);
-  const validationResult = await AdminAuthService.validateSession(token, clientIp);
+  const validationResult = await AdminAuthService.validateSession(authContext.token, clientIp);
 
   if (!validationResult) {
     throw new UnauthorizedError('Invalid, expired, or revoked admin session');
@@ -80,4 +122,39 @@ export async function adminAuthenticate(
     ...admin,
     sessionId: session.id
   };
+
+  request.adminAuthSource = authContext.source || 'bearer';
+  request.adminSession = {
+    id: session.id,
+    adminId: session.adminId,
+    tokenHash: session.sessionTokenHash,
+    expiresAt: session.expiresAt,
+    createdAt: session.createdAt
+  };
+
+  // Anti-CSRF Enforcement for cookie-authenticated state-changing requests
+  const method = request.method.toUpperCase();
+  const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+  if (isStateChanging && request.adminAuthSource === 'cookie') {
+    const csrfHeader = (
+      request.headers[CSRF_HEADER_NAME] ||
+      request.headers['x-zdex-csrf-token'] ||
+      request.headers['x-admin-csrf-token']
+    ) as string | undefined;
+
+    if (!csrfHeader || typeof csrfHeader !== 'string' || csrfHeader.trim().length === 0) {
+      throw new ForbiddenError('CSRF validation failed: missing x-zdex-csrf-token header');
+    }
+
+    const isValidCsrf = validateCsrfToken(csrfHeader.trim(), {
+      id: session.id,
+      tokenHash: session.sessionTokenHash
+    });
+
+    if (!isValidCsrf) {
+      throw new ForbiddenError('CSRF validation failed: invalid or mismatched admin CSRF token');
+    }
+  }
 }
+

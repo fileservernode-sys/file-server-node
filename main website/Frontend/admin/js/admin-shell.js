@@ -2483,12 +2483,8 @@
         const params = new URLSearchParams({ format });
         if (this.auditState.action) params.append('action', this.auditState.action);
         if (this.auditState.status) params.append('status', this.auditState.status);
-
-        const token = window.AdminAuth.token;
         const res = await fetch(`/api/v1/admin/audit-logs/export?${params.toString()}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          credentials: 'include'
         });
 
         if (!res.ok) {

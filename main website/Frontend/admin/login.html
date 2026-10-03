@@ -130,8 +130,12 @@
       }
 
       // If already authenticated, redirect
-      if (window.AdminAuth && window.AdminAuth.isAuthenticated()) {
-        window.location.href = getRedirectDestination();
+      if (window.AdminAuth && typeof window.AdminAuth.initSession === 'function') {
+        window.AdminAuth.initSession().then((res) => {
+          if (res && res.authenticated) {
+            window.location.href = getRedirectDestination();
+          }
+        }).catch(() => {});
       }
 
       function showAlert(msg, type = 'danger') {

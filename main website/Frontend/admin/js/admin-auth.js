@@ -15,8 +15,42 @@
       this.isSuperAdmin = false;
       this.isInitialized = false;
       this._subscribers = [];
+      this._initPromise = null;
+      this._broadcastChannel = null;
 
+      this._setupMultiTabSync();
       this._loadCachedState();
+    }
+
+    _setupMultiTabSync() {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        try {
+          this._broadcastChannel = new BroadcastChannel('zdexcloud_admin_auth_channel');
+          this._broadcastChannel.onmessage = (event) => {
+            if (event.data?.type === 'ADMIN_LOGGED_OUT') {
+              this.currentUser = null;
+              this.roles = [];
+              this.permissions = [];
+              this.isSuperAdmin = false;
+              if (this.api) this.api.clearSession();
+              this._notify();
+              if (!window.location.pathname.includes('/admin/login')) {
+                window.location.href = '/admin/login.html?reason=session_expired';
+              }
+            } else if (event.data?.type === 'ADMIN_LOGGED_IN') {
+              this.initSession(true).catch(() => {});
+            }
+          };
+        } catch (_) {}
+      }
+    }
+
+    _broadcastEvent(type) {
+      if (this._broadcastChannel) {
+        try {
+          this._broadcastChannel.postMessage({ type, timestamp: Date.now() });
+        } catch (_) {}
+      }
     }
 
     _loadCachedState() {
@@ -79,7 +113,43 @@
     }
 
     isAuthenticated() {
-      return Boolean(this.api.getToken());
+      return Boolean(this.currentUser);
+    }
+
+    async initSession(forceRefresh = false) {
+      if (this._initPromise && !forceRefresh) {
+        return this._initPromise;
+      }
+
+      this._initPromise = (async () => {
+        try {
+          const rawAdmin = await this.fetchMe();
+          this.isInitialized = true;
+          return {
+            authenticated: true,
+            user: this.currentUser,
+            roles: this.roles,
+            permissions: this.permissions
+          };
+        } catch (err) {
+          this.currentUser = null;
+          this.roles = [];
+          this.permissions = [];
+          this.isSuperAdmin = false;
+          this.isInitialized = true;
+          if (this.api) this.api.clearSession();
+          return {
+            authenticated: false,
+            user: null,
+            roles: [],
+            permissions: []
+          };
+        } finally {
+          this._initPromise = null;
+        }
+      })();
+
+      return this._initPromise;
     }
 
     async login(email, password) {
@@ -96,12 +166,14 @@
         };
       }
 
-      // If token is returned directly
-      const token = data.sessionToken || data.token || response.sessionToken || response.token;
-      if (token) {
-        this.api.setToken(token);
-        await this.fetchMe();
+      // Store in-memory CSRF token if returned
+      const csrfToken = data.csrfToken || response.csrfToken;
+      if (csrfToken && this.api) {
+        this.api.setCsrfToken(csrfToken);
       }
+
+      await this.fetchMe();
+      this._broadcastEvent('ADMIN_LOGGED_IN');
 
       return data;
     }
@@ -113,18 +185,16 @@
         otp: otpCode
       });
       const data = response.data || response;
-      const token = data.sessionToken || data.token || response.sessionToken || response.token;
-      
-      if (!token) {
-        throw {
-          status: 400,
-          code: 'INVALID_RESPONSE',
-          message: 'Server did not return a valid admin session token.'
-        };
+
+      // Store in-memory CSRF token if returned
+      const csrfToken = data.csrfToken || response.csrfToken;
+      if (csrfToken && this.api) {
+        this.api.setCsrfToken(csrfToken);
       }
 
-      this.api.setToken(token);
       await this.fetchMe();
+      this._broadcastEvent('ADMIN_LOGGED_IN');
+
       return data;
     }
 
@@ -133,6 +203,12 @@
         const response = await this.api.get('/admin/auth/me');
         const rootData = response.data || response;
         const rawAdmin = rootData.admin || rootData;
+
+        // Capture in-memory CSRF token from /admin/auth/me response
+        const csrfToken = rootData.csrfToken || response.csrfToken;
+        if (csrfToken && this.api) {
+          this.api.setCsrfToken(csrfToken);
+        }
 
         const user = {
           id: rawAdmin.id,
@@ -158,20 +234,23 @@
 
     async logout() {
       try {
-        if (this.isAuthenticated()) {
-          await this.api.post('/admin/auth/logout', {});
-        }
+        await this.api.post('/admin/auth/logout', {});
       } catch (err) {
         console.warn('[AdminAuth] Logout request completed with error:', err);
       } finally {
-        this.api.clearSession();
+        if (this.api) this.api.clearSession();
         this.currentUser = null;
         this.roles = [];
         this.permissions = [];
         this.isSuperAdmin = false;
+        this._broadcastEvent('ADMIN_LOGGED_OUT');
         this._notify();
         window.location.href = '/admin/login.html';
       }
+    }
+
+    async fetchWithAuth(url, options = {}) {
+      return this.api.request(url, options);
     }
 
     hasPermission(permission) {
@@ -235,22 +314,17 @@
     }
 
     async requireAuthGuard() {
-      if (!this.isAuthenticated()) {
+      const authResult = await this.initSession();
+      if (!authResult.authenticated) {
         const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
         window.location.href = `/admin/login.html?redirect=${redirectUrl}`;
         return false;
       }
-
-      try {
-        await this.fetchMe();
-        return true;
-      } catch (err) {
-        console.error('[AdminAuth] Auth guard verification failed:', err);
-        return false;
-      }
+      return true;
     }
   }
 
   window.AdminAuth = new AdminAuthService();
 })(window);
+
 

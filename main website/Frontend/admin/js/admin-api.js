@@ -7,11 +7,43 @@
   'use strict';
 
   const STORAGE_KEYS = {
-    SESSION_TOKEN: 'zdex_admin_session_token',
     ADMIN_USER: 'zdex_admin_user',
     ROLES: 'zdex_admin_roles',
     PERMISSIONS: 'zdex_admin_permissions'
   };
+
+  const LEGACY_ADMIN_STORAGE_KEYS = [
+    'zdex_admin_session_token',
+    'zdex_admin_token',
+    'admin_session_token',
+    'admin_token',
+    'adminToken',
+    'sessionToken',
+    'token',
+    'accessToken',
+    'x-admin-session-token'
+  ];
+
+  // Clean up legacy client-side admin credential keys immediately on script evaluation
+  function cleanupLegacyAdminStorage() {
+    if (typeof localStorage !== 'undefined') {
+      for (const key of LEGACY_ADMIN_STORAGE_KEYS) {
+        try {
+          localStorage.removeItem(key);
+        } catch (_) {}
+      }
+    }
+    if (typeof sessionStorage !== 'undefined') {
+      for (const key of LEGACY_ADMIN_STORAGE_KEYS) {
+        try {
+          sessionStorage.removeItem(key);
+        } catch (_) {}
+      }
+    }
+  }
+  cleanupLegacyAdminStorage();
+
+  let _inMemoryCsrfToken = null;
 
   function getCalculatedApiBase() {
     if (typeof window === 'undefined') return '/api/v1';
@@ -45,31 +77,27 @@
       this.apiBase = API_BASE;
     }
 
+    getCsrfToken() {
+      return _inMemoryCsrfToken;
+    }
+
+    setCsrfToken(token) {
+      _inMemoryCsrfToken = token || null;
+    }
+
+    // Legacy compatibility no-op stubs to prevent third-party crashes
     getToken() {
-      try {
-        return localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || sessionStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || null;
-      } catch {
-        return null;
-      }
+      return null;
     }
 
     setToken(token, persistLongTerm = true) {
-      try {
-        if (persistLongTerm) {
-          localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
-          sessionStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-        } else {
-          sessionStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, token);
-          localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
-        }
-      } catch (err) {
-        console.warn('[AdminApi] Failed to write token to storage:', err);
-      }
+      cleanupLegacyAdminStorage();
     }
 
     clearSession() {
+      _inMemoryCsrfToken = null;
+      cleanupLegacyAdminStorage();
       try {
-        localStorage.removeItem(STORAGE_KEYS.SESSION_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.ADMIN_USER);
         localStorage.removeItem(STORAGE_KEYS.ROLES);
         localStorage.removeItem(STORAGE_KEYS.PERMISSIONS);
@@ -87,14 +115,17 @@
         headers.set('Content-Type', 'application/json');
       }
 
-      const token = this.getToken();
-      if (token) {
-        headers.set('x-admin-session-token', token);
+      // Attach In-Memory Anti-CSRF Token for state-changing browser mutations
+      const method = (options.method || 'GET').toUpperCase();
+      const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+      if (isStateChanging && _inMemoryCsrfToken && !headers.has('x-zdex-csrf-token')) {
+        headers.set('x-zdex-csrf-token', _inMemoryCsrfToken);
       }
 
       const config = {
         ...options,
-        headers
+        headers,
+        credentials: 'include' // Enforce HttpOnly __Host-zdex_admin_session cookie transmission
       };
 
       try {

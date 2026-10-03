@@ -49,7 +49,9 @@ export interface AdminUserSanitized {
 export interface AdminLoginResult {
   requiresOtp?: boolean;
   challengeToken?: string;
+  sessionId?: string;
   sessionToken?: string;
+  sessionTokenHash?: string;
   expiresAt?: string;
   admin?: AdminUserSanitized;
   message?: string;
@@ -384,7 +386,9 @@ export class AdminAuthService {
     };
 
     return {
+      sessionId: session.id,
       sessionToken: rawToken,
+      sessionTokenHash,
       expiresAt: expiresAt.toISOString(),
       admin: sanitizedAdmin
     };
