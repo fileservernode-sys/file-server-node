@@ -5,6 +5,12 @@ import { createSuccessResponse, createErrorResponse } from '../schemas/response.
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
+import {
+  fileManagerStandardRateLimitConfig,
+  fileManagerMutationRateLimitConfig,
+  fileManagerDownloadRateLimitConfig,
+  authStrictRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 const serverIdParamSchema = z.object({
   serverId: z.string().min(1)
@@ -103,7 +109,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * checks real-time connectivity, and returns safe server metadata.
    * NEVER returns adminPasswordHash or any credential secret.
    */
-  app.get('/file-manager/:serverId/access', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/file-manager/:serverId/access',
+    {
+      config: {
+        rateLimit: fileManagerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -127,7 +140,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/file-manager/:serverId/storage
    * Proxies a STORAGE operation to the Android device via the gateway.
    */
-  app.get('/file-manager/:serverId/storage', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/file-manager/:serverId/storage',
+    {
+      config: {
+        rateLimit: fileManagerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -147,7 +167,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/file-manager/:serverId/files/recent
    * Proxies a RECENT operation to the Android device via the gateway.
    */
-  app.get('/file-manager/:serverId/files/recent', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/file-manager/:serverId/files/recent',
+    {
+      config: {
+        rateLimit: fileManagerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -168,7 +195,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies a LIST operation for file/folder browsing.
    * Accepts query params: ?path=/ and ?type=photos|videos
    */
-  app.get('/file-manager/:serverId/files', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/file-manager/:serverId/files',
+    {
+      config: {
+        rateLimit: fileManagerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -198,7 +232,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies a DELETE operation.
    * Accepts JSON body: { path: string }
    */
-  app.delete('/file-manager/:serverId/files', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.delete(
+    '/file-manager/:serverId/files',
+    {
+      config: {
+        rateLimit: fileManagerMutationRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -228,7 +269,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies a CREATE_FOLDER operation.
    * Accepts JSON body: { path: string, name: string }
    */
-  app.post('/file-manager/:serverId/folders', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/file-manager/:serverId/folders',
+    {
+      config: {
+        rateLimit: fileManagerMutationRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -263,7 +311,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies a RENAME operation.
    * Accepts JSON body: { oldPath: string, newName: string }
    */
-  app.post('/file-manager/:serverId/rename', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/file-manager/:serverId/rename',
+    {
+      config: {
+        rateLimit: fileManagerMutationRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -301,7 +356,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies an UPLOAD initiation to the Android device.
    * Accepts JSON body: { path: string, name: string, dataBase64?: string }
    */
-  app.post('/file-manager/:serverId/upload', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/file-manager/:serverId/upload',
+    {
+      config: {
+        rateLimit: fileManagerMutationRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -341,7 +403,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies a file download / media stream through the gateway.
    * Accepts query params: ?path=<filePath>&download=true|false
    */
-  app.get('/file-manager/:serverId/download', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/file-manager/:serverId/download',
+    {
+      config: {
+        rateLimit: fileManagerDownloadRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');
@@ -434,7 +503,14 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * NEVER stores the password — only proxies it to Android for verification.
    * Returns a file-server session token (not the ZdexCloud token).
    */
-  app.post('/file-manager/:serverId/auth/login', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/file-manager/:serverId/auth/login',
+    {
+      config: {
+        rateLimit: authStrictRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverIdParamSchema.safeParse(request.params);
     if (!params.success) throw new ValidationError('Invalid server ID');

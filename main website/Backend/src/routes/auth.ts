@@ -15,6 +15,12 @@ import {
 } from '../config/cookie.js';
 import { extractCustomerToken, resolveCustomerSession } from '../middleware/customer-auth.js';
 import { generateCsrfToken } from '../utils/csrf.js';
+import {
+  authStrictRateLimitConfig,
+  authOtpVerifyRateLimitConfig,
+  authResendOtpRateLimitConfig,
+  customerStandardRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 // Input Validation Schemas
 const registerSchema = z.object({
@@ -73,7 +79,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/auth/register
    * Step 1 of Email/Password Account Creation: Creates PENDING_VERIFICATION user and dispatches 6-digit OTP.
    */
-  app.post('/auth/register', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/register',
+    {
+      config: {
+        rateLimit: authStrictRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const body = registerSchema.safeParse(request.body);
     if (!body.success) {
       throw new ValidationError(body.error.errors[0]?.message || 'Invalid registration parameters');
@@ -239,14 +252,37 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/auth/verify-otp & POST /api/v1/auth/verify-email
    * Step 2 of Email/Password Flow: Verifies 6-digit OTP code, marks user ACTIVE, and issues session token.
    */
-  app.post('/auth/verify-otp', handleVerifyOtp);
-  app.post('/auth/verify-email', handleVerifyOtp);
+  app.post(
+    '/auth/verify-otp',
+    {
+      config: {
+        rateLimit: authOtpVerifyRateLimitConfig
+      }
+    },
+    handleVerifyOtp
+  );
+  app.post(
+    '/auth/verify-email',
+    {
+      config: {
+        rateLimit: authOtpVerifyRateLimitConfig
+      }
+    },
+    handleVerifyOtp
+  );
 
   /**
    * POST /api/v1/auth/login
    * Step 1 of Email/Password Login: Validates credentials and sends 6-digit Email OTP (Mandatory 2FA step).
    */
-  app.post('/auth/login', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/login',
+    {
+      config: {
+        rateLimit: authStrictRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const body = loginSchema.safeParse(request.body);
     if (!body.success) {
       throw new ValidationError('Email and password required');
@@ -315,15 +351,38 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     }));
   };
 
-  app.post('/auth/resend-otp', handleResendOtp);
-  app.post('/auth/resend-verification', handleResendOtp);
+  app.post(
+    '/auth/resend-otp',
+    {
+      config: {
+        rateLimit: authResendOtpRateLimitConfig
+      }
+    },
+    handleResendOtp
+  );
+  app.post(
+    '/auth/resend-verification',
+    {
+      config: {
+        rateLimit: authResendOtpRateLimitConfig
+      }
+    },
+    handleResendOtp
+  );
 
   /**
    * POST /api/v1/auth/forgot-password
    * Dispatches 6-digit password reset OTP to user email.
    * Returns identical generic success response whether email exists or not to prevent account enumeration.
    */
-  app.post('/auth/forgot-password', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/forgot-password',
+    {
+      config: {
+        rateLimit: authResendOtpRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const body = forgotPasswordSchema.safeParse(request.body);
     if (!body.success) {
       throw new ValidationError('Valid email address required');
@@ -359,7 +418,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/auth/verify-password-reset-otp
    * Validates 6-digit password reset OTP code before asking for the new password.
    */
-  app.post('/auth/verify-password-reset-otp', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/verify-password-reset-otp',
+    {
+      config: {
+        rateLimit: authOtpVerifyRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const body = verifyPasswordResetOtpSchema.safeParse(request.body);
     if (!body.success) {
       throw new ValidationError('Invalid password reset parameters');
@@ -395,7 +461,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/auth/reset-password
    * Finalizes password reset: Verifies OTP, hashes new password, invalidates all sessions, and updates user.
    */
-  app.post('/auth/reset-password', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/reset-password',
+    {
+      config: {
+        rateLimit: authStrictRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const body = resetPasswordSchema.safeParse(request.body);
     if (!body.success) {
       throw new ValidationError(body.error.errors[0]?.message || 'Invalid password reset parameters');
@@ -531,14 +604,37 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     });
   };
 
-  app.get('/auth/me', handleVerifySession);
-  app.post('/auth/session/verify', handleVerifySession);
+  app.get(
+    '/auth/me',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    handleVerifySession
+  );
+  app.post(
+    '/auth/session/verify',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    handleVerifySession
+  );
 
   /**
    * POST /api/v1/auth/logout
    * Invalidates active session token in database and clears browser session cookie
    */
-  app.post('/auth/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/auth/logout',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const { token } = extractCustomerToken(request);
     if (token) {
       const tokenHash = hashSessionToken(token);

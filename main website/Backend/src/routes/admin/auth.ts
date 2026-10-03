@@ -12,6 +12,11 @@ import { resolveClientIp } from '../../utils/ip.js';
 import { ADMIN_SESSION_COOKIE_NAME, getAdminSessionCookieOptions, getAdminSessionCookieClearOptions } from '../../config/cookie.js';
 import { generateCsrfToken } from '../../utils/csrf.js';
 import { hashSessionToken } from '../../utils/crypto.js';
+import {
+  adminAuthRateLimitConfig,
+  adminOperationsRateLimitConfig,
+  adminHeavyQueryRateLimitConfig
+} from '../../middleware/rate_limit_presets.js';
 
 // Input Schemas
 const adminLoginSchema = z.object({
@@ -49,14 +54,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
     '/admin/auth/login',
     {
       config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: '1 minute',
-          keyGenerator: (req: FastifyRequest) => {
-            const clientIp = resolveClientIp(req) || 'unknown';
-            return `admin_login_${clientIp}`;
-          }
-        }
+        rateLimit: adminAuthRateLimitConfig
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -102,10 +100,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
     '/admin/auth/verify-otp',
     {
       config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: '1 minute'
-        }
+        rateLimit: adminAuthRateLimitConfig
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -148,6 +143,11 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post(
     '/admin/auth/logout',
+    {
+      config: {
+        rateLimit: adminOperationsRateLimitConfig
+      }
+    },
     async (request: FastifyRequest, reply: FastifyReply) => {
       const authContext = extractAdminTokenContext(request);
       const clientIp = resolveClientIp(request);
@@ -173,6 +173,9 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/admin/auth/me',
     {
+      config: {
+        rateLimit: adminOperationsRateLimitConfig
+      },
       preHandler: [adminAuthenticate]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -225,15 +228,7 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
     '/admin/auth/change-password',
     {
       config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: '1 minute',
-          keyGenerator: (req: FastifyRequest) => {
-            const adminId = (req as any).admin?.id || 'anonymous';
-            const clientIp = resolveClientIp(req) || 'unknown';
-            return `admin_pwd_change_${adminId}_${clientIp}`;
-          }
-        }
+        rateLimit: adminHeavyQueryRateLimitConfig
       },
       preHandler: [adminAuthenticate]
     },
@@ -264,6 +259,9 @@ export async function adminAuthRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     '/admin/auth/admins/:adminId/status',
     {
+      config: {
+        rateLimit: adminOperationsRateLimitConfig
+      },
       preHandler: [adminAuthenticate, requirePermission('admin_roles.write')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

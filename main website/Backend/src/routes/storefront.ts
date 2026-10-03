@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { CountryDetectionService } from '../services/billing/country_detection_service.js';
 import { createSuccessResponse } from '../schemas/response.js';
+import { publicStandardRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 export async function storefrontRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -13,7 +14,14 @@ export async function storefrontRoutes(app: FastifyInstance): Promise<void> {
    * 3. Sets strict anti-caching headers so CDNs never cross-serve country responses.
    * 4. Does NOT mutate AccountBillingState.billingCountry or any customer profiles.
    */
-  app.get('/storefront/region', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/storefront/region',
+    {
+      config: {
+        rateLimit: publicStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     // Prevent intermediate proxy / CDN caching across diverse geo locations
     reply.header('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
     reply.header('Vary', 'CF-IPCountry, Accept-Encoding');

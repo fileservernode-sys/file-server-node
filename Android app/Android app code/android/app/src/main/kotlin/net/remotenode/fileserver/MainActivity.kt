@@ -492,6 +492,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        android.util.Log.i("MainActivity", "[UI_DISCONNECT] source=flutter_activity_teardown action=detach_only persistentServerPreserved=true")
         tunnelListener?.let { RemoteNodeTunnelManager.removeListener(it) }
         tunnelListener = null
         tunnelEventSink = null

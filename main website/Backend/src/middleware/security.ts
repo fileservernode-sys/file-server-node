@@ -7,6 +7,8 @@ import { config } from '../config/env.js';
 import { isOriginAllowed } from '../utils/security.js';
 import { createErrorResponse } from '../schemas/response.js';
 
+import { buildRateLimitErrorResponse } from './rate_limit_presets.js';
+
 export async function registerSecurityPlugins(app: FastifyInstance): Promise<void> {
   // 0. Cookie Parser Foundation (HttpOnly Browser Sessions)
   await app.register(cookie);
@@ -46,7 +48,7 @@ export async function registerSecurityPlugins(app: FastifyInstance): Promise<voi
   await app.register(rateLimit, {
     max: 120,
     timeWindow: '1 minute',
-    errorResponseBuilder: (req) => createErrorResponse('TOO_MANY_REQUESTS', 'Rate limit exceeded. Please try again later.', (req as any)?.id)
+    errorResponseBuilder: buildRateLimitErrorResponse
   });
 }
 

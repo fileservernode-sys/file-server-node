@@ -1,13 +1,21 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
 import { checkDatabaseReadiness } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
+import { highCapacityHealthRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 export async function readyRoutes(app: FastifyInstance): Promise<void> {
   /**
    * GET /api/v1/ready
    * Service Readiness Probe: Tests active database connection availability.
    */
-  app.get('/ready', async (_request, reply: FastifyReply) => {
+  app.get(
+    '/ready',
+    {
+      config: {
+        rateLimit: highCapacityHealthRateLimitConfig
+      }
+    },
+    async (_request, reply: FastifyReply) => {
     const isDbConnected = await checkDatabaseReadiness();
 
     if (isDbConnected) {

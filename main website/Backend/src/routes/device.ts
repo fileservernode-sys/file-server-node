@@ -33,6 +33,11 @@ const refreshDeviceSessionSchema = z.object({
 });
 
 import { getAuthUser } from '../middleware/customer-auth.js';
+import {
+  expensiveCustomerRateLimitConfig,
+  connectionRegisterRateLimitConfig,
+  customerStandardRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
@@ -44,7 +49,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * 2. Max 1 active server per device (idempotent reuse, no duplicate ServerInstance)
    * 3. Concurrency safety via transactional row locking on User entity
    */
-  app.post('/devices/register', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/devices/register',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const body = registerDeviceSchema.safeParse(request.body);
 
@@ -244,7 +256,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/devices/:deviceId/credentials/issue
    * Explicitly provisions a persistent device authentication credential for an authorized server device.
    */
-  app.post('/devices/:deviceId/credentials/issue', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/devices/:deviceId/credentials/issue',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = heartbeatSchema.safeParse(request.params);
 
@@ -311,10 +330,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     '/devices/:deviceId/session/refresh',
     {
       config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: '1 minute'
-        }
+        rateLimit: connectionRegisterRateLimitConfig
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -476,7 +492,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/devices/:deviceId/heartbeat
    * Reports heartbeat for an authenticated device, updating lastSeenAt timestamp.
    */
-  app.post('/devices/:deviceId/heartbeat', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/devices/:deviceId/heartbeat',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = heartbeatSchema.safeParse(request.params);
 
@@ -524,7 +547,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/devices
    * Retrieves all registered devices for the authenticated user along with their active servers and endpoints.
    */
-  app.get('/devices', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/devices',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
 
     const devices = await prisma.device.findMany({
@@ -606,7 +636,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/devices/:deviceId
    * Retrieves a single device by ID with its active server and endpoint.
    */
-  app.get('/devices/:deviceId', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/devices/:deviceId',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = heartbeatSchema.safeParse(request.params);
 
@@ -795,7 +832,23 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     }));
   };
 
-  app.delete('/devices/:deviceId', handleDeleteDevice);
-  app.delete('/servers/:deviceId', handleDeleteDevice);
+  app.delete(
+    '/devices/:deviceId',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    handleDeleteDevice
+  );
+  app.delete(
+    '/servers/:deviceId',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    handleDeleteDevice
+  );
 }
 

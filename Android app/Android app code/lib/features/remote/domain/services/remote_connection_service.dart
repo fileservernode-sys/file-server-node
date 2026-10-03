@@ -288,8 +288,19 @@ class NativeRemoteConnectionService implements RemoteConnectionService {
     required String sessionToken,
   }) async {
     _stopReconciliation();
+    AppLogger.info('[NativeRemoteConnection] [UI_DISCONNECT] source=flutter_disconnect action=detach_only persistentServerPreserved=true');
+    _currentInfo = const RemoteConnectionInfo(status: RemoteConnectionState.disconnected);
+    if (!_statusController.isClosed) {
+      _statusController.add(_currentInfo);
+    }
+    return _currentInfo;
+  }
+
+  /// Explicit user-directed native tunnel stop
+  Future<RemoteConnectionInfo> stopNativeTunnel() async {
+    _stopReconciliation();
     try {
-      AppLogger.info('[NativeRemoteConnection] Requesting native tunnel stop');
+      AppLogger.info('[NativeRemoteConnection] [EXPLICIT_STOP] Requesting native tunnel stop');
       final res = await _methodChannel.invokeMethod<Map<dynamic, dynamic>>('stopTunnel');
       if (res != null) {
         final info = _parseNativeInfo(Map<String, dynamic>.from(res));

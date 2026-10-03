@@ -8,6 +8,7 @@ import { EmailWebhookService } from '../services/email_webhook_service.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { config } from '../config/env.js';
 import { RequestContextStore } from '../observability/request_context.js';
+import { providerWebhookRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 import { sanitizeFailureReason } from '../utils/email_sanitizer.js';
 
@@ -21,10 +22,7 @@ export async function emailWebhookRoutes(app: FastifyInstance): Promise<void> {
     '/webhooks/email/brevo',
     {
       config: {
-        rateLimit: {
-          max: 120,
-          timeWindow: '1 minute'
-        }
+        rateLimit: providerWebhookRateLimitConfig
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

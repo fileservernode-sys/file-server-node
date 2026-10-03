@@ -246,8 +246,7 @@ export class GatewayService {
   /**
    * Sliding window rate limiter per remote IP
    */
-  private checkRateLimit(remoteIp: string): boolean {
-    const now = Date.now();
+  public checkRateLimit(remoteIp: string, now: number = Date.now()): boolean {
     const tracker = this.rateLimitTracker.get(remoteIp);
 
     if (!tracker || now > tracker.resetAt) {
@@ -263,6 +262,11 @@ export class GatewayService {
     tracker.count++;
     return true;
   }
+
+  public getRateLimitEvents(): number {
+    return this.rateLimitEvents;
+  }
+
 
   /**
    * Disconnects active WebSocket connections and unbinds proxy hostname routes for a deleted device.

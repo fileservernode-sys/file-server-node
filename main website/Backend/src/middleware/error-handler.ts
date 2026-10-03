@@ -4,6 +4,8 @@ import { createErrorResponse } from '../schemas/response.js';
 import { config } from '../config/env.js';
 import { reconnectDatabase } from '../config/database.js';
 import { errorIngestionService } from '../services/error_ingestion_service.js';
+import { SecurityAuditService } from '../observability/security_audit_service.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 export function globalErrorHandler(error: FastifyError, request: FastifyRequest, reply: FastifyReply) {
   const reqId = request.id;
@@ -11,9 +13,35 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     reply.header('x-request-id', reqId);
   }
 
+  const clientIp = resolveClientIp(request);
+  const userAgent = request.headers['user-agent'] as string;
+  const userId = (request as any).user?.id || (request as any).userId;
+  const adminId = (request as any).admin?.id || (request as any).adminId;
+
   // 1. Operational App Errors
   if (error instanceof AppError) {
     request.log.warn({ err: error, url: request.url, reqId }, error.message);
+
+    // If authorization or authentication denial, emit structured security event
+    if (error.statusCode === 403 || error.statusCode === 401) {
+      SecurityAuditService.recordSecurityEvent({
+        eventType: error.statusCode === 403 ? 'AUTHZ_DENIED' : 'AUTH_REJECTED',
+        severity: 'SECURITY',
+        actor: {
+          type: adminId ? 'ADMIN' : (userId ? 'USER' : 'ANONYMOUS'),
+          id: adminId || userId || null
+        },
+        resource: { type: 'API_ENDPOINT', id: request.url.split('?')[0] },
+        action: request.method,
+        result: 'DENIED',
+        statusCode: error.statusCode,
+        errorCode: error.errorCode,
+        reason: error.message,
+        requestId: reqId,
+        ipAddress: clientIp,
+        userAgent
+      }).catch(() => {/* non-blocking */});
+    }
 
     // Ingest into Observability Error Center
     errorIngestionService.ingest({
@@ -24,9 +52,9 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
       httpPath: request.url,
       httpStatus: error.statusCode,
       requestId: reqId,
-      userId: (request as any).user?.id || (request as any).userId,
+      userId,
       metadata: {
-        adminId: (request as any).admin?.id || (request as any).adminId,
+        adminId,
         url: request.url,
         params: request.params,
         query: request.query
@@ -40,6 +68,14 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
   if ((error as any).statusCode === 429 || (error as any).code === 'FST_ERR_RATE_LIMIT' || (error as any).error?.code === 'TOO_MANY_REQUESTS') {
     request.log.warn({ err: error, url: request.url, reqId }, 'Rate limit exceeded');
 
+    // Record Security Audit event for rate limiting
+    SecurityAuditService.recordRateLimitThrottled({
+      ipAddress: clientIp,
+      endpoint: request.url.split('?')[0],
+      userId,
+      limitType: (error as any).code || 'RATE_LIMIT_EXCEEDED'
+    }).catch(() => {/* non-blocking */});
+
     errorIngestionService.ingest({
       error,
       component: 'BACKEND_API',
@@ -49,7 +85,7 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
       httpPath: request.url,
       httpStatus: 429,
       requestId: reqId,
-      userId: (request as any).user?.id || (request as any).userId,
+      userId,
       metadata: { url: request.url }
     }).catch(() => {/* fail-safe */});
 
@@ -69,7 +105,7 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
       httpPath: request.url,
       httpStatus: 400,
       requestId: reqId,
-      userId: (request as any).user?.id || (request as any).userId,
+      userId,
       metadata: { validation: error.validation, url: request.url }
     }).catch(() => {/* fail-safe */});
 
@@ -89,7 +125,7 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
       httpPath: request.url,
       httpStatus: error.statusCode,
       requestId: reqId,
-      userId: (request as any).user?.id || (request as any).userId,
+      userId,
       metadata: { url: request.url }
     }).catch(() => {/* fail-safe */});
 
@@ -119,7 +155,7 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
       httpPath: request.url,
       httpStatus: 503,
       requestId: reqId,
-      userId: (request as any).user?.id || (request as any).userId,
+      userId,
       metadata: { url: request.url }
     }).catch(() => {/* fail-safe */});
 
@@ -138,9 +174,9 @@ export function globalErrorHandler(error: FastifyError, request: FastifyRequest,
     httpPath: request.url,
     httpStatus: 500,
     requestId: reqId,
-    userId: (request as any).user?.id || (request as any).userId,
+    userId,
     metadata: {
-      adminId: (request as any).admin?.id || (request as any).adminId,
+      adminId,
       url: request.url
     }
   }).catch(() => {/* fail-safe */});

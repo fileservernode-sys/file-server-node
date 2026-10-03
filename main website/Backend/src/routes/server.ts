@@ -5,6 +5,7 @@ import { createSuccessResponse, createErrorResponse } from '../schemas/response.
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
+import { expensiveCustomerRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
@@ -19,7 +20,14 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
    * 1. Max 5 active servers per account (MAX_SERVERS_REACHED)
    * 2. Max 1 active server per device (idempotent reuse, no duplicate ServerInstance)
    */
-  app.post('/servers', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/servers',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const body = createServerSchema.safeParse(request.body);
 

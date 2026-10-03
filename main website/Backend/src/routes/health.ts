@@ -3,6 +3,10 @@ import nodemailer from 'nodemailer';
 import { prisma } from '../config/database.js';
 import { config } from '../config/env.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
+import {
+  highCapacityHealthRateLimitConfig,
+  expensiveCustomerRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 /**
  * Categorizes database errors safely for server-side diagnostic logging.
@@ -51,7 +55,14 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
    * Process Liveness Probe: Differentiates process liveness from database readiness.
    * Does NOT expose secrets, credentials, or system paths.
    */
-  app.get('/health', async () => {
+  app.get(
+    '/health',
+    {
+      config: {
+        rateLimit: highCapacityHealthRateLimitConfig
+      }
+    },
+    async () => {
     return createSuccessResponse({
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -63,7 +74,14 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/health/live
    * Standard Kubernetes / Cloud Liveness Probe: Answers 'is the process alive?'.
    */
-  app.get('/health/live', async () => {
+  app.get(
+    '/health/live',
+    {
+      config: {
+        rateLimit: highCapacityHealthRateLimitConfig
+      }
+    },
+    async () => {
     return createSuccessResponse({
       status: 'live',
       timestamp: new Date().toISOString()
@@ -74,7 +92,14 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/health/ready
    * Standard Kubernetes / Cloud Readiness Probe: Answers 'can this node receive traffic?'.
    */
-  app.get('/health/ready', async (_request, reply: FastifyReply) => {
+  app.get(
+    '/health/ready',
+    {
+      config: {
+        rateLimit: highCapacityHealthRateLimitConfig
+      }
+    },
+    async (_request, reply: FastifyReply) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       return reply.status(200).send(
@@ -99,7 +124,14 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
    * Database Connectivity Verification & Diagnostic Probe.
    * Executes a minimal SELECT 1 query via the Prisma singleton.
    */
-  app.get('/health/db', async (_request, reply: FastifyReply) => {
+  app.get(
+    '/health/db',
+    {
+      config: {
+        rateLimit: highCapacityHealthRateLimitConfig
+      }
+    },
+    async (_request, reply: FastifyReply) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       return reply.status(200).send(
@@ -240,6 +272,22 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
     }
   };
 
-  app.get('/health/smtp', emailHealthHandler);
-  app.get('/health/email', emailHealthHandler);
+  app.get(
+    '/health/smtp',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    emailHealthHandler
+  );
+  app.get(
+    '/health/email',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    emailHealthHandler
+  );
 }

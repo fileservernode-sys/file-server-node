@@ -213,6 +213,7 @@ class RemoteNodeServerService : Service() {
                 handleStartServer(port)
             }
             ACTION_STOP_SERVER -> {
+                android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_SERVER source=intent")
                 handleStopServer()
             }
             ACTION_RESTART_SERVER -> {
@@ -236,6 +237,7 @@ class RemoteNodeServerService : Service() {
                 }
             }
             ACTION_STOP_TUNNEL -> {
+                android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_TUNNEL source=intent")
                 setDesiredTunnelEnabled(this, false)
                 RemoteNodeTunnelManager.stopTunnel()
                 val text = "Personal file server on port $activePort | Gateway: DISCONNECTED"
@@ -246,6 +248,22 @@ class RemoteNodeServerService : Service() {
         }
 
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        val desired = getDesiredServerEnabled(this)
+        android.util.Log.i("RemoteNodeServerService", "[ON_TASK_REMOVED] serverDesired=$desired isRunning=$isServiceRunning activePort=$activePort")
+        if (desired) {
+            val text = if (RemoteNodeTunnelManager.currentState == RemoteNodeTunnelManager.STATE_CONNECTED) {
+                "Personal file server on port $activePort | Gateway: CONNECTED"
+            } else {
+                "Personal file server is running on port $activePort"
+            }
+            val runningNotif = buildNotification(text)
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, runningNotif)
+        }
     }
 
     private fun handleStartServer(port: Int) {
@@ -329,6 +347,7 @@ class RemoteNodeServerService : Service() {
     private fun handleStopServer() {
         synchronized(lifecycleLock) {
             try {
+                android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] handleStopServer: Stopping local engine and tunnel explicitly")
                 setDesiredTunnelEnabled(this, false)
                 RemoteNodeTunnelManager.stopTunnel()
                 setDesiredServerEnabled(this, false)

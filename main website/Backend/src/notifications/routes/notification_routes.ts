@@ -27,6 +27,10 @@ const paginationQuerySchema = z.object({
 });
 
 import { getAuthUser } from '../../middleware/customer-auth.js';
+import {
+  customerStandardRateLimitConfig,
+  expensiveCustomerRateLimitConfig
+} from '../../middleware/rate_limit_presets.js';
 
 export async function notificationRoutes(app: FastifyInstance): Promise<void> {
 
@@ -34,7 +38,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/notifications
    * Returns paginated notification history for authenticated user.
    */
-  app.get('/notifications', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/notifications',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const query = paginationQuerySchema.safeParse(request.query);
 
@@ -78,7 +89,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/notifications/unread-count
    * Returns count of unread notifications for authenticated user.
    */
-  app.get('/notifications/unread-count', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/notifications/unread-count',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const unreadCount = await notificationRepository.getUnreadCount(user.id);
     return reply.send(createSuccessResponse({ unreadCount }));
@@ -88,7 +106,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/notifications/read-all
    * Marks all UNREAD notifications as read for authenticated user.
    */
-  app.post('/notifications/read-all', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/notifications/read-all',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const count = await notificationRepository.markAllAsRead(user.id);
     return reply.send(createSuccessResponse({
@@ -101,7 +126,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * PATCH /api/v1/notifications/read-all
    * Alias for POST /notifications/read-all.
    */
-  app.patch('/notifications/read-all', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.patch(
+    '/notifications/read-all',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const count = await notificationRepository.markAllAsRead(user.id);
     return reply.send(createSuccessResponse({
@@ -114,7 +146,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * PATCH /api/v1/notifications/:notificationId/read
    * Marks a notification as read (user ownership enforced).
    */
-  app.patch('/notifications/:notificationId/read', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.patch(
+    '/notifications/:notificationId/read',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const { notificationId } = request.params as { notificationId: string };
 
@@ -139,7 +178,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * PATCH /api/v1/notifications/:notificationId/archive
    * Marks a notification as archived (user ownership enforced).
    */
-  app.patch('/notifications/:notificationId/archive', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.patch(
+    '/notifications/:notificationId/archive',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const { notificationId } = request.params as { notificationId: string };
 
@@ -163,7 +209,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/notifications/health
    * Returns operational notification health state (Authenticated).
    */
-  app.get('/notifications/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/notifications/health',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     await getAuthUser(request); // Authentication required
 
     const metricsSnapshot = notificationMetrics.getSnapshot();
@@ -209,7 +262,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/notifications/metrics
    * Returns operational notification metrics snapshot (Authenticated).
    */
-  app.get('/notifications/metrics', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/notifications/metrics',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     await getAuthUser(request); // Authentication required
 
     const metricsSnapshot = notificationMetrics.getSnapshot();
@@ -232,7 +292,14 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
    * Dispatches an authenticated real-time test notification to all active devices belonging to the user.
    * Returns complete diagnostics (devices targeted, FCM delivery status, delivery record IDs).
    */
-  app.post('/notifications/test-push', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/notifications/test-push',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     
     // Resolve active push tokens for this user

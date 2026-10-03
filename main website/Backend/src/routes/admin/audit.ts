@@ -7,6 +7,10 @@ import { createSuccessResponse } from '../../schemas/response.js';
 import { ValidationError } from '../../errors/app-error.js';
 import { AdminAuditAction } from '@prisma/client';
 import { resolveClientIp } from '../../utils/ip.js';
+import {
+  adminOperationsRateLimitConfig,
+  adminHeavyQueryRateLimitConfig
+} from '../../middleware/rate_limit_presets.js';
 
 const auditQuerySchema = z.object({
   startDate: z.string().optional(),
@@ -38,6 +42,9 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     '/admin/audit-logs',
     {
+      config: {
+        rateLimit: adminOperationsRateLimitConfig
+      },
       preHandler: [adminAuthenticate, requirePermission('audit.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -64,15 +71,7 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
     '/admin/audit-logs/export',
     {
       config: {
-        rateLimit: {
-          max: 10,
-          timeWindow: '1 minute',
-          keyGenerator: (req: FastifyRequest) => {
-            const adminId = (req as any).admin?.id || 'anonymous';
-            const clientIp = resolveClientIp(req) || 'unknown';
-            return `audit_export_${adminId}_${clientIp}`;
-          }
-        }
+        rateLimit: adminHeavyQueryRateLimitConfig
       },
       preHandler: [adminAuthenticate, requirePermission('audit.read')]
     },
@@ -104,6 +103,9 @@ export async function adminAuditRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     '/admin/audit-logs/verify-integrity',
     {
+      config: {
+        rateLimit: adminHeavyQueryRateLimitConfig
+      },
       preHandler: [adminAuthenticate, requirePermission('system.read')]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

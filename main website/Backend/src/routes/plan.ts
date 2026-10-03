@@ -5,6 +5,7 @@ import { CountryDetectionService } from '../services/billing/country_detection_s
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { CurrencyCode } from '@prisma/client';
 import { AppError } from '../errors/app-error.js';
+import { publicStandardRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 const GetPlansQuerySchema = z.object({
   currency: z.enum(['INR', 'USD']).optional()
@@ -24,7 +25,14 @@ export async function planRoutes(app: FastifyInstance): Promise<void> {
    * 2. Sets anti-cache headers (private, no-store, Vary: CF-IPCountry).
    * 3. Prevents client currency manipulation.
    */
-  app.get('/plans', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/plans',
+    {
+      config: {
+        rateLimit: publicStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     // Prevent intermediate CDN / proxy cache pollution across regions
     reply.header('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
     reply.header('Vary', 'CF-IPCountry, Accept-Encoding');
@@ -61,7 +69,14 @@ export async function planRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/plans/:code
    * Public backend-authoritative endpoint returning a single plan by code for the detected region.
    */
-  app.get('/plans/:code', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/plans/:code',
+    {
+      config: {
+        rateLimit: publicStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     // Prevent intermediate CDN / proxy cache pollution across regions
     reply.header('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
     reply.header('Vary', 'CF-IPCountry, Accept-Encoding');

@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   # ---------------------------------------------------------------------------
   # 1. BUILD ANDROID APK ARTIFACTS (PRIMARY PRODUCT TARGET)

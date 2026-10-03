@@ -19,6 +19,13 @@ import { createSuccessResponse } from '../schemas/response.js';
 import { adminAuthenticate } from '../middleware/admin-auth.js';
 import { requirePermission } from '../middleware/admin-rbac.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
+import {
+  customerStandardRateLimitConfig,
+  expensiveCustomerRateLimitConfig,
+  providerWebhookRateLimitConfig,
+  adminOperationsRateLimitConfig,
+  adminHeavyQueryRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -26,7 +33,14 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
    * Authenticated, IDOR-safe endpoint returning the current user's authoritative billing state,
    * active subscription summary, and resolved technical entitlements.
    */
-  app.get('/billing', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/billing',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
 
     // 1. Authoritatively resolve effective plan and billing state from database
@@ -495,7 +509,14 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/billing/payments/:id/receipt', getPaymentReceiptHandler);
 
-  app.post('/billing/webhooks/razorpay', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/billing/webhooks/razorpay',
+    {
+      config: {
+        rateLimit: providerWebhookRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const signature = (request.headers['x-razorpay-signature'] || request.headers['X-Razorpay-Signature']) as string | undefined;
     const eventIdHeader = (request.headers['x-razorpay-event-id'] || request.headers['X-Razorpay-Event-Id']) as string | undefined;
     const rawBody = (request as any).rawBody || JSON.stringify(request.body || {});

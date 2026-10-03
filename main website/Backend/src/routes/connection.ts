@@ -41,7 +41,11 @@ const reportTelemetryErrorSchema = z.object({
   metadata: z.record(z.any()).optional()
 });
 
-import { getAuthUser } from '../middleware/customer-auth.js';
+import { getAuthUser, customerAuthenticate } from '../middleware/customer-auth.js';
+import {
+  connectionRegisterRateLimitConfig,
+  customerStandardRateLimitConfig
+} from '../middleware/rate_limit_presets.js';
 
 export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
@@ -50,8 +54,16 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
    * Registers intent for outbound remote connection from an Android device
    * Supports deterministic gateway candidate selection and failed-node avoidance (Batch 11A.10)
    */
-  app.post('/connections/register', async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
+  app.post(
+    '/connections/register',
+    {
+      preHandler: [customerAuthenticate],
+      config: {
+        rateLimit: connectionRegisterRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = request.user || await getAuthUser(request);
     const body = registerConnectionSchema.safeParse(request.body);
 
     if (!body.success) {
@@ -274,7 +286,14 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/connections/:connectionId/heartbeat
    * Reports heartbeat and status state transitions for remote connection
    */
-  app.post('/connections/:connectionId/heartbeat', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/connections/:connectionId/heartbeat',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = connectionParamSchema.safeParse(request.params);
 
@@ -319,7 +338,14 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
    * POST /api/v1/connections/:connectionId/disconnect
    * Gracefully disconnects a remote connection
    */
-  app.post('/connections/:connectionId/disconnect', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post(
+    '/connections/:connectionId/disconnect',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = connectionParamSchema.safeParse(request.params);
 
@@ -369,7 +395,14 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/connections/:connectionId
    * Retrieves current status and metrics for a remote connection
    */
-  app.get('/connections/:connectionId', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/connections/:connectionId',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = connectionParamSchema.safeParse(request.params);
 

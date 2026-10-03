@@ -33,22 +33,25 @@ describe('Platform Account Authentication API (/api/v1/auth)', () => {
 
   test('Email Templates strictly contain NO verification links or password reset links', () => {
     const regTemplate = getEmailVerificationTemplate('123456', 10);
-    assert.strictEqual(regTemplate.subject.includes('123456'), true);
+    assert.strictEqual(regTemplate.subject.includes('ZdexCloud'), true);
     assert.strictEqual(regTemplate.html.includes('123456'), true);
+    assert.strictEqual(regTemplate.text.includes('123456'), true);
     assert.strictEqual(regTemplate.html.includes('href="http://'), false);
     assert.strictEqual(regTemplate.html.includes('href="https://zdexcloud.com/verify'), false);
     assert.strictEqual(regTemplate.text.includes('http://'), false);
 
     const resetTemplate = getPasswordResetTemplate('654321', 10);
-    assert.strictEqual(resetTemplate.subject.includes('654321'), true);
+    assert.strictEqual(resetTemplate.subject.includes('ZdexCloud'), true);
     assert.strictEqual(resetTemplate.html.includes('654321'), true);
+    assert.strictEqual(resetTemplate.text.includes('654321'), true);
     assert.strictEqual(resetTemplate.html.includes('href="http://'), false);
     assert.strictEqual(resetTemplate.html.includes('href="https://zdexcloud.com/reset'), false);
     assert.strictEqual(resetTemplate.text.includes('http://'), false);
 
     const loginTemplate = getLoginOtpTemplate('999888', 10);
-    assert.strictEqual(loginTemplate.subject.includes('999888'), true);
+    assert.strictEqual(loginTemplate.subject.includes('ZdexCloud'), true);
     assert.strictEqual(loginTemplate.html.includes('999888'), true);
+    assert.strictEqual(loginTemplate.text.includes('999888'), true);
   });
 
   test('Crypto utilities hash OTPs securely and perform timing-safe verification', () => {

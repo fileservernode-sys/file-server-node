@@ -5,6 +5,7 @@ import { createSuccessResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { EndpointService } from '../services/endpoint.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
+import { customerStandardRateLimitConfig } from '../middleware/rate_limit_presets.js';
 
 const serverParamSchema = z.object({
   serverId: z.string().min(1)
@@ -16,7 +17,14 @@ export async function endpointRoutes(app: FastifyInstance): Promise<void> {
    * GET /api/v1/servers/:serverId/endpoint
    * Retrieves allocated remote endpoint details for a ServerInstance
    */
-  app.get('/servers/:serverId/endpoint', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get(
+    '/servers/:serverId/endpoint',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const params = serverParamSchema.safeParse(request.params);
 
