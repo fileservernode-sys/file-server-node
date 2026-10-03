@@ -857,61 +857,7 @@
       const offlineState = document.getElementById('vd-offline-state');
       const wrapper = document.getElementById('file-manager-wrapper');
       const serverBreadcrumb = document.getElementById('vd-server-name-breadcrumb');
-      let authResult = { authenticated: false, user: null };
-      if (typeof AuthService !== 'undefined') {
-        authResult = await AuthService.initSession();
-      }
-
-      if (!authResult.authenticated) {
-        window.location.href = 'login.html';
-        return;
-      }
-
-      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
-
-      if (user && user.email && userBadge) {
-        userBadge.textContent = user.email;
-      }
-
-      if (typeof EmbeddedFileManager !== 'undefined') {
-        const isInitialized = EmbeddedFileManager.init();
-        if (!isInitialized) {
-          showOffline('No target server selected or authentication session expired.');
-          return;
-        }
-
-        try {
-          const apiBase = EmbeddedFileManager.getApiBase();
-          const res = await fetch(`${apiBase}/file-manager/${EmbeddedFileManager.serverId}/access`, {
-            credentials: 'include'
-          });
-          const data = await res.json();
-
-          if (!res.ok || !data.success) {
-            showOffline(data?.error?.message || 'Server host unreachable.');
-            return;
-          }
-
-          if (serverBreadcrumb) {
-            serverBreadcrumb.textContent = EmbeddedFileManager.serverName || data.data?.serverName || 'Android Storage Host';
-          }
-
-          if (loadingState) loadingState.style.display = 'none';
-          if (wrapper) wrapper.style.display = 'flex';
-
-          AppRouter.init();
-          MyFilesController.init();
-          if (typeof FileManagerHelper !== 'undefined' && FileManagerHelper.init) {
-            FileManagerHelper.init();
-          }
-          HomeController.load();
-
-        } catch (err) {
-          showOffline('Connection timeout while reaching target Android server host.');
-        }
-      } else {
-        showOffline('File Manager engine failed to initialize.');
-      }
+      const userBadge = document.getElementById('vd-user-email');
 
       function showOffline(message) {
         if (loadingState) loadingState.style.display = 'none';
@@ -920,6 +866,72 @@
           const msgEl = document.getElementById('vd-offline-message');
           if (msgEl) msgEl.textContent = message;
         }
+      }
+
+      try {
+        let authResult = { authenticated: false, user: null };
+        if (typeof AuthService !== 'undefined') {
+          authResult = await AuthService.initSession();
+        }
+
+        if (!authResult.authenticated) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+        if (user && user.email && userBadge) {
+          userBadge.textContent = user.email;
+        }
+
+        if (typeof EmbeddedFileManager !== 'undefined') {
+          const isInitialized = EmbeddedFileManager.init();
+          if (!isInitialized) {
+            showOffline('No target server selected or authentication session expired.');
+            return;
+          }
+
+          try {
+            const apiBase = EmbeddedFileManager.getApiBase();
+            const res = await fetch(`${apiBase}/file-manager/${EmbeddedFileManager.serverId}/access`, {
+              credentials: 'include'
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+              showOffline(data?.error?.message || 'Server host unreachable.');
+              return;
+            }
+
+            if (!data.data?.online) {
+              showOffline('Your Android phone server is currently offline. Please ensure Server Mode is active in the ZdexCloud app on your phone.');
+              return;
+            }
+
+            if (serverBreadcrumb) {
+              serverBreadcrumb.textContent = EmbeddedFileManager.serverName || data.data?.serverName || 'Android Storage Host';
+            }
+
+            if (loadingState) loadingState.style.display = 'none';
+            if (wrapper) wrapper.style.display = 'flex';
+
+            AppRouter.init();
+            MyFilesController.init();
+            if (typeof FileManagerHelper !== 'undefined' && FileManagerHelper.init) {
+              FileManagerHelper.init();
+            }
+            HomeController.load();
+
+          } catch (err) {
+            showOffline('Connection timeout while reaching target Android server host.');
+          }
+        } else {
+          showOffline('File Manager engine failed to initialize.');
+        }
+      } catch (globalErr) {
+        console.error('[FileManager] Initialization error:', globalErr);
+        showOffline('Unexpected error initializing file manager.');
       }
     }
   </script>
