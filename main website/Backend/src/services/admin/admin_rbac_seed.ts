@@ -74,9 +74,11 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   { slug: 'sql.query.write', name: 'Execute Controlled Write SQL', resource: 'sql', action: 'write', description: 'Execute authorized controlled write SQL statements via Admin SQL Console' },
   { slug: 'sql.query.destructive', name: 'Execute Destructive SQL', resource: 'sql', action: 'destructive', description: 'Execute authorized destructive SQL statements (DELETE) via Admin SQL Console' },
 
-  // Database Management (Phase 15 Batch 15.1 & Batch 15.4)
+  // Database Management (Phase 15 Batch 15.1, Batch 15.4, Batch 15.5 & Batch 15.6)
   { slug: 'database.management.view', name: 'View Database Management', resource: 'database', action: 'view', description: 'View database topology, schema overview, and table metadata' },
-  { slug: 'database.management.insert', name: 'Insert Database Records', resource: 'database', action: 'insert', description: 'Insert single records into authorized database tables via Database Management' }
+  { slug: 'database.management.insert', name: 'Insert Database Records', resource: 'database', action: 'insert', description: 'Insert single records into authorized database tables via Database Management' },
+  { slug: 'database.management.update', name: 'Update Database Records', resource: 'database', action: 'update', description: 'Update single records in authorized database tables via Database Management' },
+  { slug: 'database.management.delete', name: 'Delete Database Records', resource: 'database', action: 'delete', description: 'Delete single records and execute bounded bulk deletion on authorized database tables via Database Management' }
 ];
 
 export const SYSTEM_ROLES: SystemRoleDef[] = [
@@ -104,7 +106,9 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'admin_roles.read',
       'system.read',
       'database.management.view',
-      'database.management.insert'
+      'database.management.insert',
+      'database.management.update',
+      'database.management.delete'
     ]
   },
   {

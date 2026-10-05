@@ -349,12 +349,12 @@ class RemoteNodeServerService : Service() {
             try {
                 android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] handleStopServer: Stopping local engine and tunnel explicitly")
                 setDesiredTunnelEnabled(this, false)
-                RemoteNodeTunnelManager.stopTunnel()
                 setDesiredServerEnabled(this, false)
-                engine.stop()
-                releaseWakeLock()
                 isServiceRunning = false
                 currentServerState = "STOPPED"
+                engine.stop()
+                RemoteNodeTunnelManager.stopTunnel()
+                releaseWakeLock()
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)

@@ -366,6 +366,7 @@ class MainActivity : FlutterActivity() {
                     try {
                         context.startService(intent)
                     } catch (_: Exception) {}
+                    RemoteNodeTunnelManager.stopTunnel()
                     val res = RemoteNodeServerService.engine.stop()
                     result.success(res)
                 }

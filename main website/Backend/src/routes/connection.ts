@@ -5,6 +5,7 @@ import { createSuccessResponse, createErrorResponse } from '../schemas/response.
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
 import { EndpointService } from '../services/endpoint.js';
 import { ConnectionStateMachine } from '../services/connection_state_machine.js';
+import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { ConnectionObservability } from '../observability/connection_observability.js';
 import { ErrorIngestionService } from '../services/error_ingestion_service.js';
 import { ConnectionStatus, ErrorSeverity } from '@prisma/client';
@@ -385,11 +386,27 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const now = new Date();
+
+    // 1. Evict active gateway connection session promptly
+    defaultGatewayService.evictDeviceSession(connection.deviceId, 'Explicit user stop');
+
+    // 2. Transition connection state machine with DISCONNECT_EXPLICIT
     const transitionResult = await ConnectionStateMachine.transition({
       connectionId,
       nextStatus: ConnectionStatus.DISCONNECTED,
       eventSource: 'DISCONNECT_EXPLICIT',
       timestamp: now
+    });
+
+    // 3. Atomically mark ServerInstance as STOPPED and ServerEndpoints as INACTIVE for this device
+    await prisma.serverInstance.updateMany({
+      where: { deviceId: connection.deviceId },
+      data: { status: 'STOPPED' }
+    });
+
+    await prisma.serverEndpoint.updateMany({
+      where: { serverInstance: { deviceId: connection.deviceId } },
+      data: { status: 'INACTIVE' }
     });
 
     await prisma.auditEvent.create({

@@ -37,10 +37,15 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
     throw new ForbiddenError('You do not have permission to access this server');
   }
 
-  // 3. Verify gateway has the live WebSocket for this device
+  // 3. Fail closed immediately if server is explicitly STOPPED in database
+  if (serverInstance.status === 'STOPPED') {
+    return { serverInstance, device, activeConnectionId: null, offline: true };
+  }
+
+  // 4. Verify gateway has the live WebSocket for this device
   const hasGatewayConnection = defaultGatewayService.hasActiveConnectionForDevice(device.id);
 
-  // 4. Resolve active DeviceConnection
+  // 5. Resolve active DeviceConnection
   const activeConnection = await prisma.deviceConnection.findFirst({
     where: {
       deviceId: device.id,
@@ -53,15 +58,7 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
     return { serverInstance, device, activeConnectionId: activeConnection?.id || null, offline: true };
   }
 
-  // Self-heal serverInstance status if live WebSocket connection exists
-  if (serverInstance.status !== 'RUNNING') {
-    await prisma.serverInstance.update({
-      where: { id: serverInstance.id },
-      data: { status: 'RUNNING', lastHeartbeatAt: new Date() }
-    }).catch(() => {});
-  }
-
-  // 5. Perform end-to-end HEALTH probe to verify real Android connection
+  // 6. Perform end-to-end HEALTH probe to verify real Android local file server is running
   try {
     const probe = await defaultGatewayService.handleProxiedFileRequestByDeviceId(device.id, 'HEALTH', {});
     if (!probe || probe.success === false) {
@@ -71,6 +68,14 @@ async function resolveAuthorisedServer(serverId: string, userId: string) {
   } catch (err) {
     console.warn(`[FILE_MANAGER] Health probe error for deviceId=${device.id}:`, err);
     return { serverInstance, device, activeConnectionId: activeConnection?.id || null, offline: true };
+  }
+
+  // 7. Self-heal serverInstance status ONLY when live WebSocket exists AND end-to-end health probe passes
+  if (serverInstance.status !== 'RUNNING') {
+    await prisma.serverInstance.update({
+      where: { id: serverInstance.id },
+      data: { status: 'RUNNING', lastHeartbeatAt: new Date() }
+    }).catch(() => {});
   }
 
   return {

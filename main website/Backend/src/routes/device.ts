@@ -6,6 +6,7 @@ import { createSuccessResponse, createErrorResponse } from '../schemas/response.
 import { ValidationError, UnauthorizedError, ForbiddenError, ConflictError } from '../errors/app-error.js';
 import { hashPassword, hashSessionToken, generateSessionToken } from '../utils/crypto.js';
 import { defaultGatewayService } from '../gateway/gateway_service.js';
+import { ConnectionStateMachine } from '../services/connection_state_machine.js';
 import { EndpointService } from '../services/endpoint.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { CustomerStatusService } from '../services/customer_status_service.js';
@@ -529,11 +530,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
-    // Update server instance heartbeat AND status
+    // Update server instance heartbeat timestamp ONLY if currently RUNNING (do NOT revive a STOPPED server!)
     await prisma.serverInstance.updateMany({
-      where: { deviceId },
+      where: { deviceId, status: 'RUNNING' },
       data: { 
-        status: 'RUNNING',
         lastHeartbeatAt: now 
       }
     });
@@ -542,6 +542,88 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       status: 'ok',
       deviceId: updatedDevice.id,
       lastSeenAt: now.toISOString()
+    }));
+  });
+
+  /**
+   * POST /api/v1/devices/:deviceId/server/stop
+   * Explicitly marks the server instance on a device as STOPPED,
+   * evicts the active gateway connection, and marks endpoints INACTIVE.
+   */
+  app.post(
+    '/devices/:deviceId/server/stop',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = heartbeatSchema.safeParse(request.params);
+    if (!params.success) {
+      throw new ValidationError('Invalid device ID parameter');
+    }
+
+    const deviceId = params.data.deviceId;
+    const user = await getAuthUser(request, { allowDeviceRuntime: true, requiredDeviceId: deviceId });
+    const device = await prisma.device.findUnique({
+      where: { id: deviceId },
+      include: { servers: true, connections: true }
+    });
+
+    if (!device) {
+      return reply.status(404).send(createErrorResponse('DEVICE_NOT_FOUND', 'Device node not found'));
+    }
+
+    if (device.userId !== user.id) {
+      throw new ForbiddenError('You do not have permission to manage this device');
+    }
+
+    const now = new Date();
+
+    // 1. Evict active gateway connection session promptly
+    defaultGatewayService.evictDeviceSession(deviceId, 'Explicit user stop');
+
+    // 2. Transition any active connection records to DISCONNECTED
+    const activeConns = await prisma.deviceConnection.findMany({
+      where: {
+        deviceId,
+        status: { in: ['CONNECTED', 'CONNECTING', 'RECONNECTING', 'STALE'] }
+      }
+    });
+
+    for (const conn of activeConns) {
+      await ConnectionStateMachine.transition({
+        connectionId: conn.id,
+        nextStatus: 'DISCONNECTED' as any,
+        eventSource: 'DISCONNECT_EXPLICIT',
+        timestamp: now
+      });
+    }
+
+    // 3. Mark ServerInstance STOPPED and ServerEndpoints INACTIVE
+    await prisma.serverInstance.updateMany({
+      where: { deviceId },
+      data: { status: 'STOPPED' }
+    });
+
+    await prisma.serverEndpoint.updateMany({
+      where: { serverInstance: { deviceId } },
+      data: { status: 'INACTIVE' }
+    });
+
+    await prisma.auditEvent.create({
+      data: {
+        userId: user.id,
+        deviceId,
+        eventType: 'SERVER_STOPPED',
+        metadata: { stoppedAt: now.toISOString(), source: 'device_stop' }
+      }
+    });
+
+    return reply.status(200).send(createSuccessResponse({
+      deviceId,
+      serverStatus: 'STOPPED',
+      stoppedAt: now.toISOString()
     }));
   });
 

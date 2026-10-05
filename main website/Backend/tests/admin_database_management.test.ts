@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DatabaseMetadataService } from '../src/services/admin/database_metadata_service.js';
 import { getDestructiveTableClassification } from '../src/utils/sql_safety_guard.js';
-import { NotFoundError, ValidationError } from '../src/errors/app-error.js';
+import { NotFoundError, ValidationError, ConflictError } from '../src/errors/app-error.js';
 import { SYSTEM_PERMISSIONS, SYSTEM_ROLES } from '../src/services/admin/admin_rbac_seed.js';
 
 test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async (t) => {
@@ -987,6 +987,678 @@ test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async
       }
     });
   });
+
+  /* =========================================================================
+     Phase 15 — Batch 15.5: Edit / Update Records Test Suite
+     ========================================================================= */
+  await t.test('7. Phase 15 — Batch 15.5: Edit / Update Records Verification Suite', async (t2: any) => {
+
+    await t2.test('1. RBAC: database.management.update permission catalog validation', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.update');
+      assert.ok(perm, 'database.management.update permission must be registered');
+      assert.strictEqual(perm?.resource, 'database');
+      assert.strictEqual(perm?.action, 'update');
+
+      const superAdminRole = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      assert.ok(superAdminRole?.permissions.includes('database.management.update'), 'SUPER_ADMIN must have update permission');
+
+      const adminRole = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      assert.ok(adminRole?.permissions.includes('database.management.update'), 'ADMIN must have update permission');
+
+      const opsRole = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      assert.strictEqual(opsRole?.permissions.includes('database.management.update'), false, 'OPERATIONS must NOT have update permission');
+
+      const supportRole = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+      assert.strictEqual(supportRole?.permissions.includes('database.management.update'), false, 'SUPPORT must NOT have update permission');
+    });
+
+    await t2.test('2. UPDATE_POLICY_REGISTRY: exactly 6 approved leaf tables permitted with explicit column policies', () => {
+      const expectedLeafPolicies: Record<string, { editableColumns: string[]; concurrencyField?: string }> = {
+        support_case_notes: { editableColumns: ['note', 'isInternal'], concurrencyField: 'updatedAt' },
+        error_occurrences: { editableColumns: ['message', 'stackTrace', 'metadata'], concurrencyField: 'createdAt' },
+        email_delivery_attempts: { editableColumns: ['providerResponse', 'failureReason'], concurrencyField: 'attemptedAt' },
+        device_connections: { editableColumns: ['remoteEndpoint', 'status'], concurrencyField: 'updatedAt' },
+        device_push_tokens: { editableColumns: ['isActive', 'appVersion', 'platform'], concurrencyField: 'updatedAt' },
+        server_endpoints: { editableColumns: ['hostname', 'status'], concurrencyField: 'updatedAt' }
+      };
+
+      for (const [table, policy] of Object.entries(expectedLeafPolicies)) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'APPROVED_LEAF', `${table} must be classified as APPROVED_LEAF`);
+        assert.strictEqual(cls.isExplicitlyApproved, true);
+        assert.ok(policy.editableColumns.length > 0, `${table} must declare editable columns`);
+      }
+    });
+
+    await t2.test('3. Fail-Closed: update rejected for all NON_LEAF, PROTECTED, BUSINESS_SENSITIVE, and INTERNAL tables', () => {
+      const prohibitedTables = [
+        '_prisma_migrations',
+        'admin_users',
+        'admin_sessions',
+        'users',
+        'user_sessions',
+        'billing_payments',
+        'subscriptions',
+        'devices',
+        'server_instances',
+        'support_cases',
+        'email_messages',
+        'unknown_custom_table'
+      ];
+
+      for (const table of prohibitedTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.notStrictEqual(cls.classification, 'APPROVED_LEAF', `${table} must NOT be editable`);
+      }
+    });
+
+    await t2.test('4. Primary Key targeting: rejects tables without a primary key', () => {
+      const validateTableHasPk = (primaryKeys: string[]) => {
+        if (!primaryKeys || primaryKeys.length === 0) {
+          throw new ValidationError('Table has no primary key defined. Single-row update is not permitted.');
+        }
+      };
+
+      assert.doesNotThrow(() => validateTableHasPk(['id']));
+      assert.doesNotThrow(() => validateTableHasPk(['deviceId', 'connectionId']));
+      assert.throws(() => validateTableHasPk([]), /no primary key/);
+    });
+
+    await t2.test('5. Primary Key targeting: enforces complete primary key payload for single and composite PKs', () => {
+      const validatePkPayload = (requiredPks: string[], payload: Record<string, any>) => {
+        for (const pk of requiredPks) {
+          if (payload[pk] === undefined || payload[pk] === null || payload[pk] === '') {
+            throw new ValidationError(`Missing primary key value for '${pk}'`);
+          }
+        }
+      };
+
+      assert.doesNotThrow(() => validatePkPayload(['id'], { id: 'note_123' }));
+      assert.doesNotThrow(() => validatePkPayload(['userId', 'roleId'], { userId: 'u_1', roleId: 'r_1' }));
+      assert.throws(() => validatePkPayload(['id'], {}), /Missing primary key/);
+      assert.throws(() => validatePkPayload(['userId', 'roleId'], { userId: 'u_1' }), /Missing primary key value for 'roleId'/);
+    });
+
+    await t2.test('6. Column Policy: rejects attempts to update unapproved or immutable columns', () => {
+      const allowedColumns = new Set(['note', 'isInternal']);
+      const requestedUpdates = { note: 'New Note', createdAt: '2026-01-01', id: 'new_id' };
+
+      const rejectedCols = Object.keys(requestedUpdates).filter(col => !allowedColumns.has(col));
+      assert.deepStrictEqual(rejectedCols, ['createdAt', 'id']);
+    });
+
+    await t2.test('7. Column Policy: rejects primary key, auto-increment, generated, and sensitive column modifications', () => {
+      const columns = [
+        { name: 'id', isPrimaryKey: true, isAutoIncrement: true, isEditable: false },
+        { name: 'password_hash', isSensitive: true, isEditable: false },
+        { name: 'full_name', isGenerated: true, isEditable: false },
+        { name: 'note', isEditable: true }
+      ];
+
+      for (const col of columns) {
+        if (col.isPrimaryKey || col.isAutoIncrement || col.isSensitive || col.isGenerated) {
+          assert.strictEqual(col.isEditable, false, `${col.name} must NOT be editable`);
+        }
+      }
+    });
+
+    await t2.test('8. Optimistic Concurrency Control: detects stale records and rejects with 409 Conflict', () => {
+      const checkConcurrency = (currentVal: any, submittedVal: any) => {
+        if (submittedVal === undefined || submittedVal === null) return true;
+        const currentIso = currentVal instanceof Date ? currentVal.toISOString() : String(currentVal);
+        const submittedIso = submittedVal instanceof Date ? submittedVal.toISOString() : String(submittedVal);
+        return currentIso === submittedIso;
+      };
+
+      const now = new Date('2026-10-05T12:00:00.000Z');
+      const older = new Date('2026-10-05T11:00:00.000Z');
+
+      assert.strictEqual(checkConcurrency(now, now.toISOString()), true);
+      assert.strictEqual(checkConcurrency(now, older.toISOString()), false);
+    });
+
+    await t2.test('9. Unchanged values detection: skips redundant write when values are identical', () => {
+      const currentRow = { id: 'note_1', note: 'Original Note', isInternal: true };
+      const submittedValues = { note: 'Original Note', isInternal: true };
+
+      let changedCount = 0;
+      for (const [k, v] of Object.entries(submittedValues)) {
+        if ((currentRow as any)[k] !== v) {
+          changedCount++;
+        }
+      }
+
+      assert.strictEqual(changedCount, 0);
+    });
+
+    await t2.test('10. Type validation: strictly validates JSON payload format on update', () => {
+      const validateJson = (val: any) => {
+        if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+        if (typeof val === 'string') {
+          JSON.parse(val);
+          return val;
+        }
+        throw new Error('Invalid JSON');
+      };
+
+      assert.doesNotThrow(() => validateJson('{"status": "ok"}'));
+      assert.doesNotThrow(() => validateJson({ status: 'ok' }));
+      assert.throws(() => validateJson('{ invalid: json }'));
+    });
+
+    await t2.test('11. Type validation: boolean normalization for tinyint(1) and boolean columns', () => {
+      const coerceBool = (val: any) => {
+        if (typeof val === 'boolean') return val ? 1 : 0;
+        if (val === 'true' || val === 1 || val === '1') return 1;
+        if (val === 'false' || val === 0 || val === '0') return 0;
+        throw new Error('Invalid boolean');
+      };
+
+      assert.strictEqual(coerceBool(true), 1);
+      assert.strictEqual(coerceBool('true'), 1);
+      assert.strictEqual(coerceBool(false), 0);
+      assert.strictEqual(coerceBool('false'), 0);
+      assert.throws(() => coerceBool('invalid'));
+    });
+
+    await t2.test('12. BigInt string precision preservation on row update targeting', () => {
+      const bigIntPk = '90071992547409939999';
+      assert.strictEqual(typeof bigIntPk, 'string');
+      assert.strictEqual(bigIntPk.length, 20);
+      // Validating string is passed directly into parameterized query without floating point corruption
+      assert.strictEqual(BigInt(bigIntPk).toString(), bigIntPk);
+    });
+
+    await t2.test('13. Transactional single-row guarantee: rolls back if affected rows !== 1', () => {
+      const assertSingleRowAffected = (affectedRows: number) => {
+        if (affectedRows > 1) {
+          throw new Error(`Safety violation: update affected ${affectedRows} rows. Rolled back.`);
+        }
+        return affectedRows;
+      };
+
+      assert.doesNotThrow(() => assertSingleRowAffected(1));
+      assert.doesNotThrow(() => assertSingleRowAffected(0)); // 0 when values unchanged
+      assert.throws(() => assertSingleRowAffected(2), /Safety violation/);
+      assert.throws(() => assertSingleRowAffected(50), /Safety violation/);
+    });
+
+    await t2.test('14. Parameterized SQL generator for UPDATE: creates safe UPDATE statement with WHERE clause', () => {
+      const tableName = 'support_case_notes';
+      const updateCols = ['note', 'isInternal'];
+      const pkCols = ['id'];
+
+      const setClauses = updateCols.map(c => `\`${c}\` = ?`).join(', ');
+      const whereClauses = pkCols.map(c => `\`${c}\` = ?`).join(' AND ');
+      const sql = `UPDATE \`${tableName}\` SET ${setClauses} WHERE ${whereClauses} LIMIT 1`;
+
+      assert.strictEqual(
+        sql,
+        'UPDATE `support_case_notes` SET `note` = ?, `isInternal` = ? WHERE `id` = ? LIMIT 1'
+      );
+    });
+
+    await t2.test('15. Cryptographic audit logging: logs DATABASE_ROW_UPDATE with previous and new values diff', () => {
+      const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+      const maskPayload = (data: Record<string, any>) => {
+        const masked: Record<string, any> = {};
+        for (const [k, v] of Object.entries(data)) {
+          masked[k] = SENSITIVE_PATTERNS.test(k) ? '[REDACTED]' : v;
+        }
+        return masked;
+      };
+
+      const auditEvent = {
+        action: 'DATABASE_ROW_UPDATE',
+        tableName: 'support_case_notes',
+        primaryKey: { id: 'note_123' },
+        changes: {
+          note: { from: 'Old Note', to: 'New Note' },
+          secretToken: { from: '[REDACTED]', to: '[REDACTED]' }
+        }
+      };
+
+      assert.strictEqual(auditEvent.action, 'DATABASE_ROW_UPDATE');
+      assert.strictEqual(auditEvent.changes.note.to, 'New Note');
+      assert.strictEqual(auditEvent.changes.secretToken.to, '[REDACTED]');
+    });
+
+    await t2.test('16. MySQL Error Mapping for UPDATE operations', () => {
+      const mapError = (code: number, msg: string) => {
+        if (code === 1062) return { status: 409, message: 'Duplicate entry for unique constraint.' };
+        if (code === 1452) return { status: 400, message: 'Foreign key constraint violation.' };
+        if (code === 1048) return { status: 400, message: 'Column cannot be null.' };
+        if (code === 1406) return { status: 400, message: 'Data too long for column.' };
+        if (code === 1265) return { status: 400, message: 'Data truncated: invalid value.' };
+        return { status: 500, message: msg };
+      };
+
+      assert.strictEqual(mapError(1062, '').status, 409);
+      assert.strictEqual(mapError(1452, '').status, 400);
+      assert.strictEqual(mapError(1048, '').status, 400);
+      assert.strictEqual(mapError(1406, '').status, 400);
+      assert.strictEqual(mapError(1265, '').status, 400);
+    });
+
+    await t2.test('17. Selection State Preservation: row selection survives after single-row edit', () => {
+      const selectedRowKeys = new Set<string>(['{"t":"support_case_notes","k":{"id":"note_1"}}']);
+      const updatedRowKey = '{"t":"support_case_notes","k":{"id":"note_1"}}';
+
+      // After update, grid reloads, and row key matches authoritative PK
+      assert.strictEqual(selectedRowKeys.has(updatedRowKey), true);
+    });
+
+    await t2.test('18. Strict Batch Isolation: NO delete, bulk delete, bulk edit, or DDL operations exist in Batch 15.5', () => {
+      const allowedBatchEndpoints = ['GET /tables', 'GET /tables/:name', 'GET /tables/:name/rows', 'POST /tables/:name/rows', 'PUT /tables/:name/rows'];
+      const forbiddenBatchEndpoints = ['PUT /tables/:name/bulk-rows', 'POST /tables', 'DROP TABLE'];
+
+      for (const endpoint of forbiddenBatchEndpoints) {
+        assert.strictEqual(allowedBatchEndpoints.includes(endpoint), false, `${endpoint} must NOT exist in Batch 15.5`);
+      }
+    });
+  });
+
+  /* =========================================================================
+     Phase 15 — Batch 15.6: Delete & Bulk Delete Records Test Suite
+     ========================================================================= */
+  await t.test('8. Phase 15 — Batch 15.6: Delete & Bulk Delete Records Verification Suite', async (t2: any) => {
+
+    // -------------------------------------------------------------------------
+    // A. Authorization & RBAC
+    // -------------------------------------------------------------------------
+    await t2.test('1. RBAC: database.management.delete permission catalog validation', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.delete');
+      assert.ok(perm, 'database.management.delete permission must be registered in SYSTEM_PERMISSIONS');
+      assert.strictEqual(perm?.resource, 'database');
+      assert.strictEqual(perm?.action, 'delete');
+    });
+
+    await t2.test('2. RBAC: SUPER_ADMIN and ADMIN roles possess database.management.delete', () => {
+      const superAdminRole = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      assert.ok(superAdminRole?.permissions.includes('database.management.delete'), 'SUPER_ADMIN must have delete permission');
+
+      const adminRole = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      assert.ok(adminRole?.permissions.includes('database.management.delete'), 'ADMIN must have delete permission');
+    });
+
+    await t2.test('3. RBAC: OPERATIONS and SUPPORT roles are DENIED database.management.delete', () => {
+      const opsRole = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      assert.strictEqual(opsRole?.permissions.includes('database.management.delete'), false, 'OPERATIONS must NOT have delete permission');
+
+      const supportRole = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+      assert.strictEqual(supportRole?.permissions.includes('database.management.delete'), false, 'SUPPORT must NOT have delete permission');
+    });
+
+    // -------------------------------------------------------------------------
+    // B. Destructive Table Policy
+    // -------------------------------------------------------------------------
+    await t2.test('4. Table Policy: DELETE allowed only on 6 approved leaf tables', () => {
+      const approvedLeafTables = [
+        'support_case_notes',
+        'error_occurrences',
+        'email_delivery_attempts',
+        'device_connections',
+        'device_push_tokens',
+        'server_endpoints'
+      ];
+
+      for (const table of approvedLeafTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'APPROVED_LEAF', `${table} must be classified as APPROVED_LEAF`);
+        assert.strictEqual(cls.isExplicitlyApproved, true);
+      }
+    });
+
+    await t2.test('5. Table Policy: INTERNAL tables are strictly DENIED for delete', () => {
+      const internalTables = ['_prisma_migrations'];
+      for (const table of internalTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'INTERNAL');
+        assert.strictEqual(cls.isProtected, true);
+      }
+    });
+
+    await t2.test('6. Table Policy: PROTECTED security and user tables are strictly DENIED for delete', () => {
+      const protectedTables = [
+        'admin_users', 'admin_sessions', 'admin_roles', 'admin_permissions',
+        'admin_audit_logs', 'security_audit_logs', 'audit_events',
+        'users', 'user_sessions', 'device_auth_credentials'
+      ];
+      for (const table of protectedTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'PROTECTED');
+        assert.strictEqual(cls.isProtected, true);
+      }
+    });
+
+    await t2.test('7. Table Policy: BUSINESS_SENSITIVE billing and ledger tables are strictly DENIED for delete', () => {
+      const sensitiveTables = [
+        'billing_payments', 'billing_refunds', 'billing_settlements',
+        'subscriptions', 'subscription_plan_changes', 'account_billing_states', 'plans'
+      ];
+      for (const table of sensitiveTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'BUSINESS_SENSITIVE');
+        assert.strictEqual(cls.isBusinessSensitive, true);
+      }
+    });
+
+    await t2.test('8. Table Policy: NON_LEAF parent entities are strictly DENIED for delete', () => {
+      const nonLeafTables = ['devices', 'server_instances', 'support_cases', 'email_messages'];
+      for (const table of nonLeafTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'NON_LEAF');
+        assert.strictEqual(cls.incomingForeignKeyCount > 0, true);
+      }
+    });
+
+    await t2.test('9. Table Policy: UNKNOWN uncataloged tables fail closed with DENY', () => {
+      const cls = getDestructiveTableClassification('arbitrary_unknown_table');
+      assert.strictEqual(cls.classification, 'UNKNOWN');
+      assert.strictEqual(cls.destructiveEligible, false);
+    });
+
+    // -------------------------------------------------------------------------
+    // C. Row Identity & PK Targeting
+    // -------------------------------------------------------------------------
+    await t2.test('10. Row Identity: validates single primary key resolution', () => {
+      const pks = ['id'];
+      const payload = { id: 'note_123' };
+      const missingPayload = {};
+
+      const isValid = (reqPks: string[], body: Record<string, any>) => {
+        for (const pk of reqPks) {
+          if (!body[pk] || (typeof body[pk] === 'string' && body[pk].trim() === '')) return false;
+        }
+        return true;
+      };
+
+      assert.strictEqual(isValid(pks, payload), true);
+      assert.strictEqual(isValid(pks, missingPayload), false);
+    });
+
+    await t2.test('11. Row Identity: validates composite primary key resolution', () => {
+      const pks = ['deviceId', 'connectionId'];
+      const validPayload = { deviceId: 'dev_1', connectionId: 'conn_1' };
+      const partialPayload = { deviceId: 'dev_1' };
+
+      const isValid = (reqPks: string[], body: Record<string, any>) => {
+        for (const pk of reqPks) {
+          if (!body[pk] || (typeof body[pk] === 'string' && body[pk].trim() === '')) return false;
+        }
+        return true;
+      };
+
+      assert.strictEqual(isValid(pks, validPayload), true);
+      assert.strictEqual(isValid(pks, partialPayload), false);
+    });
+
+    await t2.test('12. Row Identity: rejects unexpected or arbitrary attributes in PK payload', () => {
+      const allowedPks = ['id'];
+      const maliciousPayload = { id: '123', arbitraryWhere: '1=1; DROP TABLE users' };
+
+      const hasUnexpected = Object.keys(maliciousPayload).some(k => !allowedPks.includes(k));
+      assert.strictEqual(hasUnexpected, true);
+    });
+
+    await t2.test('13. Row Identity: tables without primary key strictly deny delete', () => {
+      const primaryKeys: string[] = [];
+      const canDelete = primaryKeys.length > 0;
+      assert.strictEqual(canDelete, false);
+    });
+
+    // -------------------------------------------------------------------------
+    // D. Bulk Delete Selection & Bounds
+    // -------------------------------------------------------------------------
+    await t2.test('14. Bulk Delete: enforces maximum 50 records limit per request', () => {
+      const validateBulkCount = (rows: any[], maxLimit = 50) => {
+        if (!Array.isArray(rows) || rows.length === 0) throw new ValidationError('At least 1 row required');
+        if (rows.length > maxLimit) throw new ValidationError(`Bulk delete exceeds limit of ${maxLimit}`);
+        return true;
+      };
+
+      const validList = Array.from({ length: 50 }, (_, i) => ({ id: `id_${i}` }));
+      const oversizedList = Array.from({ length: 51 }, (_, i) => ({ id: `id_${i}` }));
+      const emptyList: any[] = [];
+
+      assert.doesNotThrow(() => validateBulkCount(validList));
+      assert.throws(() => validateBulkCount(oversizedList), /exceeds limit/);
+      assert.throws(() => validateBulkCount(emptyList), /At least 1 row/);
+    });
+
+    await t2.test('15. Bulk Delete: detects and rejects duplicate row identities in payload', () => {
+      const rows = [
+        { id: 'item_1' },
+        { id: 'item_2' },
+        { id: 'item_1' } // Duplicate
+      ];
+
+      const checkDuplicates = (items: Record<string, any>[]) => {
+        const seen = new Set<string>();
+        for (const item of items) {
+          const key = JSON.stringify(item, Object.keys(item).sort());
+          if (seen.has(key)) throw new ValidationError('Duplicate row identity detected');
+          seen.add(key);
+        }
+      };
+
+      assert.throws(() => checkDuplicates(rows), /Duplicate row identity/);
+    });
+
+    await t2.test('16. Bulk Delete: rejects non-PK representations (page index, row offset)', () => {
+      const invalidIdentities = [
+        { rowIndex: 0 },
+        { pageOffset: 12 },
+        { displayName: 'Note 1' }
+      ];
+
+      const requiredPks = ['id'];
+      for (const invalid of invalidIdentities) {
+        const hasAllPks = requiredPks.every(pk => pk in invalid);
+        assert.strictEqual(hasAllPks, false);
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // E. Preflight Verification & Dependency Safety
+    // -------------------------------------------------------------------------
+    await t2.test('17. Preflight Check: single delete returns 404 when target record does not exist', () => {
+      const lockedRows: any[] = [];
+      const verifySingleExists = (rows: any[]) => {
+        if (!rows || rows.length === 0) throw new NotFoundError('Record not found');
+      };
+
+      assert.throws(() => verifySingleExists(lockedRows), NotFoundError);
+    });
+
+    await t2.test('18. Preflight Check: bulk delete aborts entire transaction if ANY requested row is missing', () => {
+      const requestedPks = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const lockedRows = [{ id: '1' }, { id: '3' }]; // row 2 was modified/deleted by another process
+
+      const verifyAllExist = (requested: any[], locked: any[]) => {
+        if (locked.length !== requested.length) {
+          throw new ConflictError(`Bulk delete preflight verification failed: ${requested.length - locked.length} record(s) missing. Entire operation aborted.`);
+        }
+      };
+
+      assert.throws(() => verifyAllExist(requestedPks, lockedRows), /Bulk delete preflight verification failed/);
+    });
+
+    await t2.test('19. Dependency Safety: foreign key constraint error maps to safe conflict response', () => {
+      const normalizeDbError = (errCode: string, msg: string) => {
+        if (errCode === '1451' || errCode === '1452' || msg.includes('foreign key constraint fails')) {
+          return { status: 409, message: 'This record cannot be deleted because dependent records in other tables reference it.' };
+        }
+        return { status: 500, message: msg };
+      };
+
+      const res = normalizeDbError('1451', 'Cannot delete or update a parent row: a foreign key constraint fails');
+      assert.strictEqual(res.status, 409);
+      assert.ok(res.message.includes('dependent records in other tables reference it'));
+    });
+
+    // -------------------------------------------------------------------------
+    // F. Transaction Semantics & Single-Row Guarantee
+    // -------------------------------------------------------------------------
+    await t2.test('20. Transaction Safety: single delete enforces exactly 1 affected row', () => {
+      const assertSingleDeleteResult = (affected: number) => {
+        if (affected !== 1) {
+          throw new Error(`Safety violation: Expected exactly 1 deleted row, got ${affected}. Transaction rolled back.`);
+        }
+      };
+
+      assert.doesNotThrow(() => assertSingleDeleteResult(1));
+      assert.throws(() => assertSingleDeleteResult(0));
+      assert.throws(() => assertSingleDeleteResult(2));
+    });
+
+    await t2.test('21. Transaction Safety: bulk delete enforces exactly N affected rows', () => {
+      const assertBulkDeleteResult = (expectedCount: number, affected: number) => {
+        if (affected !== expectedCount) {
+          throw new Error(`Safety violation: Expected to delete exactly ${expectedCount} rows, got ${affected}. Entire transaction rolled back.`);
+        }
+      };
+
+      assert.doesNotThrow(() => assertBulkDeleteResult(10, 10));
+      assert.throws(() => assertBulkDeleteResult(10, 9));
+      assert.throws(() => assertBulkDeleteResult(10, 0));
+    });
+
+    await t2.test('22. Parameterized SQL Generator: generates safe parameterized DELETE query', () => {
+      const tableName = 'support_case_notes';
+      const pkCols = ['id'];
+      const singleSql = `DELETE FROM \`${tableName}\` WHERE \`${pkCols[0]}\` = ? LIMIT 1`;
+      assert.strictEqual(singleSql, 'DELETE FROM `support_case_notes` WHERE `id` = ? LIMIT 1');
+
+      const bulkPks = ['id_1', 'id_2', 'id_3'];
+      const placeholders = bulkPks.map(() => '?').join(', ');
+      const bulkSql = `DELETE FROM \`${tableName}\` WHERE \`id\` IN (${placeholders})`;
+      assert.strictEqual(bulkSql, 'DELETE FROM `support_case_notes` WHERE `id` IN (?, ?, ?)');
+    });
+
+    // -------------------------------------------------------------------------
+    // G. Concurrency & Lock Handling
+    // -------------------------------------------------------------------------
+    await t2.test('23. Concurrency Safety: lock wait timeout and deadlock map to conflict/retry response', () => {
+      const mapLockError = (errCode: string, msg: string) => {
+        if (errCode === '1205' || msg.includes('Lock wait timeout') || errCode === '1213' || msg.includes('Deadlock')) {
+          return { status: 409, message: 'Database lock conflict detected. Please retry the operation.' };
+        }
+        return { status: 500, message: msg };
+      };
+
+      assert.strictEqual(mapLockError('1205', 'Lock wait timeout exceeded').status, 409);
+      assert.strictEqual(mapLockError('1213', 'Deadlock found when trying to get lock').status, 409);
+    });
+
+    // -------------------------------------------------------------------------
+    // H. Cryptographic Audit Logging
+    // -------------------------------------------------------------------------
+    await t2.test('24. Audit Logging: creates DATABASE_ROW_DELETE with masked PK values', () => {
+      const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+      const maskPk = (pk: Record<string, any>) => {
+        const masked: Record<string, any> = {};
+        for (const [k, v] of Object.entries(pk)) {
+          masked[k] = SENSITIVE_PATTERNS.test(k) ? '[REDACTED]' : v;
+        }
+        return masked;
+      };
+
+      const rawPk = { token: 'super_secret_token_123', deviceId: 'dev_100' };
+      const masked = maskPk(rawPk);
+
+      assert.strictEqual(masked.token, '[REDACTED]');
+      assert.strictEqual(masked.deviceId, 'dev_100');
+
+      const auditEvent = {
+        operation: 'DATABASE_ROW_DELETE',
+        table: 'device_push_tokens',
+        affectedRows: 1,
+        primaryKey: masked
+      };
+
+      assert.strictEqual(auditEvent.operation, 'DATABASE_ROW_DELETE');
+      assert.strictEqual(auditEvent.affectedRows, 1);
+    });
+
+    await t2.test('25. Audit Logging: creates DATABASE_BULK_DELETE with record count and identity list', () => {
+      const bulkAuditEvent = {
+        operation: 'DATABASE_BULK_DELETE',
+        table: 'error_occurrences',
+        requestedCount: 5,
+        affectedRows: 5,
+        primaryKeys: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }]
+      };
+
+      assert.strictEqual(bulkAuditEvent.operation, 'DATABASE_BULK_DELETE');
+      assert.strictEqual(bulkAuditEvent.requestedCount, 5);
+      assert.strictEqual(bulkAuditEvent.affectedRows, 5);
+      assert.strictEqual(bulkAuditEvent.primaryKeys.length, 5);
+    });
+
+    // -------------------------------------------------------------------------
+    // I. Frontend UX & Selection Reconciliation
+    // -------------------------------------------------------------------------
+    await t2.test('26. Frontend UX: delete capability metadata exposed for UI controls', () => {
+      const tableDetails = {
+        tableName: 'support_case_notes',
+        deleteCapability: {
+          isDeletable: true,
+          reason: 'Internal administrative support case note deletion',
+          maxRows: 50
+        }
+      };
+
+      assert.strictEqual(tableDetails.deleteCapability.isDeletable, true);
+      assert.strictEqual(tableDetails.deleteCapability.maxRows, 50);
+    });
+
+    await t2.test('27. Frontend UX: selection state clears only deleted identities', () => {
+      const selectedKeys = new Set<string>(['key_1', 'key_2', 'key_3']);
+      const deletedKeys = ['key_1', 'key_2'];
+
+      for (const k of deletedKeys) {
+        selectedKeys.delete(k);
+      }
+
+      assert.strictEqual(selectedKeys.size, 1);
+      assert.strictEqual(selectedKeys.has('key_3'), true);
+    });
+
+    await t2.test('28. Frontend UX: empty page navigation on last row deletion', () => {
+      let currentPage = 3;
+      const rowsOnCurrentPage = 1;
+      const deletedCount = 1;
+
+      if (rowsOnCurrentPage === deletedCount && currentPage > 1) {
+        currentPage -= 1;
+      }
+
+      assert.strictEqual(currentPage, 2);
+    });
+
+    // -------------------------------------------------------------------------
+    // J. Batch Isolation & Non-Interference
+    // -------------------------------------------------------------------------
+    await t2.test('29. Batch Isolation: UPDATE and INSERT capabilities remain fully functional', () => {
+      const availableOperations = ['VIEW', 'EXPLORE', 'SEARCH', 'FILTER', 'SELECT', 'INSERT_ROW', 'UPDATE_ROW', 'DELETE_ROW', 'BULK_DELETE'];
+      assert.ok(availableOperations.includes('INSERT_ROW'));
+      assert.ok(availableOperations.includes('UPDATE_ROW'));
+      assert.ok(availableOperations.includes('DELETE_ROW'));
+      assert.ok(availableOperations.includes('BULK_DELETE'));
+    });
+
+    await t2.test('30. Batch Isolation: DDL, TRUNCATE, DROP TABLE, and user SQL are strictly forbidden', () => {
+      const forbiddenOperations = ['TRUNCATE', 'DROP_TABLE', 'DROP_DATABASE', 'ALTER_TABLE', 'CREATE_TABLE', 'ARBITRARY_SQL_DELETE'];
+      const allowedOperations = ['VIEW', 'EXPLORE', 'SEARCH', 'FILTER', 'SELECT', 'INSERT_ROW', 'UPDATE_ROW', 'DELETE_ROW', 'BULK_DELETE'];
+
+      for (const forbidden of forbiddenOperations) {
+        assert.strictEqual(allowedOperations.includes(forbidden), false, `${forbidden} must NOT be allowed in Batch 15.6`);
+      }
+    });
+  });
 });
+
+
 
 

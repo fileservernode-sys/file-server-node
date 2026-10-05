@@ -11831,6 +11831,7 @@
           const scopeLabel = selectedCount === visibleSelectedCount
             ? '(on this page)'
             : `(${visibleSelectedCount} on this page)`;
+          const isDeletable = this.dbManagementState.tableDetails?.deleteCapability?.isDeletable;
           selectionWrap.innerHTML = `
             <div class="admin-db-selection-badge">
               <span class="admin-db-selection-count">
@@ -11839,6 +11840,17 @@
               <span class="admin-db-selection-scope">
                 ${scopeLabel}
               </span>
+              ${isDeletable ? `
+                <button
+                  class="admin-btn admin-btn-danger admin-btn-xs"
+                  style="padding:0.125rem 0.5rem; font-size:0.6875rem;"
+                  onclick="AdminShell._confirmBulkDelete('${this._escape(this.dbManagementState.tableDetails.tableName)}')"
+                  title="Delete all selected records"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;margin-right:2px;display:inline-block;vertical-align:middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  Delete Selected (${selectedCount})
+                </button>
+              ` : ''}
               <button
                 class="admin-btn admin-btn-secondary admin-btn-xs"
                 style="padding:0.125rem 0.375rem; font-size:0.6875rem;"
@@ -11896,6 +11908,7 @@
       const rows = gridData?.rows || [];
       const columns = gridData?.columns || details.columns || [];
       const primaryKeys = gridData?.primaryKeys || details.primaryKeys || [];
+      const hasRowActions = (details.updateCapability?.isUpdatable) || (details.deleteCapability?.isDeletable);
       const pagination = gridData?.pagination || {
         page: this.dbManagementState.page,
         pageSize: this.dbManagementState.pageSize,
@@ -11990,6 +12003,9 @@
                     </label>
                   </th>
                   <th class="admin-db-grid-th" style="width: 48px; text-align: center; cursor: default;">#</th>
+                  ${hasRowActions ? `
+                    <th class="admin-db-grid-th" style="width: ${(details.updateCapability?.isUpdatable && details.deleteCapability?.isDeletable) ? '128px' : '72px'}; text-align: center; cursor: default;">Actions</th>
+                  ` : ''}
                   ${columns.map(col => {
                     const isSorted = sortBy === col.name;
                     const sortIcon = isSorted
@@ -12044,6 +12060,30 @@
                         </label>
                       </td>
                       <td class="admin-db-grid-td" style="text-align: center; color: var(--admin-text-muted);">${startRow + rIdx}</td>
+                      ${hasRowActions ? `
+                        <td class="admin-db-grid-td" style="text-align: center;">
+                          <div style="display:inline-flex; gap:4px; align-items:center; justify-content:center;">
+                            ${details.updateCapability?.isUpdatable ? `
+                              <button
+                                class="admin-btn admin-btn-secondary admin-btn-xs"
+                                onclick="AdminShell._openEditRowDrawer('${this._escape(details.tableName)}', ${rIdx})"
+                                title="Edit this record"
+                              >
+                                Edit
+                              </button>
+                            ` : ''}
+                            ${details.deleteCapability?.isDeletable ? `
+                              <button
+                                class="admin-btn admin-btn-danger admin-btn-xs"
+                                onclick="AdminShell._confirmDeleteRow('${this._escape(details.tableName)}', ${rIdx})"
+                                title="Delete this record"
+                              >
+                                Delete
+                              </button>
+                            ` : ''}
+                          </div>
+                        </td>
+                      ` : ''}
                       ${columns.map(col => {
                         const val = row[col.name];
                         const rendered = this._formatDataGridCell(col, val);
@@ -12054,7 +12094,7 @@
                 }).join('')}
                 ${rows.length === 0 ? `
                   <tr>
-                    <td colspan="${columns.length + 2}" style="text-align: center; padding: 4rem 2rem;">
+                    <td colspan="${columns.length + (hasRowActions ? 3 : 2)}" style="text-align: center; padding: 4rem 2rem;">
                       <div class="admin-db-empty-state">
                         <div class="admin-db-empty-state-icon">${ICONS.database || ''}</div>
                         <h4 style="margin:0; font-size:0.9375rem; color:var(--admin-text-primary);">
@@ -12894,6 +12934,567 @@
           `;
         }
       }
+    }
+
+    /* =========================================================================
+       Phase 15 Batch 15.5: Edit / Update Row Drawer Handlers
+       ========================================================================= */
+
+    _openEditRowDrawer(tableName, rowIndex) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.updateCapability || !details.updateCapability.isUpdatable) {
+        this.toast(details.updateCapability?.reason || 'Direct record update is not permitted on this table.', 'warning');
+        return;
+      }
+
+      const rows = this.dbManagementState.gridData?.rows || [];
+      const originalRow = rows[rowIndex];
+      if (!originalRow) {
+        this.toast('Selected row was not found in the current view.', 'warning');
+        return;
+      }
+
+      // Concurrency tracking value from the original row
+      const concurrencyField = details.updateCapability.concurrencyField;
+      const concurrencyValue = concurrencyField ? originalRow[concurrencyField] : undefined;
+
+      this.editRowState = {
+        tableName,
+        rowIndex,
+        originalRow,
+        concurrencyValue,
+        isDirty: false,
+        isSubmitting: false,
+        nullFields: new Set()
+      };
+
+      const existingBackdrop = document.getElementById('adminDbEditRowDrawerBackdrop');
+      if (existingBackdrop) existingBackdrop.remove();
+
+      const columns = details.columns || [];
+
+      const fieldsHtml = columns.map(col => {
+        const isEditable = col.isEditable === true && !col.isPrimaryKey && !col.isAutoIncrement && !col.isGenerated && !col.isSensitive;
+        const currentVal = originalRow[col.name];
+
+        if (!isEditable) {
+          let reasonTag = 'Read-Only Column';
+          if (col.isPrimaryKey) reasonTag = 'Primary Key (Immutable)';
+          else if (col.isAutoIncrement) reasonTag = 'Auto-Increment (Immutable)';
+          else if (col.isGenerated) reasonTag = 'Generated Column (Computed by DB)';
+          else if (col.isSensitive) reasonTag = 'Sensitive Column (Protected)';
+
+          let displayVal = currentVal;
+          if (displayVal === null || displayVal === undefined) displayVal = 'NULL';
+          else if (typeof displayVal === 'object') displayVal = JSON.stringify(displayVal);
+          else displayVal = String(displayVal);
+
+          return `
+            <div class="admin-db-form-group">
+              <div class="admin-db-form-label-row">
+                <span class="admin-db-form-label">
+                  ${this._escape(col.name)}
+                  ${col.isPrimaryKey ? '<span class="admin-db-pk-indicator">PK</span>' : ''}
+                  <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+                </span>
+                <span style="font-size:0.6875rem; color:var(--admin-text-muted);">${this._escape(reasonTag)}</span>
+              </div>
+              <div class="admin-db-read-only-field">
+                <code>${this._escape(displayVal)}</code>
+              </div>
+            </div>
+          `;
+        }
+
+        const isEnum = col.enumValues && Array.isArray(col.enumValues) && col.enumValues.length > 0;
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isDate = col.dataType.includes('date') || col.dataType.includes('time');
+        const isNum = col.dataType.includes('int') || col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+        const isText = col.dataType.includes('text');
+
+        let inputElementHtml = '';
+        if (isEnum) {
+          inputElementHtml = `
+            <select id="editRowInput_${this._escape(col.name)}" class="admin-db-input" onchange="AdminShell._markEditRowDirty()">
+              ${col.isNullable ? `<option value="">-- NULL --</option>` : ''}
+              ${col.enumValues.map(ev => `<option value="${this._escape(ev)}" ${currentVal === ev ? 'selected' : ''}>${this._escape(ev)}</option>`).join('')}
+            </select>
+          `;
+        } else if (isBool) {
+          const boolValStr = currentVal === true || currentVal === 1 ? 'true' : (currentVal === false || currentVal === 0 ? 'false' : '');
+          inputElementHtml = `
+            <select id="editRowInput_${this._escape(col.name)}" class="admin-db-input" onchange="AdminShell._markEditRowDirty()">
+              <option value="true" ${boolValStr === 'true' ? 'selected' : ''}>TRUE</option>
+              <option value="false" ${boolValStr === 'false' ? 'selected' : ''}>FALSE</option>
+            </select>
+          `;
+        } else if (isJson) {
+          const jsonVal = typeof currentVal === 'object' && currentVal !== null ? JSON.stringify(currentVal, null, 2) : (currentVal || '');
+          inputElementHtml = `
+            <textarea id="editRowInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="{}" oninput="AdminShell._markEditRowDirty()">${this._escape(jsonVal)}</textarea>
+          `;
+        } else if (isDate) {
+          const dateVal = currentVal ? (typeof currentVal === 'string' ? currentVal : new Date(currentVal).toISOString()) : '';
+          inputElementHtml = `
+            <input type="text" id="editRowInput_${this._escape(col.name)}" class="admin-db-input" value="${this._escape(dateVal)}" placeholder="YYYY-MM-DD HH:MM:SS or ISO 8601" oninput="AdminShell._markEditRowDirty()" />
+          `;
+        } else if (isNum) {
+          const numVal = currentVal !== null && currentVal !== undefined ? String(currentVal) : '';
+          inputElementHtml = `
+            <input type="text" id="editRowInput_${this._escape(col.name)}" class="admin-db-input" value="${this._escape(numVal)}" placeholder="e.g. 123" oninput="AdminShell._markEditRowDirty()" />
+          `;
+        } else if (isText) {
+          const textVal = currentVal !== null && currentVal !== undefined ? String(currentVal) : '';
+          inputElementHtml = `
+            <textarea id="editRowInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="Enter text..." oninput="AdminShell._markEditRowDirty()">${this._escape(textVal)}</textarea>
+          `;
+        } else {
+          const strVal = currentVal !== null && currentVal !== undefined ? String(currentVal) : '';
+          inputElementHtml = `
+            <input type="text" id="editRowInput_${this._escape(col.name)}" class="admin-db-input" value="${this._escape(strVal)}" placeholder="Enter value..." ${col.characterMaximumLength ? `maxlength="${col.characterMaximumLength}"` : ''} oninput="AdminShell._markEditRowDirty()" />
+          `;
+        }
+
+        const isInitiallyNull = currentVal === null || currentVal === undefined;
+        if (isInitiallyNull) {
+          this.editRowState.nullFields.add(col.name);
+        }
+
+        return `
+          <div class="admin-db-form-group">
+            <div class="admin-db-form-label-row">
+              <label for="editRowInput_${this._escape(col.name)}" class="admin-db-form-label">
+                <span>${this._escape(col.name)}</span>
+                ${col.isRequired ? '<span class="admin-db-required-asterisk" title="Required field">*</span>' : ''}
+                ${col.foreignKey ? `<span class="admin-db-fk-badge" title="References ${this._escape(col.foreignKey.referencedTable)}.${this._escape(col.foreignKey.referencedColumn)}">FK → ${this._escape(col.foreignKey.referencedTable)}</span>` : ''}
+                <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+              </label>
+              ${col.isNullable ? `
+                <label class="admin-db-null-toggle">
+                  <input type="checkbox" id="editNullCheck_${this._escape(col.name)}" ${isInitiallyNull ? 'checked' : ''} onchange="AdminShell._toggleEditNullField('${this._escape(col.name)}', this.checked)" />
+                  <span>Set NULL</span>
+                </label>
+              ` : ''}
+            </div>
+            ${inputElementHtml}
+            <div style="font-size:0.6875rem; color:var(--admin-text-muted); display:flex; justify-content:space-between;">
+              <span>${col.isRequired ? 'Required' : 'Optional'}</span>
+              ${col.characterMaximumLength ? `<span>Max length: ${col.characterMaximumLength}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const pkSummary = (details.primaryKeys || []).map(pk => `${pk}: ${originalRow[pk]}`).join(', ');
+
+      const drawerHtml = `
+        <div class="admin-db-drawer-backdrop" id="adminDbEditRowDrawerBackdrop" onclick="AdminShell._onEditRowDrawerBackdropClick(event)">
+          <div class="admin-db-drawer" id="adminDbEditRowDrawer">
+            <div class="admin-db-drawer-header">
+              <div>
+                <div class="admin-db-drawer-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--admin-primary);"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  <span>Edit Record: <code>${this._escape(tableName)}</code></span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--admin-text-secondary); margin-top:0.25rem;">
+                  Target PK: <code class="admin-code-pill">${this._escape(pkSummary || 'N/A')}</code>
+                </div>
+              </div>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeEditRowDrawer()" title="Close Drawer">✕</button>
+            </div>
+
+            <div class="admin-db-drawer-body">
+              <div id="editRowErrorBanner" style="display:none;"></div>
+              <form id="editRowRecordForm" onsubmit="event.preventDefault(); AdminShell._submitEditRowForm('${this._escape(tableName)}');">
+                <div style="display:flex; flex-direction:column; gap:1rem;">
+                  ${fieldsHtml}
+                </div>
+              </form>
+            </div>
+
+            <div class="admin-db-drawer-footer">
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._closeEditRowDrawer()">
+                Cancel
+              </button>
+              <button type="button" id="submitEditRowBtn" class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._submitEditRowForm('${this._escape(tableName)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', drawerHtml);
+
+      // Disable inputs that are initially NULL
+      if (this.editRowState?.nullFields) {
+        for (const nullCol of this.editRowState.nullFields) {
+          const inp = document.getElementById(`editRowInput_${nullCol}`);
+          if (inp) inp.disabled = true;
+        }
+      }
+    }
+
+    _markEditRowDirty() {
+      if (this.editRowState) {
+        this.editRowState.isDirty = true;
+      }
+    }
+
+    _toggleEditNullField(colName, isNull) {
+      if (!this.editRowState) return;
+      const input = document.getElementById(`editRowInput_${colName}`);
+      if (isNull) {
+        this.editRowState.nullFields.add(colName);
+        if (input) input.disabled = true;
+      } else {
+        this.editRowState.nullFields.delete(colName);
+        if (input) input.disabled = false;
+      }
+      this.editRowState.isDirty = true;
+    }
+
+    _onEditRowDrawerBackdropClick(event) {
+      if (event && event.target && event.target.id === 'adminDbEditRowDrawerBackdrop') {
+        this._closeEditRowDrawer();
+      }
+    }
+
+    _closeEditRowDrawer(force = false) {
+      if (!force && this.editRowState?.isDirty) {
+        const discard = window.confirm('You have unsaved changes in this record. Are you sure you want to discard them?');
+        if (!discard) return;
+      }
+
+      const backdrop = document.getElementById('adminDbEditRowDrawerBackdrop');
+      if (backdrop) backdrop.remove();
+      this.editRowState = null;
+    }
+
+    async _submitEditRowForm(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName || !this.editRowState) return;
+
+      const errorBanner = document.getElementById('editRowErrorBanner');
+      const submitBtn = document.getElementById('submitEditRowBtn');
+
+      if (errorBanner) {
+        errorBanner.style.display = 'none';
+        errorBanner.innerHTML = '';
+      }
+
+      const primaryKeys = details.primaryKeys || [];
+      if (primaryKeys.length === 0) {
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;">Table has no primary key defined. Updates are disabled.</div>`;
+        }
+        return;
+      }
+
+      const pkPayload = {};
+      for (const pk of primaryKeys) {
+        const pkVal = this.editRowState.originalRow[pk];
+        if (pkVal === undefined || pkVal === null) {
+          if (errorBanner) {
+            errorBanner.style.display = 'block';
+            errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;">Missing primary key value for '${this._escape(pk)}'.</div>`;
+          }
+          return;
+        }
+        pkPayload[pk] = pkVal;
+      }
+
+      const columns = details.columns || [];
+      const values = {};
+
+      for (const col of columns) {
+        const isEditable = col.isEditable === true && !col.isPrimaryKey && !col.isAutoIncrement && !col.isGenerated && !col.isSensitive;
+        if (!isEditable) continue;
+
+        if (this.editRowState.nullFields.has(col.name)) {
+          values[col.name] = null;
+          continue;
+        }
+
+        const input = document.getElementById(`editRowInput_${col.name}`);
+        const rawVal = input ? input.value : '';
+
+        if (rawVal === '') {
+          if (col.isRequired) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Validation Error:</strong> Column '${this._escape(col.name)}' is required.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          if (col.isNullable) {
+            values[col.name] = null;
+            continue;
+          }
+        }
+
+        // Parse and validate based on type
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isInt = col.dataType.includes('int');
+        const isDec = col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+
+        if (isBool) {
+          values[col.name] = rawVal === 'true';
+        } else if (isJson) {
+          try {
+            JSON.parse(rawVal);
+            values[col.name] = rawVal;
+          } catch (jsonErr) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>JSON Syntax Error:</strong> Invalid JSON in '${this._escape(col.name)}': ${this._escape(jsonErr.message)}</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+        } else if (isInt) {
+          if (!/^-?\d+$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be an integer.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else if (isDec) {
+          if (!/^-?\d+(\.\d+)?$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be a valid decimal/number.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else {
+          values[col.name] = rawVal;
+        }
+      }
+
+      this.editRowState.isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="admin-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;display:inline-block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Saving...
+        `;
+      }
+
+      try {
+        const payload = {
+          primaryKey: pkPayload,
+          values,
+          concurrencyValue: this.editRowState.concurrencyValue
+        };
+
+        const res = await window.AdminApi.updateTableRow(tableName, payload);
+        if (res && res.success) {
+          this.toast(`Record in '${tableName}' updated successfully.`, 'success');
+          this._closeEditRowDrawer(true);
+          this._loadDbGridRows(tableName);
+        } else {
+          throw new Error(res?.error?.message || 'Server rejected update request.');
+        }
+      } catch (err) {
+        console.error('Update row failed:', err);
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          const isConflict = err.message && (err.message.toLowerCase().includes('concurrency') || err.message.toLowerCase().includes('conflict')) || err.status === 409;
+          errorBanner.innerHTML = `
+            <div class="admin-error-banner" style="margin:0;">
+              <strong>${isConflict ? 'Concurrency Conflict:' : 'Update Failed:'}</strong> ${this._escape(err.message || 'Error executing update operation.')}
+              ${isConflict ? '<p style="margin:0.25rem 0 0 0; font-size:0.75rem;">Another process modified this record. Please close and refresh the table to inspect current data.</p>' : ''}
+            </div>
+          `;
+        }
+      } finally {
+        if (this.editRowState) {
+          this.editRowState.isSubmitting = false;
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Save Changes
+          `;
+        }
+      }
+    }
+
+    /* =========================================================================
+       Phase 15 Batch 15.6: Delete & Bulk Delete Handlers
+       ========================================================================= */
+
+    _confirmDeleteRow(tableName, rowIndex) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.deleteCapability || !details.deleteCapability.isDeletable) {
+        this.toast(details.deleteCapability?.reason || 'Record deletion is not permitted on this table.', 'warning');
+        return;
+      }
+
+      const rows = this.dbManagementState.gridData?.rows || [];
+      const targetRow = rows[rowIndex];
+      if (!targetRow) {
+        this.toast('Target row was not found in the current view.', 'warning');
+        return;
+      }
+
+      const primaryKeys = details.primaryKeys || [];
+      if (primaryKeys.length === 0) {
+        this.toast('Table has no primary key defined. Deletion is disabled.', 'warning');
+        return;
+      }
+
+      const pkPayload = {};
+      for (const pk of primaryKeys) {
+        const val = targetRow[pk];
+        if (val === undefined || val === null) {
+          this.toast(`Missing primary key value for '${pk}'.`, 'danger');
+          return;
+        }
+        pkPayload[pk] = val;
+      }
+
+      const pkSummary = primaryKeys.map(pk => `${pk}: ${targetRow[pk]}`).join(', ');
+
+      this.showConfirmModal({
+        title: 'Confirm Record Deletion',
+        message: `Are you sure you want to permanently delete this record from table <strong>${this._escape(tableName)}</strong>?<br><br>Target Primary Key: <code class="admin-code-pill">${this._escape(pkSummary)}</code>`,
+        warningText: 'This operation is permanent and cannot be undone. If other database records depend on this row, deletion will be safely rejected by foreign-key constraints.',
+        confirmLabel: 'Delete Record',
+        confirmType: 'danger',
+        onConfirm: async () => {
+          try {
+            const res = await window.AdminApi.deleteTableRow(tableName, pkPayload);
+            if (res && res.success) {
+              this.toast(`Record in '${tableName}' deleted successfully.`, 'success');
+              // Reconcile selection state
+              const canonicalKey = this._getCanonicalRowKey(tableName, primaryKeys, targetRow, rowIndex, this.dbManagementState.page);
+              this.dbManagementState.selectedRowKeys.delete(canonicalKey);
+              this.dbManagementState.selectedRowsMeta.delete(canonicalKey);
+
+              // If this was the only row on page > 1, navigate to previous page
+              if (rows.length === 1 && this.dbManagementState.page > 1) {
+                this.dbManagementState.page -= 1;
+              }
+
+              this._loadDbGridRows(tableName);
+            } else {
+              throw new Error(res?.error?.message || 'Server rejected delete operation.');
+            }
+          } catch (err) {
+            console.error('Delete row failed:', err);
+            this.toast(err.message || 'Failed to delete record.', 'danger', 6000);
+          }
+        }
+      });
+    }
+
+    _confirmBulkDelete(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.deleteCapability || !details.deleteCapability.isDeletable) {
+        this.toast(details.deleteCapability?.reason || 'Bulk deletion is not permitted on this table.', 'warning');
+        return;
+      }
+
+      const primaryKeys = details.primaryKeys || [];
+      if (primaryKeys.length === 0) {
+        this.toast('Table has no primary key defined. Bulk deletion is disabled.', 'warning');
+        return;
+      }
+
+      const selectedKeys = Array.from(this.dbManagementState.selectedRowKeys);
+      if (selectedKeys.length === 0) {
+        this.toast('Please select at least 1 record to delete.', 'warning');
+        return;
+      }
+
+      const maxLimit = details.deleteCapability.maxRows || 50;
+      if (selectedKeys.length > maxLimit) {
+        this.toast(`Bulk delete is limited to a maximum of ${maxLimit} records per operation. You have ${selectedKeys.length} selected.`, 'warning');
+        return;
+      }
+
+      // Extract structured primary key objects from canonical keys
+      const rowIdentities = [];
+      const parsedKeys = [];
+
+      for (const canonicalStr of selectedKeys) {
+        try {
+          const parsed = JSON.parse(canonicalStr);
+          if (parsed.t === tableName && parsed.k && typeof parsed.k === 'object') {
+            rowIdentities.push(parsed.k);
+            parsedKeys.push(canonicalStr);
+          }
+        } catch (_) {}
+      }
+
+      if (rowIdentities.length === 0) {
+        this.toast('No valid primary-key row identities found for this table.', 'warning');
+        return;
+      }
+
+      this.showConfirmModal({
+        title: 'Confirm Bulk Record Deletion',
+        message: `Are you sure you want to permanently delete <strong>${rowIdentities.length} selected records</strong> from table <strong>${this._escape(tableName)}</strong>?`,
+        warningText: 'This operation is atomic and irreversible. If any requested record has been modified or has foreign-key dependencies, the entire bulk operation will be safely aborted with zero records deleted.',
+        confirmLabel: `Delete ${rowIdentities.length} Records`,
+        confirmType: 'danger',
+        onConfirm: async () => {
+          try {
+            const res = await window.AdminApi.bulkDeleteTableRows(tableName, rowIdentities);
+            if (res && res.success) {
+              const deletedCount = res.data?.deletedCount || rowIdentities.length;
+              this.toast(`Successfully deleted ${deletedCount} records from '${tableName}'.`, 'success');
+
+              // Clear deleted selections
+              for (const k of parsedKeys) {
+                this.dbManagementState.selectedRowKeys.delete(k);
+                this.dbManagementState.selectedRowsMeta.delete(k);
+              }
+
+              // Adjust page if all rows were deleted on page > 1
+              const currentRows = this.dbManagementState.gridData?.rows || [];
+              if (currentRows.length <= rowIdentities.length && this.dbManagementState.page > 1) {
+                this.dbManagementState.page -= 1;
+              }
+
+              this._loadDbGridRows(tableName);
+            } else {
+              throw new Error(res?.error?.message || 'Server rejected bulk delete operation.');
+            }
+          } catch (err) {
+            console.error('Bulk delete failed:', err);
+            this.toast(err.message || 'Failed to bulk delete records.', 'danger', 6000);
+          }
+        }
+      });
     }
 
     _escape(str) {

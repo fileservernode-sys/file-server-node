@@ -368,6 +368,24 @@
     insertTableRow(tableName, values = {}) {
       return this.post(`/admin/database/tables/${encodeURIComponent(tableName)}/rows`, { values });
     }
+
+    updateTableRow(tableName, payload = {}) {
+      return this.put(`/admin/database/tables/${encodeURIComponent(tableName)}/rows`, payload);
+    }
+
+    deleteTableRow(tableName, primaryKey = {}) {
+      return this.request(`/admin/database/tables/${encodeURIComponent(tableName)}/rows`, {
+        method: 'DELETE',
+        body: JSON.stringify({ primaryKey })
+      });
+    }
+
+    bulkDeleteTableRows(tableName, rows = []) {
+      return this.request(`/admin/database/tables/${encodeURIComponent(tableName)}/bulk-rows`, {
+        method: 'DELETE',
+        body: JSON.stringify({ rows })
+      });
+    }
   }
 
   window.AdminApi = new AdminApiClient();

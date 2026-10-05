@@ -52,6 +52,22 @@ const insertRowBodySchema = z.object({
   values: z.record(z.any(), { required_error: 'values object is required' })
 });
 
+const updateRowBodySchema = z.object({
+  primaryKey: z.record(z.any(), { required_error: 'primaryKey object is required' }),
+  values: z.record(z.any(), { required_error: 'values object is required' }),
+  concurrencyValue: z.union([z.string(), z.number()]).optional().nullable()
+});
+
+const deleteRowBodySchema = z.object({
+  primaryKey: z.record(z.any(), { required_error: 'primaryKey object is required' })
+});
+
+const bulkDeleteRowsBodySchema = z.object({
+  rows: z.array(z.record(z.any()), { required_error: 'rows array is required' })
+    .min(1, 'At least 1 row identity must be provided')
+    .max(50, 'Maximum of 50 records allowed per bulk delete request')
+});
+
 const rowsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
@@ -259,6 +275,122 @@ export async function adminDatabaseRoutes(app: FastifyInstance): Promise<void> {
       });
 
       return reply.status(201).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * PUT /api/v1/admin/database/tables/:tableName/rows
+   * Phase 15 Batch 15.5: Edit / Update Records
+   * Safely updates a single record in an authorized database table by primary key.
+   */
+  app.put(
+    '/admin/database/tables/:tableName/rows',
+    {
+      preHandler: [adminAuthenticate, requirePermission('database.management.update')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin;
+      if (!admin) {
+        throw new UnauthorizedError('Admin authentication required');
+      }
+
+      const paramsResult = tableNameParamSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        throw new ValidationError(paramsResult.error.errors[0]?.message || 'Invalid table name parameter');
+      }
+
+      const bodyResult = updateRowBodySchema.safeParse(request.body);
+      if (!bodyResult.success) {
+        throw new ValidationError(bodyResult.error.errors[0]?.message || 'Invalid request payload: primaryKey and values objects are required');
+      }
+
+      const result = await DatabaseMetadataService.updateTableRow({
+        adminId: admin.id,
+        tableName: paramsResult.data.tableName,
+        primaryKey: bodyResult.data.primaryKey,
+        values: bodyResult.data.values,
+        concurrencyValue: bodyResult.data.concurrencyValue,
+        ipAddress: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
+      });
+
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * DELETE /api/v1/admin/database/tables/:tableName/rows
+   * Phase 15 Batch 15.6: Delete Single Database Record
+   * Safely deletes a single record in an authorized database table by authoritative primary key.
+   */
+  app.delete(
+    '/admin/database/tables/:tableName/rows',
+    {
+      preHandler: [adminAuthenticate, requirePermission('database.management.delete')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin;
+      if (!admin) {
+        throw new UnauthorizedError('Admin authentication required');
+      }
+
+      const paramsResult = tableNameParamSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        throw new ValidationError(paramsResult.error.errors[0]?.message || 'Invalid table name parameter');
+      }
+
+      const bodyResult = deleteRowBodySchema.safeParse(request.body);
+      if (!bodyResult.success) {
+        throw new ValidationError(bodyResult.error.errors[0]?.message || 'Invalid request payload: primaryKey object is required');
+      }
+
+      const result = await DatabaseMetadataService.deleteTableRow({
+        adminId: admin.id,
+        tableName: paramsResult.data.tableName,
+        primaryKey: bodyResult.data.primaryKey,
+        ipAddress: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
+      });
+
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * DELETE /api/v1/admin/database/tables/:tableName/bulk-rows
+   * Phase 15 Batch 15.6: Bulk Delete Database Records
+   * Safely deletes a bounded set of records (max 50) in an authorized database table with complete preflight checks.
+   */
+  app.delete(
+    '/admin/database/tables/:tableName/bulk-rows',
+    {
+      preHandler: [adminAuthenticate, requirePermission('database.management.delete')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin;
+      if (!admin) {
+        throw new UnauthorizedError('Admin authentication required');
+      }
+
+      const paramsResult = tableNameParamSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        throw new ValidationError(paramsResult.error.errors[0]?.message || 'Invalid table name parameter');
+      }
+
+      const bodyResult = bulkDeleteRowsBodySchema.safeParse(request.body);
+      if (!bodyResult.success) {
+        throw new ValidationError(bodyResult.error.errors[0]?.message || 'Invalid request payload: rows array is required (1-50 items)');
+      }
+
+      const result = await DatabaseMetadataService.bulkDeleteTableRows({
+        adminId: admin.id,
+        tableName: paramsResult.data.tableName,
+        rows: bodyResult.data.rows,
+        ipAddress: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
+      });
+
+      return reply.status(200).send(createSuccessResponse(result));
     }
   );
 }

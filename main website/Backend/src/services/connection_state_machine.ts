@@ -302,6 +302,11 @@ export class ConnectionStateMachine {
         updateData.disconnectedAt = now;
       }
 
+      // If explicit stop, evict gateway session promptly
+      if (request.eventSource === 'DISCONNECT_EXPLICIT') {
+        defaultGatewayService.evictDeviceSession(deviceId, request.reason || 'Explicit user stop');
+      }
+
       // 6. Execute atomic persistence write
       await db.deviceConnection.update({
         where: { id: request.connectionId },
@@ -309,7 +314,8 @@ export class ConnectionStateMachine {
       });
 
       // 7. Synchronize associated Device and ServerInstance statuses deterministically
-      await this.syncDeviceAndServerStatus(deviceId, request.connectionId, nextStatus, currentConn.device?.userId, db, now);
+      const isExplicitStop = request.eventSource === 'DISCONNECT_EXPLICIT';
+      await this.syncDeviceAndServerStatus(deviceId, request.connectionId, nextStatus, currentConn.device?.userId, db, now, isExplicitStop);
 
       ConnectionObservability.emit({
         event: 'state_transition',
@@ -358,7 +364,8 @@ export class ConnectionStateMachine {
     connStatus: ConnectionStatus,
     userId: string | undefined,
     db: any,
-    now: Date
+    now: Date,
+    isExplicitStop: boolean = false
   ): Promise<void> {
     try {
       if (connStatus === ConnectionStatus.CONNECTED) {
@@ -388,10 +395,13 @@ export class ConnectionStateMachine {
         connStatus === ConnectionStatus.STALE
       ) {
         // Multi-connection & live Gateway check: only mark OFFLINE/STOPPED if NO active connection exists
-        const hasLiveGatewaySession = defaultGatewayService.hasActiveConnectionForDevice(deviceId);
-        if (hasLiveGatewaySession) {
-          // A live session exists on Gateway — do not downgrade Device or ServerInstance!
-          return;
+        // (unless it is an EXPLICIT user stop, which unconditionally stops the server on this device)
+        if (!isExplicitStop) {
+          const hasLiveGatewaySession = defaultGatewayService.hasActiveConnectionForDevice(deviceId);
+          if (hasLiveGatewaySession) {
+            // A live session exists on Gateway — do not downgrade Device or ServerInstance!
+            return;
+          }
         }
 
         const otherActiveConn = await db.deviceConnection.findFirst({
@@ -402,7 +412,7 @@ export class ConnectionStateMachine {
           }
         });
 
-        if (!otherActiveConn) {
+        if (!otherActiveConn || isExplicitStop) {
           const deviceStatus = connStatus === ConnectionStatus.STALE ? DeviceStatus.ONLINE : DeviceStatus.OFFLINE;
           await db.device.update({
             where: { id: deviceId },

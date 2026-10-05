@@ -329,18 +329,37 @@ object RemoteNodeTunnelManager {
         val currentGen = connectionGeneration.incrementAndGet()
 
         stopPingTimer()
+
+        // 1. Notify Gateway over WebSocket before closing socket
+        try {
+            if (activeWebSocket != null) {
+                val disconnectMsg = JSONObject().apply {
+                    put("type", "DISCONNECT")
+                    put("reason", "User stopped server")
+                }
+                activeWebSocket?.send(disconnectMsg.toString())
+            }
+        } catch (_: Exception) {}
+
         closeActiveWebSocket()
 
         val connId = activeConnectionId
+        val devId = storedDeviceId
         val token = storedSessionToken
         val apiBase = storedApiBaseUrl
 
         Log.i(TAG, "[STOP_TUNNEL] gen=$currentGen activeConnId=${connId ?: "none"}")
 
-        if (connId != null && token != null && apiBase != null) {
+        // 2. Dispatch HTTP disconnect to backend control plane
+        if (token != null && apiBase != null && (!connId.isNullOrEmpty() || !devId.isNullOrEmpty())) {
             workerExecutor.execute {
                 try {
-                    val url = URL("$apiBase/connections/$connId/disconnect")
+                    val endpointUrl = if (!connId.isNullOrEmpty()) {
+                        "$apiBase/connections/$connId/disconnect"
+                    } else {
+                        "$apiBase/devices/$devId/server/stop"
+                    }
+                    val url = URL(endpointUrl)
                     val conn = url.openConnection() as HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Authorization", "Bearer $token")
@@ -929,11 +948,21 @@ object RemoteNodeTunnelManager {
 
                 when (operation) {
                     "HEALTH" -> {
-                        responseMsg.put("success", true)
-                        responseMsg.put("data", JSONObject().apply {
-                            put("status", "ok")
-                            put("server", "native-remotenode-file-server")
-                        })
+                        val isEngineOnline = RemoteNodeServerService.isServiceRunning && (RemoteNodeServerService.engine.getStatus()["status"] == "ONLINE")
+                        if (isEngineOnline && !isExplicitlyStopped) {
+                            responseMsg.put("success", true)
+                            responseMsg.put("data", JSONObject().apply {
+                                put("status", "ok")
+                                put("server", "native-remotenode-file-server")
+                                put("port", RemoteNodeServerService.activePort)
+                            })
+                        } else {
+                            responseMsg.put("success", false)
+                            responseMsg.put("error", JSONObject().apply {
+                                put("code", "SERVER_STOPPED")
+                                put("message", "Local file server engine is stopped or inactive")
+                            })
+                        }
                     }
                     "STORAGE" -> {
                         val localRes = executeLocalHttpGet("/api/storage")
