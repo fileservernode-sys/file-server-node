@@ -716,6 +716,20 @@
       window.addEventListener('mousemove', resetActivity, { passive: true });
       window.addEventListener('keydown', resetActivity, { passive: true });
       window.addEventListener('click', resetActivity, { passive: true });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (document.getElementById('adminDbFilterModal')) {
+            this._closeDbFilterModal();
+          } else if (document.getElementById('adminDbAddRowDrawerBackdrop')) {
+            this._closeAddRowDrawer();
+          } else if (document.getElementById('adminDbEditRowDrawerBackdrop')) {
+            this._closeEditRowDrawer();
+          } else if (document.getElementById('adminDbBulkEditDrawerBackdrop')) {
+            this._closeBulkEditDrawer();
+          }
+        }
+      });
     }
 
     _startIdleCountdown() {
@@ -6736,6 +6750,71 @@
       });
     }
 
+    showCustomModal({ title, width = '560px', content, confirmLabel = 'Confirm', confirmType = 'primary', onConfirm }) {
+      const existing = document.getElementById('adminCustomModalBackdrop');
+      if (existing) existing.remove();
+
+      const backdrop = document.createElement('div');
+      backdrop.id = 'adminCustomModalBackdrop';
+      backdrop.className = 'admin-modal-backdrop';
+
+      backdrop.innerHTML = `
+        <div class="admin-modal-card" role="dialog" aria-modal="true" aria-label="${this._escape(title)}" style="max-width: ${width};">
+          <div class="admin-modal-header">
+            <h3 class="admin-modal-title">${this._escape(title)}</h3>
+            <button class="admin-btn-icon" id="adminCustomModalCloseBtn" aria-label="Close modal">
+              ${ICONS.x}
+            </button>
+          </div>
+          <div class="admin-modal-body">
+            ${content}
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn admin-btn-secondary" id="adminCustomModalCancelBtn">Cancel</button>
+            <button type="button" class="admin-btn admin-btn-${confirmType}" id="adminCustomModalConfirmBtn">${this._escape(confirmLabel)}</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(backdrop);
+
+      const closeBtn = document.getElementById('adminCustomModalCloseBtn');
+      const cancelBtn = document.getElementById('adminCustomModalCancelBtn');
+      const confirmBtn = document.getElementById('adminCustomModalConfirmBtn');
+
+      const closeModal = () => backdrop.remove();
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+          confirmBtn.disabled = true;
+          const origText = confirmBtn.textContent;
+          confirmBtn.textContent = 'Processing...';
+          try {
+            await onConfirm();
+            closeModal();
+          } catch (err) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = origText;
+            this.toast(err.message || 'Operation failed', 'danger');
+          }
+        });
+      }
+
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeModal();
+      });
+
+      window.addEventListener('keydown', function escHandler(e) {
+        if (e.key === 'Escape') {
+          closeModal();
+          window.removeEventListener('keydown', escHandler);
+        }
+      });
+    }
+
     copyErrorText(text, label = 'Text') {
       if (!text) return;
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -11186,6 +11265,18 @@
             </div>
           </div>
 
+          <!-- Mobile Schema Selector Bar (Visible < 768px) -->
+          <div class="admin-db-mobile-schema-bar" id="adminDbMobileSchemaBar" onclick="AdminShell._toggleMobileSchemaExplorer()" role="button" tabindex="0" aria-expanded="false" aria-label="Toggle schema explorer">
+            <div style="display:flex;align-items:center;gap:0.5rem;overflow:hidden;">
+              <span style="font-weight:600;font-size:0.8125rem;color:var(--admin-text-primary);white-space:nowrap;">Table:</span>
+              <span class="admin-code-pill admin-db-mobile-schema-table-name" id="dbMobileCurrentTableName" style="font-size:0.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.dbManagementState.selectedTable ? this._escape(this.dbManagementState.selectedTable) : 'Select Table'}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.25rem;font-size:0.75rem;color:var(--admin-primary);font-weight:500;">
+              <span id="dbMobileSchemaToggleText">Explore Schema</span>
+              <span id="dbMobileSchemaToggleChevron" style="transition:transform 0.2s ease;display:inline-block;">▾</span>
+            </div>
+          </div>
+
           <!-- Main Two-Column Layout -->
           <div class="admin-db-layout">
             <!-- Left Sidebar Table Explorer -->
@@ -11227,6 +11318,18 @@
       // Load initial data
       this._loadDatabaseOverview();
       this._loadDatabaseTables();
+    }
+
+    _toggleMobileSchemaExplorer() {
+      const sidebar = document.querySelector('.admin-db-sidebar');
+      const bar = document.getElementById('adminDbMobileSchemaBar');
+      const toggleText = document.getElementById('dbMobileSchemaToggleText');
+      const chevron = document.getElementById('dbMobileSchemaToggleChevron');
+      if (!sidebar) return;
+      const isOpen = sidebar.classList.toggle('mobile-open');
+      if (bar) bar.setAttribute('aria-expanded', String(isOpen));
+      if (toggleText) toggleText.textContent = isOpen ? 'Hide Schema' : 'Explore Schema';
+      if (chevron) chevron.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
     }
 
     async _refreshDatabaseView() {
@@ -11389,6 +11492,23 @@
     async _selectDbTable(tableName) {
       this.dbManagementState.selectedTable = tableName;
       this.dbManagementState.previewOffset = 0;
+
+      // Update mobile schema bar label
+      const mobileName = document.getElementById('dbMobileCurrentTableName');
+      if (mobileName) mobileName.textContent = tableName;
+
+      // Auto-collapse mobile schema sidebar if open
+      const sidebar = document.querySelector('.admin-db-sidebar');
+      if (sidebar && sidebar.classList.contains('mobile-open')) {
+        sidebar.classList.remove('mobile-open');
+        const bar = document.getElementById('adminDbMobileSchemaBar');
+        const toggleText = document.getElementById('dbMobileSchemaToggleText');
+        const chevron = document.getElementById('dbMobileSchemaToggleChevron');
+        if (bar) bar.setAttribute('aria-expanded', 'false');
+        if (toggleText) toggleText.textContent = 'Explore Schema';
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+      }
+
       this._renderDbTableList();
       await this._loadTableDetails(tableName);
       if (this.dbManagementState.activeTab === 'preview') {
@@ -11831,7 +11951,8 @@
           const scopeLabel = selectedCount === visibleSelectedCount
             ? '(on this page)'
             : `(${visibleSelectedCount} on this page)`;
-          const isDeletable = this.dbManagementState.tableDetails?.deleteCapability?.isDeletable;
+          const canBulkEdit = this.dbManagementState.tableDetails?.bulkEditCapability?.isBulkEditable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.update') : true);
+          const isDeletable = this.dbManagementState.tableDetails?.deleteCapability?.isDeletable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.delete') : true);
           selectionWrap.innerHTML = `
             <div class="admin-db-selection-badge">
               <span class="admin-db-selection-count">
@@ -11840,6 +11961,17 @@
               <span class="admin-db-selection-scope">
                 ${scopeLabel}
               </span>
+              ${canBulkEdit ? `
+                <button
+                  class="admin-btn admin-btn-secondary admin-btn-xs"
+                  style="padding:0.125rem 0.5rem; font-size:0.6875rem;"
+                  onclick="AdminShell._openBulkEditDrawer('${this._escape(this.dbManagementState.tableDetails.tableName)}')"
+                  title="Bulk edit selected records"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;margin-right:2px;display:inline-block;vertical-align:middle;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  Edit Selected (${selectedCount})
+                </button>
+              ` : ''}
               ${isDeletable ? `
                 <button
                   class="admin-btn admin-btn-danger admin-btn-xs"
@@ -11908,7 +12040,11 @@
       const rows = gridData?.rows || [];
       const columns = gridData?.columns || details.columns || [];
       const primaryKeys = gridData?.primaryKeys || details.primaryKeys || [];
-      const hasRowActions = (details.updateCapability?.isUpdatable) || (details.deleteCapability?.isDeletable);
+      const canInsert = details.insertCapability && details.insertCapability.isInsertable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.insert') : true);
+      const canUpdate = details.updateCapability?.isUpdatable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.update') : true);
+      const canDuplicate = details.duplicateCapability?.isDuplicable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.insert') : true);
+      const canDelete = details.deleteCapability?.isDeletable && (window.AdminAuth ? window.AdminAuth.hasPermission('database.management.delete') : true);
+      const hasRowActions = canUpdate || canDuplicate || canDelete;
       const pagination = gridData?.pagination || {
         page: this.dbManagementState.page,
         pageSize: this.dbManagementState.pageSize,
@@ -11957,7 +12093,7 @@
             </div>
 
             <div style="display:flex; align-items:center; gap:0.75rem;">
-              ${details.insertCapability && details.insertCapability.isInsertable ? `
+              ${canInsert ? `
                 <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._openAddRowDrawer('${this._escape(details.tableName)}')">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   + Add Row
@@ -12028,7 +12164,7 @@
                   </th>
                   <th class="admin-db-grid-th" style="width: 48px; text-align: center; cursor: default;">#</th>
                   ${hasRowActions ? `
-                    <th class="admin-db-grid-th" style="width: ${(details.updateCapability?.isUpdatable && details.deleteCapability?.isDeletable) ? '128px' : '72px'}; text-align: center; cursor: default;">Actions</th>
+                    <th class="admin-db-grid-th" style="width: ${(canUpdate && canDelete) ? (canDuplicate ? '175px' : '128px') : (canDuplicate ? '120px' : '72px')}; text-align: center; cursor: default;">Actions</th>
                   ` : ''}
                   ${columns.map(col => {
                     const isSorted = sortBy === col.name;
@@ -12087,7 +12223,7 @@
                       ${hasRowActions ? `
                         <td class="admin-db-grid-td" style="text-align: center;">
                           <div style="display:inline-flex; gap:4px; align-items:center; justify-content:center;">
-                            ${details.updateCapability?.isUpdatable ? `
+                            ${canUpdate ? `
                               <button
                                 class="admin-btn admin-btn-secondary admin-btn-xs"
                                 onclick="AdminShell._openEditRowDrawer('${this._escape(details.tableName)}', ${rIdx})"
@@ -12096,7 +12232,16 @@
                                 Edit
                               </button>
                             ` : ''}
-                            ${details.deleteCapability?.isDeletable ? `
+                            ${canDuplicate ? `
+                              <button
+                                class="admin-btn admin-btn-secondary admin-btn-xs"
+                                onclick="AdminShell._openDuplicateRowModal('${this._escape(details.tableName)}', ${rIdx})"
+                                title="Duplicate this record"
+                              >
+                                Duplicate
+                              </button>
+                            ` : ''}
+                            ${canDelete ? `
                               <button
                                 class="admin-btn admin-btn-danger admin-btn-xs"
                                 onclick="AdminShell._confirmDeleteRow('${this._escape(details.tableName)}', ${rIdx})"
@@ -12392,11 +12537,11 @@
       });
 
       const modalHtml = `
-        <div class="admin-db-filter-modal-backdrop" id="adminDbFilterModal">
-          <div class="admin-db-filter-modal" style="max-width: 480px;">
+        <div class="admin-db-filter-modal-backdrop" id="adminDbFilterModal" onclick="if(event.target===this)AdminShell._closeDbFilterModal()">
+          <div class="admin-db-filter-modal" role="dialog" aria-modal="true" aria-label="Add Column Filter" style="max-width: 480px;">
             <div class="admin-db-filter-modal-header">
               <span>Add Column Filter</span>
-              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeDbFilterModal()">✕</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeDbFilterModal()" aria-label="Close modal">✕</button>
             </div>
             <div class="admin-db-filter-modal-body" style="display:flex; flex-direction:column; gap:1rem;">
               <div>
@@ -12799,7 +12944,7 @@
 
       const drawerHtml = `
         <div class="admin-db-drawer-backdrop" id="adminDbAddRowDrawerBackdrop" onclick="AdminShell._onAddRowDrawerBackdropClick(event)">
-          <div class="admin-db-drawer" id="adminDbAddRowDrawer">
+          <div class="admin-db-drawer" id="adminDbAddRowDrawer" role="dialog" aria-modal="true" aria-label="Insert Row in ${this._escape(tableName)}">
             <div class="admin-db-drawer-header">
               <div>
                 <div class="admin-db-drawer-title">
@@ -12810,7 +12955,7 @@
                   Create a single verified record. Authoritative server-side constraints apply.
                 </div>
               </div>
-              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeAddRowDrawer()" title="Close Drawer">✕</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeAddRowDrawer()" title="Close Drawer" aria-label="Close Drawer">✕</button>
             </div>
 
             <div class="admin-db-drawer-body">
@@ -13172,7 +13317,7 @@
 
       const drawerHtml = `
         <div class="admin-db-drawer-backdrop" id="adminDbEditRowDrawerBackdrop" onclick="AdminShell._onEditRowDrawerBackdropClick(event)">
-          <div class="admin-db-drawer" id="adminDbEditRowDrawer">
+          <div class="admin-db-drawer" id="adminDbEditRowDrawer" role="dialog" aria-modal="true" aria-label="Edit Record in ${this._escape(tableName)}">
             <div class="admin-db-drawer-header">
               <div>
                 <div class="admin-db-drawer-title">
@@ -13183,7 +13328,7 @@
                   Target PK: <code class="admin-code-pill">${this._escape(pkSummary || 'N/A')}</code>
                 </div>
               </div>
-              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeEditRowDrawer()" title="Close Drawer">✕</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeEditRowDrawer()" title="Close Drawer" aria-label="Close Drawer">✕</button>
             </div>
 
             <div class="admin-db-drawer-body">
@@ -13569,6 +13714,521 @@
           } catch (err) {
             console.error('Bulk delete failed:', err);
             this.toast(err.message || 'Failed to bulk delete records.', 'danger', 6000);
+          }
+        }
+      });
+    }
+
+    /* =========================================================================
+       Phase 15 Batch 15.8: Database Operations & Bulk Actions Handlers
+       ========================================================================= */
+
+    _openBulkEditDrawer(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.bulkEditCapability || !details.bulkEditCapability.isBulkEditable) {
+        this.toast(details.bulkEditCapability?.reason || 'Bulk edit is not permitted on this table.', 'warning');
+        return;
+      }
+
+      const selectedKeys = Array.from(this.dbManagementState.selectedRowKeys);
+      if (selectedKeys.length === 0) {
+        this.toast('Please select at least 1 record to bulk edit.', 'warning');
+        return;
+      }
+
+      const maxLimit = details.bulkEditCapability.maxRows || 50;
+      if (selectedKeys.length > maxLimit) {
+        this.toast(`Bulk edit is limited to a maximum of ${maxLimit} records. You currently have ${selectedKeys.length} selected.`, 'warning');
+        return;
+      }
+
+      // Extract row identities
+      const rowIdentities = [];
+      for (const canonicalStr of selectedKeys) {
+        try {
+          const parsed = JSON.parse(canonicalStr);
+          if (parsed.t === tableName && parsed.k && typeof parsed.k === 'object') {
+            rowIdentities.push(parsed.k);
+          }
+        } catch (_) {}
+      }
+
+      if (rowIdentities.length === 0) {
+        this.toast('No valid primary-key row identities found for this table.', 'warning');
+        return;
+      }
+
+      const allowedColumns = new Set(details.bulkEditCapability.allowedEditableColumns || []);
+      const columns = (details.columns || []).filter(c => allowedColumns.has(c.name));
+
+      if (columns.length === 0) {
+        this.toast('No fields on this table are designated for bulk modification.', 'warning');
+        return;
+      }
+
+      this.bulkEditState = {
+        tableName,
+        rowIdentities,
+        activeFields: new Set(),
+        nullFields: new Set(),
+        isSubmitting: false
+      };
+
+      const existingBackdrop = document.getElementById('adminDbBulkEditDrawerBackdrop');
+      if (existingBackdrop) existingBackdrop.remove();
+
+      const fieldsHtml = columns.map(col => {
+        const isEnum = col.enumValues && Array.isArray(col.enumValues) && col.enumValues.length > 0;
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isNum = col.dataType.includes('int') || col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+        const isText = col.dataType.includes('text');
+
+        let inputElementHtml = '';
+        if (isEnum) {
+          inputElementHtml = `
+            <select id="bulkEditInput_${this._escape(col.name)}" class="admin-db-input" disabled>
+              ${col.enumValues.map(ev => `<option value="${this._escape(ev)}">${this._escape(ev)}</option>`).join('')}
+            </select>
+          `;
+        } else if (isBool) {
+          inputElementHtml = `
+            <select id="bulkEditInput_${this._escape(col.name)}" class="admin-db-input" disabled>
+              <option value="true">TRUE</option>
+              <option value="false">FALSE</option>
+            </select>
+          `;
+        } else if (isJson) {
+          inputElementHtml = `
+            <textarea id="bulkEditInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="{}" disabled></textarea>
+          `;
+        } else if (isNum) {
+          inputElementHtml = `
+            <input type="text" id="bulkEditInput_${this._escape(col.name)}" class="admin-db-input" placeholder="e.g. 123" disabled />
+          `;
+        } else if (isText) {
+          inputElementHtml = `
+            <textarea id="bulkEditInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="Enter new value..." disabled></textarea>
+          `;
+        } else {
+          inputElementHtml = `
+            <input type="text" id="bulkEditInput_${this._escape(col.name)}" class="admin-db-input" placeholder="Enter new value..." ${col.characterMaximumLength ? `maxlength="${col.characterMaximumLength}"` : ''} disabled />
+          `;
+        }
+
+        return `
+          <div class="admin-db-form-group" style="padding:0.75rem; border:1px solid var(--admin-border); border-radius:var(--radius-md); background:var(--admin-card-bg);">
+            <div class="admin-db-form-label-row" style="margin-bottom:0.5rem;">
+              <label class="admin-db-checkbox-label" style="font-weight:600; cursor:pointer;">
+                <input
+                  type="checkbox"
+                  id="bulkEditCheck_${this._escape(col.name)}"
+                  class="admin-db-checkbox"
+                  onchange="AdminShell._toggleBulkEditField('${this._escape(col.name)}', this.checked)"
+                />
+                <span style="font-size:0.8125rem; color:var(--admin-text-primary);">${this._escape(col.name)}</span>
+                <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+              </label>
+              ${col.isNullable ? `
+                <label class="admin-db-null-toggle" id="bulkEditNullWrap_${this._escape(col.name)}" style="opacity:0.5; pointer-events:none;">
+                  <input type="checkbox" id="bulkEditNullCheck_${this._escape(col.name)}" onchange="AdminShell._toggleBulkEditNull('${this._escape(col.name)}', this.checked)" />
+                  <span>Set NULL</span>
+                </label>
+              ` : ''}
+            </div>
+            <div id="bulkEditInputWrap_${this._escape(col.name)}">
+              ${inputElementHtml}
+            </div>
+            <div style="font-size:0.6875rem; color:var(--admin-text-muted); margin-top:0.25rem;">
+              <span>Check column to include in bulk update across all ${rowIdentities.length} selected records</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const drawerHtml = `
+        <div class="admin-db-drawer-backdrop" id="adminDbBulkEditDrawerBackdrop" onclick="AdminShell._onBulkEditDrawerBackdropClick(event)">
+          <div class="admin-db-drawer" id="adminDbBulkEditDrawer" role="dialog" aria-modal="true" aria-label="Bulk Edit Records in ${this._escape(tableName)}">
+            <div class="admin-db-drawer-header">
+              <div>
+                <div class="admin-db-drawer-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--admin-primary);"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  <span>Bulk Edit Records: <code>${this._escape(tableName)}</code></span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--admin-text-secondary); margin-top:0.25rem;">
+                  Target Scope: <span class="admin-badge admin-badge-info" style="font-weight:600;">${rowIdentities.length} Selected Records</span>
+                </div>
+              </div>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeBulkEditDrawer()" title="Close Drawer" aria-label="Close Drawer">✕</button>
+            </div>
+
+            <div class="admin-db-drawer-body">
+              <div id="bulkEditErrorBanner" style="display:none; margin-bottom:1rem;"></div>
+              <div style="background:var(--admin-bg); padding:0.75rem; border-radius:var(--radius-md); font-size:0.75rem; color:var(--admin-text-secondary); margin-bottom:1rem; border:1px solid var(--admin-border);">
+                <strong>How bulk editing works:</strong> Select one or more columns below to update. Only checked columns will be modified. All other fields on the ${rowIdentities.length} selected records will remain untouched.
+              </div>
+              <form id="bulkEditRecordForm" onsubmit="event.preventDefault(); AdminShell._submitBulkEditForm('${this._escape(tableName)}');">
+                <div style="display:flex; flex-direction:column; gap:0.75rem;">
+                  ${fieldsHtml}
+                </div>
+              </form>
+            </div>
+
+            <div class="admin-db-drawer-footer">
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._closeBulkEditDrawer()">
+                Cancel
+              </button>
+              <button type="button" id="submitBulkEditBtn" class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._submitBulkEditForm('${this._escape(tableName)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Apply Bulk Update (${rowIdentities.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', drawerHtml);
+    }
+
+    _toggleBulkEditField(colName, isEnabled) {
+      if (!this.bulkEditState) return;
+      const input = document.getElementById(`bulkEditInput_${colName}`);
+      const nullWrap = document.getElementById(`bulkEditNullWrap_${colName}`);
+      const nullCheck = document.getElementById(`bulkEditNullCheck_${colName}`);
+
+      if (isEnabled) {
+        this.bulkEditState.activeFields.add(colName);
+        if (nullWrap) {
+          nullWrap.style.opacity = '1';
+          nullWrap.style.pointerEvents = 'auto';
+        }
+        if (input && (!nullCheck || !nullCheck.checked)) {
+          input.disabled = false;
+        }
+      } else {
+        this.bulkEditState.activeFields.delete(colName);
+        this.bulkEditState.nullFields.delete(colName);
+        if (nullWrap) {
+          nullWrap.style.opacity = '0.5';
+          nullWrap.style.pointerEvents = 'none';
+        }
+        if (nullCheck) nullCheck.checked = false;
+        if (input) input.disabled = true;
+      }
+    }
+
+    _toggleBulkEditNull(colName, isNull) {
+      if (!this.bulkEditState) return;
+      const input = document.getElementById(`bulkEditInput_${colName}`);
+      if (isNull) {
+        this.bulkEditState.nullFields.add(colName);
+        if (input) input.disabled = true;
+      } else {
+        this.bulkEditState.nullFields.delete(colName);
+        if (input && this.bulkEditState.activeFields.has(colName)) {
+          input.disabled = false;
+        }
+      }
+    }
+
+    _onBulkEditDrawerBackdropClick(event) {
+      if (event && event.target && event.target.id === 'adminDbBulkEditDrawerBackdrop') {
+        this._closeBulkEditDrawer();
+      }
+    }
+
+    _closeBulkEditDrawer(force = false) {
+      if (!force && this.bulkEditState?.activeFields?.size > 0) {
+        const discard = window.confirm('You have selected fields for bulk update. Are you sure you want to discard your changes?');
+        if (!discard) return;
+      }
+
+      const backdrop = document.getElementById('adminDbBulkEditDrawerBackdrop');
+      if (backdrop) backdrop.remove();
+      this.bulkEditState = null;
+    }
+
+    async _submitBulkEditForm(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName || !this.bulkEditState) return;
+
+      const errorBanner = document.getElementById('bulkEditErrorBanner');
+      const submitBtn = document.getElementById('submitBulkEditBtn');
+
+      if (errorBanner) {
+        errorBanner.style.display = 'none';
+        errorBanner.innerHTML = '';
+      }
+
+      if (this.bulkEditState.activeFields.size === 0) {
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;">Please select at least one column to update.</div>`;
+        }
+        return;
+      }
+
+      const columns = (details.columns || []).filter(c => this.bulkEditState.activeFields.has(c.name));
+      const values = {};
+
+      for (const col of columns) {
+        if (this.bulkEditState.nullFields.has(col.name)) {
+          values[col.name] = null;
+          continue;
+        }
+
+        const input = document.getElementById(`bulkEditInput_${col.name}`);
+        const rawVal = input ? input.value : '';
+
+        if (rawVal === '') {
+          if (col.isRequired) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Validation Error:</strong> Column '${this._escape(col.name)}' is required.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          if (col.isNullable) {
+            values[col.name] = null;
+            continue;
+          }
+        }
+
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isInt = col.dataType.includes('int');
+        const isDec = col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+
+        if (isBool) {
+          values[col.name] = rawVal === 'true';
+        } else if (isJson) {
+          try {
+            JSON.parse(rawVal);
+            values[col.name] = rawVal;
+          } catch (jsonErr) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>JSON Syntax Error:</strong> Invalid JSON in '${this._escape(col.name)}': ${this._escape(jsonErr.message)}</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+        } else if (isInt) {
+          if (!/^-?\d+$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be an integer.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else if (isDec) {
+          if (!/^-?\d+(\.\d+)?$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be a decimal/number.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else {
+          values[col.name] = rawVal;
+        }
+      }
+
+      this.bulkEditState.isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="admin-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;display:inline-block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Updating ${this.bulkEditState.rowIdentities.length} records...
+        `;
+      }
+
+      try {
+        const payload = {
+          rows: this.bulkEditState.rowIdentities,
+          values
+        };
+
+        const res = await window.AdminApi.bulkEditTableRows(tableName, payload);
+        if (res && res.success) {
+          const { matchedCount, changedCount, unchangedCount, changedColumns } = res.data || {};
+          const colsSummary = (changedColumns || []).join(', ');
+          this.toast(`Bulk update successful: ${changedCount} changed, ${unchangedCount} unchanged (${matchedCount} matched) on column(s) [${colsSummary}].`, 'success', 6000);
+          this._closeBulkEditDrawer(true);
+          this._clearDbSelection();
+          this._loadDbGridRows(tableName);
+        } else {
+          throw new Error(res?.error?.message || 'Server rejected bulk update request.');
+        }
+      } catch (err) {
+        console.error('Bulk edit failed:', err);
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          errorBanner.innerHTML = `
+            <div class="admin-error-banner" style="margin:0;">
+              <strong>Bulk Update Failed:</strong> ${this._escape(err.message || 'Error executing bulk update operation.')}
+            </div>
+          `;
+        }
+      } finally {
+        if (this.bulkEditState) {
+          this.bulkEditState.isSubmitting = false;
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Apply Bulk Update (${this.bulkEditState?.rowIdentities?.length || 0})
+          `;
+        }
+      }
+    }
+
+    _openDuplicateRowModal(tableName, rowIndex) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.duplicateCapability || !details.duplicateCapability.isDuplicable) {
+        this.toast(details.duplicateCapability?.reason || 'Record duplication is not permitted on this table.', 'warning');
+        return;
+      }
+
+      const rows = this.dbManagementState.gridData?.rows || [];
+      const sourceRow = rows[rowIndex];
+      if (!sourceRow) {
+        this.toast('Source row was not found in the current view.', 'warning');
+        return;
+      }
+
+      const primaryKeys = details.primaryKeys || [];
+      if (primaryKeys.length === 0) {
+        this.toast('Table has no primary key defined. Duplication is disabled.', 'warning');
+        return;
+      }
+
+      const pkPayload = {};
+      for (const pk of primaryKeys) {
+        const val = sourceRow[pk];
+        if (val === undefined || val === null) {
+          this.toast(`Missing primary key value for '${pk}'.`, 'danger');
+          return;
+        }
+        pkPayload[pk] = val;
+      }
+
+      const pkSummary = primaryKeys.map(pk => `${pk}: ${sourceRow[pk]}`).join(', ');
+      const copyableCols = details.duplicateCapability.copyableColumns || [];
+      const protectedCols = details.duplicateCapability.protectedColumns || [];
+      const regeneratedCols = details.duplicateCapability.regeneratedColumns || [];
+
+      // Create modal with summary and optional overrides
+      const overrideInputsHtml = copyableCols.map(colName => {
+        const colMeta = (details.columns || []).find(c => c.name === colName);
+        const currentVal = sourceRow[colName];
+        let displayVal = currentVal;
+        if (displayVal === null || displayVal === undefined) displayVal = '';
+        else if (typeof displayVal === 'object') displayVal = JSON.stringify(displayVal);
+        else displayVal = String(displayVal);
+
+        return `
+          <div class="admin-db-form-group" style="margin-bottom:0.75rem;">
+            <div class="admin-db-form-label-row">
+              <label for="dupOverride_${this._escape(colName)}" class="admin-db-form-label" style="font-size:0.75rem;">
+                <span>${this._escape(colName)}</span>
+                ${colMeta?.dataType ? `<span class="admin-db-type-chip">${this._escape(colMeta.dataType)}</span>` : ''}
+              </label>
+            </div>
+            <input
+              type="text"
+              id="dupOverride_${this._escape(colName)}"
+              class="admin-db-input"
+              value="${this._escape(displayVal)}"
+              style="font-size:0.8125rem;"
+            />
+          </div>
+        `;
+      }).join('');
+
+      this.showCustomModal({
+        title: `Duplicate Record in ${tableName}`,
+        width: '560px',
+        content: `
+          <div id="duplicateRowErrorBanner" style="display:none; margin-bottom:1rem;"></div>
+          <div style="background:var(--admin-bg); padding:0.75rem; border-radius:var(--radius-md); font-size:0.75rem; color:var(--admin-text-secondary); margin-bottom:1rem; border:1px solid var(--admin-border);">
+            <div style="font-weight:600; margin-bottom:0.25rem;">Source Record: <code class="admin-code-pill">${this._escape(pkSummary)}</code></div>
+            <div>• Primary keys and auto-increment identities will be <strong>freshly generated</strong>.</div>
+            <div>• Security tokens, secrets, and timestamps (<code>${this._escape(protectedCols.concat(regeneratedCols).join(', '))}</code>) will be safely reset.</div>
+          </div>
+          <div style="margin-bottom:0.75rem;">
+            <span style="font-size:0.75rem; font-weight:600; color:var(--admin-text-primary); text-transform:uppercase;">Adjust Copied Values (Optional):</span>
+          </div>
+          <div style="max-height:280px; overflow-y:auto; padding-right:0.25rem;">
+            ${overrideInputsHtml}
+          </div>
+        `,
+        confirmLabel: 'Create Duplicate Record',
+        confirmType: 'primary',
+        onConfirm: async () => {
+          const errorBanner = document.getElementById('duplicateRowErrorBanner');
+          if (errorBanner) {
+            errorBanner.style.display = 'none';
+            errorBanner.innerHTML = '';
+          }
+
+          const overrides = {};
+          for (const colName of copyableCols) {
+            const input = document.getElementById(`dupOverride_${colName}`);
+            if (input && input.value !== undefined) {
+              const origVal = sourceRow[colName];
+              const newVal = input.value;
+              if (String(origVal ?? '') !== newVal) {
+                overrides[colName] = newVal;
+              }
+            }
+          }
+
+          try {
+            const res = await window.AdminApi.duplicateTableRow(tableName, {
+              primaryKey: pkPayload,
+              overrides: Object.keys(overrides).length > 0 ? overrides : undefined
+            });
+
+            if (res && res.success) {
+              const newPk = res.data?.newPrimaryKey;
+              const newPkStr = newPk && typeof newPk === 'object' ? Object.entries(newPk).map(([k, v]) => `${k}=${v}`).join(', ') : 'Generated';
+              this.toast(`Record duplicated successfully with new ID: ${newPkStr}`, 'success', 5000);
+              this._loadDbGridRows(tableName);
+              return true; // Closes modal
+            } else {
+              throw new Error(res?.error?.message || 'Server rejected record duplication.');
+            }
+          } catch (err) {
+            console.error('Duplicate record failed:', err);
+            const isConflict = err.status === 409 || (err.message && err.message.toLowerCase().includes('unique'));
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `
+                <div class="admin-error-banner" style="margin:0;">
+                  <strong>${isConflict ? 'Unique Constraint Conflict:' : 'Duplication Failed:'}</strong> ${this._escape(err.message || 'Error duplicating record.')}
+                </div>
+              `;
+            } else {
+              this.toast(err.message || 'Failed to duplicate record.', 'danger', 6000);
+            }
+            return false; // Keep modal open
           }
         }
       });

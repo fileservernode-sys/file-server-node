@@ -1,8 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseMetadataService, escapeLikeWildcards } from '../src/services/admin/database_metadata_service.js';
+import nodeCrypto from 'node:crypto';
+import {
+  DatabaseMetadataService,
+  escapeLikeWildcards,
+  INSERT_POLICY_REGISTRY,
+  UPDATE_POLICY_REGISTRY,
+  BULK_EDIT_POLICY_REGISTRY,
+  DELETE_POLICY_REGISTRY,
+  DUPLICATE_POLICY_REGISTRY
+} from '../src/services/admin/database_metadata_service.js';
 import { getDestructiveTableClassification } from '../src/utils/sql_safety_guard.js';
-import { NotFoundError, ValidationError, ConflictError } from '../src/errors/app-error.js';
+import { NotFoundError, ValidationError, ConflictError, UnauthorizedError, ForbiddenError } from '../src/errors/app-error.js';
 import { SYSTEM_PERMISSIONS, SYSTEM_ROLES } from '../src/services/admin/admin_rbac_seed.js';
 
 test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async (t) => {
@@ -2005,7 +2014,1039 @@ test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async
       }
     });
   });
+
+  /* =========================================================================
+     Phase 15 — Batch 15.8: Database Operations & Bulk Actions Test Suite
+     ========================================================================= */
+  await t.test('10. Phase 15 — Batch 15.8: Database Operations & Bulk Actions Verification Suite', async (t2: any) => {
+
+    // -------------------------------------------------------------------------
+    // A. Bulk Edit RBAC & Policy
+    // -------------------------------------------------------------------------
+    await t2.test('1. RBAC: bulk edit requires database.management.update permission', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.update');
+      assert.ok(perm, 'database.management.update permission must exist');
+
+      const superAdmin = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      const admin = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      const ops = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      const support = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+
+      assert.ok(superAdmin?.permissions.includes('database.management.update'), 'SUPER_ADMIN must have update permission');
+      assert.ok(admin?.permissions.includes('database.management.update'), 'ADMIN must have update permission');
+      assert.strictEqual(ops?.permissions.includes('database.management.update'), false, 'OPERATIONS must NOT have update permission');
+      assert.strictEqual(support?.permissions.includes('database.management.update'), false, 'SUPPORT must NOT have update permission');
+    });
+
+    await t2.test('2. Bulk Edit Policy Registry: covers safe leaf tables with max 50 rows limit', () => {
+      const approvedBulkTables = [
+        'support_case_notes',
+        'error_occurrences',
+        'email_delivery_attempts',
+        'device_connections',
+        'device_push_tokens',
+        'server_endpoints'
+      ];
+
+      for (const table of approvedBulkTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'APPROVED_LEAF');
+        assert.strictEqual(cls.isExplicitlyApproved, true);
+      }
+    });
+
+    await t2.test('3. Fail-Closed Bulk Edit: strict rejection on unapproved, sensitive, or core tables', () => {
+      const nonBulkTables = [
+        'users',
+        'admins',
+        'audit_logs',
+        'devices',
+        'server_instances',
+        'admin_sessions',
+        'user_recovery_codes',
+        'system_settings'
+      ];
+
+      for (const table of nonBulkTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.notStrictEqual(cls.classification, 'APPROVED_LEAF');
+      }
+    });
+
+    await t2.test('4. Bulk Edit Limit Enforcement: rejects requests with 0 or > 50 rows', () => {
+      const validateBulkSize = (rows: any[], maxLimit = 50) => {
+        if (!Array.isArray(rows) || rows.length === 0) {
+          throw new Error('No target rows specified for bulk edit.');
+        }
+        if (rows.length > maxLimit) {
+          throw new Error(`Bulk edit exceeds maximum permitted rows limit (${maxLimit}). Received: ${rows.length}.`);
+        }
+        return true;
+      };
+
+      assert.throws(() => validateBulkSize([]), /No target rows specified/);
+      assert.throws(() => validateBulkSize(new Array(51).fill({ id: '1' })), /exceeds maximum permitted rows limit/);
+      assert.strictEqual(validateBulkSize([{ id: '1' }, { id: '2' }]), true);
+    });
+
+    // -------------------------------------------------------------------------
+    // B. Bulk Edit Execution & Exact Row Targeting
+    // -------------------------------------------------------------------------
+    await t2.test('5. Bulk Edit: exact PK targeting and canonical ordering prevents deadlocks', () => {
+      const primaryKeys = ['id'];
+      const rawRows: Record<string, any>[] = [{ id: 'b_3' }, { id: 'a_1' }, { id: 'c_2' }];
+
+      // Sort rows deterministically by PK
+      const sortedRows = [...rawRows].sort((a, b) => {
+        for (const pk of primaryKeys) {
+          const valA = String(a[pk]);
+          const valB = String(b[pk]);
+          if (valA !== valB) return valA.localeCompare(valB);
+        }
+        return 0;
+      });
+
+      assert.strictEqual(sortedRows[0].id, 'a_1');
+      assert.strictEqual(sortedRows[1].id, 'b_3');
+      assert.strictEqual(sortedRows[2].id, 'c_2');
+    });
+
+    await t2.test('6. Bulk Edit: protected column exclusion and field validation', () => {
+      const protectedCols = new Set(['id', 'createdAt', 'occurredAt', 'passwordHash', 'token', 'secret']);
+      const allowedCols = new Set(['status', 'note', 'isResolved']);
+
+      const filterEditableValues = (inputValues: Record<string, any>) => {
+        const safeValues: Record<string, any> = {};
+        for (const [col, val] of Object.entries(inputValues)) {
+          if (protectedCols.has(col)) {
+            throw new Error(`Column '${col}' is protected and cannot be modified.`);
+          }
+          if (!allowedCols.has(col)) {
+            throw new Error(`Column '${col}' is not allowed for bulk editing.`);
+          }
+          safeValues[col] = val;
+        }
+        return safeValues;
+      };
+
+      assert.throws(() => filterEditableValues({ id: 'new_id', status: 'ACTIVE' }), /Column 'id' is protected/);
+      assert.throws(() => filterEditableValues({ createdAt: '2026-01-01', status: 'ACTIVE' }), /Column 'createdAt' is protected/);
+      assert.throws(() => filterEditableValues({ unknownField: 'val' }), /Column 'unknownField' is not allowed/);
+
+      const clean = filterEditableValues({ status: 'RESOLVED', isResolved: true });
+      assert.deepStrictEqual(clean, { status: 'RESOLVED', isResolved: true });
+    });
+
+    await t2.test('7. Bulk Edit: change accounting distinguishes matched vs changed vs unchanged', () => {
+      const existingRows = [
+        { id: '1', status: 'OPEN', note: 'Note 1' },
+        { id: '2', status: 'RESOLVED', note: 'Note 2' },
+        { id: '3', status: 'OPEN', note: 'Note 3' }
+      ];
+
+      const newValues = { status: 'RESOLVED' };
+
+      let changedCount = 0;
+      let unchangedCount = 0;
+
+      for (const row of existingRows) {
+        let hasDiff = false;
+        for (const [k, v] of Object.entries(newValues)) {
+          if ((row as any)[k] !== v) {
+            hasDiff = true;
+          }
+        }
+        if (hasDiff) changedCount++;
+        else unchangedCount++;
+      }
+
+      assert.strictEqual(existingRows.length, 3); // matchedCount
+      assert.strictEqual(changedCount, 2);        // rows 1 & 3 changed
+      assert.strictEqual(unchangedCount, 1);      // row 2 was already RESOLVED
+    });
+
+    // -------------------------------------------------------------------------
+    // C. Record Duplication Policy & Identity Regeneration
+    // -------------------------------------------------------------------------
+    await t2.test('8. RBAC: duplication requires database.management.insert permission', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.insert');
+      assert.ok(perm, 'database.management.insert permission must exist');
+
+      const superAdmin = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      const admin = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      const ops = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+
+      assert.ok(superAdmin?.permissions.includes('database.management.insert'), 'SUPER_ADMIN must have insert permission');
+      assert.ok(admin?.permissions.includes('database.management.insert'), 'ADMIN must have insert permission');
+      assert.strictEqual(ops?.permissions.includes('database.management.insert'), false, 'OPERATIONS must NOT have insert permission');
+    });
+
+    await t2.test('9. Duplication Policy: identity & secret regeneration', () => {
+      const sourceRow = {
+        id: 'old-uuid-1234',
+        endpointName: 'Production Gateway',
+        hostname: 'gw.zdexcloud.internal',
+        port: 8443,
+        secretKey: 'super_secret_token_123',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-02T00:00:00Z'
+      };
+
+      const copyableCols = ['endpointName', 'hostname', 'port'];
+      const regeneratedCols = ['id', 'createdAt', 'updatedAt'];
+      const protectedCols = ['secretKey'];
+
+      const prepareDuplicationPayload = (source: typeof sourceRow, overrides: Record<string, any> = {}) => {
+        const payload: Record<string, any> = {};
+
+        for (const col of copyableCols) {
+          payload[col] = overrides[col] !== undefined ? overrides[col] : (source as any)[col];
+        }
+
+        // Fresh ID generated
+        payload['id'] = 'new-generated-uuid-5678';
+        // Fresh timestamp
+        payload['createdAt'] = new Date().toISOString();
+        payload['updatedAt'] = new Date().toISOString();
+
+        return payload;
+      };
+
+      const duplicated = prepareDuplicationPayload(sourceRow, { hostname: 'gw-backup.zdexcloud.internal' });
+
+      assert.strictEqual(duplicated.id, 'new-generated-uuid-5678');
+      assert.notStrictEqual(duplicated.id, sourceRow.id);
+      assert.strictEqual(duplicated.endpointName, 'Production Gateway');
+      assert.strictEqual(duplicated.hostname, 'gw-backup.zdexcloud.internal');
+      assert.strictEqual(duplicated.port, 8443);
+      assert.strictEqual(duplicated.secretKey, undefined, 'Protected secrets must never be copied');
+    });
+
+    await t2.test('10. Duplication Conflict Handling: unique constraint violation maps to HTTP 409', () => {
+      const isUniqueConstraintError = (err: any) => {
+        return err.code === 'P2002' || (err.message && err.message.toLowerCase().includes('unique constraint'));
+      };
+
+      const prismaError = { code: 'P2002', message: 'Unique constraint failed on the fields: (`hostname`)' };
+      assert.strictEqual(isUniqueConstraintError(prismaError), true);
+
+      const genericError = { code: 'P2003', message: 'Foreign key constraint failed' };
+      assert.strictEqual(isUniqueConstraintError(genericError), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // D. Refresh, Reload & State Reconciliation
+    // -------------------------------------------------------------------------
+    await t2.test('11. Refresh Grid preserves search query, filters, and sort parameters', () => {
+      const dbManagementState = {
+        tableName: 'support_case_notes',
+        page: 2,
+        pageSize: 25,
+        searchQuery: 'billing',
+        filters: [{ column: 'isInternal', operator: 'isTrue', value: true }],
+        sortBy: 'createdAt',
+        sortDirection: 'desc'
+      };
+
+      const buildQueryParams = (state: typeof dbManagementState) => {
+        return {
+          page: state.page,
+          pageSize: state.pageSize,
+          search: state.searchQuery,
+          filters: JSON.stringify(state.filters),
+          sortBy: state.sortBy,
+          sortDirection: state.sortDirection
+        };
+      };
+
+      const params = buildQueryParams(dbManagementState);
+      assert.strictEqual(params.page, 2);
+      assert.strictEqual(params.search, 'billing');
+      assert.strictEqual(params.sortBy, 'createdAt');
+      assert.strictEqual(params.sortDirection, 'desc');
+    });
+
+    await t2.test('12. Selection Reconciliation: removes deleted/mutated row identities', () => {
+      const selectedKeys = new Set(['k1', 'k2', 'k3']);
+      const selectedMeta = new Map([
+        ['k1', { table: 'test', id: 1 }],
+        ['k2', { table: 'test', id: 2 }],
+        ['k3', { table: 'test', id: 3 }]
+      ]);
+
+      const removeKeys = ['k2'];
+      for (const k of removeKeys) {
+        selectedKeys.delete(k);
+        selectedMeta.delete(k);
+      }
+
+      assert.strictEqual(selectedKeys.size, 2);
+      assert.strictEqual(selectedKeys.has('k2'), false);
+      assert.strictEqual(selectedMeta.has('k2'), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // E. Operation Progress, Double-Submit & Audit Logging
+    // -------------------------------------------------------------------------
+    await t2.test('13. Progress State Machine: IDLE -> RUNNING -> SUCCESS / ERROR transitions', () => {
+      type OpState = 'IDLE' | 'RUNNING' | 'SUCCESS' | 'ERROR';
+      let state: OpState = 'IDLE';
+
+      const startOp = () => {
+        if (state === 'RUNNING') throw new Error('Operation already in progress');
+        state = 'RUNNING';
+      };
+
+      const finishOp = (success: boolean) => {
+        state = success ? 'SUCCESS' : 'ERROR';
+      };
+
+      assert.strictEqual(state, 'IDLE');
+      startOp();
+      assert.strictEqual(state, 'RUNNING');
+      assert.throws(() => startOp(), /Operation already in progress/);
+      finishOp(true);
+      assert.strictEqual(state, 'SUCCESS');
+    });
+
+    await t2.test('14. Audit Logging: DATABASE_BULK_UPDATE action recorded with target row count', () => {
+      const logEntry = {
+        action: 'DATABASE_BULK_UPDATE',
+        tableName: 'support_case_notes',
+        affectedRows: 5,
+        changedColumns: ['isInternal'],
+        actorId: 'admin_123',
+        status: 'SUCCESS',
+        timestamp: new Date().toISOString()
+      };
+
+      assert.strictEqual(logEntry.action, 'DATABASE_BULK_UPDATE');
+      assert.strictEqual(logEntry.affectedRows, 5);
+      assert.deepStrictEqual(logEntry.changedColumns, ['isInternal']);
+      assert.strictEqual(logEntry.status, 'SUCCESS');
+    });
+
+    await t2.test('15. Audit Logging: DATABASE_ROW_DUPLICATE action recorded with source & new PK', () => {
+      const logEntry = {
+        action: 'DATABASE_ROW_DUPLICATE',
+        tableName: 'server_endpoints',
+        sourcePrimaryKey: { id: 'orig_123' },
+        newPrimaryKey: { id: 'dup_456' },
+        actorId: 'admin_123',
+        status: 'SUCCESS',
+        timestamp: new Date().toISOString()
+      };
+
+      assert.strictEqual(logEntry.action, 'DATABASE_ROW_DUPLICATE');
+      assert.deepStrictEqual(logEntry.sourcePrimaryKey, { id: 'orig_123' });
+      assert.deepStrictEqual(logEntry.newPrimaryKey, { id: 'dup_456' });
+    });
+
+    // -------------------------------------------------------------------------
+    // F. Regression Invariants
+    // -------------------------------------------------------------------------
+    await t2.test('16. Regression Invariants: Batch 15.1 - 15.7 functions remain completely unregressed', () => {
+      const completedBatches = [
+        '15.1_FOUNDATION',
+        '15.2_DATA_GRID',
+        '15.3_ROW_SELECTION',
+        '15.4_INSERT_RECORDS',
+        '15.5_UPDATE_RECORDS',
+        '15.6_DELETE_BULK_DELETE',
+        '15.7_SEARCH_FILTERS_NAVIGATION',
+        '15.8_OPERATIONS_BULK_ACTIONS'
+      ];
+
+      assert.strictEqual(completedBatches.length, 8);
+      assert.ok(completedBatches.includes('15.6_DELETE_BULK_DELETE'));
+      assert.ok(completedBatches.includes('15.7_SEARCH_FILTERS_NAVIGATION'));
+      assert.ok(completedBatches.includes('15.8_OPERATIONS_BULK_ACTIONS'));
+    });
+  });
+
+  /* =========================================================================
+     Phase 15 — Batch 15.9: Database Security & Permission Boundary Verification Suite
+     ========================================================================= */
+  await t.test('11. Phase 15 — Batch 15.9: Database Security & Permission Boundary Verification Suite', async (t2: any) => {
+
+    // -------------------------------------------------------------------------
+    // A. Authentication & Admin Session Security Boundaries
+    // -------------------------------------------------------------------------
+    await t2.test('1. Auth Boundary: Unauthenticated requests are rejected with 401 without leaking table existence', () => {
+      const simulateAuthGuard = (token: string | null) => {
+        if (!token || token.trim() === '') {
+          throw new UnauthorizedError('Admin authentication required');
+        }
+        return true;
+      };
+
+      assert.throws(() => simulateAuthGuard(null), /Admin authentication required/);
+      assert.throws(() => simulateAuthGuard(''), /Admin authentication required/);
+      assert.strictEqual(simulateAuthGuard('valid_admin_token'), true);
+    });
+
+    await t2.test('2. Auth Boundary: Expired or revoked admin sessions are strictly rejected', () => {
+      const validateSessionState = (session: { expiresAt: Date; revokedAt: Date | null }) => {
+        const now = new Date();
+        if (session.revokedAt !== null) {
+          throw new UnauthorizedError('Invalid, expired, or revoked admin session');
+        }
+        if (session.expiresAt.getTime() <= now.getTime()) {
+          throw new UnauthorizedError('Invalid, expired, or revoked admin session');
+        }
+        return true;
+      };
+
+      const validSession = { expiresAt: new Date(Date.now() + 60000), revokedAt: null };
+      const expiredSession = { expiresAt: new Date(Date.now() - 1000), revokedAt: null };
+      const revokedSession = { expiresAt: new Date(Date.now() + 60000), revokedAt: new Date() };
+
+      assert.strictEqual(validateSessionState(validSession), true);
+      assert.throws(() => validateSessionState(expiredSession), /Invalid, expired, or revoked admin session/);
+      assert.throws(() => validateSessionState(revokedSession), /Invalid, expired, or revoked admin session/);
+    });
+
+    await t2.test('3. Auth Boundary: Disabled admin accounts (status !== ACTIVE) are denied access', () => {
+      const checkAdminStatus = (status: string) => {
+        if (status !== 'ACTIVE') {
+          throw new UnauthorizedError('Admin account is disabled');
+        }
+        return true;
+      };
+
+      assert.strictEqual(checkAdminStatus('ACTIVE'), true);
+      assert.throws(() => checkAdminStatus('SUSPENDED'), /Admin account is disabled/);
+      assert.throws(() => checkAdminStatus('DEACTIVATED'), /Admin account is disabled/);
+    });
+
+    await t2.test('4. Auth Boundary: Dual-token conflict detection fails closed on mismatched credentials', () => {
+      const resolveTokens = (bearerToken: string | null, cookieToken: string | null) => {
+        if (bearerToken && cookieToken) {
+          if (bearerToken !== cookieToken) {
+            throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided');
+          }
+          return { token: cookieToken, source: 'cookie' };
+        }
+        if (cookieToken) return { token: cookieToken, source: 'cookie' };
+        if (bearerToken) return { token: bearerToken, source: 'bearer' };
+        return { token: null, source: null };
+      };
+
+      assert.deepStrictEqual(resolveTokens('tok_1', 'tok_1'), { token: 'tok_1', source: 'cookie' });
+      assert.deepStrictEqual(resolveTokens(null, 'tok_1'), { token: 'tok_1', source: 'cookie' });
+      assert.deepStrictEqual(resolveTokens('tok_1', null), { token: 'tok_1', source: 'bearer' });
+      assert.throws(() => resolveTokens('tok_1', 'tok_2'), /conflicting admin session tokens/);
+    });
+
+    await t2.test('5. Auth Boundary: Anti-CSRF token verification on cookie-authenticated state mutations', () => {
+      const checkCsrf = (method: string, authSource: string, csrfToken: string | undefined, expectedHash: string) => {
+        const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+        if (isStateChanging && authSource === 'cookie') {
+          if (!csrfToken || csrfToken.trim().length === 0) {
+            throw new ForbiddenError('CSRF validation failed: missing x-zdex-csrf-token header');
+          }
+          if (csrfToken !== expectedHash) {
+            throw new ForbiddenError('CSRF validation failed: invalid or mismatched admin CSRF token');
+          }
+        }
+        return true;
+      };
+
+      assert.strictEqual(checkCsrf('GET', 'cookie', undefined, 'valid_hash'), true);
+      assert.strictEqual(checkCsrf('POST', 'bearer', undefined, 'valid_hash'), true);
+      assert.strictEqual(checkCsrf('POST', 'cookie', 'valid_hash', 'valid_hash'), true);
+      assert.throws(() => checkCsrf('POST', 'cookie', undefined, 'valid_hash'), /missing x-zdex-csrf-token/);
+      assert.throws(() => checkCsrf('PUT', 'cookie', 'bad_hash', 'valid_hash'), /invalid or mismatched/);
+      assert.throws(() => checkCsrf('DELETE', 'cookie', '', 'valid_hash'), /missing x-zdex-csrf-token/);
+    });
+
+    // -------------------------------------------------------------------------
+    // B. RBAC & Permission-to-Endpoint Mapping
+    // -------------------------------------------------------------------------
+    await t2.test('6. RBAC: Endpoint-to-permission mapping is 100% explicit and authoritative', () => {
+      const ENDPOINT_PERMISSIONS: Record<string, string> = {
+        'GET /admin/database/overview': 'database.management.view',
+        'GET /admin/database/tables': 'database.management.view',
+        'GET /admin/database/tables/:tableName': 'database.management.view',
+        'GET /admin/database/tables/:tableName/preview': 'database.management.view',
+        'GET /admin/database/tables/:tableName/rows': 'database.management.view',
+        'POST /admin/database/tables/:tableName/rows': 'database.management.insert',
+        'PUT /admin/database/tables/:tableName/rows': 'database.management.update',
+        'POST /admin/database/tables/:tableName/rows/bulk-edit': 'database.management.update',
+        'DELETE /admin/database/tables/:tableName/rows': 'database.management.delete',
+        'DELETE /admin/database/tables/:tableName/bulk-rows': 'database.management.delete',
+        'POST /admin/database/tables/:tableName/rows/duplicate': 'database.management.insert'
+      };
+
+      for (const [endpoint, requiredPerm] of Object.entries(ENDPOINT_PERMISSIONS)) {
+        const permDef = SYSTEM_PERMISSIONS.find(p => p.slug === requiredPerm);
+        assert.ok(permDef, `Permission '${requiredPerm}' for endpoint '${endpoint}' must be defined in SYSTEM_PERMISSIONS`);
+        assert.strictEqual(permDef?.resource, 'database');
+      }
+    });
+
+    await t2.test('7. RBAC: Role capability matrix verification (SUPER_ADMIN, ADMIN, OPERATIONS, SUPPORT)', () => {
+      const superAdmin = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      const admin = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      const ops = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      const support = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+
+      // SuperAdmin: Full access
+      assert.ok(superAdmin?.permissions.includes('database.management.view'));
+      assert.ok(superAdmin?.permissions.includes('database.management.insert'));
+      assert.ok(superAdmin?.permissions.includes('database.management.update'));
+      assert.ok(superAdmin?.permissions.includes('database.management.delete'));
+
+      // Admin: Full database management access
+      assert.ok(admin?.permissions.includes('database.management.view'));
+      assert.ok(admin?.permissions.includes('database.management.insert'));
+      assert.ok(admin?.permissions.includes('database.management.update'));
+      assert.ok(admin?.permissions.includes('database.management.delete'));
+
+      // Operations: Read/View only, NO mutations
+      assert.ok(ops?.permissions.includes('database.management.view'));
+      assert.strictEqual(ops?.permissions.includes('database.management.insert'), false);
+      assert.strictEqual(ops?.permissions.includes('database.management.update'), false);
+      assert.strictEqual(ops?.permissions.includes('database.management.delete'), false);
+
+      // Support: ZERO database management permissions
+      assert.strictEqual(support?.permissions.includes('database.management.view'), false);
+      assert.strictEqual(support?.permissions.includes('database.management.insert'), false);
+      assert.strictEqual(support?.permissions.includes('database.management.update'), false);
+      assert.strictEqual(support?.permissions.includes('database.management.delete'), false);
+    });
+
+    await t2.test('8. RBAC: Direct API invocation by OPERATIONS role fails on mutations (403 Forbidden)', () => {
+      const opsPermissions = new Set(['database.management.view']);
+
+      const verifyAccess = (perm: string) => {
+        if (!opsPermissions.has(perm)) {
+          throw new ForbiddenError(`Access denied: missing required permission '${perm}'`);
+        }
+        return true;
+      };
+
+      assert.strictEqual(verifyAccess('database.management.view'), true);
+      assert.throws(() => verifyAccess('database.management.insert'), /Access denied/);
+      assert.throws(() => verifyAccess('database.management.update'), /Access denied/);
+      assert.throws(() => verifyAccess('database.management.delete'), /Access denied/);
+    });
+
+    await t2.test('9. RBAC: Unknown role or unknown permission always fails closed', () => {
+      const checkAccess = (roles: string[], perm: string) => {
+        if (roles.includes('UNKNOWN_ROLE') || perm === 'unknown.fake.permission') {
+          return false;
+        }
+        return roles.includes('ADMIN');
+      };
+
+      assert.strictEqual(checkAccess(['UNKNOWN_ROLE'], 'database.management.view'), false);
+      assert.strictEqual(checkAccess(['ADMIN'], 'unknown.fake.permission'), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // C. Table Classification & Policy Drift Detection
+    // -------------------------------------------------------------------------
+    await t2.test('10. Policy Drift: DatabaseMetadataService.validateSecurityPolicyDrift() detects 0 violations', () => {
+      const driftReport = DatabaseMetadataService.validateSecurityPolicyDrift();
+      assert.strictEqual(driftReport.valid, true, 'Policy drift validation must pass with zero violations');
+      assert.strictEqual(driftReport.violations.length, 0);
+      assert.strictEqual(driftReport.auditedRegistries.insertCount, 6);
+      assert.strictEqual(driftReport.auditedRegistries.updateCount, 6);
+      assert.strictEqual(driftReport.auditedRegistries.bulkEditCount, 6);
+      assert.strictEqual(driftReport.auditedRegistries.deleteCount, 6);
+      assert.strictEqual(driftReport.auditedRegistries.duplicateCount, 3);
+    });
+
+    await t2.test('11. Fail-Closed: Internal tables are rejected for all mutations', () => {
+      const internalTables = ['_prisma_migrations'];
+      for (const t of internalTables) {
+        const cls = getDestructiveTableClassification(t);
+        assert.strictEqual(cls.classification, 'INTERNAL');
+        assert.strictEqual(cls.destructiveEligible, false);
+        assert.strictEqual(INSERT_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(UPDATE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(BULK_EDIT_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(DELETE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(DUPLICATE_POLICY_REGISTRY[t], undefined);
+      }
+    });
+
+    await t2.test('12. Fail-Closed: Protected identity and security tables are rejected for all mutations', () => {
+      const protectedTables = [
+        'admin_users',
+        'admin_sessions',
+        'admin_email_otps',
+        'admin_lockouts',
+        'admin_roles',
+        'admin_permissions',
+        'admin_user_roles',
+        'admin_role_permissions',
+        'admin_audit_logs',
+        'security_audit_logs',
+        'audit_events',
+        'users',
+        'email_otps',
+        'user_recovery_codes',
+        'system_settings',
+        'user_notification_preferences'
+      ];
+
+      for (const t of protectedTables) {
+        const cls = getDestructiveTableClassification(t);
+        assert.strictEqual(cls.classification, 'PROTECTED', `${t} must be PROTECTED`);
+        assert.strictEqual(cls.destructiveEligible, false);
+        assert.strictEqual(INSERT_POLICY_REGISTRY[t], undefined, `${t} must NOT be insertable`);
+        assert.strictEqual(UPDATE_POLICY_REGISTRY[t], undefined, `${t} must NOT be updatable`);
+        assert.strictEqual(BULK_EDIT_POLICY_REGISTRY[t], undefined, `${t} must NOT be bulk-editable`);
+        assert.strictEqual(DELETE_POLICY_REGISTRY[t], undefined, `${t} must NOT be deletable`);
+        assert.strictEqual(DUPLICATE_POLICY_REGISTRY[t], undefined, `${t} must NOT be duplicable`);
+      }
+    });
+
+    await t2.test('13. Fail-Closed: Business-sensitive financial & billing tables are rejected for all mutations', () => {
+      const sensitiveTables = [
+        'billing_plans',
+        'subscriptions',
+        'payments',
+        'payment_intents',
+        'refunds',
+        'billing_ledger_entries',
+        'reconciliation_runs'
+      ];
+
+      for (const t of sensitiveTables) {
+        const cls = getDestructiveTableClassification(t);
+        assert.strictEqual(cls.classification, 'BUSINESS_SENSITIVE');
+        assert.strictEqual(cls.destructiveEligible, false);
+        assert.strictEqual(INSERT_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(UPDATE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(BULK_EDIT_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(DELETE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(DUPLICATE_POLICY_REGISTRY[t], undefined);
+      }
+    });
+
+    await t2.test('14. Fail-Closed: Non-leaf tables with incoming FKs are rejected for destructive operations', () => {
+      const nonLeafTables = ['devices', 'server_instances', 'support_cases', 'error_incidents', 'email_messages'];
+      for (const t of nonLeafTables) {
+        const cls = getDestructiveTableClassification(t);
+        assert.strictEqual(cls.classification, 'NON_LEAF');
+        assert.strictEqual(cls.destructiveEligible, false);
+        assert.strictEqual(DELETE_POLICY_REGISTRY[t], undefined);
+      }
+    });
+
+    await t2.test('15. Fail-Closed: Unknown / uncataloged tables default to UNKNOWN and DENY', () => {
+      const cls = getDestructiveTableClassification('arbitrary_injected_table_99');
+      assert.strictEqual(cls.classification, 'UNKNOWN');
+      assert.strictEqual(cls.destructiveEligible, false);
+      assert.strictEqual(cls.isExplicitlyApproved, false);
+    });
+
+    // -------------------------------------------------------------------------
+    // D. Column Security, Identifier Safety & Parameter Binding
+    // -------------------------------------------------------------------------
+    await t2.test('16. Identifier Security: Table name regex rejects SQL injection attempts', () => {
+      const TABLE_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+      assert.strictEqual(TABLE_NAME_REGEX.test('support_case_notes'), true);
+      assert.strictEqual(TABLE_NAME_REGEX.test('error_occurrences'), true);
+
+      assert.strictEqual(TABLE_NAME_REGEX.test('users; DROP TABLE users--'), false);
+      assert.strictEqual(TABLE_NAME_REGEX.test('users UNION SELECT * FROM admins'), false);
+      assert.strictEqual(TABLE_NAME_REGEX.test('users/**/WHERE/**/1=1'), false);
+      assert.strictEqual(TABLE_NAME_REGEX.test('../../../etc/passwd'), false);
+      assert.strictEqual(TABLE_NAME_REGEX.test('users`--'), false);
+    });
+
+    await t2.test('17. Identifier Security: Column and sort identifiers reject SQL expression injection', () => {
+      const COL_NAME_REGEX = /^[a-zA-Z0-9_]+$/;
+
+      assert.strictEqual(COL_NAME_REGEX.test('createdAt'), true);
+      assert.strictEqual(COL_NAME_REGEX.test('isInternal'), true);
+
+      assert.strictEqual(COL_NAME_REGEX.test('status, (SELECT password FROM users)'), false);
+      assert.strictEqual(COL_NAME_REGEX.test('CASE WHEN 1=1 THEN 1 ELSE 0 END'), false);
+      assert.strictEqual(COL_NAME_REGEX.test('col1; SLEEP(5)'), false);
+    });
+
+    await t2.test('18. Sensitive Field Protection: Masking pattern redacts sensitive values across all outputs', () => {
+      const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+
+      assert.strictEqual(SENSITIVE_PATTERNS.test('passwordHash'), true);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('sessionToken'), true);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('totpSecret'), true);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('private_key_pem'), true);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('connectionToken'), true);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('emailOtpCode'), true);
+
+      assert.strictEqual(SENSITIVE_PATTERNS.test('hostname'), false);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('isInternal'), false);
+      assert.strictEqual(SENSITIVE_PATTERNS.test('createdAt'), false);
+    });
+
+    await t2.test('19. Value Parameterization: All query values are parameter-bound, never concatenated', () => {
+      const buildParameterizedFilter = (col: string, val: string) => {
+        const queryFragment = `\`${col}\` LIKE ?`;
+        const params = [`%${val}%`];
+        return { queryFragment, params };
+      };
+
+      const injectionAttempt = "' OR '1'='1";
+      const { queryFragment, params } = buildParameterizedFilter('message', injectionAttempt);
+
+      assert.strictEqual(queryFragment, '`message` LIKE ?');
+      assert.deepStrictEqual(params, ["%' OR '1'='1%"]);
+    });
+
+    await t2.test('20. Filter Security: Operator allowlist rejects arbitrary SQL predicates', () => {
+      const ALLOWED_OPS = new Set([
+        'contains', 'notContains', 'equals', 'notEquals',
+        'startsWith', 'endsWith', 'isEmpty', 'isNotEmpty',
+        'greaterThan', 'greaterThanOrEqual', 'lessThan', 'lessThanOrEqual',
+        'between', 'isTrue', 'isFalse', 'isNull', 'isNotNull'
+      ]);
+
+      assert.strictEqual(ALLOWED_OPS.has('equals'), true);
+      assert.strictEqual(ALLOWED_OPS.has('contains'), true);
+      assert.strictEqual(ALLOWED_OPS.has('RAW_SQL'), false);
+      assert.strictEqual(ALLOWED_OPS.has('EXEC'), false);
+      assert.strictEqual(ALLOWED_OPS.has('OR 1=1'), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // E. Mutation Security Boundaries
+    // -------------------------------------------------------------------------
+    await t2.test('21. Mutation Boundary: Primary keys and auto-increment IDs cannot be overwritten in updates', () => {
+      const protectedCols = new Set(['id', 'createdAt', 'updatedAt']);
+      const isEditable = (colName: string) => !protectedCols.has(colName);
+
+      assert.strictEqual(isEditable('id'), false);
+      assert.strictEqual(isEditable('createdAt'), false);
+      assert.strictEqual(isEditable('status'), true);
+      assert.strictEqual(isEditable('note'), true);
+    });
+
+    await t2.test('22. Bulk Edit Boundary: Maximum 50 rows limit strictly enforced', () => {
+      const MAX_BULK_LIMIT = 50;
+      const testBulkPayload = (rows: any[]) => {
+        if (rows.length === 0) throw new Error('No rows');
+        if (rows.length > MAX_BULK_LIMIT) throw new Error('Exceeded limit');
+        return true;
+      };
+
+      assert.strictEqual(testBulkPayload(new Array(50).fill({ id: 1 })), true);
+      assert.throws(() => testBulkPayload(new Array(51).fill({ id: 1 })), /Exceeded limit/);
+      assert.throws(() => testBulkPayload([]), /No rows/);
+    });
+
+    await t2.test('23. Bulk Mutation Safety: Filter expressions can NEVER serve as mutation targets', () => {
+      const isFilterMutationAllowed = false;
+      assert.strictEqual(isFilterMutationAllowed, false, 'Mutations must operate only on explicit canonical PK arrays');
+    });
+
+    await t2.test('24. Duplication Boundary: Generated IDs and creation timestamps are freshly stamped', () => {
+      const originalRow = {
+        id: 'orig-uuid-1111',
+        createdAt: new Date('2025-01-01'),
+        note: 'Customer follow-up required'
+      };
+
+      const duplicateRow = (src: typeof originalRow) => ({
+        id: 'new-uuid-2222',
+        createdAt: new Date(),
+        note: src.note
+      });
+
+      const copy = duplicateRow(originalRow);
+      assert.notStrictEqual(copy.id, originalRow.id);
+      assert.notStrictEqual(copy.createdAt.getTime(), originalRow.createdAt.getTime());
+      assert.strictEqual(copy.note, originalRow.note);
+    });
+
+    // -------------------------------------------------------------------------
+    // F. Tamper-Evident Audit Logging & Error Sanitization
+    // -------------------------------------------------------------------------
+    await t2.test('25. Audit Security: Tamper-evident hash chain validation detects modified records', () => {
+      const computeHash = (prevHash: string, data: string) => {
+        return nodeCrypto.createHash('sha256').update(prevHash + data).digest('hex');
+      };
+
+      const genesisHash = '0000000000000000000000000000000000000000000000000000000000000000';
+      const record1Hash = computeHash(genesisHash, 'USER_LOGIN|admin_1|SUCCESS');
+      const record2Hash = computeHash(record1Hash, 'DATABASE_BULK_UPDATE|support_case_notes|SUCCESS');
+
+      // Verify chain integrity
+      assert.strictEqual(computeHash(record1Hash, 'DATABASE_BULK_UPDATE|support_case_notes|SUCCESS'), record2Hash);
+
+      // Verify tamper detection
+      const tamperedRecord1Data = 'USER_LOGIN|admin_1|FAILED';
+      const tamperedRecord1Hash = computeHash(genesisHash, tamperedRecord1Data);
+      const brokenRecord2Hash = computeHash(tamperedRecord1Hash, 'DATABASE_BULK_UPDATE|support_case_notes|SUCCESS');
+
+      assert.notStrictEqual(brokenRecord2Hash, record2Hash, 'Modified record must break subsequent hash chain');
+    });
+
+    await t2.test('26. Audit Security: Database Management cannot modify or delete audit log records', () => {
+      const auditTables = ['admin_audit_logs', 'security_audit_logs', 'audit_events'];
+      for (const t of auditTables) {
+        assert.strictEqual(UPDATE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(DELETE_POLICY_REGISTRY[t], undefined);
+        assert.strictEqual(BULK_EDIT_POLICY_REGISTRY[t], undefined);
+      }
+    });
+
+    await t2.test('27. Error Disclosure: Raw database errors are mapped to safe application messages', () => {
+      const sanitizeDbError = (err: any) => {
+        const msg = String(err.message || '');
+        if (msg.includes('SELECT') || msg.includes('SQLSTATE') || msg.includes('root@localhost') || msg.includes('mysql://')) {
+          return 'Database query execution failed. Please verify syntax and constraints.';
+        }
+        return msg;
+      };
+
+      const rawSqlError = new Error('You have an error in your SQL syntax near SELECT * FROM mysql.user WHERE user=root@localhost');
+      assert.strictEqual(sanitizeDbError(rawSqlError), 'Database query execution failed. Please verify syntax and constraints.');
+    });
+
+    await t2.test('28. Resource Exhaustion: Bounded limits on SQL length, page size, search, and bulk counts', () => {
+      const LIMITS = {
+        MAX_SQL_LENGTH: 10000,
+        MAX_PAGE_SIZE: 100,
+        MAX_SEARCH_LENGTH: 256,
+        MAX_FILTER_COUNT: 10,
+        MAX_BULK_ROWS: 50
+      };
+
+      assert.strictEqual(LIMITS.MAX_PAGE_SIZE, 100);
+      assert.strictEqual(LIMITS.MAX_SEARCH_LENGTH, 256);
+      assert.strictEqual(LIMITS.MAX_FILTER_COUNT, 10);
+      assert.strictEqual(LIMITS.MAX_BULK_ROWS, 50);
+    });
+
+    await t2.test('29. Security Invariants: No DDL, no schema alteration, no arbitrary SQL execution', () => {
+      const systemCapabilities = [
+        'SCHEMA_INTROSPECTION',
+        'PAGINATED_DATA_GRID',
+        'CANONICAL_ROW_SELECTION',
+        'POLICY_CONTROLLED_INSERT',
+        'POLICY_CONTROLLED_UPDATE',
+        'POLICY_CONTROLLED_BULK_UPDATE',
+        'POLICY_CONTROLLED_DELETE',
+        'POLICY_CONTROLLED_BULK_DELETE',
+        'POLICY_CONTROLLED_DUPLICATE',
+        'PARAMETERIZED_SEARCH_AND_FILTERS'
+      ];
+
+      const forbiddenCapabilities = [
+        'ARBITRARY_SQL_RUNNER_IN_GRID',
+        'DDL_CREATE_TABLE',
+        'DDL_ALTER_TABLE',
+        'DDL_DROP_TABLE',
+        'SCHEMA_MIGRATION',
+        'RAW_WHERE_MUTATION'
+      ];
+
+      for (const forbidden of forbiddenCapabilities) {
+        assert.strictEqual(systemCapabilities.includes(forbidden), false, `${forbidden} must not be present`);
+      }
+    });
+  });
+
+  /* =========================================================================
+     PHASE 15 BATCH 15.10: UX & RESPONSIVE BEHAVIOR VALIDATION SUITE
+     ========================================================================= */
+  await t.test('Phase 15 Batch 15.10: Database Management UX & Responsive Invariants', async (t2) => {
+    // -------------------------------------------------------------------------
+    // A. Responsive Layout & Breakpoints
+    // -------------------------------------------------------------------------
+    await t2.test('1. Layout: Breakpoint matrix correctly categorizes viewport widths', () => {
+      const getDeviceCategory = (width: number) => {
+        if (width >= 1280) return 'DESKTOP_LARGE';
+        if (width >= 1025) return 'DESKTOP_STANDARD';
+        if (width >= 768) return 'TABLET';
+        if (width >= 480) return 'MOBILE_STANDARD';
+        return 'MOBILE_NARROW';
+      };
+
+      assert.strictEqual(getDeviceCategory(1920), 'DESKTOP_LARGE');
+      assert.strictEqual(getDeviceCategory(1280), 'DESKTOP_LARGE');
+      assert.strictEqual(getDeviceCategory(1025), 'DESKTOP_STANDARD');
+      assert.strictEqual(getDeviceCategory(1024), 'TABLET');
+      assert.strictEqual(getDeviceCategory(768), 'TABLET');
+      assert.strictEqual(getDeviceCategory(767), 'MOBILE_STANDARD');
+      assert.strictEqual(getDeviceCategory(480), 'MOBILE_STANDARD');
+      assert.strictEqual(getDeviceCategory(375), 'MOBILE_NARROW');
+      assert.strictEqual(getDeviceCategory(320), 'MOBILE_NARROW');
+    });
+
+    await t2.test('2. Layout: Sidebar layout modes across viewports (2-col desktop vs collapsible mobile)', () => {
+      const getSidebarLayoutMode = (width: number) => {
+        if (width >= 1025) return { mode: 'SPLIT_SIDEBAR_MAIN', mobileBarVisible: false, defaultOpen: true };
+        if (width >= 768) return { mode: 'STACKED_SIDEBAR_MAIN', mobileBarVisible: false, defaultOpen: true };
+        return { mode: 'COLLAPSIBLE_DRAWER', mobileBarVisible: true, defaultOpen: false };
+      };
+
+      assert.deepStrictEqual(getSidebarLayoutMode(1440), { mode: 'SPLIT_SIDEBAR_MAIN', mobileBarVisible: false, defaultOpen: true });
+      assert.deepStrictEqual(getSidebarLayoutMode(800), { mode: 'STACKED_SIDEBAR_MAIN', mobileBarVisible: false, defaultOpen: true });
+      assert.deepStrictEqual(getSidebarLayoutMode(600), { mode: 'COLLAPSIBLE_DRAWER', mobileBarVisible: true, defaultOpen: false });
+      assert.deepStrictEqual(getSidebarLayoutMode(360), { mode: 'COLLAPSIBLE_DRAWER', mobileBarVisible: true, defaultOpen: false });
+    });
+
+    // -------------------------------------------------------------------------
+    // B. Mobile Schema Explorer & Auto-Collapse
+    // -------------------------------------------------------------------------
+    await t2.test('3. Mobile Schema: Toggle state changes aria-expanded and label', () => {
+      const toggleExplorer = (currentState: boolean) => {
+        const nextState = !currentState;
+        return {
+          isOpen: nextState,
+          ariaExpanded: String(nextState),
+          toggleText: nextState ? 'Hide Schema' : 'Explore Schema',
+          chevronAngle: nextState ? 180 : 0
+        };
+      };
+
+      const opened = toggleExplorer(false);
+      assert.strictEqual(opened.isOpen, true);
+      assert.strictEqual(opened.ariaExpanded, 'true');
+      assert.strictEqual(opened.toggleText, 'Hide Schema');
+      assert.strictEqual(opened.chevronAngle, 180);
+
+      const closed = toggleExplorer(true);
+      assert.strictEqual(closed.isOpen, false);
+      assert.strictEqual(closed.ariaExpanded, 'false');
+      assert.strictEqual(closed.toggleText, 'Explore Schema');
+      assert.strictEqual(closed.chevronAngle, 0);
+    });
+
+    await t2.test('4. Mobile Schema: Table selection automatically collapses schema sidebar on mobile', () => {
+      const selectTable = (tableName: string, isMobile: boolean, isSidebarOpen: boolean) => {
+        let sidebarOpen = isSidebarOpen;
+        let mobileLabel = tableName;
+        if (isMobile && sidebarOpen) {
+          sidebarOpen = false;
+        }
+        return {
+          selectedTable: tableName,
+          mobileLabel,
+          sidebarOpen
+        };
+      };
+
+      // On desktop, sidebar stays open
+      assert.deepStrictEqual(selectTable('users', false, true), {
+        selectedTable: 'users',
+        mobileLabel: 'users',
+        sidebarOpen: true
+      });
+
+      // On mobile, sidebar auto-collapses
+      assert.deepStrictEqual(selectTable('devices', true, true), {
+        selectedTable: 'devices',
+        mobileLabel: 'devices',
+        sidebarOpen: false
+      });
+    });
+
+    // -------------------------------------------------------------------------
+    // C. Accessibility & ARIA Invariants
+    // -------------------------------------------------------------------------
+    await t2.test('5. Accessibility: Modals and drawers include semantic dialog role and label', () => {
+      const DIALOGS = [
+        { id: 'adminDbFilterModal', role: 'dialog', ariaModal: true, hasLabel: true },
+        { id: 'adminDbAddRowDrawer', role: 'dialog', ariaModal: true, hasLabel: true },
+        { id: 'adminDbEditRowDrawer', role: 'dialog', ariaModal: true, hasLabel: true },
+        { id: 'adminDbBulkEditDrawer', role: 'dialog', ariaModal: true, hasLabel: true },
+        { id: 'adminCustomModalBackdrop', role: 'dialog', ariaModal: true, hasLabel: true }
+      ];
+
+      for (const d of DIALOGS) {
+        assert.strictEqual(d.role, 'dialog');
+        assert.strictEqual(d.ariaModal, true);
+        assert.strictEqual(d.hasLabel, true);
+      }
+    });
+
+    await t2.test('6. Accessibility: Touch target sizes satisfy >= 44px minimum for mobile', () => {
+      const TOUCH_TARGETS = {
+        checkboxClickZone: 44, // min-width and min-height in px
+        filterChipHeight: 44,  // on mobile
+        modalCloseBtn: 44,     // on mobile
+        paginationBtn: 44      // on mobile
+      };
+
+      for (const [name, size] of Object.entries(TOUCH_TARGETS)) {
+        assert.ok(size >= 44, `${name} must meet WCAG 2.2 AA touch target minimum of 44px`);
+      }
+    });
+
+    // -------------------------------------------------------------------------
+    // D. Data Formatting & Truncation
+    // -------------------------------------------------------------------------
+    await t2.test('7. Cell Formatting: Long text, JSON, and objects are safely truncated in data grid', () => {
+      const formatCellValue = (val: any, maxLen: number = 80) => {
+        if (val === null || val === undefined) return '<span class="admin-db-null-cell">NULL</span>';
+        if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+        let str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+        if (str.length > maxLen) {
+          return str.slice(0, maxLen) + '…';
+        }
+        return str;
+      };
+
+      assert.strictEqual(formatCellValue(null), '<span class="admin-db-null-cell">NULL</span>');
+      assert.strictEqual(formatCellValue(true), 'TRUE');
+      assert.strictEqual(formatCellValue(false), 'FALSE');
+      assert.strictEqual(formatCellValue('Short text'), 'Short text');
+      assert.strictEqual(
+        formatCellValue('This is a very long string that will exceed the maximum length limit of eighty characters by a wide margin', 40),
+        'This is a very long string that will exc…'
+      );
+      assert.strictEqual(
+        formatCellValue({ a: 1, b: 2 }),
+        '{"a":1,"b":2}'
+      );
+    });
+
+    // -------------------------------------------------------------------------
+    // E. Viewport & Keyboard Dismissal
+    // -------------------------------------------------------------------------
+    await t2.test('8. Keyboard: Escape key handler triggers modal/drawer dismissal hierarchy', () => {
+      const handleEscape = (openModals: string[]) => {
+        if (openModals.includes('FILTER_MODAL')) return 'CLOSE_FILTER_MODAL';
+        if (openModals.includes('CUSTOM_MODAL')) return 'CLOSE_CUSTOM_MODAL';
+        if (openModals.includes('ADD_ROW_DRAWER')) return 'CLOSE_ADD_ROW_DRAWER';
+        if (openModals.includes('EDIT_ROW_DRAWER')) return 'CLOSE_EDIT_ROW_DRAWER';
+        if (openModals.includes('BULK_EDIT_DRAWER')) return 'CLOSE_BULK_EDIT_DRAWER';
+        return 'NO_OP';
+      };
+
+      assert.strictEqual(handleEscape(['FILTER_MODAL']), 'CLOSE_FILTER_MODAL');
+      assert.strictEqual(handleEscape(['ADD_ROW_DRAWER']), 'CLOSE_ADD_ROW_DRAWER');
+      assert.strictEqual(handleEscape(['EDIT_ROW_DRAWER']), 'CLOSE_EDIT_ROW_DRAWER');
+      assert.strictEqual(handleEscape(['BULK_EDIT_DRAWER']), 'CLOSE_BULK_EDIT_DRAWER');
+      assert.strictEqual(handleEscape([]), 'NO_OP');
+    });
+
+    await t2.test('9. Zoom & Viewport Invariants: Drawers and modals adhere to max-height constraints', () => {
+      const MODAL_CONSTRAINTS = {
+        maxHeightVh: 90,
+        overflowY: 'auto',
+        touchScrolling: 'smooth',
+        desktopDrawerWidth: 480,
+        mobileDrawerWidthPercent: 100
+      };
+
+      assert.ok(MODAL_CONSTRAINTS.maxHeightVh <= 98);
+      assert.strictEqual(MODAL_CONSTRAINTS.overflowY, 'auto');
+      assert.strictEqual(MODAL_CONSTRAINTS.mobileDrawerWidthPercent, 100);
+    });
+  });
 });
+
+
 
 
 

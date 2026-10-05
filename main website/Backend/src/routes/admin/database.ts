@@ -86,6 +86,18 @@ const bulkDeleteRowsBodySchema = z.object({
     .max(50, 'Maximum of 50 records allowed per bulk delete request')
 });
 
+const bulkEditRowsBodySchema = z.object({
+  rows: z.array(z.record(z.any()), { required_error: 'rows array is required' })
+    .min(1, 'At least 1 row identity must be provided')
+    .max(50, 'Maximum of 50 records allowed per bulk edit request'),
+  values: z.record(z.any(), { required_error: 'values object is required' })
+});
+
+const duplicateRowBodySchema = z.object({
+  primaryKey: z.record(z.any(), { required_error: 'primaryKey object is required' }),
+  overrides: z.record(z.any()).optional()
+});
+
 const rowsQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
@@ -404,6 +416,84 @@ export async function adminDatabaseRoutes(app: FastifyInstance): Promise<void> {
         adminId: admin.id,
         tableName: paramsResult.data.tableName,
         rows: bodyResult.data.rows,
+        ipAddress: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
+      });
+
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/database/tables/:tableName/rows/bulk-edit
+   * Phase 15 Batch 15.8: Bulk Edit Selected Database Records
+   * Safely updates policy-approved fields across a bounded selection of records (max 50) within an atomic transaction.
+   */
+  app.post(
+    '/admin/database/tables/:tableName/rows/bulk-edit',
+    {
+      preHandler: [adminAuthenticate, requirePermission('database.management.update')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin;
+      if (!admin) {
+        throw new UnauthorizedError('Admin authentication required');
+      }
+
+      const paramsResult = tableNameParamSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        throw new ValidationError(paramsResult.error.errors[0]?.message || 'Invalid table name parameter');
+      }
+
+      const bodyResult = bulkEditRowsBodySchema.safeParse(request.body);
+      if (!bodyResult.success) {
+        throw new ValidationError(bodyResult.error.errors[0]?.message || 'Invalid request payload: rows array (1-50 items) and values object are required');
+      }
+
+      const result = await DatabaseMetadataService.bulkEditTableRows({
+        adminId: admin.id,
+        tableName: paramsResult.data.tableName,
+        rows: bodyResult.data.rows,
+        values: bodyResult.data.values,
+        ipAddress: request.ip,
+        userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
+      });
+
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/database/tables/:tableName/rows/duplicate
+   * Phase 15 Batch 15.8: Duplicate / Copy Single Database Record
+   * Safely duplicates a single record in an authorized database table with policy field filtering and identity regeneration.
+   */
+  app.post(
+    '/admin/database/tables/:tableName/rows/duplicate',
+    {
+      preHandler: [adminAuthenticate, requirePermission('database.management.insert')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const admin = request.admin;
+      if (!admin) {
+        throw new UnauthorizedError('Admin authentication required');
+      }
+
+      const paramsResult = tableNameParamSchema.safeParse(request.params);
+      if (!paramsResult.success) {
+        throw new ValidationError(paramsResult.error.errors[0]?.message || 'Invalid table name parameter');
+      }
+
+      const bodyResult = duplicateRowBodySchema.safeParse(request.body);
+      if (!bodyResult.success) {
+        throw new ValidationError(bodyResult.error.errors[0]?.message || 'Invalid request payload: primaryKey object is required');
+      }
+
+      const result = await DatabaseMetadataService.duplicateTableRow({
+        adminId: admin.id,
+        tableName: paramsResult.data.tableName,
+        primaryKey: bodyResult.data.primaryKey,
+        overrides: bodyResult.data.overrides,
         ipAddress: request.ip,
         userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined
       });

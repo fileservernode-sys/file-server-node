@@ -8,6 +8,7 @@
  * and professional server-side paginated, sorted, searchable data grid querying.
  */
 
+import crypto from 'node:crypto';
 import { prisma } from '../../config/database.js';
 import { getDestructiveTableClassification } from '../../utils/sql_safety_guard.js';
 import { NotFoundError, ValidationError, ForbiddenError, ConflictError } from '../../errors/app-error.js';
@@ -208,6 +209,98 @@ export const DELETE_POLICY_REGISTRY: Record<string, TableDeletePolicy> = {
   }
 };
 
+export interface TableBulkEditPolicy {
+  allowed: boolean;
+  reason: string;
+  maxRows: number;
+  allowedEditableColumns: string[];
+  protectedColumns: string[];
+  concurrencyField?: string;
+}
+
+export const BULK_EDIT_POLICY_REGISTRY: Record<string, TableBulkEditPolicy> = {
+  support_case_notes: {
+    allowed: true,
+    reason: 'Bulk update of internal administrative support case notes state',
+    maxRows: 50,
+    allowedEditableColumns: ['isInternal', 'note'],
+    protectedColumns: ['id', 'caseId', 'authorId', 'createdAt', 'updatedAt'],
+    concurrencyField: 'updatedAt'
+  },
+  error_occurrences: {
+    allowed: true,
+    reason: 'Bulk adjustment of operational error diagnostics and metadata',
+    maxRows: 50,
+    allowedEditableColumns: ['message', 'metadata'],
+    protectedColumns: ['id', 'fingerprintId', 'incidentId', 'occurredAt', 'component', 'severity', 'errorCode', 'errorType', 'httpMethod', 'httpPath', 'httpStatus', 'requestId', 'userId', 'deviceId', 'serverInstanceId', 'gatewayNodeId', 'connectionId', 'sessionId', 'createdAt'],
+    concurrencyField: 'createdAt'
+  },
+  email_delivery_attempts: {
+    allowed: true,
+    reason: 'Bulk adjustment of email delivery attempt diagnostics',
+    maxRows: 50,
+    allowedEditableColumns: ['providerResponse', 'failureReason'],
+    protectedColumns: ['id', 'emailMessageId', 'attemptNumber', 'providerMessageId', 'attemptedAt', 'createdAt'],
+    concurrencyField: 'attemptedAt'
+  },
+  device_connections: {
+    allowed: true,
+    reason: 'Bulk update of edge device connection status',
+    maxRows: 50,
+    allowedEditableColumns: ['status'],
+    protectedColumns: ['id', 'deviceId', 'gatewayNodeId', 'connectionToken', 'remoteEndpoint', 'connectedAt', 'disconnectedAt', 'lastHeartbeatAt', 'createdAt', 'updatedAt'],
+    concurrencyField: 'updatedAt'
+  },
+  device_push_tokens: {
+    allowed: true,
+    reason: 'Bulk deactivation or update of device push notification tokens',
+    maxRows: 50,
+    allowedEditableColumns: ['isActive', 'appVersion', 'platform'],
+    protectedColumns: ['id', 'userId', 'deviceId', 'token', 'lastSeenAt', 'revokedAt', 'createdAt', 'updatedAt'],
+    concurrencyField: 'updatedAt'
+  },
+  server_endpoints: {
+    allowed: true,
+    reason: 'Bulk update of server endpoint status',
+    maxRows: 50,
+    allowedEditableColumns: ['status'],
+    protectedColumns: ['id', 'serverInstanceId', 'hostname', 'createdAt', 'updatedAt'],
+    concurrencyField: 'updatedAt'
+  }
+};
+
+export interface TableDuplicatePolicy {
+  allowed: boolean;
+  reason: string;
+  copyableColumns: string[];
+  protectedColumns: string[];
+  regeneratedColumns: string[];
+}
+
+export const DUPLICATE_POLICY_REGISTRY: Record<string, TableDuplicatePolicy> = {
+  support_case_notes: {
+    allowed: true,
+    reason: 'Duplication of administrative support case notes',
+    copyableColumns: ['caseId', 'note', 'isInternal'],
+    protectedColumns: ['id', 'authorId', 'createdAt', 'updatedAt'],
+    regeneratedColumns: ['id', 'authorId', 'createdAt', 'updatedAt']
+  },
+  error_occurrences: {
+    allowed: true,
+    reason: 'Duplication of error occurrence scenario for diagnostic replay',
+    copyableColumns: ['fingerprintId', 'incidentId', 'component', 'severity', 'errorCode', 'errorType', 'message', 'stackTrace', 'httpMethod', 'httpPath', 'httpStatus', 'metadata'],
+    protectedColumns: ['id', 'occurredAt', 'requestId', 'userId', 'deviceId', 'serverInstanceId', 'gatewayNodeId', 'connectionId', 'sessionId', 'createdAt'],
+    regeneratedColumns: ['id', 'occurredAt', 'requestId', 'createdAt']
+  },
+  server_endpoints: {
+    allowed: true,
+    reason: 'Duplication of server endpoint mapping configuration',
+    copyableColumns: ['serverInstanceId', 'status'],
+    protectedColumns: ['id', 'hostname', 'createdAt', 'updatedAt'],
+    regeneratedColumns: ['id', 'createdAt', 'updatedAt']
+  }
+};
+
 export interface InsertTableRowParams {
   adminId: string;
   tableName: string;
@@ -271,6 +364,41 @@ export interface BulkDeleteTableRowsResult {
   primaryKeys: Record<string, any>[];
 }
 
+export interface BulkEditTableRowsParams {
+  adminId: string;
+  tableName: string;
+  rows: Record<string, any>[];
+  values: Record<string, any>;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+export interface BulkEditTableRowsResult {
+  tableName: string;
+  selectedCount: number;
+  matchedCount: number;
+  changedCount: number;
+  unchangedCount: number;
+  changedColumns: string[];
+}
+
+export interface DuplicateTableRowParams {
+  adminId: string;
+  tableName: string;
+  primaryKey: Record<string, any>;
+  overrides?: Record<string, any>;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}
+
+export interface DuplicateTableRowResult {
+  tableName: string;
+  sourcePrimaryKey: Record<string, any>;
+  newPrimaryKey: Record<string, any> | null;
+  duplicatedRow: Record<string, any>;
+  copiedColumns: string[];
+}
+
 export interface TableDetails {
   tableName: string;
   displayName: string;
@@ -301,6 +429,20 @@ export interface TableDetails {
     isDeletable: boolean;
     reason: string;
     maxRows: number;
+  };
+  bulkEditCapability: {
+    isBulkEditable: boolean;
+    reason: string;
+    maxRows: number;
+    allowedEditableColumns: string[];
+    protectedColumns: string[];
+    concurrencyField?: string | null;
+  };
+  duplicateCapability: {
+    isDuplicable: boolean;
+    reason: string;
+    copyableColumns: string[];
+    protectedColumns: string[];
   };
 }
 
@@ -719,6 +861,15 @@ export class DatabaseMetadataService {
     const deleteReason = deletePolicy ? deletePolicy.reason : 'Table is not in authorized delete policy registry';
     const maxDeleteRows = deletePolicy ? (deletePolicy.maxRows || 50) : 50;
 
+    const bulkEditPolicy = BULK_EDIT_POLICY_REGISTRY[tableName];
+    const isBulkEditable = bulkEditPolicy ? bulkEditPolicy.allowed : false;
+    const bulkEditReason = bulkEditPolicy ? bulkEditPolicy.reason : 'Table is not in authorized bulk-edit policy registry';
+    const maxBulkEditRows = bulkEditPolicy ? (bulkEditPolicy.maxRows || 50) : 50;
+
+    const duplicatePolicy = DUPLICATE_POLICY_REGISTRY[tableName];
+    const isDuplicable = duplicatePolicy ? duplicatePolicy.allowed : false;
+    const duplicateReason = duplicatePolicy ? duplicatePolicy.reason : 'Table is not in authorized duplication policy registry';
+
     return {
       tableName,
       displayName: formatDisplayName(tableName),
@@ -749,6 +900,20 @@ export class DatabaseMetadataService {
         isDeletable: isDeletable && primaryKeys.length > 0,
         reason: primaryKeys.length === 0 ? 'Table has no primary key. Direct deletion is disabled.' : deleteReason,
         maxRows: maxDeleteRows
+      },
+      bulkEditCapability: {
+        isBulkEditable: isBulkEditable && primaryKeys.length > 0,
+        reason: primaryKeys.length === 0 ? 'Table has no primary key. Bulk edit is disabled.' : bulkEditReason,
+        maxRows: maxBulkEditRows,
+        allowedEditableColumns: bulkEditPolicy?.allowedEditableColumns || [],
+        protectedColumns: bulkEditPolicy?.protectedColumns || [],
+        concurrencyField: bulkEditPolicy?.concurrencyField || null
+      },
+      duplicateCapability: {
+        isDuplicable: isDuplicable && primaryKeys.length > 0,
+        reason: primaryKeys.length === 0 ? 'Table has no primary key. Duplication is disabled.' : duplicateReason,
+        copyableColumns: duplicatePolicy?.copyableColumns || [],
+        protectedColumns: duplicatePolicy?.protectedColumns || []
       }
     };
 
@@ -2160,6 +2325,632 @@ export class DatabaseMetadataService {
       primaryKeys: sanitizedPkList
     };
   }
+
+  /**
+   * Phase 15 Batch 15.8: Bulk Edit Selected Database Records
+   *
+   * Executes securely validated, parameter-bound, metadata-verified multi-row UPDATE (max 50 rows)
+   * within an atomic database transaction with deterministic primary key lock ordering (SELECT ... FOR UPDATE),
+   * optimistic concurrency verification, exact row targeting, and tamper-evident cryptographic audit logging.
+   */
+  static async bulkEditTableRows(params: BulkEditTableRowsParams): Promise<BulkEditTableRowsResult> {
+    const { adminId, tableName, rows, values, ipAddress, userAgent } = params;
+
+    if (!tableName || !/^[a-zA-Z0-9_]+$/.test(tableName)) {
+      throw new ValidationError(`Invalid table identifier format: '${tableName}'`);
+    }
+
+    const verifiedTables = await this.getVerifiedTableNames();
+    if (!verifiedTables.has(tableName)) {
+      throw new NotFoundError(`Table '${tableName}' was not found in the database schema`);
+    }
+
+    // 1. Authoritative Backend Policy Check
+    const policy = BULK_EDIT_POLICY_REGISTRY[tableName];
+    if (!policy || !policy.allowed) {
+      const classification = getDestructiveTableClassification(tableName).classification;
+      throw new ForbiddenError(
+        `Bulk edit operation is not permitted on table '${tableName}' (Classification: ${classification}). ${policy?.reason || 'Table is not in authorized bulk-edit policy registry.'}`
+      );
+    }
+
+    // 2. Fetch authoritative table details
+    const tableDetails = await this.getTableDetails(tableName);
+    if (!tableDetails.primaryKeys || tableDetails.primaryKeys.length === 0) {
+      throw new ValidationError(`Table '${tableName}' has no primary key. Bulk edit is disabled.`);
+    }
+
+    // 3. Validate Rows Array Bounds
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new ValidationError('At least 1 row identity must be provided for bulk edit');
+    }
+
+    const maxAllowed = policy.maxRows || 50;
+    if (rows.length > maxAllowed) {
+      throw new ValidationError(`Bulk edit exceeds maximum allowed limit of ${maxAllowed} records per request`);
+    }
+
+    // 4. Validate & Normalize Every Row Identity
+    const columnMap = new Map<string, ColumnMetadata>();
+    for (const col of tableDetails.columns) {
+      columnMap.set(col.name, col);
+    }
+
+    const normalizedPks: Record<string, any>[] = [];
+    const seenIdentities = new Set<string>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowItem = rows[i];
+      if (!rowItem || typeof rowItem !== 'object' || Array.isArray(rowItem)) {
+        throw new ValidationError(`Invalid row identity object at index ${i}`);
+      }
+
+      const pkObj: Record<string, any> = {};
+      for (const pkCol of tableDetails.primaryKeys) {
+        const val = rowItem[pkCol];
+        if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
+          throw new ValidationError(`Missing primary key value '${pkCol}' in row identity at index ${i}`);
+        }
+
+        const colMeta = columnMap.get(pkCol);
+        const dt = (colMeta?.dataType || '').toLowerCase();
+        if (dt.includes('int')) {
+          const strVal = String(val).trim();
+          if (!/^-?\d+$/.test(strVal)) {
+            throw new ValidationError(`Primary key '${pkCol}' requires a valid integer at index ${i}`);
+          }
+          pkObj[pkCol] = dt === 'bigint' ? strVal : Number(strVal);
+        } else {
+          pkObj[pkCol] = String(val);
+        }
+      }
+
+      // Check for unexpected fields in row identity
+      for (const k of Object.keys(rowItem)) {
+        if (!tableDetails.primaryKeys.includes(k) && k !== policy.concurrencyField) {
+          throw new ValidationError(`Unexpected attribute '${k}' in primary key identifier at index ${i}`);
+        }
+      }
+
+      const canonicalStr = JSON.stringify(pkObj, Object.keys(pkObj).sort());
+      if (seenIdentities.has(canonicalStr)) {
+        throw new ValidationError(`Duplicate row identity detected in bulk edit payload at index ${i}`);
+      }
+      seenIdentities.add(canonicalStr);
+
+      // Preserve concurrency value if present on row item
+      if (policy.concurrencyField && rowItem[policy.concurrencyField] !== undefined) {
+        pkObj[policy.concurrencyField] = rowItem[policy.concurrencyField];
+      }
+
+      normalizedPks.push(pkObj);
+    }
+
+    // 5. Validate Submitted Columns against Bulk Edit Policy
+    const submittedValues = values && typeof values === 'object' ? values : {};
+    const submittedColNames = Object.keys(submittedValues);
+
+    if (submittedColNames.length === 0) {
+      throw new ValidationError('No column values provided for bulk edit');
+    }
+
+    for (const colName of submittedColNames) {
+      const colMeta = columnMap.get(colName);
+      if (!colMeta) {
+        throw new ValidationError(`Unknown column '${colName}' on table '${tableName}'`);
+      }
+      if (colMeta.isPrimaryKey || tableDetails.primaryKeys.includes(colName)) {
+        throw new ValidationError(`Primary key column '${colName}' cannot be modified in bulk edit`);
+      }
+      if (colMeta.isSensitive) {
+        throw new ValidationError(`Bulk update to sensitive column '${colName}' is prohibited`);
+      }
+      if (colMeta.isGenerated) {
+        throw new ValidationError(`Cannot update generated column '${colName}'`);
+      }
+      if (colMeta.isAutoIncrement) {
+        throw new ValidationError(`Cannot update auto-increment column '${colName}'`);
+      }
+      if (!policy.allowedEditableColumns.includes(colName)) {
+        throw new ValidationError(`Column '${colName}' is not in the allowed bulk-editable columns list for table '${tableName}'`);
+      }
+    }
+
+    // 6. Coerce and Validate Submitted Values
+    const sanitizedValues: Record<string, any> = {};
+
+    for (const [colName, rawVal] of Object.entries(submittedValues)) {
+      const colMeta = columnMap.get(colName)!;
+
+      if (rawVal === null || rawVal === undefined) {
+        if (rawVal === null) {
+          if (!colMeta.isNullable) {
+            throw new ValidationError(`Column '${colName}' does not permit NULL values`);
+          }
+          sanitizedValues[colName] = null;
+        }
+        continue;
+      }
+
+      const dt = colMeta.dataType.toLowerCase();
+
+      if (dt.includes('char') || dt.includes('text')) {
+        const strVal = String(rawVal);
+        if (colMeta.characterMaximumLength && strVal.length > colMeta.characterMaximumLength) {
+          throw new ValidationError(`Value for '${colName}' exceeds maximum length of ${colMeta.characterMaximumLength} characters`);
+        }
+        sanitizedValues[colName] = strVal;
+      } else if (dt === 'enum') {
+        const strVal = String(rawVal);
+        if (colMeta.enumValues && !colMeta.enumValues.includes(strVal)) {
+          throw new ValidationError(`Invalid value '${strVal}' for enum column '${colName}'. Allowed values: ${colMeta.enumValues.join(', ')}`);
+        }
+        sanitizedValues[colName] = strVal;
+      } else if (dt === 'json') {
+        if (typeof rawVal === 'object') {
+          sanitizedValues[colName] = JSON.stringify(rawVal);
+        } else {
+          try {
+            JSON.parse(String(rawVal));
+            sanitizedValues[colName] = String(rawVal);
+          } catch (_) {
+            throw new ValidationError(`Invalid JSON syntax provided for column '${colName}'`);
+          }
+        }
+      } else if (dt.includes('int')) {
+        const strVal = String(rawVal).trim();
+        if (!/^-?\d+$/.test(strVal)) {
+          throw new ValidationError(`Column '${colName}' requires a valid integer`);
+        }
+        if (dt === 'bigint') {
+          sanitizedValues[colName] = strVal;
+        } else {
+          const num = Number(strVal);
+          if (!Number.isSafeInteger(num)) {
+            throw new ValidationError(`Column '${colName}' value exceeds safe integer range`);
+          }
+          sanitizedValues[colName] = num;
+        }
+      } else if (dt.includes('decimal') || dt.includes('numeric') || dt.includes('float') || dt.includes('double')) {
+        const strVal = String(rawVal).trim();
+        if (isNaN(Number(strVal))) {
+          throw new ValidationError(`Column '${colName}' requires a valid numeric value`);
+        }
+        sanitizedValues[colName] = strVal;
+      } else if (dt.includes('bool') || colMeta.columnType.toLowerCase() === 'tinyint(1)') {
+        sanitizedValues[colName] = (rawVal === true || rawVal === 'true' || rawVal === 1 || rawVal === '1') ? 1 : 0;
+      } else if (dt.includes('date') || dt.includes('time')) {
+        const d = new Date(rawVal);
+        if (isNaN(d.getTime())) {
+          throw new ValidationError(`Invalid date/time format for column '${colName}'`);
+        }
+        if (dt === 'date') {
+          sanitizedValues[colName] = d.toISOString().slice(0, 10);
+        } else if (dt === 'time') {
+          sanitizedValues[colName] = d.toISOString().slice(11, 19);
+        } else {
+          sanitizedValues[colName] = d.toISOString().slice(0, 19).replace('T', ' ');
+        }
+      } else {
+        sanitizedValues[colName] = rawVal;
+      }
+    }
+
+    // 7. Deterministic Lock Ordering by Primary Keys
+    const pkCols = tableDetails.primaryKeys;
+    normalizedPks.sort((a, b) => {
+      for (const pk of pkCols) {
+        const strA = String(a[pk]);
+        const strB = String(b[pk]);
+        if (strA !== strB) return strA.localeCompare(strB);
+      }
+      return 0;
+    });
+
+    // 8. Atomic Transaction Execution with Row Locking and Change Accounting
+    let matchedCount = 0;
+    let changedCount = 0;
+    let unchangedCount = 0;
+    const changedColumns = Object.keys(sanitizedValues);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        for (const pkObj of normalizedPks) {
+          const whereClauses = pkCols.map(k => `\`${k}\` = ?`);
+          const pkParams = pkCols.map(k => pkObj[k]);
+          const selectSql = `SELECT * FROM \`${tableName}\` WHERE ${whereClauses.join(' AND ')} FOR UPDATE`;
+
+          const existingRows = await tx.$queryRawUnsafe<any[]>(selectSql, ...pkParams);
+          if (!existingRows || existingRows.length === 0) {
+            throw new NotFoundError(
+              `Target record with primary key ${JSON.stringify(pkObj)} not found in '${tableName}'. Entire bulk edit rolled back.`
+            );
+          }
+
+          matchedCount++;
+          const existingRow = existingRows[0];
+
+          // Optimistic concurrency check if provided on this row
+          if (policy.concurrencyField && pkObj[policy.concurrencyField] !== undefined) {
+            const currentVal = existingRow[policy.concurrencyField];
+            const expectedVal = pkObj[policy.concurrencyField];
+            if (currentVal !== undefined && currentVal !== null) {
+              const curStr = currentVal instanceof Date ? currentVal.toISOString() : String(currentVal);
+              const expStr = String(expectedVal);
+              let matches = curStr === expStr;
+              if (!matches) {
+                const d1 = new Date(curStr).getTime();
+                const d2 = new Date(expStr).getTime();
+                if (!isNaN(d1) && !isNaN(d2) && d1 === d2) matches = true;
+              }
+              if (!matches) {
+                throw new ConflictError(
+                  `Optimistic concurrency conflict on record ${JSON.stringify(pkObj)}. Data was modified concurrently. Entire bulk operation rolled back.`
+                );
+              }
+            }
+          }
+
+          // Check whether the row actually needs an update
+          let rowNeedsUpdate = false;
+          const rowChangedCols: string[] = [];
+
+          for (const [colName, newVal] of Object.entries(sanitizedValues)) {
+            const oldVal = existingRow[colName];
+            let isSame = false;
+            if (newVal === null && (oldVal === null || oldVal === undefined)) {
+              isSame = true;
+            } else if (typeof newVal === 'number' && typeof oldVal === 'number') {
+              isSame = newVal === oldVal;
+            } else if (oldVal instanceof Date) {
+              const oldIso = oldVal.toISOString();
+              isSame = oldIso.startsWith(String(newVal)) || oldVal.getTime() === new Date(String(newVal)).getTime();
+            } else if (typeof oldVal === 'bigint') {
+              isSame = oldVal.toString() === String(newVal);
+            } else {
+              isSame = String(oldVal ?? '') === String(newVal ?? '');
+            }
+
+            if (!isSame) {
+              rowNeedsUpdate = true;
+              rowChangedCols.push(colName);
+            }
+          }
+
+          if (rowNeedsUpdate) {
+            const setClauses = rowChangedCols.map(c => `\`${c}\` = ?`);
+            const updateParams = [...rowChangedCols.map(c => sanitizedValues[c]), ...pkParams];
+            const updateSql = `UPDATE \`${tableName}\` SET ${setClauses.join(', ')} WHERE ${whereClauses.join(' AND ')}`;
+
+            const affected = await tx.$executeRawUnsafe(updateSql, ...updateParams);
+            if (affected > 1) {
+              throw new Error(`Critical integrity violation: Expected 1 row update, but database reported ${affected}`);
+            }
+            changedCount++;
+          } else {
+            unchangedCount++;
+          }
+        }
+      });
+    } catch (err: any) {
+      if (err instanceof NotFoundError || err instanceof ValidationError || err instanceof ForbiddenError || err instanceof ConflictError) {
+        throw err;
+      }
+      const errCode = err?.code || (err?.meta?.code ? String(err.meta.code) : '');
+      const errMsg = err?.message || '';
+
+      if (errCode === 1062 || errMsg.includes('Duplicate entry')) {
+        throw new ConflictError(`Unique constraint violation: Bulk update creates a duplicate entry in '${tableName}'`);
+      }
+      if (errCode === 1452 || errMsg.includes('foreign key constraint fails')) {
+        throw new ConflictError(`Foreign key constraint violation: One or more referenced entities do not exist`);
+      }
+      if (errCode === 1205 || errMsg.includes('Lock wait timeout') || errCode === 1213 || errMsg.includes('Deadlock')) {
+        throw new ConflictError(`Database lock conflict detected during bulk operation. Please retry.`);
+      }
+
+      console.error(`Database BULK UPDATE error on '${tableName}':`, err);
+      throw new Error(`Failed to bulk update records: ${errMsg}`);
+    }
+
+    // 9. Cryptographic Audit Logging
+    const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+    const sanitizedPkList = normalizedPks.map(pkObj => {
+      const sanitized: Record<string, any> = {};
+      for (const [k, v] of Object.entries(pkObj)) {
+        sanitized[k] = SENSITIVE_PATTERNS.test(k) ? '[REDACTED]' : v;
+      }
+      return sanitized;
+    });
+
+    try {
+      await AdminAuditService.logEvent({
+        adminId,
+        action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+        status: 'SUCCESS',
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        metadata: {
+          operation: 'DATABASE_BULK_UPDATE',
+          table: tableName,
+          selectedCount: normalizedPks.length,
+          matchedCount,
+          changedCount,
+          unchangedCount,
+          changedColumns,
+          targetPrimaryKeys: sanitizedPkList
+        }
+      });
+    } catch (auditErr) {
+      console.error('Failed to log admin audit event for database bulk update:', auditErr);
+    }
+
+    return {
+      tableName,
+      selectedCount: normalizedPks.length,
+      matchedCount,
+      changedCount,
+      unchangedCount,
+      changedColumns
+    };
+  }
+
+  /**
+   * Phase 15 Batch 15.8: Duplicate / Copy Single Database Record
+   *
+   * Executes securely validated, policy-governed single-record duplication within a transaction.
+   * Copies allowed fields, regenerates identity and timestamps, preserves foreign keys, and
+   * records cryptographic audit logging.
+   */
+  static async duplicateTableRow(params: DuplicateTableRowParams): Promise<DuplicateTableRowResult> {
+    const { adminId, tableName, primaryKey, overrides, ipAddress, userAgent } = params;
+
+    if (!tableName || !/^[a-zA-Z0-9_]+$/.test(tableName)) {
+      throw new ValidationError(`Invalid table identifier format: '${tableName}'`);
+    }
+
+    const verifiedTables = await this.getVerifiedTableNames();
+    if (!verifiedTables.has(tableName)) {
+      throw new NotFoundError(`Table '${tableName}' was not found in the database schema`);
+    }
+
+    // 1. Authoritative Backend Policy Check
+    const policy = DUPLICATE_POLICY_REGISTRY[tableName];
+    if (!policy || !policy.allowed) {
+      const classification = getDestructiveTableClassification(tableName).classification;
+      throw new ForbiddenError(
+        `Duplicate operation is not permitted on table '${tableName}' (Classification: ${classification}). ${policy?.reason || 'Table is not in authorized duplication policy registry.'}`
+      );
+    }
+
+    // 2. Fetch authoritative table details
+    const tableDetails = await this.getTableDetails(tableName);
+    if (!tableDetails.primaryKeys || tableDetails.primaryKeys.length === 0) {
+      throw new ValidationError(`Table '${tableName}' has no primary key. Record duplication is disabled.`);
+    }
+
+    // 3. Validate Source Primary Key
+    if (!primaryKey || typeof primaryKey !== 'object' || Array.isArray(primaryKey)) {
+      throw new ValidationError('Primary key object is required to identify the record to duplicate');
+    }
+
+    const pkMap: Record<string, any> = {};
+    for (const pkCol of tableDetails.primaryKeys) {
+      const val = primaryKey[pkCol];
+      if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
+        throw new ValidationError(`Missing or empty primary key value for column '${pkCol}'`);
+      }
+      pkMap[pkCol] = val;
+    }
+
+    const columnMap = new Map<string, ColumnMetadata>();
+    for (const col of tableDetails.columns) {
+      columnMap.set(col.name, col);
+    }
+
+    let finalInsertedRow: Record<string, any> = {};
+    let newPrimaryKeyResult: Record<string, any> | null = null;
+    const copiedColumns: string[] = [];
+
+    const wherePkClauses = tableDetails.primaryKeys.map(k => `\`${k}\` = ?`);
+    const pkParams = tableDetails.primaryKeys.map(k => pkMap[k]);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Step A: Load source row
+        const selectSql = `SELECT * FROM \`${tableName}\` WHERE ${wherePkClauses.join(' AND ')}`;
+        const sourceRows = await tx.$queryRawUnsafe<any[]>(selectSql, ...pkParams);
+
+        if (!sourceRows || sourceRows.length === 0) {
+          throw new NotFoundError(`Source record for duplication not found in table '${tableName}'`);
+        }
+
+        const sourceRow = sourceRows[0];
+        const newRecordPayload: Record<string, any> = {};
+
+        // Step B: Copy allowed columns from policy
+        for (const colName of policy.copyableColumns) {
+          if (sourceRow[colName] !== undefined) {
+            newRecordPayload[colName] = sourceRow[colName];
+            copiedColumns.push(colName);
+          }
+        }
+
+        // Step C: Apply permitted overrides if provided
+        if (overrides && typeof overrides === 'object' && !Array.isArray(overrides)) {
+          for (const [colName, val] of Object.entries(overrides)) {
+            if (policy.copyableColumns.includes(colName) || (policy.protectedColumns.includes(colName) && colName === 'hostname')) {
+              newRecordPayload[colName] = val;
+            }
+          }
+        }
+
+        // Step D: Regenerate timestamps and IDs if required
+        const now = new Date();
+        if (columnMap.has('createdAt')) {
+          newRecordPayload['createdAt'] = now;
+        }
+        if (columnMap.has('updatedAt')) {
+          newRecordPayload['updatedAt'] = now;
+        }
+        if (columnMap.has('occurredAt')) {
+          newRecordPayload['occurredAt'] = now;
+        }
+        if (columnMap.has('authorId') && tableName === 'support_case_notes') {
+          newRecordPayload['authorId'] = adminId;
+        }
+
+        // Check primary key column generation
+        const pkCol = tableDetails.primaryKeys[0];
+        const pkMeta = columnMap.get(pkCol);
+        if (tableDetails.primaryKeys.length === 1 && pkMeta && !pkMeta.isAutoIncrement && pkMeta.dataType.toLowerCase().includes('char')) {
+          newRecordPayload[pkCol] = crypto.randomUUID();
+        }
+
+        // Step E: Construct INSERT query
+        const insertCols = Object.keys(newRecordPayload);
+        const placeholders = insertCols.map(() => '?').join(', ');
+        const insertParams = insertCols.map(c => newRecordPayload[c]);
+        const insertSql = `INSERT INTO \`${tableName}\` (${insertCols.map(c => `\`${c}\``).join(', ')}) VALUES (${placeholders})`;
+
+        const affected = await tx.$executeRawUnsafe(insertSql, ...insertParams);
+        if (affected !== 1) {
+          throw new Error(`Expected exactly 1 duplicated row, but database returned ${affected}`);
+        }
+
+        // Step F: Retrieve created row
+        const lastIdRows = await tx.$queryRawUnsafe<any[]>(`SELECT LAST_INSERT_ID() as lastId`);
+        const lastId = lastIdRows[0]?.lastId;
+
+        if (tableDetails.primaryKeys.length === 1 && pkCol && lastId && Number(lastId) > 0) {
+          newPrimaryKeyResult = { [pkCol]: String(lastId) };
+          const rows = await tx.$queryRawUnsafe<any[]>(`SELECT * FROM \`${tableName}\` WHERE \`${pkCol}\` = ?`, lastId);
+          if (rows[0]) finalInsertedRow = rows[0];
+        } else if (tableDetails.primaryKeys.length > 0 && tableDetails.primaryKeys.every(k => newRecordPayload[k] !== undefined)) {
+          newPrimaryKeyResult = {};
+          for (const pk of tableDetails.primaryKeys) {
+            newPrimaryKeyResult[pk] = String(newRecordPayload[pk]);
+          }
+          const whereNewPk = tableDetails.primaryKeys.map(k => `\`${k}\` = ?`).join(' AND ');
+          const newPkParams = tableDetails.primaryKeys.map(k => newRecordPayload[k]);
+          const rows = await tx.$queryRawUnsafe<any[]>(`SELECT * FROM \`${tableName}\` WHERE ${whereNewPk}`, ...newPkParams);
+          if (rows[0]) finalInsertedRow = rows[0];
+        } else {
+          finalInsertedRow = { ...newRecordPayload };
+        }
+      });
+    } catch (dbErr: any) {
+      if (dbErr instanceof NotFoundError || dbErr instanceof ConflictError || dbErr instanceof ValidationError || dbErr instanceof ForbiddenError) {
+        throw dbErr;
+      }
+      const errCode = dbErr?.code || dbErr?.errno;
+      const msg = dbErr?.message || String(dbErr);
+
+      if (errCode === 1062 || msg.includes('Duplicate entry')) {
+        throw new ConflictError(`Unique constraint conflict: Duplicated record collides with existing unique values in '${tableName}'. Please adjust unique field overrides.`);
+      }
+      if (errCode === 1452 || msg.includes('foreign key constraint fails')) {
+        throw new ValidationError(`Foreign key constraint violation during duplication: Referenced entity does not exist`);
+      }
+      throw new ValidationError(`Database record duplication failed: ${msg}`);
+    }
+
+    // 4. Sanitize Return Row
+    const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+    const sanitizedReturnRow: Record<string, any> = {};
+    for (const [k, v] of Object.entries(finalInsertedRow)) {
+      if (SENSITIVE_PATTERNS.test(k)) {
+        sanitizedReturnRow[k] = '[REDACTED]';
+      } else if (typeof v === 'bigint') {
+        sanitizedReturnRow[k] = v.toString();
+      } else if (v instanceof Date) {
+        sanitizedReturnRow[k] = v.toISOString();
+      } else if (Buffer.isBuffer(v)) {
+        sanitizedReturnRow[k] = `[BINARY ${v.length} bytes]`;
+      } else {
+        sanitizedReturnRow[k] = v;
+      }
+    }
+
+    // 5. Cryptographic Audit Logging
+    try {
+      await AdminAuditService.logEvent({
+        adminId,
+        action: AdminAuditAction.ADMIN_STATUS_UPDATED,
+        status: 'SUCCESS',
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        metadata: {
+          operation: 'DATABASE_ROW_DUPLICATE',
+          table: tableName,
+          sourcePrimaryKey: pkMap,
+          newPrimaryKey: newPrimaryKeyResult,
+          copiedColumns
+        }
+      });
+    } catch (auditErr) {
+      console.error('Failed to log admin audit event for database duplicate:', auditErr);
+    }
+
+    return {
+      tableName,
+      sourcePrimaryKey: pkMap,
+      newPrimaryKey: newPrimaryKeyResult,
+      duplicatedRow: sanitizedReturnRow,
+      copiedColumns
+    };
+  }
+
+  /**
+   * Phase 15 Batch 15.9: Security Policy Drift Detection Helper
+   * Programmatically validates that all mutation policy registries (INSERT, UPDATE, BULK_EDIT, DELETE, DUPLICATE)
+   * are 100% reconciled against canonical table classifications, guaranteeing fail-closed rejection of
+   * any non-leaf, protected, business-sensitive, or internal tables.
+   */
+  static validateSecurityPolicyDrift(): {
+    valid: boolean;
+    auditedRegistries: {
+      insertCount: number;
+      updateCount: number;
+      bulkEditCount: number;
+      deleteCount: number;
+      duplicateCount: number;
+    };
+    violations: string[];
+  } {
+    const violations: string[] = [];
+    const registries = [
+      { name: 'INSERT_POLICY_REGISTRY', registry: INSERT_POLICY_REGISTRY },
+      { name: 'UPDATE_POLICY_REGISTRY', registry: UPDATE_POLICY_REGISTRY },
+      { name: 'BULK_EDIT_POLICY_REGISTRY', registry: BULK_EDIT_POLICY_REGISTRY },
+      { name: 'DELETE_POLICY_REGISTRY', registry: DELETE_POLICY_REGISTRY },
+      { name: 'DUPLICATE_POLICY_REGISTRY', registry: DUPLICATE_POLICY_REGISTRY }
+    ];
+
+    for (const { name, registry } of registries) {
+      for (const tableName of Object.keys(registry)) {
+        const cls = getDestructiveTableClassification(tableName);
+        if (cls.classification !== 'APPROVED_LEAF' || !cls.isExplicitlyApproved) {
+          violations.push(
+            `Policy drift violation in ${name}: Table '${tableName}' is classified as '${cls.classification}' (destructiveEligible=${cls.destructiveEligible}), which violates the fail-closed APPROVED_LEAF mutation boundary.`
+          );
+        }
+      }
+    }
+
+    return {
+      valid: violations.length === 0,
+      auditedRegistries: {
+        insertCount: Object.keys(INSERT_POLICY_REGISTRY).length,
+        updateCount: Object.keys(UPDATE_POLICY_REGISTRY).length,
+        bulkEditCount: Object.keys(BULK_EDIT_POLICY_REGISTRY).length,
+        deleteCount: Object.keys(DELETE_POLICY_REGISTRY).length,
+        duplicateCount: Object.keys(DUPLICATE_POLICY_REGISTRY).length
+      },
+      violations
+    };
+  }
 }
+
 
 

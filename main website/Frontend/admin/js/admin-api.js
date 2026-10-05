@@ -386,6 +386,14 @@
         body: JSON.stringify({ rows })
       });
     }
+
+    bulkEditTableRows(tableName, { rows = [], values = {} } = {}) {
+      return this.post(`/admin/database/tables/${encodeURIComponent(tableName)}/rows/bulk-edit`, { rows, values });
+    }
+
+    duplicateTableRow(tableName, { primaryKey = {}, overrides = {} } = {}) {
+      return this.post(`/admin/database/tables/${encodeURIComponent(tableName)}/rows/duplicate`, { primaryKey, overrides });
+    }
   }
 
   window.AdminApi = new AdminApiClient();
