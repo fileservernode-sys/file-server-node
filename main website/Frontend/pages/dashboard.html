@@ -2335,9 +2335,12 @@
         } else {
           const cardsHtml = devices.map(device => {
             const server = device.server;
-            // Customer Status Accuracy (Batch 11A.16): use authoritative derived remoteStatus
+            // Customer Status Accuracy (Phase PRS Batch PRS-1): use authoritative derived remoteStatus & isRemoteAvailable
             const effectiveRemoteStatus = device.remoteStatus || server?.remoteStatus || (device.status === 'ONLINE' && server?.status === 'RUNNING' ? 'ONLINE' : 'OFFLINE');
-            const isOnline = effectiveRemoteStatus === 'ONLINE';
+            const isRemoteAvailable = typeof device.isRemoteAvailable === 'boolean'
+              ? device.isRemoteAvailable
+              : (typeof server?.isRemoteAvailable === 'boolean' ? server.isRemoteAvailable : (effectiveRemoteStatus === 'ONLINE'));
+            const isOnline = effectiveRemoteStatus === 'ONLINE' || isRemoteAvailable;
             const isConnecting = effectiveRemoteStatus === 'CONNECTING';
             const isReconnecting = effectiveRemoteStatus === 'RECONNECTING';
             const isError = effectiveRemoteStatus === 'ERROR';
@@ -2363,10 +2366,11 @@
             }
             const osDisplay = osVer ? `${platform} ${osVer}` : platform;
             const platformInfo = `${escapeHtml(osDisplay)} • App v${escapeHtml(device.appVersion || '1.0.0')}`.trim();
-            const lastSeenFormatted = formatRelativeTime(device.lastSeenAt || server?.startedAt);
+            const effectiveLastSeen = device.effectiveLastSeenAt || server?.effectiveLastSeenAt || device.lastSeenAt || server?.startedAt;
+            const lastSeenFormatted = formatRelativeTime(effectiveLastSeen);
 
             let fileManagerButtonHtml = '';
-            if (isOnline && server?.id) {
+            if ((isOnline || isRemoteAvailable) && server?.id) {
               fileManagerButtonHtml = `
                 <a href="file-manager.html?server=${escapeHtml(server.id)}" class="btn btn-primary btn-sm" style="width: 100%; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-weight: 600; text-decoration: none; margin-bottom: var(--space-md);">
                   <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>

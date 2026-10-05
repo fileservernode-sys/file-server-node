@@ -654,10 +654,10 @@ export class GatewayService {
         // 4. Batched Heartbeat Persistence: Flush active connection heartbeats in batches
         if (this.config.NODE_ENV !== 'test') {
           this.heartbeatBatchTimer = setInterval(async () => {
-            const updates: Array<{ connectionId: string; lastHeartbeatAt: Date }> = [];
+            const updates: Array<{ connectionId: string; deviceId: string; lastHeartbeatAt: Date }> = [];
             for (const [connId, conn] of this.activeConnections.entries()) {
               if (conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
-                updates.push({ connectionId: connId, lastHeartbeatAt: conn.lastHeartbeatAt });
+                updates.push({ connectionId: connId, deviceId: conn.deviceId, lastHeartbeatAt: conn.lastHeartbeatAt });
               }
             }
             if (updates.length > 0) {

@@ -585,6 +585,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
         const derivedStatus = CustomerStatusService.deriveCustomerStatus({
           deviceId: d.id,
+          deviceLastSeenAt: d.lastSeenAt,
           serverInstance: activeServer,
           deviceConnection: activeConn,
           userStatus: user.status
@@ -602,6 +603,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           statusReason: derivedStatus.statusReason,
           isRemoteAvailable: derivedStatus.isRemoteAvailable,
           livenessValid: derivedStatus.livenessValid,
+          effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || d.lastSeenAt?.toISOString() || null,
           lastSeenAt: d.lastSeenAt?.toISOString(),
           server: activeServer ? {
             id: activeServer.id,
@@ -611,6 +613,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             remoteStatus: derivedStatus.remoteStatus,
             statusReason: derivedStatus.statusReason,
             isRemoteAvailable: derivedStatus.isRemoteAvailable,
+            effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || activeServer.lastHeartbeatAt?.toISOString() || null,
             localServerUrl: 'http://127.0.0.1:8080',
             startedAt: activeServer.startedAt?.toISOString(),
             endpoint: activeEndpoint ? {
@@ -685,6 +688,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
     const derivedStatus = CustomerStatusService.deriveCustomerStatus({
       deviceId: device.id,
+      deviceLastSeenAt: device.lastSeenAt,
       serverInstance: activeServer,
       deviceConnection: activeConn,
       userStatus: user.status
@@ -703,6 +707,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         statusReason: derivedStatus.statusReason,
         isRemoteAvailable: derivedStatus.isRemoteAvailable,
         livenessValid: derivedStatus.livenessValid,
+        effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || device.lastSeenAt?.toISOString() || null,
         lastSeenAt: device.lastSeenAt?.toISOString(),
         server: activeServer ? {
           id: activeServer.id,
@@ -712,6 +717,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           remoteStatus: derivedStatus.remoteStatus,
           statusReason: derivedStatus.statusReason,
           isRemoteAvailable: derivedStatus.isRemoteAvailable,
+          effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || activeServer.lastHeartbeatAt?.toISOString() || null,
           localServerUrl: 'http://127.0.0.1:8080',
           startedAt: activeServer.startedAt?.toISOString(),
           endpoint: activeEndpoint ? {

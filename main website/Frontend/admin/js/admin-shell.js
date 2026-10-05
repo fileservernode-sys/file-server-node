@@ -225,15 +225,15 @@
       icon: 'mail'
     },
     {
-      id: 'database-mgmt',
-      name: 'Database Management & Migrations',
+      id: 'database',
+      name: 'Database Management',
       category: 'System & Data',
-      route: null,
-      permission: 'database.admin',
-      status: 'FUTURE',
-      phase: 'Phase 14',
-      description: 'Schema inspection, connection pooling telemetry, and migration tracking.',
-      apiNamespace: 'Scheduled for Phase 14',
+      route: '#database',
+      permission: 'database.management.view',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 15',
+      description: 'Database topology, schema discovery, table inspection, and bounded table browsing.',
+      apiNamespace: '/api/v1/admin/database/*',
       icon: 'database'
     },
     {
@@ -393,6 +393,12 @@
       group: 'Developer Tools',
       items: [
         {
+          id: 'database',
+          label: 'Database Management',
+          icon: 'database',
+          permission: 'database.management.view'
+        },
+        {
           id: 'sql-runner',
           label: 'SQL Query Runner',
           icon: 'database',
@@ -516,7 +522,36 @@
         expandedIds: new Set()
       };
       this.sqlMode = 'READ_ONLY'; // 'READ_ONLY' | 'CONTROLLED_WRITE'
+      this.dbManagementState = {
+        overview: null,
+        tables: [],
+        selectedTable: null,
+        tableDetails: null,
+        previewData: null,
+        gridData: null,
+        activeTab: 'grid', // 'grid' | 'columns' | 'indexes'
+        filterText: '',
+        classificationFilter: 'ALL',
+        // Grid Specific State
+        page: 1,
+        pageSize: 25,
+        sortBy: null,
+        sortDirection: 'asc',
+        searchQuery: '',
+        filters: [], // Array of { column, operator, value }
+        selectedRowKeys: new Set(), // Set of canonical row identity keys
+        selectedRowsMeta: new Map(), // Map of canonicalKey -> { table, primaryKey, noPrimaryKey }
+        selectionLimit: 500, // Maximum client-side selected rows limit
+        isLoadingOverview: false,
+        isLoadingTables: false,
+        isLoadingDetails: false,
+        isLoadingGrid: false,
+        requestId: 0,
+        searchDebounceTimer: null,
+        error: null
+      };
     }
+
 
     async init() {
       const authed = await window.AdminAuth.requireAuthGuard();
@@ -734,6 +769,7 @@
       if (rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') hash = 'observability-center';
       if (rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') hash = 'email-operations';
       if (rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') hash = 'sql-runner';
+      if (rawHash === 'database' || rawHash === 'database-mgmt' || rawHash === 'database-management' || rawHash === 'db') hash = 'database';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -752,7 +788,8 @@
           ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements') ||
           ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center') ||
           ((rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') && itemId === 'email-operations') ||
-          ((rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') && itemId === 'sql-runner')
+          ((rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') && itemId === 'sql-runner') ||
+          ((rawHash === 'database' || rawHash === 'database-mgmt' || rawHash === 'database-management' || rawHash === 'db') && itemId === 'database')
         ) {
           el.classList.add('active');
         } else {
@@ -780,7 +817,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : (hash === 'email-operations' ? 'Email Operations' : 'Dashboard')))))))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : (hash === 'email-operations' ? 'Email Operations' : (hash === 'database' ? 'Database Management' : 'Dashboard'))))))))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -863,6 +900,12 @@
         case 'email-analytics':
         case 'email-tracking':
           this._renderEmailOperationsView(container);
+          break;
+        case 'database':
+        case 'database-mgmt':
+        case 'database-management':
+        case 'db':
+          this._renderDatabaseManagementView(container);
           break;
         case 'sql-runner':
         case 'sql':
@@ -11095,6 +11138,1401 @@
       }
     }
 
+    /* =========================================================================
+       PHASE 15 BATCH 15.1: DATABASE MANAGEMENT FOUNDATION
+       ========================================================================= */
+    async _renderDatabaseManagementView(container) {
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-db-container">
+          <div class="admin-view-header">
+            <div class="admin-view-title-wrap">
+              <h1>Database Management</h1>
+              <p>Authoritative MySQL schema topology, dynamic table discovery, structural metadata, and bounded read-only record browsing.</p>
+            </div>
+            <div class="admin-header-actions">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btnRefreshDbOverview" onclick="AdminShell._refreshDatabaseView()">
+                ${ICONS['rotate-ccw'] || ''} Refresh Schema
+              </button>
+            </div>
+          </div>
+
+          <!-- Overview Metric Cards -->
+          <div class="admin-db-metrics-grid" id="adminDbMetricsGrid">
+            <div class="admin-db-metric-card">
+              <div class="admin-db-metric-header">
+                <span>Database Instance</span>
+                <span class="admin-badge admin-badge-success" style="font-size:0.6875rem;">CONNECTED</span>
+              </div>
+              <div class="admin-db-metric-value" id="dbOverviewName">...</div>
+              <div class="admin-db-metric-subtext" id="dbOverviewEngine">MySQL Engine • InnoDB Storage</div>
+            </div>
+            <div class="admin-db-metric-card">
+              <div class="admin-db-metric-header">
+                <span>Physical Tables</span>
+                <span class="admin-badge admin-badge-info" id="dbOverviewTableCountBadge" style="font-size:0.6875rem;">0 Total</span>
+              </div>
+              <div class="admin-db-metric-value" id="dbOverviewTableCount">0</div>
+              <div class="admin-db-metric-subtext" id="dbOverviewClassBreakdown">Loading classifications...</div>
+            </div>
+            <div class="admin-db-metric-card">
+              <div class="admin-db-metric-header">
+                <span>Estimated Volume</span>
+                <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">DATA & INDEX</span>
+              </div>
+              <div class="admin-db-metric-value" id="dbOverviewRowCount">0</div>
+              <div class="admin-db-metric-subtext" id="dbOverviewStorageSize">0 KB estimated storage</div>
+            </div>
+          </div>
+
+          <!-- Main Two-Column Layout -->
+          <div class="admin-db-layout">
+            <!-- Left Sidebar Table Explorer -->
+            <div class="admin-db-sidebar">
+              <div class="admin-db-sidebar-header">
+                <div class="admin-db-sidebar-title">
+                  <span>Schema Explorer</span>
+                  <span class="admin-badge admin-badge-neutral" id="dbTableFilterCount" style="font-size:0.6875rem;">0 tables</span>
+                </div>
+                <input type="text" class="admin-db-search-input" id="dbTableSearchInput" placeholder="Filter tables by name..." oninput="AdminShell._onDbTableSearchInput(this.value)" />
+                <div class="admin-db-filter-chips">
+                  <button class="admin-db-filter-chip active" data-filter="ALL" onclick="AdminShell._setDbClassificationFilter('ALL')">All</button>
+                  <button class="admin-db-filter-chip" data-filter="APPROVED_LEAF" onclick="AdminShell._setDbClassificationFilter('APPROVED_LEAF')">Leaf</button>
+                  <button class="admin-db-filter-chip" data-filter="NON_LEAF" onclick="AdminShell._setDbClassificationFilter('NON_LEAF')">Non-Leaf</button>
+                  <button class="admin-db-filter-chip" data-filter="BUSINESS_SENSITIVE" onclick="AdminShell._setDbClassificationFilter('BUSINESS_SENSITIVE')">Sensitive</button>
+                  <button class="admin-db-filter-chip" data-filter="PROTECTED" onclick="AdminShell._setDbClassificationFilter('PROTECTED')">Protected</button>
+                  <button class="admin-db-filter-chip" data-filter="INTERNAL" onclick="AdminShell._setDbClassificationFilter('INTERNAL')">Internal</button>
+                </div>
+              </div>
+              <div class="admin-db-table-list" id="dbTableListContainer">
+                <div class="admin-loading-state" style="padding: 2rem 1rem; text-align: center; color: var(--admin-text-muted); font-size: 0.8125rem;">
+                  Loading schema tables...
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Detail & Preview Area -->
+            <div class="admin-db-main" id="dbMainAreaContainer">
+              <div class="admin-db-empty-state">
+                <div class="admin-db-empty-state-icon">${ICONS.database || ''}</div>
+                <h3 style="margin:0; font-size:1rem; color:var(--admin-text-primary);">Select a Table</h3>
+                <p style="margin:0; font-size:0.8125rem; max-width:360px;">Choose a database table from the schema explorer to inspect its columns, indexes, foreign key relationships, and browse bounded records.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Load initial data
+      this._loadDatabaseOverview();
+      this._loadDatabaseTables();
+    }
+
+    async _refreshDatabaseView() {
+      this.toast('Refreshing database topology and schema...', 'info');
+      await Promise.all([
+        this._loadDatabaseOverview(),
+        this._loadDatabaseTables()
+      ]);
+      if (this.dbManagementState.selectedTable) {
+        await this._loadTableDetails(this.dbManagementState.selectedTable);
+        if (this.dbManagementState.activeTab === 'preview') {
+          await this._loadTablePreview(this.dbManagementState.selectedTable, this.dbManagementState.previewOffset);
+        }
+      }
+      this.toast('Schema and metadata refreshed successfully.', 'success');
+    }
+
+    async _loadDatabaseOverview() {
+      try {
+        this.dbManagementState.isLoadingOverview = true;
+        const res = await window.AdminApi.getDatabaseOverview();
+        if (res && res.success && res.data) {
+          this.dbManagementState.overview = res.data;
+          this._renderDbOverviewCards(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load database overview:', err);
+      } finally {
+        this.dbManagementState.isLoadingOverview = false;
+      }
+    }
+
+    _renderDbOverviewCards(overview) {
+      const nameEl = document.getElementById('dbOverviewName');
+      const engineEl = document.getElementById('dbOverviewEngine');
+      const tableCountEl = document.getElementById('dbOverviewTableCount');
+      const tableCountBadge = document.getElementById('dbOverviewTableCountBadge');
+      const breakdownEl = document.getElementById('dbOverviewClassBreakdown');
+      const rowCountEl = document.getElementById('dbOverviewRowCount');
+      const storageSizeEl = document.getElementById('dbOverviewStorageSize');
+
+      if (nameEl) nameEl.textContent = overview.databaseName || 'zdexcloud';
+      if (engineEl) engineEl.textContent = `${overview.serverVersion || 'MySQL 8.0'} • InnoDB Engine`;
+      if (tableCountEl) tableCountEl.textContent = String(overview.totalTables || 0);
+      if (tableCountBadge) tableCountBadge.textContent = `${overview.totalTables || 0} Tables`;
+
+      if (breakdownEl && overview.classificationCounts) {
+        const counts = overview.classificationCounts;
+        breakdownEl.innerHTML = `
+          <span title="Approved Leaf Tables" style="color:#059669; font-weight:600;">${counts.APPROVED_LEAF || 0} Leaf</span> •
+          <span title="Non-Leaf Tables" style="color:#d97706; font-weight:600;">${counts.NON_LEAF || 0} Non-Leaf</span> •
+          <span title="Protected System Tables" style="color:#dc2626; font-weight:600;">${counts.PROTECTED || 0} Protected</span> •
+          <span title="Business-Sensitive Financial Tables" style="color:#7c3aed; font-weight:600;">${counts.BUSINESS_SENSITIVE || 0} Sensitive</span>
+        `;
+      }
+
+      if (rowCountEl) {
+        const formattedRows = (overview.totalEstimatedRows || 0).toLocaleString();
+        rowCountEl.textContent = `~${formattedRows} rows`;
+      }
+
+      if (storageSizeEl) {
+        const totalBytes = (overview.totalDataSizeBytes || 0) + (overview.totalIndexSizeBytes || 0);
+        const mb = (totalBytes / (1024 * 1024)).toFixed(2);
+        storageSizeEl.textContent = `~${mb} MB allocated storage`;
+      }
+    }
+
+    async _loadDatabaseTables() {
+      try {
+        this.dbManagementState.isLoadingTables = true;
+        const res = await window.AdminApi.getDatabaseTables();
+        if (res && res.success && res.data) {
+          this.dbManagementState.tables = res.data;
+          this._renderDbTableList();
+        }
+      } catch (err) {
+        console.error('Failed to load database tables:', err);
+        const listEl = document.getElementById('dbTableListContainer');
+        if (listEl) {
+          listEl.innerHTML = `
+            <div class="admin-error-banner" style="margin:1rem; padding:0.75rem; font-size:0.75rem;">
+              Failed to load schema tables. <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._loadDatabaseTables()">Retry</button>
+            </div>
+          `;
+        }
+      } finally {
+        this.dbManagementState.isLoadingTables = false;
+      }
+    }
+
+    _onDbTableSearchInput(val) {
+      this.dbManagementState.filterText = (val || '').trim().toLowerCase();
+      this._renderDbTableList();
+    }
+
+    _setDbClassificationFilter(filter) {
+      this.dbManagementState.classificationFilter = filter;
+      const chips = document.querySelectorAll('.admin-db-filter-chip');
+      chips.forEach(chip => {
+        if (chip.getAttribute('data-filter') === filter) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+      this._renderDbTableList();
+    }
+
+    _renderDbTableList() {
+      const container = document.getElementById('dbTableListContainer');
+      const countBadge = document.getElementById('dbTableFilterCount');
+      if (!container) return;
+
+      const tables = this.dbManagementState.tables || [];
+      const filterText = this.dbManagementState.filterText;
+      const classFilter = this.dbManagementState.classificationFilter;
+
+      const filtered = tables.filter(t => {
+        const matchesText = !filterText ||
+          t.tableName.toLowerCase().includes(filterText) ||
+          (t.displayName && t.displayName.toLowerCase().includes(filterText));
+        const matchesClass = classFilter === 'ALL' || t.classification === classFilter;
+        return matchesText && matchesClass;
+      });
+
+      if (countBadge) {
+        countBadge.textContent = `${filtered.length} of ${tables.length} tables`;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 2rem 1rem; text-align: center; color: var(--admin-text-muted); font-size: 0.8125rem;">
+            No tables matching filter
+          </div>
+        `;
+        return;
+      }
+
+      const selectedTable = this.dbManagementState.selectedTable;
+
+      container.innerHTML = filtered.map(t => {
+        const isSelected = t.tableName === selectedTable;
+        const rowEstimateFormatted = Number(t.rowCountEstimate || 0).toLocaleString();
+        return `
+          <div class="admin-db-table-item ${isSelected ? 'active' : ''}" onclick="AdminShell._selectDbTable('${this._escape(t.tableName)}')">
+            <div class="admin-db-table-item-name">
+              <span>${this._escape(t.tableName)}</span>
+              <span class="admin-db-badge-chip ${t.classification}">${t.classification.replace('_', ' ')}</span>
+            </div>
+            <div class="admin-db-table-item-meta">
+              <span>${t.columnCount} columns • ~${rowEstimateFormatted} rows</span>
+              <span>${(Number(t.dataSizeBytes || 0) / 1024).toFixed(0)} KB</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async _selectDbTable(tableName) {
+      this.dbManagementState.selectedTable = tableName;
+      this.dbManagementState.previewOffset = 0;
+      this._renderDbTableList();
+      await this._loadTableDetails(tableName);
+      if (this.dbManagementState.activeTab === 'preview') {
+        await this._loadTablePreview(tableName, 0);
+      }
+    }
+
+    async _loadTableDetails(tableName) {
+      const mainArea = document.getElementById('dbMainAreaContainer');
+      if (!mainArea) return;
+
+      try {
+        this.dbManagementState.isLoadingDetails = true;
+        this._renderDbTableMainSkeleton(tableName);
+
+        const res = await window.AdminApi.getTableDetails(tableName);
+        if (res && res.success && res.data) {
+          this.dbManagementState.tableDetails = res.data;
+          this._renderDbTableMain();
+        }
+      } catch (err) {
+        console.error('Failed to load table details:', err);
+        mainArea.innerHTML = `
+          <div class="admin-error-banner" style="margin:2rem; padding:1.25rem;">
+            <strong>Failed to load details for table '${this._escape(tableName)}'.</strong>
+            <p style="margin:0.5rem 0 0 0; font-size:0.8125rem;">${this._escape(err.message || 'Error communicating with database.')}</p>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:0.75rem;" onclick="AdminShell._selectDbTable('${this._escape(tableName)}')">Retry</button>
+          </div>
+        `;
+      } finally {
+        this.dbManagementState.isLoadingDetails = false;
+      }
+    }
+
+    _renderDbTableMainSkeleton(tableName) {
+      const mainArea = document.getElementById('dbMainAreaContainer');
+      if (!mainArea) return;
+
+      mainArea.innerHTML = `
+        <div class="admin-db-main-header">
+          <div class="admin-db-main-title-row">
+            <div class="admin-db-main-title">
+              <span>${this._escape(tableName)}</span>
+              <span class="admin-badge admin-badge-neutral">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div class="admin-loading-state" style="padding: 4rem 2rem; text-align: center; color: var(--admin-text-muted);">
+          Introspecting table structure and metadata...
+        </div>
+      `;
+    }
+
+    _renderDbTableMain() {
+      const mainArea = document.getElementById('dbMainAreaContainer');
+      const details = this.dbManagementState.tableDetails;
+      if (!mainArea || !details) return;
+
+      const activeTab = this.dbManagementState.activeTab || 'grid';
+      const exactRowsFormatted = details.exactRowCount !== null ? details.exactRowCount.toLocaleString() : null;
+      const estimateRowsFormatted = Number(details.rowCountEstimate || 0).toLocaleString();
+
+      mainArea.innerHTML = `
+        <div class="admin-db-main-header">
+          <div class="admin-db-main-title-row">
+            <div class="admin-db-main-title">
+              <span>${this._escape(details.tableName)}</span>
+              <span class="admin-db-badge-chip ${details.classification}">${details.classification.replace('_', ' ')}</span>
+              <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${details.engine}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._copyText('${this._escape(details.tableName)}')">
+                ${ICONS.copy || ''} Copy Name
+              </button>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._openInSqlRunner('${this._escape(details.tableName)}')">
+                ${ICONS.database || ''} Open in SQL Runner
+              </button>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:1.25rem; font-size:0.75rem; color:var(--admin-text-secondary); flex-wrap:wrap;">
+            <span><strong>Primary Keys:</strong> ${details.primaryKeys && details.primaryKeys.length > 0 ? details.primaryKeys.map(pk => `<code style="background:var(--admin-bg-base); padding:0.1rem 0.35rem; border-radius:3px;">${this._escape(pk)}</code>`).join(', ') : '<em>None</em>'}</span>
+            <span><strong>Columns:</strong> ${details.columns ? details.columns.length : 0}</span>
+            <span><strong>Row Count:</strong> ${exactRowsFormatted !== null ? `${exactRowsFormatted} (Exact)` : `~${estimateRowsFormatted} (Estimate)`}</span>
+            <span><strong>Size:</strong> ${(Number(details.dataSizeBytes || 0) / 1024).toFixed(1)} KB</span>
+            <span><strong>Incoming FKs:</strong> ${details.incomingForeignKeyCount} references</span>
+          </div>
+        </div>
+
+        <div class="admin-db-nav-tabs">
+          <div class="admin-db-nav-tab ${activeTab === 'grid' ? 'active' : ''}" onclick="AdminShell._switchDbTab('grid')">
+            Data Grid (Server Paginated)
+          </div>
+          <div class="admin-db-nav-tab ${activeTab === 'columns' ? 'active' : ''}" onclick="AdminShell._switchDbTab('columns')">
+            Columns & Types (${details.columns ? details.columns.length : 0})
+          </div>
+          <div class="admin-db-nav-tab ${activeTab === 'indexes' ? 'active' : ''}" onclick="AdminShell._switchDbTab('indexes')">
+            Indexes & Constraints (${(details.indexes ? details.indexes.length : 0) + (details.foreignKeys ? details.foreignKeys.length : 0)})
+          </div>
+        </div>
+
+        <div class="admin-db-tab-content" id="dbTabContentArea">
+          <!-- Populated by _renderDbTabContent -->
+        </div>
+      `;
+
+      this._renderDbTabContent();
+    }
+
+    _switchDbTab(tab) {
+      this.dbManagementState.activeTab = tab;
+      const tabs = document.querySelectorAll('.admin-db-nav-tab');
+      tabs.forEach(t => t.classList.remove('active'));
+
+      const tabsContainer = document.querySelector('.admin-db-nav-tabs');
+      if (tabsContainer) {
+        const tabEls = tabsContainer.children;
+        if (tab === 'grid' && tabEls[0]) tabEls[0].classList.add('active');
+        if (tab === 'columns' && tabEls[1]) tabEls[1].classList.add('active');
+        if (tab === 'indexes' && tabEls[2]) tabEls[2].classList.add('active');
+      }
+
+      this._renderDbTabContent();
+
+      if (tab === 'grid' && !this.dbManagementState.gridData && this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    async _selectDbTable(tableName) {
+      this.dbManagementState.selectedTable = tableName;
+      this.dbManagementState.page = 1;
+      this.dbManagementState.searchQuery = '';
+      this.dbManagementState.filters = [];
+      this.dbManagementState.gridData = null;
+      // Switching tables unconditionally clears row selection
+      this.dbManagementState.selectedRowKeys.clear();
+      this.dbManagementState.selectedRowsMeta.clear();
+      this._renderDbTableList();
+      await this._loadTableDetails(tableName);
+      if (this.dbManagementState.activeTab === 'grid') {
+        await this._loadDbGridRows(tableName, true);
+      }
+    }
+
+    async _renderDbTabContent() {
+      const container = document.getElementById('dbTabContentArea');
+      const details = this.dbManagementState.tableDetails;
+      const tab = this.dbManagementState.activeTab;
+      if (!container || !details) return;
+
+      if (tab === 'columns') {
+        container.innerHTML = `
+          <div class="admin-db-table-wrapper">
+            <table class="admin-db-data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Column Name</th>
+                  <th>Data Type</th>
+                  <th>Nullable</th>
+                  <th>Key</th>
+                  <th>Default</th>
+                  <th>Extra / Attributes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(details.columns || []).map(col => `
+                  <tr>
+                    <td style="color:var(--admin-text-muted);">${col.ordinalPosition}</td>
+                    <td style="font-weight:600; color:var(--admin-text-primary);">
+                      ${this._escape(col.name)}
+                      ${col.isPrimaryKey ? '<span class="admin-badge admin-badge-warning" style="font-size:0.625rem; margin-left:0.35rem;">PK</span>' : ''}
+                    </td>
+                    <td><code style="color:#2563eb;">${this._escape(col.columnType || col.dataType)}</code></td>
+                    <td>${col.isNullable ? '<span class="admin-badge admin-badge-neutral" style="font-size:0.625rem;">YES</span>' : '<span class="admin-badge admin-badge-info" style="font-size:0.625rem;">NO</span>'}</td>
+                    <td>${col.isPrimaryKey ? 'PRIMARY' : (col.columnKey || '-')}</td>
+                    <td style="color:var(--admin-text-secondary);">${col.columnDefault !== null ? this._escape(String(col.columnDefault)) : '<em>NULL</em>'}</td>
+                    <td style="color:var(--admin-text-muted);">${col.extra ? this._escape(col.extra) : '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } else if (tab === 'indexes') {
+        container.innerHTML = `
+          <div style="display:flex; flex-direction:column; gap:1.25rem;">
+            <div>
+              <h4 style="margin:0 0 0.5rem 0; font-size:0.875rem; color:var(--admin-text-primary);">Indexes (${details.indexes ? details.indexes.length : 0})</h4>
+              <div class="admin-db-table-wrapper">
+                <table class="admin-db-data-table">
+                  <thead>
+                    <tr>
+                      <th>Index Name</th>
+                      <th>Type</th>
+                      <th>Unique</th>
+                      <th>Indexed Columns</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(details.indexes || []).map(idx => `
+                      <tr>
+                        <td style="font-weight:600;">${this._escape(idx.name)}</td>
+                        <td><code>${this._escape(idx.type)}</code></td>
+                        <td>${idx.isUnique ? '<span class="admin-badge admin-badge-success" style="font-size:0.625rem;">UNIQUE</span>' : '<span class="admin-badge admin-badge-neutral" style="font-size:0.625rem;">INDEX</span>'}</td>
+                        <td>${idx.columns.map(c => `<code>${this._escape(c)}</code>`).join(', ')}</td>
+                      </tr>
+                    `).join('')}
+                    ${(!details.indexes || details.indexes.length === 0) ? '<tr><td colspan="4" style="text-align:center; color:var(--admin-text-muted);">No indexes defined</td></tr>' : ''}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <h4 style="margin:0 0 0.5rem 0; font-size:0.875rem; color:var(--admin-text-primary);">Foreign Key Constraints (${details.foreignKeys ? details.foreignKeys.length : 0})</h4>
+              <div class="admin-db-table-wrapper">
+                <table class="admin-db-data-table">
+                  <thead>
+                    <tr>
+                      <th>Constraint Name</th>
+                      <th>Column</th>
+                      <th>Referenced Table</th>
+                      <th>Referenced Column</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${(details.foreignKeys || []).map(fk => `
+                      <tr>
+                        <td>${this._escape(fk.constraintName)}</td>
+                        <td style="font-weight:600;"><code>${this._escape(fk.columnName)}</code></td>
+                        <td style="color:#7c3aed; font-weight:600;">${this._escape(fk.referencedTable)}</td>
+                        <td><code>${this._escape(fk.referencedColumn)}</code></td>
+                      </tr>
+                    `).join('')}
+                    ${(!details.foreignKeys || details.foreignKeys.length === 0) ? '<tr><td colspan="4" style="text-align:center; color:var(--admin-text-muted);">No outbound foreign key relationships</td></tr>' : ''}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // Data Grid Tab
+        this._renderDbGridContent(container);
+      }
+    }
+
+    /* =========================================================================
+       Phase 15 Batch 15.3: Canonical Row Identity & Selection Helpers
+       ========================================================================= */
+
+    _getCanonicalRowKey(tableName, primaryKeys, row, rowIndex, page) {
+      if (primaryKeys && Array.isArray(primaryKeys) && primaryKeys.length > 0) {
+        const sortedKeys = [...primaryKeys].sort();
+        const pkObj = {};
+        for (const pk of sortedKeys) {
+          pkObj[pk] = (row[pk] !== undefined && row[pk] !== null) ? String(row[pk]) : '';
+        }
+        return JSON.stringify({ t: tableName, k: pkObj });
+      }
+      return JSON.stringify({ t: tableName, nopk: true, p: page || 1, i: rowIndex });
+    }
+
+    _getRowIdentityMeta(tableName, primaryKeys, row, rowIndex, page) {
+      if (primaryKeys && Array.isArray(primaryKeys) && primaryKeys.length > 0) {
+        const sortedKeys = [...primaryKeys].sort();
+        const pkObj = {};
+        for (const pk of sortedKeys) {
+          pkObj[pk] = (row[pk] !== undefined && row[pk] !== null) ? String(row[pk]) : '';
+        }
+        return {
+          table: tableName,
+          primaryKey: pkObj,
+          noPrimaryKey: false
+        };
+      }
+      return {
+        table: tableName,
+        primaryKey: null,
+        noPrimaryKey: true,
+        page: page || 1,
+        rowIndex: rowIndex
+      };
+    }
+
+    _checkNoPkReset() {
+      const details = this.dbManagementState.tableDetails;
+      const isNoPk = !details?.primaryKeys || details.primaryKeys.length === 0;
+      if (isNoPk && this.dbManagementState.selectedRowKeys.size > 0) {
+        this.dbManagementState.selectedRowKeys.clear();
+        this.dbManagementState.selectedRowsMeta.clear();
+      }
+    }
+
+    _onRowCheckboxChange(checkboxEl, canonicalKey) {
+      const isChecked = checkboxEl.checked;
+      if (isChecked) {
+        if (this.dbManagementState.selectedRowKeys.size >= this.dbManagementState.selectionLimit) {
+          checkboxEl.checked = false;
+          this.toast(`Selection limit reached (${this.dbManagementState.selectionLimit} rows). Clear some selections before selecting more.`, 'warning');
+          return;
+        }
+        this.dbManagementState.selectedRowKeys.add(canonicalKey);
+
+        const gridData = this.dbManagementState.gridData;
+        const details = this.dbManagementState.tableDetails;
+        if (gridData && details) {
+          const primaryKeys = gridData.primaryKeys || details.primaryKeys || [];
+          const page = gridData.pagination?.page || this.dbManagementState.page || 1;
+          const rows = gridData.rows || [];
+          for (let i = 0; i < rows.length; i++) {
+            const k = this._getCanonicalRowKey(details.tableName, primaryKeys, rows[i], i, page);
+            if (k === canonicalKey) {
+              const meta = this._getRowIdentityMeta(details.tableName, primaryKeys, rows[i], i, page);
+              this.dbManagementState.selectedRowsMeta.set(canonicalKey, meta);
+              break;
+            }
+          }
+        }
+      } else {
+        this.dbManagementState.selectedRowKeys.delete(canonicalKey);
+        this.dbManagementState.selectedRowsMeta.delete(canonicalKey);
+      }
+      this._updateGridSelectionUI();
+    }
+
+    _toggleSelectAllVisible() {
+      const gridData = this.dbManagementState.gridData;
+      const details = this.dbManagementState.tableDetails;
+      if (!gridData || !gridData.rows || !details) return;
+
+      const rows = gridData.rows;
+      const primaryKeys = gridData.primaryKeys || details.primaryKeys || [];
+      const page = gridData.pagination?.page || this.dbManagementState.page || 1;
+      const tableName = details.tableName;
+
+      const visibleRowKeys = [];
+      const visibleRowMetas = [];
+      for (let i = 0; i < rows.length; i++) {
+        const key = this._getCanonicalRowKey(tableName, primaryKeys, rows[i], i, page);
+        const meta = this._getRowIdentityMeta(tableName, primaryKeys, rows[i], i, page);
+        visibleRowKeys.push(key);
+        visibleRowMetas.push(meta);
+      }
+
+      const allVisibleSelected = visibleRowKeys.length > 0 && visibleRowKeys.every(k => this.dbManagementState.selectedRowKeys.has(k));
+
+      if (allVisibleSelected) {
+        // Deselect visible rows on current page only
+        for (const key of visibleRowKeys) {
+          this.dbManagementState.selectedRowKeys.delete(key);
+          this.dbManagementState.selectedRowsMeta.delete(key);
+        }
+      } else {
+        // Select visible rows up to selection limit
+        let limitReached = false;
+        for (let i = 0; i < visibleRowKeys.length; i++) {
+          const key = visibleRowKeys[i];
+          if (!this.dbManagementState.selectedRowKeys.has(key)) {
+            if (this.dbManagementState.selectedRowKeys.size >= this.dbManagementState.selectionLimit) {
+              limitReached = true;
+              break;
+            }
+            this.dbManagementState.selectedRowKeys.add(key);
+            this.dbManagementState.selectedRowsMeta.set(key, visibleRowMetas[i]);
+          }
+        }
+        if (limitReached) {
+          this.toast(`Selection limit reached (${this.dbManagementState.selectionLimit} rows). Some rows could not be selected.`, 'warning');
+        }
+      }
+
+      this._updateGridSelectionUI();
+    }
+
+    _clearDbSelection() {
+      this.dbManagementState.selectedRowKeys.clear();
+      this.dbManagementState.selectedRowsMeta.clear();
+      this._updateGridSelectionUI();
+    }
+
+    _updateGridSelectionUI() {
+      const container = document.getElementById('dbTabContentArea');
+      if (!container) return;
+
+      const gridData = this.dbManagementState.gridData;
+      const details = this.dbManagementState.tableDetails;
+      if (!gridData || !gridData.rows || !details) return;
+
+      const rows = gridData.rows;
+      const primaryKeys = gridData.primaryKeys || details.primaryKeys || [];
+      const page = gridData.pagination?.page || this.dbManagementState.page || 1;
+      const tableName = details.tableName;
+
+      let visibleSelectedCount = 0;
+      const visibleRowKeys = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const key = this._getCanonicalRowKey(tableName, primaryKeys, rows[i], i, page);
+        visibleRowKeys.push(key);
+        const isSelected = this.dbManagementState.selectedRowKeys.has(key);
+        if (isSelected) visibleSelectedCount++;
+
+        const escapedKey = (window.CSS && CSS.escape) ? CSS.escape(key) : key.replace(/["\\]/g, '\\$&');
+        const rowCheckbox = document.querySelector(`.db-row-checkbox[data-canonical-key="${escapedKey}"]`);
+        if (rowCheckbox) {
+          rowCheckbox.checked = isSelected;
+          const tr = rowCheckbox.closest('tr');
+          if (tr) {
+            if (isSelected) tr.classList.add('selected');
+            else tr.classList.remove('selected');
+          }
+        }
+      }
+
+      // Update Header Checkbox with tri-state indeterminate support
+      const headerCheckbox = document.getElementById('dbGridHeaderSelectAll');
+      if (headerCheckbox) {
+        if (visibleRowKeys.length === 0) {
+          headerCheckbox.checked = false;
+          headerCheckbox.indeterminate = false;
+        } else if (visibleSelectedCount === visibleRowKeys.length) {
+          headerCheckbox.checked = true;
+          headerCheckbox.indeterminate = false;
+        } else if (visibleSelectedCount > 0) {
+          headerCheckbox.checked = false;
+          headerCheckbox.indeterminate = true;
+        } else {
+          headerCheckbox.checked = false;
+          headerCheckbox.indeterminate = false;
+        }
+      }
+
+      // Update Toolbar Selection Summary Badge
+      const selectedCount = this.dbManagementState.selectedRowKeys.size;
+      const selectionWrap = document.getElementById('dbGridSelectionToolbarWrap');
+      if (selectionWrap) {
+        if (selectedCount > 0) {
+          const scopeLabel = selectedCount === visibleSelectedCount
+            ? '(on this page)'
+            : `(${visibleSelectedCount} on this page)`;
+          selectionWrap.innerHTML = `
+            <div class="admin-db-selection-badge">
+              <span class="admin-db-selection-count">
+                ${selectedCount} ${selectedCount === 1 ? 'row' : 'rows'} selected
+              </span>
+              <span class="admin-db-selection-scope">
+                ${scopeLabel}
+              </span>
+              <button
+                class="admin-btn admin-btn-secondary admin-btn-xs"
+                style="padding:0.125rem 0.375rem; font-size:0.6875rem;"
+                onclick="AdminShell._clearDbSelection()"
+                title="Clear all selected rows"
+              >
+                Clear Selection
+              </button>
+            </div>
+          `;
+        } else {
+          selectionWrap.innerHTML = '';
+        }
+      }
+    }
+
+    getSelectedRowIdentities() {
+      const results = [];
+      for (const [key, meta] of this.dbManagementState.selectedRowsMeta.entries()) {
+        results.push({
+          canonicalKey: key,
+          table: meta.table,
+          primaryKey: meta.primaryKey || null,
+          noPrimaryKey: !!meta.noPrimaryKey
+        });
+      }
+      return results;
+    }
+
+    _renderDbGridContent(container) {
+      const details = this.dbManagementState.tableDetails;
+      if (!container || !details) return;
+
+      const gridData = this.dbManagementState.gridData;
+      const isLoading = this.dbManagementState.isLoadingGrid;
+      const searchQuery = this.dbManagementState.searchQuery || '';
+      const filters = this.dbManagementState.filters || [];
+      const sortBy = this.dbManagementState.sortBy;
+      const sortDirection = this.dbManagementState.sortDirection;
+
+      if (isLoading && !gridData) {
+        container.innerHTML = `
+          <div class="admin-loading-state" style="padding:4rem 2rem; text-align:center; color:var(--admin-text-muted);">
+            Querying database records for '${this._escape(details.tableName)}'...
+          </div>
+        `;
+        return;
+      }
+
+      if (!gridData && !isLoading) {
+        this._loadDbGridRows(details.tableName);
+        return;
+      }
+
+      const rows = gridData?.rows || [];
+      const columns = gridData?.columns || details.columns || [];
+      const primaryKeys = gridData?.primaryKeys || details.primaryKeys || [];
+      const pagination = gridData?.pagination || {
+        page: this.dbManagementState.page,
+        pageSize: this.dbManagementState.pageSize,
+        totalRows: 0,
+        totalMode: 'ESTIMATED',
+        totalPages: 1
+      };
+
+      const startRow = rows.length > 0 ? (pagination.page - 1) * pagination.pageSize + 1 : 0;
+      const endRow = rows.length > 0 ? (pagination.page - 1) * pagination.pageSize + rows.length : 0;
+      const totalRowsFormatted = pagination.totalRows.toLocaleString();
+
+      container.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:0.75rem;">
+          <!-- Data Grid Toolbar -->
+          <div class="admin-db-grid-toolbar">
+            <div style="display:flex; align-items:center; gap:0.5rem; flex:1; flex-wrap:wrap;">
+              <div class="admin-db-grid-search-wrap">
+                <span class="admin-db-grid-search-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input
+                  type="text"
+                  class="admin-db-grid-search-input"
+                  id="dbGridSearchField"
+                  placeholder="Global search in text columns..."
+                  value="${this._escape(searchQuery)}"
+                  oninput="AdminShell._onDbGridSearchInput(this.value)"
+                />
+                ${searchQuery ? `<button class="admin-db-grid-search-clear" onclick="AdminShell._clearDbGridSearch()" title="Clear search">✕</button>` : ''}
+              </div>
+
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._openDbFilterModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                Add Filter ${filters.length > 0 ? `(${filters.length})` : ''}
+              </button>
+
+              ${(filters.length > 0 || searchQuery) ? `
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" style="color:var(--admin-danger);" onclick="AdminShell._clearDbFilters()">
+                  Clear Filters
+                </button>
+              ` : ''}
+
+              <!-- Selection Toolbar Region -->
+              <div id="dbGridSelectionToolbarWrap" style="display:inline-flex; align-items:center;"></div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              ${details.insertCapability && details.insertCapability.isInsertable ? `
+                <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._openAddRowDrawer('${this._escape(details.tableName)}')">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  + Add Row
+                </button>
+              ` : ''}
+              <span style="font-size:0.75rem; color:var(--admin-text-secondary); font-family:var(--font-mono);">
+                ${rows.length > 0 ? `${startRow}–${endRow} of ${totalRowsFormatted}` : '0 rows'} (${pagination.totalMode.toLowerCase()})
+              </span>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._loadDbGridRows('${this._escape(details.tableName)}')" title="Refresh Table Data">
+                ${ICONS['rotate-ccw'] || ''}
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Filter Chips Bar -->
+          ${filters.length > 0 ? `
+            <div class="admin-db-grid-filters-row">
+              <span style="font-size:0.6875rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Filters:</span>
+              ${filters.map((f, idx) => `
+                <span class="admin-db-active-filter-chip">
+                  <strong>${this._escape(f.column)}</strong> ${this._escape(f.operator)} ${f.value !== undefined && f.value !== null ? `"${this._escape(String(f.value))}"` : ''}
+                  <button class="admin-db-active-filter-remove" onclick="AdminShell._removeDbFilter(${idx})" title="Remove filter">✕</button>
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <!-- Scrollable Sticky-Header Data Table -->
+          <div class="admin-db-grid-scroll-container">
+            <table class="admin-db-grid-table">
+              <thead>
+                <tr>
+                  <!-- Selection Header Checkbox -->
+                  <th class="admin-db-grid-th" style="width: 44px; text-align: center; cursor: default;">
+                    <label class="admin-db-checkbox-label" title="Select all visible rows on this page">
+                      <input
+                        type="checkbox"
+                        id="dbGridHeaderSelectAll"
+                        class="admin-db-checkbox"
+                        aria-label="Select all rows currently visible on this page"
+                        onchange="AdminShell._toggleSelectAllVisible()"
+                      />
+                    </label>
+                  </th>
+                  <th class="admin-db-grid-th" style="width: 48px; text-align: center; cursor: default;">#</th>
+                  ${columns.map(col => {
+                    const isSorted = sortBy === col.name;
+                    const sortIcon = isSorted
+                      ? (sortDirection === 'desc' ? '▼' : '▲')
+                      : '⇅';
+                    const ariaSort = isSorted
+                      ? (sortDirection === 'desc' ? 'descending' : 'ascending')
+                      : 'none';
+                    return `
+                      <th
+                        class="admin-db-grid-th ${isSorted ? 'sorted' : ''}"
+                        onclick="AdminShell._toggleDbGridSort('${this._escape(col.name)}')"
+                        aria-sort="${ariaSort}"
+                        title="Sort by ${this._escape(col.name)}"
+                      >
+                        <div class="admin-db-grid-th-content">
+                          <div class="admin-db-grid-th-title">
+                            <span>${this._escape(col.name)}</span>
+                            ${col.isPrimaryKey ? '<span class="admin-db-pk-indicator">PK</span>' : ''}
+                            <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+                          </div>
+                          <span class="admin-db-sort-icon">${sortIcon}</span>
+                        </div>
+                      </th>
+                    `;
+                  }).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map((row, rIdx) => {
+                  const canonicalKey = this._getCanonicalRowKey(details.tableName, primaryKeys, row, rIdx, pagination.page);
+                  const isSelected = this.dbManagementState.selectedRowKeys.has(canonicalKey);
+                  const isSensitivePk = primaryKeys.length === 1 && /password|token|secret|hash|private_key|auth_key|credential|otp/i.test(primaryKeys[0]);
+                  const accessibleLabel = (primaryKeys.length === 1 && !isSensitivePk && row[primaryKeys[0]] !== undefined)
+                    ? `Select row with ${primaryKeys[0]} ${row[primaryKeys[0]]}`
+                    : `Select database row #${startRow + rIdx}`;
+
+                  return `
+                    <tr class="admin-db-grid-tr ${isSelected ? 'selected' : ''}">
+                      <!-- Row Checkbox Cell -->
+                      <td class="admin-db-grid-td" style="width: 44px; text-align: center;">
+                        <label class="admin-db-checkbox-label" title="Select row">
+                          <input
+                            type="checkbox"
+                            class="admin-db-checkbox db-row-checkbox"
+                            data-canonical-key="${this._escape(canonicalKey)}"
+                            aria-label="${this._escape(accessibleLabel)}"
+                            ${isSelected ? 'checked' : ''}
+                            onchange="AdminShell._onRowCheckboxChange(this, '${this._escape(canonicalKey)}')"
+                            onclick="event.stopPropagation()"
+                          />
+                        </label>
+                      </td>
+                      <td class="admin-db-grid-td" style="text-align: center; color: var(--admin-text-muted);">${startRow + rIdx}</td>
+                      ${columns.map(col => {
+                        const val = row[col.name];
+                        const rendered = this._formatDataGridCell(col, val);
+                        return `<td class="admin-db-grid-td">${rendered}</td>`;
+                      }).join('')}
+                    </tr>
+                  `;
+                }).join('')}
+                ${rows.length === 0 ? `
+                  <tr>
+                    <td colspan="${columns.length + 2}" style="text-align: center; padding: 4rem 2rem;">
+                      <div class="admin-db-empty-state">
+                        <div class="admin-db-empty-state-icon">${ICONS.database || ''}</div>
+                        <h4 style="margin:0; font-size:0.9375rem; color:var(--admin-text-primary);">
+                          ${(searchQuery || filters.length > 0) ? 'No Matching Records Found' : 'Table is Empty'}
+                        </h4>
+                        <p style="margin:0; font-size:0.8125rem; max-width:380px;">
+                          ${(searchQuery || filters.length > 0)
+                            ? 'No records match the applied search terms or column filters. Try adjusting or clearing your filters.'
+                            : 'This database table currently contains zero recorded rows.'}
+                        </p>
+                        ${(searchQuery || filters.length > 0) ? `
+                          <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._clearDbFilters()">
+                            Clear Search & Filters
+                          </button>
+                        ` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                ` : ''}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Server-Side Pagination Bar -->
+          <div class="admin-db-grid-footer">
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <span>Showing ${rows.length > 0 ? `${startRow}–${endRow}` : '0'} of ${totalRowsFormatted} rows</span>
+              <label style="display:flex; align-items:center; gap:0.375rem; margin-left:0.5rem;">
+                <span>Page size:</span>
+                <select class="admin-db-page-size-select" onchange="AdminShell._setDbGridPageSize(this.value)">
+                  <option value="10" ${pagination.pageSize === 10 ? 'selected' : ''}>10 / page</option>
+                  <option value="25" ${pagination.pageSize === 25 ? 'selected' : ''}>25 / page</option>
+                  <option value="50" ${pagination.pageSize === 50 ? 'selected' : ''}>50 / page</option>
+                  <option value="100" ${pagination.pageSize === 100 ? 'selected' : ''}>100 / page</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="admin-db-pagination-controls">
+              <button
+                class="admin-btn admin-btn-secondary admin-btn-xs"
+                ${pagination.page <= 1 ? 'disabled' : ''}
+                onclick="AdminShell._setDbGridPage(1)"
+                title="First Page"
+              >
+                « First
+              </button>
+              <button
+                class="admin-btn admin-btn-secondary admin-btn-xs"
+                ${pagination.page <= 1 ? 'disabled' : ''}
+                onclick="AdminShell._setDbGridPage(${pagination.page - 1})"
+                title="Previous Page"
+              >
+                ‹ Prev
+              </button>
+              <span style="font-family:var(--font-mono); font-size:0.75rem; padding:0 0.5rem;">
+                Page <strong>${pagination.page}</strong> of <strong>${pagination.totalPages}</strong>
+              </span>
+              <button
+                class="admin-btn admin-btn-secondary admin-btn-xs"
+                ${pagination.page >= pagination.totalPages ? 'disabled' : ''}
+                onclick="AdminShell._setDbGridPage(${pagination.page + 1})"
+                title="Next Page"
+              >
+                Next ›
+              </button>
+              <button
+                class="admin-btn admin-btn-secondary admin-btn-xs"
+                ${pagination.page >= pagination.totalPages ? 'disabled' : ''}
+                onclick="AdminShell._setDbGridPage(${pagination.totalPages})"
+                title="Last Page"
+              >
+                Last »
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Reconcile and apply selection state immediately
+      setTimeout(() => this._updateGridSelectionUI(), 0);
+    }
+
+    _formatDataGridCell(col, val) {
+      if (val === null || val === undefined) {
+        return `<span class="admin-db-null-badge">NULL</span>`;
+      }
+      if (val === '[REDACTED]') {
+        return `<span class="admin-badge admin-badge-danger" style="font-size:0.625rem;">[REDACTED]</span>`;
+      }
+      if (typeof val === 'string' && val.startsWith('[BINARY') && val.endsWith('bytes]')) {
+        return `<span class="admin-badge admin-badge-neutral" style="font-size:0.625rem;">${this._escape(val)}</span>`;
+      }
+      if (typeof val === 'boolean') {
+        return val
+          ? `<span class="admin-badge admin-badge-success" style="font-size:0.625rem;">TRUE</span>`
+          : `<span class="admin-badge admin-badge-neutral" style="font-size:0.625rem;">FALSE</span>`;
+      }
+      if (typeof val === 'object') {
+        const jsonStr = JSON.stringify(val);
+        const previewStr = jsonStr.length > 35 ? jsonStr.substring(0, 32) + '...' : jsonStr;
+        return `
+          <span
+            class="admin-db-json-cell"
+            onclick="AdminShell._openCellInspectModal('${this._escape(col.name)}', this.dataset.rawjson, 'JSON')"
+            data-rawjson="${this._escape(jsonStr)}"
+            title="Click to inspect JSON"
+          >
+            <code>${this._escape(previewStr)}</code>
+          </span>
+        `;
+      }
+
+      const strVal = String(val);
+      const isDate = col.dataType.includes('date') || col.dataType.includes('time');
+
+      if (isDate) {
+        return `<span class="admin-db-date-cell">${this._escape(strVal)}</span>`;
+      }
+
+      if (strVal.length > 50) {
+        return `
+          <span
+            style="cursor:pointer; text-decoration:underline dotted;"
+            onclick="AdminShell._openCellInspectModal('${this._escape(col.name)}', this.dataset.rawtext, 'TEXT')"
+            data-rawtext="${this._escape(strVal)}"
+            title="Click to inspect full text"
+          >
+            ${this._escape(strVal.substring(0, 47))}...
+          </span>
+        `;
+      }
+
+      return this._escape(strVal);
+    }
+
+    async _loadDbGridRows(tableName, resetPage = false) {
+      if (resetPage) {
+        this.dbManagementState.page = 1;
+      }
+
+      const container = document.getElementById('dbTabContentArea');
+      const reqId = ++this.dbManagementState.requestId;
+      this.dbManagementState.isLoadingGrid = true;
+
+      try {
+        const params = {
+          page: this.dbManagementState.page,
+          pageSize: this.dbManagementState.pageSize,
+          sortBy: this.dbManagementState.sortBy || undefined,
+          sortDirection: this.dbManagementState.sortDirection,
+          search: this.dbManagementState.searchQuery || undefined,
+          filters: this.dbManagementState.filters && this.dbManagementState.filters.length > 0
+            ? this.dbManagementState.filters
+            : undefined
+        };
+
+        const res = await window.AdminApi.getTableRows(tableName, params);
+
+        // Discard out-of-order stale response
+        if (reqId !== this.dbManagementState.requestId) {
+          return;
+        }
+
+        if (res && res.success && res.data) {
+          this.dbManagementState.gridData = res.data;
+          if (this.dbManagementState.activeTab === 'grid' && container) {
+            this._renderDbGridContent(container);
+          }
+        }
+      } catch (err) {
+        if (reqId !== this.dbManagementState.requestId) return;
+        console.error('Failed to query data grid rows:', err);
+        if (container && this.dbManagementState.activeTab === 'grid') {
+          container.innerHTML = `
+            <div class="admin-error-banner" style="margin:1.5rem; padding:1.25rem;">
+              <strong>Query Failed for '${this._escape(tableName)}'.</strong>
+              <p style="margin:0.5rem 0 0 0; font-size:0.8125rem;">${this._escape(err.message || 'Error executing database query.')}</p>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:0.75rem;" onclick="AdminShell._loadDbGridRows('${this._escape(tableName)}')">Retry</button>
+            </div>
+          `;
+        }
+      } finally {
+        if (reqId === this.dbManagementState.requestId) {
+          this.dbManagementState.isLoadingGrid = false;
+        }
+      }
+    }
+
+    _onDbGridSearchInput(val) {
+      if (this.dbManagementState.searchDebounceTimer) {
+        clearTimeout(this.dbManagementState.searchDebounceTimer);
+      }
+      this.dbManagementState.searchDebounceTimer = setTimeout(() => {
+        this.dbManagementState.searchQuery = (val || '').trim();
+        this.dbManagementState.page = 1;
+        this._checkNoPkReset();
+        if (this.dbManagementState.selectedTable) {
+          this._loadDbGridRows(this.dbManagementState.selectedTable);
+        }
+      }, 300);
+    }
+
+    _clearDbGridSearch() {
+      const searchField = document.getElementById('dbGridSearchField');
+      if (searchField) searchField.value = '';
+      this.dbManagementState.searchQuery = '';
+      this.dbManagementState.page = 1;
+      this._checkNoPkReset();
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    _toggleDbGridSort(columnName) {
+      if (this.dbManagementState.sortBy === columnName) {
+        if (this.dbManagementState.sortDirection === 'asc') {
+          this.dbManagementState.sortDirection = 'desc';
+        } else {
+          this.dbManagementState.sortBy = null;
+          this.dbManagementState.sortDirection = 'asc';
+        }
+      } else {
+        this.dbManagementState.sortBy = columnName;
+        this.dbManagementState.sortDirection = 'asc';
+      }
+
+      this._checkNoPkReset();
+
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    _setDbGridPage(page) {
+      const maxPage = this.dbManagementState.gridData?.pagination?.totalPages || 1;
+      const boundedPage = Math.min(Math.max(1, page), maxPage);
+      if (boundedPage === this.dbManagementState.page) return;
+
+      this.dbManagementState.page = boundedPage;
+      this._checkNoPkReset();
+
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    _setDbGridPageSize(pageSize) {
+      const size = Number(pageSize) || 25;
+      if (size === this.dbManagementState.pageSize) return;
+
+      this.dbManagementState.pageSize = size;
+      this.dbManagementState.page = 1;
+      this._checkNoPkReset();
+
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    _openDbFilterModal() {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || !details.columns) return;
+
+      let modalEl = document.getElementById('adminDbFilterModal');
+      if (modalEl) modalEl.remove();
+
+      const columns = details.columns;
+
+      const modalHtml = `
+        <div class="admin-db-filter-modal-backdrop" id="adminDbFilterModal">
+          <div class="admin-db-filter-modal">
+            <div class="admin-db-filter-modal-header">
+              <span>Add Column Filter</span>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeDbFilterModal()">✕</button>
+            </div>
+            <div class="admin-db-filter-modal-body">
+              <div>
+                <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Column</label>
+                <select id="dbFilterColumnSelect" class="admin-db-page-size-select" style="width:100%;" onchange="AdminShell._updateDbFilterOperators()">
+                  ${columns.map(c => `<option value="${this._escape(c.name)}" data-type="${this._escape(c.dataType)}">${this._escape(c.name)} (${this._escape(c.dataType)})</option>`).join('')}
+                </select>
+              </div>
+
+              <div>
+                <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Operator</label>
+                <select id="dbFilterOperatorSelect" class="admin-db-page-size-select" style="width:100%;">
+                  <option value="contains">contains</option>
+                  <option value="equals">equals (=)</option>
+                  <option value="startsWith">starts with</option>
+                  <option value="greaterThan">greater than (&gt;)</option>
+                  <option value="lessThan">less than (&lt;)</option>
+                  <option value="before">before (date &lt;)</option>
+                  <option value="after">after (date &gt;)</option>
+                  <option value="isNull">is NULL</option>
+                  <option value="isNotNull">is NOT NULL</option>
+                </select>
+              </div>
+
+              <div id="dbFilterValueWrap">
+                <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Value</label>
+                <input type="text" id="dbFilterValueInput" class="admin-db-search-input" placeholder="Filter value..." />
+              </div>
+            </div>
+            <div class="admin-db-filter-modal-footer">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._closeDbFilterModal()">Cancel</button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._applyDbFilterFromModal()">Apply Filter</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      this._updateDbFilterOperators();
+    }
+
+    _updateDbFilterOperators() {
+      const colSelect = document.getElementById('dbFilterColumnSelect');
+      const opSelect = document.getElementById('dbFilterOperatorSelect');
+      const valWrap = document.getElementById('dbFilterValueWrap');
+      if (!colSelect || !opSelect) return;
+
+      const opt = colSelect.options[colSelect.selectedIndex];
+      const dataType = (opt?.getAttribute('data-type') || '').toLowerCase();
+
+      let allowedOps = [];
+      if (dataType.includes('int') || dataType.includes('decimal') || dataType.includes('float') || dataType.includes('double') || dataType.includes('numeric')) {
+        allowedOps = [
+          { val: 'equals', label: 'equals (=)' },
+          { val: 'greaterThan', label: 'greater than (>)' },
+          { val: 'lessThan', label: 'less than (<)' },
+          { val: 'isNull', label: 'is NULL' },
+          { val: 'isNotNull', label: 'is NOT NULL' }
+        ];
+      } else if (dataType.includes('date') || dataType.includes('time')) {
+        allowedOps = [
+          { val: 'equals', label: 'equals (=)' },
+          { val: 'before', label: 'before (<)' },
+          { val: 'after', label: 'after (>)' },
+          { val: 'isNull', label: 'is NULL' },
+          { val: 'isNotNull', label: 'is NOT NULL' }
+        ];
+      } else {
+        allowedOps = [
+          { val: 'contains', label: 'contains' },
+          { val: 'equals', label: 'equals (=)' },
+          { val: 'startsWith', label: 'starts with' },
+          { val: 'isNull', label: 'is NULL' },
+          { val: 'isNotNull', label: 'is NOT NULL' }
+        ];
+      }
+
+      opSelect.innerHTML = allowedOps.map(o => `<option value="${o.val}">${o.label}</option>`).join('');
+
+      opSelect.onchange = () => {
+        if (valWrap) {
+          valWrap.style.display = (opSelect.value === 'isNull' || opSelect.value === 'isNotNull') ? 'none' : 'block';
+        }
+      };
+    }
+
+    _closeDbFilterModal() {
+      const modal = document.getElementById('adminDbFilterModal');
+      if (modal) modal.remove();
+    }
+
+    _applyDbFilterFromModal() {
+      const colSelect = document.getElementById('dbFilterColumnSelect');
+      const opSelect = document.getElementById('dbFilterOperatorSelect');
+      const valInput = document.getElementById('dbFilterValueInput');
+      if (!colSelect || !opSelect) return;
+
+      const column = colSelect.value;
+      const operator = opSelect.value;
+      const value = (operator === 'isNull' || operator === 'isNotNull') ? null : (valInput?.value || '').trim();
+
+      if (operator !== 'isNull' && operator !== 'isNotNull' && !value) {
+        this.toast('Please specify a filter value.', 'warning');
+        return;
+      }
+
+      if (this.dbManagementState.filters.length >= 5) {
+        this.toast('Maximum of 5 active filters allowed.', 'warning');
+        return;
+      }
+
+      this.dbManagementState.filters.push({ column, operator, value });
+      this._closeDbFilterModal();
+      this.dbManagementState.page = 1;
+      this._checkNoPkReset();
+
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+    _removeDbFilter(index) {
+      if (index >= 0 && index < this.dbManagementState.filters.length) {
+        this.dbManagementState.filters.splice(index, 1);
+        this.dbManagementState.page = 1;
+        this._checkNoPkReset();
+        if (this.dbManagementState.selectedTable) {
+          this._loadDbGridRows(this.dbManagementState.selectedTable);
+        }
+      }
+    }
+
+    _clearDbFilters() {
+      this.dbManagementState.filters = [];
+      this.dbManagementState.searchQuery = '';
+      const searchField = document.getElementById('dbGridSearchField');
+      if (searchField) searchField.value = '';
+      this.dbManagementState.page = 1;
+      this._checkNoPkReset();
+
+      if (this.dbManagementState.selectedTable) {
+        this._loadDbGridRows(this.dbManagementState.selectedTable);
+      }
+    }
+
+
+    _openCellInspectModal(columnName, rawValue, type) {
+      let modalEl = document.getElementById('adminDbCellInspectModal');
+      if (modalEl) modalEl.remove();
+
+      let displayValue = rawValue || '';
+      if (type === 'JSON') {
+        try {
+          const parsed = JSON.parse(rawValue);
+          displayValue = JSON.stringify(parsed, null, 2);
+        } catch (_) {}
+      }
+
+      const modalHtml = `
+        <div class="admin-db-filter-modal-backdrop" id="adminDbCellInspectModal">
+          <div class="admin-db-filter-modal" style="max-width: 600px;">
+            <div class="admin-db-filter-modal-header">
+              <span>Inspect Cell: <code>${this._escape(columnName)}</code> (${type})</span>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeCellInspectModal()">✕</button>
+            </div>
+            <div class="admin-db-filter-modal-body">
+              <pre style="background:var(--admin-bg-base); padding:1rem; border:1px solid var(--admin-border); border-radius:var(--radius-xs); font-family:var(--font-mono); font-size:0.75rem; max-height:360px; overflow:auto; white-space:pre-wrap; word-break:break-all; margin:0;">${this._escape(displayValue)}</pre>
+            </div>
+            <div class="admin-db-filter-modal-footer">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._copyText(this.dataset.raw)" data-raw="${this._escape(displayValue)}">
+                ${ICONS.copy || ''} Copy Value
+              </button>
+              <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._closeCellInspectModal()">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    _closeCellInspectModal() {
+      const modal = document.getElementById('adminDbCellInspectModal');
+      if (modal) modal.remove();
+    }
+
+    _openInSqlRunner(tableName) {
+      if (this.sqlState) {
+        this.sqlState.sql = `SELECT * FROM ${tableName} LIMIT 50;`;
+      }
+      window.location.hash = '#sql-runner';
+    }
+
+    _copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          this.toast(`Copied '${text}' to clipboard.`, 'success', 2000);
+        });
+      } else {
+        this.toast(`Copied '${text}'`, 'info', 2000);
+      }
+    }
+
     toast(message, type = 'info', duration = 4000) {
       let container = document.getElementById('adminToastContainer');
       if (!container) {
@@ -11119,6 +12557,343 @@
         toast.style.transform = 'translateY(12px)';
         setTimeout(() => toast.remove(), 250);
       }, duration);
+    }
+
+    /* =========================================================================
+       Phase 15 Batch 15.4: Add / Insert Row Drawer Handlers
+       ========================================================================= */
+
+    _openAddRowDrawer(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName) {
+        this.toast('Table metadata is not loaded.', 'warning');
+        return;
+      }
+
+      if (!details.insertCapability || !details.insertCapability.isInsertable) {
+        this.toast(details.insertCapability?.reason || 'Direct insertion is not permitted on this table.', 'warning');
+        return;
+      }
+
+      this.addRowState = {
+        tableName,
+        isDirty: false,
+        isSubmitting: false,
+        nullFields: new Set()
+      };
+
+      const existingBackdrop = document.getElementById('adminDbAddRowDrawerBackdrop');
+      if (existingBackdrop) existingBackdrop.remove();
+
+      const columns = details.columns || [];
+
+      const fieldsHtml = columns.map(col => {
+        const isInsertable = col.isInsertable !== false && !col.isAutoIncrement && !col.isGenerated && !col.isSensitive;
+
+        if (!isInsertable) {
+          let reasonTag = 'Read-Only';
+          if (col.isAutoIncrement) reasonTag = 'Auto-Increment (Database Generated)';
+          else if (col.isGenerated) reasonTag = 'Generated Column (Computed by DB)';
+          else if (col.isSensitive) reasonTag = 'Sensitive Column (Protected)';
+
+          return `
+            <div class="admin-db-form-group">
+              <div class="admin-db-form-label-row">
+                <span class="admin-db-form-label">
+                  ${this._escape(col.name)}
+                  <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+                </span>
+              </div>
+              <div class="admin-db-read-only-field">${this._escape(reasonTag)}</div>
+            </div>
+          `;
+        }
+
+        const isEnum = col.enumValues && Array.isArray(col.enumValues) && col.enumValues.length > 0;
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isDate = col.dataType.includes('date') || col.dataType.includes('time');
+        const isNum = col.dataType.includes('int') || col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+        const isText = col.dataType.includes('text');
+
+        let inputElementHtml = '';
+        if (isEnum) {
+          inputElementHtml = `
+            <select id="addRowInput_${this._escape(col.name)}" class="admin-db-input" onchange="AdminShell._markAddRowDirty()">
+              <option value="">-- Select ${this._escape(col.name)} --</option>
+              ${col.enumValues.map(ev => `<option value="${this._escape(ev)}">${this._escape(ev)}</option>`).join('')}
+            </select>
+          `;
+        } else if (isBool) {
+          inputElementHtml = `
+            <select id="addRowInput_${this._escape(col.name)}" class="admin-db-input" onchange="AdminShell._markAddRowDirty()">
+              <option value="">-- Select Boolean --</option>
+              <option value="true">TRUE</option>
+              <option value="false">FALSE</option>
+            </select>
+          `;
+        } else if (isJson) {
+          inputElementHtml = `
+            <textarea id="addRowInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="{}" oninput="AdminShell._markAddRowDirty()"></textarea>
+          `;
+        } else if (isDate) {
+          inputElementHtml = `
+            <input type="text" id="addRowInput_${this._escape(col.name)}" class="admin-db-input" placeholder="YYYY-MM-DD HH:MM:SS or ISO 8601" oninput="AdminShell._markAddRowDirty()" />
+          `;
+        } else if (isNum) {
+          inputElementHtml = `
+            <input type="text" id="addRowInput_${this._escape(col.name)}" class="admin-db-input" placeholder="e.g. 123" oninput="AdminShell._markAddRowDirty()" />
+          `;
+        } else if (isText) {
+          inputElementHtml = `
+            <textarea id="addRowInput_${this._escape(col.name)}" class="admin-db-textarea" placeholder="Enter text..." oninput="AdminShell._markAddRowDirty()"></textarea>
+          `;
+        } else {
+          inputElementHtml = `
+            <input type="text" id="addRowInput_${this._escape(col.name)}" class="admin-db-input" placeholder="Enter value..." ${col.characterMaximumLength ? `maxlength="${col.characterMaximumLength}"` : ''} oninput="AdminShell._markAddRowDirty()" />
+          `;
+        }
+
+        return `
+          <div class="admin-db-form-group">
+            <div class="admin-db-form-label-row">
+              <label for="addRowInput_${this._escape(col.name)}" class="admin-db-form-label">
+                <span>${this._escape(col.name)}</span>
+                ${col.isRequired ? '<span class="admin-db-required-asterisk" title="Required field">*</span>' : ''}
+                ${col.isPrimaryKey ? '<span class="admin-db-pk-indicator">PK</span>' : ''}
+                ${col.foreignKey ? `<span class="admin-db-fk-badge" title="References ${this._escape(col.foreignKey.referencedTable)}.${this._escape(col.foreignKey.referencedColumn)}">FK → ${this._escape(col.foreignKey.referencedTable)}</span>` : ''}
+                <span class="admin-db-type-chip">${this._escape(col.dataType)}</span>
+              </label>
+              ${col.isNullable ? `
+                <label class="admin-db-null-toggle">
+                  <input type="checkbox" onchange="AdminShell._toggleNullField('${this._escape(col.name)}', this.checked)" />
+                  <span>Set NULL</span>
+                </label>
+              ` : ''}
+            </div>
+            ${inputElementHtml}
+            <div style="font-size:0.6875rem; color:var(--admin-text-muted); display:flex; justify-content:space-between;">
+              <span>${col.columnDefault !== null && col.columnDefault !== undefined ? `Default: <code>${this._escape(col.columnDefault)}</code>` : (col.isRequired ? 'Required' : 'Optional')}</span>
+              ${col.characterMaximumLength ? `<span>Max length: ${col.characterMaximumLength}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const drawerHtml = `
+        <div class="admin-db-drawer-backdrop" id="adminDbAddRowDrawerBackdrop" onclick="AdminShell._onAddRowDrawerBackdropClick(event)">
+          <div class="admin-db-drawer" id="adminDbAddRowDrawer">
+            <div class="admin-db-drawer-header">
+              <div>
+                <div class="admin-db-drawer-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--admin-primary);"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>Insert Row: <code>${this._escape(tableName)}</code></span>
+                </div>
+                <div style="font-size:0.75rem; color:var(--admin-text-secondary); margin-top:0.25rem;">
+                  Create a single verified record. Authoritative server-side constraints apply.
+                </div>
+              </div>
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeAddRowDrawer()" title="Close Drawer">✕</button>
+            </div>
+
+            <div class="admin-db-drawer-body">
+              <div id="addRowErrorBanner" style="display:none;"></div>
+              <form id="addRowRecordForm" onsubmit="event.preventDefault(); AdminShell._submitAddRowForm('${this._escape(tableName)}');">
+                <div style="display:flex; flex-direction:column; gap:1rem;">
+                  ${fieldsHtml}
+                </div>
+              </form>
+            </div>
+
+            <div class="admin-db-drawer-footer">
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell._closeAddRowDrawer()">
+                Cancel
+              </button>
+              <button type="button" id="submitAddRowBtn" class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._submitAddRowForm('${this._escape(tableName)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                Insert Record
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', drawerHtml);
+    }
+
+    _markAddRowDirty() {
+      if (this.addRowState) {
+        this.addRowState.isDirty = true;
+      }
+    }
+
+    _toggleNullField(colName, isNull) {
+      if (!this.addRowState) return;
+      if (isNull) {
+        this.addRowState.nullFields.add(colName);
+        const input = document.getElementById(`addRowInput_${colName}`);
+        if (input) {
+          input.disabled = true;
+        }
+      } else {
+        this.addRowState.nullFields.delete(colName);
+        const input = document.getElementById(`addRowInput_${colName}`);
+        if (input) {
+          input.disabled = false;
+        }
+      }
+      this.addRowState.isDirty = true;
+    }
+
+    _onAddRowDrawerBackdropClick(event) {
+      if (event && event.target && event.target.id === 'adminDbAddRowDrawerBackdrop') {
+        this._closeAddRowDrawer();
+      }
+    }
+
+    _closeAddRowDrawer(force = false) {
+      if (!force && this.addRowState?.isDirty) {
+        const discard = window.confirm('You have unsaved changes in this record. Are you sure you want to discard them?');
+        if (!discard) return;
+      }
+
+      const backdrop = document.getElementById('adminDbAddRowDrawerBackdrop');
+      if (backdrop) backdrop.remove();
+      this.addRowState = null;
+    }
+
+    async _submitAddRowForm(tableName) {
+      const details = this.dbManagementState.tableDetails;
+      if (!details || details.tableName !== tableName || !this.addRowState) return;
+
+      const errorBanner = document.getElementById('addRowErrorBanner');
+      const submitBtn = document.getElementById('submitAddRowBtn');
+
+      if (errorBanner) {
+        errorBanner.style.display = 'none';
+        errorBanner.innerHTML = '';
+      }
+
+      const columns = details.columns || [];
+      const values = {};
+
+      for (const col of columns) {
+        const isInsertable = col.isInsertable !== false && !col.isAutoIncrement && !col.isGenerated && !col.isSensitive;
+        if (!isInsertable) continue;
+
+        if (this.addRowState.nullFields.has(col.name)) {
+          values[col.name] = null;
+          continue;
+        }
+
+        const input = document.getElementById(`addRowInput_${col.name}`);
+        const rawVal = input ? input.value : '';
+
+        if (rawVal === '') {
+          if (col.isRequired) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Validation Error:</strong> Column '${this._escape(col.name)}' is required.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          if (col.columnDefault !== null && col.columnDefault !== undefined) {
+            // Omit so database applies server default
+            continue;
+          }
+          if (col.isNullable) {
+            values[col.name] = null;
+            continue;
+          }
+          continue;
+        }
+
+        // Parse and validate based on type
+        const isBool = col.dataType === 'boolean' || col.dataType === 'tinyint(1)';
+        const isJson = col.dataType === 'json';
+        const isInt = col.dataType.includes('int');
+        const isDec = col.dataType.includes('decimal') || col.dataType.includes('float') || col.dataType.includes('double') || col.dataType.includes('numeric');
+
+        if (isBool) {
+          values[col.name] = rawVal === 'true';
+        } else if (isJson) {
+          try {
+            JSON.parse(rawVal);
+            values[col.name] = rawVal;
+          } catch (jsonErr) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>JSON Syntax Error:</strong> Invalid JSON in '${this._escape(col.name)}': ${this._escape(jsonErr.message)}</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+        } else if (isInt) {
+          if (!/^-?\d+$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be an integer.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else if (isDec) {
+          if (!/^-?\d+(\.\d+)?$/.test(rawVal.trim())) {
+            if (errorBanner) {
+              errorBanner.style.display = 'block';
+              errorBanner.innerHTML = `<div class="admin-error-banner" style="margin:0;"><strong>Type Error:</strong> '${this._escape(col.name)}' must be a valid decimal/number.</div>`;
+            }
+            if (input) input.focus();
+            return;
+          }
+          values[col.name] = rawVal.trim();
+        } else {
+          values[col.name] = rawVal;
+        }
+      }
+
+      this.addRowState.isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="admin-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;display:inline-block;animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+          Inserting...
+        `;
+      }
+
+      try {
+        const res = await window.AdminApi.insertTableRow(tableName, values);
+        if (res && res.success) {
+          this.toast(`Record inserted into '${tableName}' successfully.`, 'success');
+          this._closeAddRowDrawer(true);
+          this._loadDbGridRows(tableName);
+        } else {
+          throw new Error(res?.error?.message || 'Server rejected insert request.');
+        }
+      } catch (err) {
+        console.error('Insert row failed:', err);
+        if (errorBanner) {
+          errorBanner.style.display = 'block';
+          errorBanner.innerHTML = `
+            <div class="admin-error-banner" style="margin:0;">
+              <strong>Insertion Failed:</strong> ${this._escape(err.message || 'Error executing insert operation.')}
+            </div>
+          `;
+        }
+      } finally {
+        if (this.addRowState) {
+          this.addRowState.isSubmitting = false;
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-right:0.25rem;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Insert Record
+          `;
+        }
+      }
     }
 
     _escape(str) {

@@ -222,6 +222,15 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
         });
       }
 
+      // Update Device status and lastSeenAt on registration
+      await tx.device.update({
+        where: { id: deviceId },
+        data: {
+          status: 'ONLINE',
+          lastSeenAt: now
+        }
+      });
+
       await tx.auditEvent.create({
         data: {
           userId: user.id,

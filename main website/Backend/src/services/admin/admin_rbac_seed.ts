@@ -72,7 +72,11 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   // SQL Query Runner (Phase 15)
   { slug: 'sql.query.read', name: 'Execute Read-Only SQL', resource: 'sql', action: 'read', description: 'Execute read-only SQL queries via Admin SQL Runner' },
   { slug: 'sql.query.write', name: 'Execute Controlled Write SQL', resource: 'sql', action: 'write', description: 'Execute authorized controlled write SQL statements via Admin SQL Console' },
-  { slug: 'sql.query.destructive', name: 'Execute Destructive SQL', resource: 'sql', action: 'destructive', description: 'Execute authorized destructive SQL statements (DELETE) via Admin SQL Console' }
+  { slug: 'sql.query.destructive', name: 'Execute Destructive SQL', resource: 'sql', action: 'destructive', description: 'Execute authorized destructive SQL statements (DELETE) via Admin SQL Console' },
+
+  // Database Management (Phase 15 Batch 15.1 & Batch 15.4)
+  { slug: 'database.management.view', name: 'View Database Management', resource: 'database', action: 'view', description: 'View database topology, schema overview, and table metadata' },
+  { slug: 'database.management.insert', name: 'Insert Database Records', resource: 'database', action: 'insert', description: 'Insert single records into authorized database tables via Database Management' }
 ];
 
 export const SYSTEM_ROLES: SystemRoleDef[] = [
@@ -98,7 +102,9 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'errors.read', 'errors.manage',
       'audit.read',
       'admin_roles.read',
-      'system.read'
+      'system.read',
+      'database.management.view',
+      'database.management.insert'
     ]
   },
   {
@@ -126,7 +132,8 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'errors.read', 'errors.manage',
       'emails.read', 'emails.manage',
       'audit.read',
-      'system.read'
+      'system.read',
+      'database.management.view'
     ]
   }
 ];

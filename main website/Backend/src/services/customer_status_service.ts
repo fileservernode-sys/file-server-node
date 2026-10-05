@@ -25,6 +25,7 @@ export interface DerivedCustomerStatusResult {
   statusReason: CustomerStatusReason;
   isRemoteAvailable: boolean;
   livenessValid: boolean;
+  effectiveLastSeenAt?: string | null;
   lastHeartbeatAt?: string | null;
   sessionId?: string | null;
   connectionId?: string | null;
@@ -33,6 +34,7 @@ export interface DerivedCustomerStatusResult {
 
 export interface CustomerStatusEvaluationContext {
   deviceId: string;
+  deviceLastSeenAt?: Date | string | null;
   serverInstance?: {
     id: string;
     status: ServerInstanceStatus | string;
@@ -51,28 +53,44 @@ export interface CustomerStatusEvaluationContext {
 }
 
 /**
- * Authoritative Customer Status Accuracy Engine (Phase 11A Batch 11A.16)
+ * Authoritative Customer Status Accuracy Engine (Phase 11A Batch 11A.16 & Phase PRS Batch PRS-1)
  *
  * Enforces the strict invariant:
- * Local Server State ≠ Transport State ≠ Authenticated Gateway Session ≠ Customer-Visible Remote Availability
+ * "An authenticated newer connection owns the current live state of the logical device/server.
+ *  Cleanup, timeout, disconnect, or reconciliation work belonging to an older connection MUST NOT downgrade the newer connection."
  *
- * Rules:
- * - A server can ONLY be reported 'ONLINE' when:
- *   1. Device & Server belong to authenticated customer.
- *   2. Relevant DeviceConnection is authoritative and in CONNECTED state.
- *   3. Authoritative in-memory gateway runtime session is active and open.
- *   4. Heartbeat/liveness evidence is within 11A.7 thresholds (< 60s).
- *   5. Session is not evicted or superseded.
- *   6. Not explicitly stopped.
- *   7. Local ServerInstance is RUNNING.
- *   8. Account is active (not suspended).
- *   9. Not in auth failure or unlinked state.
+ * Source Evaluation Hierarchy:
+ * 1. Account Level Suspensions & Explicit User Stop
+ * 2. Valid Current Live Gateway Session (In-memory authoritative WebSocket session)
+ * 3. Durable DB DeviceConnection Heartbeat (< 60s)
+ * 4. ServerInstance Heartbeat (< 60s)
+ * 5. Device lastSeenAt timestamp
+ * 6. Explicit fallback states
  */
 export class CustomerStatusService {
   /**
-   * Maximum acceptable age for heartbeat liveness before marking remote status expired (11A.7 reaper threshold)
+   * Maximum acceptable age for heartbeat liveness before marking remote status expired (60 seconds)
    */
   public static readonly HEARTBEAT_LIVENESS_MAX_AGE_MS = 60 * 1000;
+
+  /**
+   * Calculates normalized effective last-seen timestamp across all valid candidates.
+   * Ensures no future timestamps (beyond 5s clock skew) and formats as ISO 8601 string.
+   */
+  public static calculateEffectiveLastSeen(
+    candidates: Array<Date | string | null | undefined>
+  ): string | null {
+    const now = Date.now();
+    let maxTime = 0;
+    for (const c of candidates) {
+      if (!c) continue;
+      const t = typeof c === 'string' ? new Date(c).getTime() : c.getTime();
+      if (!isNaN(t) && t > maxTime && t <= now + 5000) {
+        maxTime = t;
+      }
+    }
+    return maxTime > 0 ? new Date(maxTime).toISOString() : null;
+  }
 
   /**
    * Derives customer-facing remote status and availability from authoritative context.
@@ -82,7 +100,7 @@ export class CustomerStatusService {
     gatewayService: GatewayService = defaultGatewayService
   ): DerivedCustomerStatusResult {
     try {
-      const { deviceId, serverInstance, deviceConnection, userStatus, isExplicitlyStopped } = context;
+      const { deviceId, deviceLastSeenAt, serverInstance, deviceConnection, userStatus, isExplicitlyStopped } = context;
 
       // 1. Account Level Suspensions
       if (userStatus === UserStatus.SUSPENDED || userStatus === 'SUSPENDED') {
@@ -90,7 +108,8 @@ export class CustomerStatusService {
           remoteStatus: 'ERROR',
           statusReason: 'account_suspended',
           isRemoteAvailable: false,
-          livenessValid: false
+          livenessValid: false,
+          effectiveLastSeenAt: this.calculateEffectiveLastSeen([deviceLastSeenAt])
         };
       }
 
@@ -100,174 +119,153 @@ export class CustomerStatusService {
           remoteStatus: 'OFFLINE',
           statusReason: 'explicitly_stopped',
           isRemoteAvailable: false,
-          livenessValid: false
-        };
-      }
-
-      // 3. Check Local Server Lifecycle State
-      if (serverInstance && serverInstance.status === ServerInstanceStatus.STOPPED) {
-        return {
-          remoteStatus: 'OFFLINE',
-          statusReason: 'server_stopped',
-          isRemoteAvailable: false,
-          livenessValid: false
-        };
-      }
-
-      // 4. Check Connection Existence
-      if (!deviceConnection) {
-        return {
-          remoteStatus: 'OFFLINE',
-          statusReason: 'no_active_connection',
-          isRemoteAvailable: false,
-          livenessValid: false
-        };
-      }
-
-      const connStatus = deviceConnection.status as ConnectionStatus;
-
-      // 5. Evaluate State Machine Status
-      if (connStatus === ConnectionStatus.FAILED) {
-        return {
-          remoteStatus: 'ERROR',
-          statusReason: 'authentication_failed',
-          isRemoteAvailable: false,
           livenessValid: false,
-          connectionId: deviceConnection.id
+          effectiveLastSeenAt: this.calculateEffectiveLastSeen([
+            deviceLastSeenAt,
+            serverInstance?.lastHeartbeatAt,
+            deviceConnection?.lastHeartbeatAt
+          ])
         };
       }
 
-      if (connStatus === ConnectionStatus.CONNECTING) {
-        return {
-          remoteStatus: 'CONNECTING',
-          statusReason: 'connecting',
-          isRemoteAvailable: false,
-          livenessValid: false,
-          connectionId: deviceConnection.id
-        };
-      }
+      // 3. Evaluate In-Memory Gateway Live Session (Source 1: Primary Live Transport)
+      const liveSession = gatewayService.getActiveSessionForDevice(deviceId);
 
-      if (connStatus === ConnectionStatus.RECONNECTING) {
-        return {
-          remoteStatus: 'RECONNECTING',
-          statusReason: 'automatic_recovery',
-          isRemoteAvailable: false,
-          livenessValid: false,
-          connectionId: deviceConnection.id
-        };
-      }
+      if (liveSession && liveSession.isAuthoritative) {
+        const liveHeartbeat = liveSession.lastHeartbeatAt;
+        const liveHeartbeatTime = liveHeartbeat ? new Date(liveHeartbeat).getTime() : 0;
+        const isLiveHeartbeatFresh = (Date.now() - liveHeartbeatTime) < CustomerStatusService.HEARTBEAT_LIVENESS_MAX_AGE_MS;
 
-      if (connStatus === ConnectionStatus.STALE) {
-        return {
-          remoteStatus: 'RECONNECTING',
-          statusReason: 'stale_connection',
-          isRemoteAvailable: false,
-          livenessValid: false,
-          connectionId: deviceConnection.id
-        };
-      }
+        const effectiveLastSeenAt = this.calculateEffectiveLastSeen([
+          liveHeartbeat,
+          deviceConnection?.lastHeartbeatAt,
+          serverInstance?.lastHeartbeatAt,
+          deviceLastSeenAt
+        ]);
 
-      if (connStatus === ConnectionStatus.DISCONNECTED) {
-        return {
-          remoteStatus: 'OFFLINE',
-          statusReason: 'no_active_connection',
-          isRemoteAvailable: false,
-          livenessValid: false,
-          connectionId: deviceConnection.id
-        };
-      }
-
-      // 6. Detailed Authoritative Verification for CONNECTED Status
-      if (connStatus === ConnectionStatus.CONNECTED) {
-        const liveSession = gatewayService.getActiveSessionForDevice(deviceId);
-
-        // A. Verify In-Memory Gateway Runtime Ownership
-        if (!liveSession) {
-          // If no runtime session on this gateway node, inspect DB heartbeat age for possible failover
-          const dbHeartbeat = deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).getTime() : 0;
-          const isDbHeartbeatRecent = (Date.now() - dbHeartbeat) < CustomerStatusService.HEARTBEAT_LIVENESS_MAX_AGE_MS;
-
-          if (!isDbHeartbeatRecent) {
-            return {
-              remoteStatus: 'OFFLINE',
-              statusReason: 'heartbeat_expired',
-              isRemoteAvailable: false,
-              livenessValid: false,
-              connectionId: deviceConnection.id,
-              lastHeartbeatAt: deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).toISOString() : null
-            };
-          }
-
-          // Socket not on this node but heartbeat is recent (potential gateway transition/failover)
+        if (isLiveHeartbeatFresh) {
+          // Authoritative live session is connected and active: server is genuinely ONLINE
           return {
-            remoteStatus: 'RECONNECTING',
-            statusReason: 'gateway_failover',
-            isRemoteAvailable: false,
-            livenessValid: false,
-            connectionId: deviceConnection.id,
-            lastHeartbeatAt: deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).toISOString() : null
+            remoteStatus: 'ONLINE',
+            statusReason: 'authenticated_live_session',
+            isRemoteAvailable: true,
+            livenessValid: true,
+            effectiveLastSeenAt,
+            connectionId: liveSession.connectionId || deviceConnection?.id,
+            sessionId: liveSession.sessionId,
+            gatewayNodeId: deviceConnection?.gatewayNodeId ?? null,
+            lastHeartbeatAt: liveHeartbeat ? new Date(liveHeartbeat).toISOString() : null
           };
-        }
-
-        // B. Verify Live Session Heartbeat Freshness
-        const effectiveHeartbeat = liveSession.lastHeartbeatAt || deviceConnection.lastHeartbeatAt;
-        const heartbeatTime = effectiveHeartbeat ? new Date(effectiveHeartbeat).getTime() : 0;
-        const isHeartbeatFresh = (Date.now() - heartbeatTime) < CustomerStatusService.HEARTBEAT_LIVENESS_MAX_AGE_MS;
-
-        if (!isHeartbeatFresh) {
+        } else {
+          // Live session exists but heartbeat has lapsed
           return {
             remoteStatus: 'OFFLINE',
             statusReason: 'heartbeat_expired',
             isRemoteAvailable: false,
             livenessValid: false,
-            connectionId: deviceConnection.id,
+            effectiveLastSeenAt,
+            connectionId: liveSession.connectionId || deviceConnection?.id,
             sessionId: liveSession.sessionId,
-            lastHeartbeatAt: effectiveHeartbeat ? new Date(effectiveHeartbeat).toISOString() : null
+            lastHeartbeatAt: liveHeartbeat ? new Date(liveHeartbeat).toISOString() : null
           };
         }
+      }
 
-        // C. Verify Local Server Instance is RUNNING
-        if (serverInstance && serverInstance.status !== ServerInstanceStatus.RUNNING) {
-          if (serverInstance.status === ServerInstanceStatus.STARTING) {
+      // 4. Evaluate Durable Connection State (Source 2: Database State when no in-memory session on this node)
+      if (deviceConnection) {
+        const connStatus = deviceConnection.status as ConnectionStatus;
+        const dbHeartbeat = deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).getTime() : 0;
+        const isDbHeartbeatRecent = (Date.now() - dbHeartbeat) < CustomerStatusService.HEARTBEAT_LIVENESS_MAX_AGE_MS;
+
+        const effectiveLastSeenAt = this.calculateEffectiveLastSeen([
+          deviceConnection.lastHeartbeatAt,
+          serverInstance?.lastHeartbeatAt,
+          deviceLastSeenAt
+        ]);
+
+        if (connStatus === ConnectionStatus.CONNECTED) {
+          if (isDbHeartbeatRecent) {
             return {
-              remoteStatus: 'CONNECTING',
-              statusReason: 'server_starting',
-              isRemoteAvailable: false,
+              remoteStatus: 'ONLINE',
+              statusReason: 'authenticated_live_session',
+              isRemoteAvailable: true,
               livenessValid: true,
+              effectiveLastSeenAt,
               connectionId: deviceConnection.id,
-              sessionId: liveSession.sessionId
+              gatewayNodeId: deviceConnection.gatewayNodeId ?? null,
+              lastHeartbeatAt: deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).toISOString() : null
+            };
+          } else {
+            return {
+              remoteStatus: 'OFFLINE',
+              statusReason: 'heartbeat_expired',
+              isRemoteAvailable: false,
+              livenessValid: false,
+              effectiveLastSeenAt,
+              connectionId: deviceConnection.id,
+              lastHeartbeatAt: deviceConnection.lastHeartbeatAt ? new Date(deviceConnection.lastHeartbeatAt).toISOString() : null
             };
           }
+        }
 
+        if (connStatus === ConnectionStatus.CONNECTING) {
           return {
-            remoteStatus: 'OFFLINE',
-            statusReason: 'server_stopped',
+            remoteStatus: 'CONNECTING',
+            statusReason: 'connecting',
             isRemoteAvailable: false,
-            livenessValid: true,
-            connectionId: deviceConnection.id,
-            sessionId: liveSession.sessionId
+            livenessValid: false,
+            effectiveLastSeenAt,
+            connectionId: deviceConnection.id
           };
         }
 
-        // ALL 9 CHECKS SATISFIED: Remote Server is genuinely available!
+        if (connStatus === ConnectionStatus.RECONNECTING || connStatus === ConnectionStatus.STALE) {
+          return {
+            remoteStatus: 'RECONNECTING',
+            statusReason: connStatus === ConnectionStatus.STALE ? 'stale_connection' : 'automatic_recovery',
+            isRemoteAvailable: false,
+            livenessValid: false,
+            effectiveLastSeenAt,
+            connectionId: deviceConnection.id
+          };
+        }
+
+        if (connStatus === ConnectionStatus.FAILED) {
+          return {
+            remoteStatus: 'ERROR',
+            statusReason: 'authentication_failed',
+            isRemoteAvailable: false,
+            livenessValid: false,
+            effectiveLastSeenAt,
+            connectionId: deviceConnection.id
+          };
+        }
+      }
+
+      // 5. Check Local Server Lifecycle State if no active connection
+      const fallbackEffectiveLastSeenAt = this.calculateEffectiveLastSeen([
+        serverInstance?.lastHeartbeatAt,
+        deviceConnection?.lastHeartbeatAt,
+        deviceLastSeenAt
+      ]);
+
+      if (serverInstance && serverInstance.status === ServerInstanceStatus.STOPPED) {
         return {
-          remoteStatus: 'ONLINE',
-          statusReason: 'authenticated_live_session',
-          isRemoteAvailable: true,
-          livenessValid: true,
-          connectionId: liveSession.connectionId || deviceConnection.id,
-          sessionId: liveSession.sessionId,
-          gatewayNodeId: deviceConnection.gatewayNodeId ?? null,
-          lastHeartbeatAt: effectiveHeartbeat ? new Date(effectiveHeartbeat).toISOString() : null
+          remoteStatus: 'OFFLINE',
+          statusReason: 'server_stopped',
+          isRemoteAvailable: false,
+          livenessValid: false,
+          effectiveLastSeenAt: fallbackEffectiveLastSeenAt
         };
       }
 
-      // Default Fallback
+      // 6. Default Fallback
       return {
         remoteStatus: 'OFFLINE',
         statusReason: 'no_active_connection',
         isRemoteAvailable: false,
-        livenessValid: false
+        livenessValid: false,
+        effectiveLastSeenAt: fallbackEffectiveLastSeenAt
       };
     } catch {
       // Fail-safe default
@@ -275,7 +273,8 @@ export class CustomerStatusService {
         remoteStatus: 'OFFLINE',
         statusReason: 'no_active_connection',
         isRemoteAvailable: false,
-        livenessValid: false
+        livenessValid: false,
+        effectiveLastSeenAt: null
       };
     }
   }
@@ -287,6 +286,7 @@ export class CustomerStatusService {
     devices: Array<{
       id: string;
       status: string;
+      lastSeenAt?: Date | string | null;
       servers?: Array<{
         id: string;
         status: string;
@@ -313,6 +313,7 @@ export class CustomerStatusService {
       const derived = this.deriveCustomerStatus(
         {
           deviceId: device.id,
+          deviceLastSeenAt: device.lastSeenAt,
           serverInstance: activeServer,
           deviceConnection: activeConn,
           userStatus

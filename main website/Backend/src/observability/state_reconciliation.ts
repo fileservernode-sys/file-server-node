@@ -297,6 +297,7 @@ export class StateReconciliationService {
       // 4. Evaluate affected devices & server instances conditionally
       let preservedCount = 0;
       for (const devId of Array.from(affectedDeviceIds)) {
+        const hasLiveGatewaySession = defaultGatewayService.hasActiveConnectionForDevice(devId);
         const hasLiveActiveConn = await prisma.deviceConnection.findFirst({
           where: {
             deviceId: devId,
@@ -304,7 +305,7 @@ export class StateReconciliationService {
           }
         });
 
-        if (!hasLiveActiveConn) {
+        if (!hasLiveActiveConn && !hasLiveGatewaySession) {
           // Safe to mark device OFFLINE and server STOPPED
           await prisma.device.update({
             where: { id: devId },
@@ -544,6 +545,7 @@ export class StateReconciliationService {
 
       // 5. Evaluate affected devices & server instances conditionally
       for (const devId of Array.from(affectedDeviceIds)) {
+        const hasLiveGatewaySession = defaultGatewayService.hasActiveConnectionForDevice(devId);
         const liveReplacementConn = await prisma.deviceConnection.findFirst({
           where: {
             deviceId: devId,
@@ -551,7 +553,7 @@ export class StateReconciliationService {
           }
         });
 
-        if (liveReplacementConn) {
+        if (liveReplacementConn || hasLiveGatewaySession) {
           // Replacement session exists — do NOT downgrade device/server!
           replacementPreserved++;
           statusTransitionsSkipped++;
@@ -619,9 +621,15 @@ export class StateReconciliationService {
    * Batched Connection Heartbeat Persistence:
    * Flushes active connection heartbeat timestamps to database in bounded batches,
    * preventing per-packet DB write storms while ensuring liveness records stay accurate.
+   *
+   * Phase PRS Batch PRS-1:
+   * Atomically synchronizes:
+   * 1. DeviceConnection.lastHeartbeatAt
+   * 2. Device.lastSeenAt & Device.status = ONLINE
+   * 3. ServerInstance.lastHeartbeatAt & ServerInstance.status = RUNNING (if not manually stopped)
    */
   public static async flushBatchedConnectionHeartbeats(
-    heartbeatUpdates: Array<{ connectionId: string; lastHeartbeatAt: Date }>
+    heartbeatUpdates: Array<{ connectionId: string; deviceId?: string; lastHeartbeatAt: Date }>
   ): Promise<number> {
     if (heartbeatUpdates.length === 0) return 0;
 
@@ -630,6 +638,7 @@ export class StateReconciliationService {
       const connIds = heartbeatUpdates.map((u) => u.connectionId);
       const now = new Date();
 
+      // 1. Update active DeviceConnection records
       const result = await prisma.deviceConnection.updateMany({
         where: {
           id: { in: connIds },
@@ -641,6 +650,49 @@ export class StateReconciliationService {
       });
 
       updatedCount = result.count;
+
+      // 2. Identify and coalesce unique deviceIds for active connections
+      const deviceIds = new Set<string>();
+      for (const u of heartbeatUpdates) {
+        if (u.deviceId) {
+          deviceIds.add(u.deviceId);
+        }
+      }
+
+      if (deviceIds.size === 0 && connIds.length > 0) {
+        const activeConns = await prisma.deviceConnection.findMany({
+          where: { id: { in: connIds }, status: ConnectionStatus.CONNECTED },
+          select: { deviceId: true }
+        });
+        for (const c of activeConns) {
+          if (c.deviceId) deviceIds.add(c.deviceId);
+        }
+      }
+
+      if (deviceIds.size > 0) {
+        const devIdList = Array.from(deviceIds);
+
+        // 3. Synchronize Device.lastSeenAt & Device.status
+        await prisma.device.updateMany({
+          where: { id: { in: devIdList } },
+          data: {
+            lastSeenAt: now,
+            status: DeviceStatus.ONLINE
+          }
+        });
+
+        // 4. Synchronize ServerInstance.lastHeartbeatAt & ServerInstance.status (where not explicitly stopped)
+        await prisma.serverInstance.updateMany({
+          where: {
+            deviceId: { in: devIdList },
+            status: { not: ServerInstanceStatus.STOPPED }
+          },
+          data: {
+            lastHeartbeatAt: now,
+            status: ServerInstanceStatus.RUNNING
+          }
+        });
+      }
     } catch {
       // Non-fatal, will retry on next sweep
     }

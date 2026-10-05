@@ -4,6 +4,7 @@ import { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { prisma } from '../src/config/database.js';
 import { hashSessionToken } from '../src/utils/crypto.js';
+import { EntitlementService } from '../src/services/billing/entitlement_service.js';
 
 describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests', () => {
   let app: FastifyInstance;
@@ -32,6 +33,7 @@ describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests
       }
     });
     userIdA = userA.id;
+    EntitlementService.setTestUserPlan(userA.id, 'PRO_MONTHLY');
     userTokenA = `token-web-a-${Date.now()}`;
     await prisma.userSession.create({
       data: {
@@ -105,6 +107,7 @@ describe('Batch 6 — Main Website Multi-Device & Multi-Server Integration Tests
   });
 
   after(async () => {
+    EntitlementService.clearTestUserPlans();
     try {
       await prisma.user.deleteMany({
         where: {

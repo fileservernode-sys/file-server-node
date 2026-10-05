@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { ConnectionStatus, DeviceStatus, ServerInstanceStatus } from '@prisma/client';
+import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { gatewayEventProducer } from '../notifications/producers/gateway_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
@@ -63,7 +64,7 @@ export class ConnectionStateMachine {
    * Authoritative Legal Transition Matrix
    */
   public static readonly LEGAL_TRANSITIONS: Record<ConnectionStatus, ConnectionStatus[]> = {
-    DISCONNECTED: [ConnectionStatus.CONNECTING],
+    DISCONNECTED: [ConnectionStatus.CONNECTING, ConnectionStatus.CONNECTED],
     CONNECTING: [
       ConnectionStatus.CONNECTED,
       ConnectionStatus.RECONNECTING,
@@ -93,6 +94,7 @@ export class ConnectionStateMachine {
     ],
     FAILED: [
       ConnectionStatus.CONNECTING,
+      ConnectionStatus.CONNECTED,
       ConnectionStatus.DISCONNECTED
     ]
   };
@@ -192,6 +194,52 @@ export class ConnectionStateMachine {
         (currentStatus === ConnectionStatus.CONNECTED || currentStatus === ConnectionStatus.CONNECTING) &&
         (request.eventSource === 'DISCONNECT_TRANSPORT' || request.eventSource === 'RECONCILIATION_CLEANUP')
       ) {
+        // Ownership Fencing: If the disconnect request is for an older connectionToken, reject the downgrade
+        if (request.connectionToken && currentConn.connectionToken && request.connectionToken !== currentConn.connectionToken) {
+          ConnectionObservability.emit({
+            event: 'state_transition_superseded',
+            component: 'backend_connection',
+            outcome: 'cancelled',
+            reason: 'Superseded by newer connection token',
+            connectionId: request.connectionId,
+            deviceId,
+            previousState: currentStatus,
+            newState: currentStatus
+          });
+
+          return {
+            success: true,
+            applied: false,
+            connectionId: request.connectionId,
+            previousStatus: currentStatus,
+            currentStatus,
+            reason: 'Superseded by newer connection token'
+          };
+        }
+
+        // Live Gateway Check: If Gateway currently has an active authoritative session for this device, reject downgrade
+        if (defaultGatewayService.hasActiveConnectionForDevice(deviceId)) {
+          ConnectionObservability.emit({
+            event: 'state_transition_superseded',
+            component: 'backend_connection',
+            outcome: 'cancelled',
+            reason: 'Active live session exists in Gateway for device',
+            connectionId: request.connectionId,
+            deviceId,
+            previousState: currentStatus,
+            newState: currentStatus
+          });
+
+          return {
+            success: true,
+            applied: false,
+            connectionId: request.connectionId,
+            previousStatus: currentStatus,
+            currentStatus,
+            reason: 'Active live session exists in Gateway for device'
+          };
+        }
+
         // Check if this connection was already updated after the event occurred
         if (currentConn.lastHeartbeatAt && currentConn.lastHeartbeatAt > now) {
           ConnectionObservability.emit({
@@ -339,7 +387,13 @@ export class ConnectionStateMachine {
         connStatus === ConnectionStatus.FAILED ||
         connStatus === ConnectionStatus.STALE
       ) {
-        // Multi-connection check: only mark OFFLINE/STOPPED if NO other active CONNECTED connection exists for this device
+        // Multi-connection & live Gateway check: only mark OFFLINE/STOPPED if NO active connection exists
+        const hasLiveGatewaySession = defaultGatewayService.hasActiveConnectionForDevice(deviceId);
+        if (hasLiveGatewaySession) {
+          // A live session exists on Gateway — do not downgrade Device or ServerInstance!
+          return;
+        }
+
         const otherActiveConn = await db.deviceConnection.findFirst({
           where: {
             deviceId,

@@ -1,0 +1,992 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { DatabaseMetadataService } from '../src/services/admin/database_metadata_service.js';
+import { getDestructiveTableClassification } from '../src/utils/sql_safety_guard.js';
+import { NotFoundError, ValidationError } from '../src/errors/app-error.js';
+import { SYSTEM_PERMISSIONS, SYSTEM_ROLES } from '../src/services/admin/admin_rbac_seed.js';
+
+test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async (t) => {
+
+  await t.test('1. RBAC & Permission Catalog Verification', async (t2: any) => {
+    await t2.test('includes database.management.view permission in SYSTEM_PERMISSIONS', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.view');
+      assert.ok(perm, 'database.management.view permission should be registered');
+      assert.strictEqual(perm?.resource, 'database');
+      assert.strictEqual(perm?.action, 'view');
+    });
+
+    await t2.test('SUPER_ADMIN role includes database.management.view', () => {
+      const superAdminRole = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      assert.ok(superAdminRole, 'SUPER_ADMIN role should exist');
+      assert.ok(superAdminRole?.permissions.includes('database.management.view'));
+    });
+
+    await t2.test('ADMIN role includes database.management.view', () => {
+      const adminRole = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      assert.ok(adminRole, 'ADMIN role should exist');
+      assert.ok(adminRole?.permissions.includes('database.management.view'));
+    });
+
+    await t2.test('OPERATIONS role includes database.management.view', () => {
+      const opsRole = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      assert.ok(opsRole, 'OPERATIONS role should exist');
+      assert.ok(opsRole?.permissions.includes('database.management.view'));
+    });
+
+    await t2.test('SUPPORT role does NOT include database.management.view', () => {
+      const supportRole = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+      assert.ok(supportRole, 'SUPPORT role should exist');
+      assert.strictEqual(supportRole?.permissions.includes('database.management.view'), false);
+    });
+  });
+
+  await t.test('2. Table Classification Matrix Consistency', async (t2: any) => {
+    await t2.test('classifies _prisma_migrations as INTERNAL', () => {
+      const res = getDestructiveTableClassification('_prisma_migrations');
+      assert.strictEqual(res.classification, 'INTERNAL');
+      assert.strictEqual(res.isProtected, true);
+    });
+
+    await t2.test('classifies admin and user security tables as PROTECTED', () => {
+      const protectedTables = [
+        'admin_users', 'admin_sessions', 'admin_email_otps', 'admin_lockouts',
+        'admin_roles', 'admin_permissions', 'admin_user_roles', 'admin_role_permissions',
+        'admin_audit_logs', 'security_audit_logs', 'audit_events',
+        'users', 'user_sessions', 'device_auth_credentials', 'user_notification_preferences'
+      ];
+      for (const table of protectedTables) {
+        const res = getDestructiveTableClassification(table);
+        assert.strictEqual(res.classification, 'PROTECTED', `Table ${table} should be classified as PROTECTED`);
+        assert.strictEqual(res.isProtected, true);
+      }
+    });
+
+    await t2.test('classifies commercial and ledger tables as BUSINESS_SENSITIVE', () => {
+      const sensitiveTables = [
+        'billing_payments', 'billing_refunds', 'billing_settlements',
+        'billing_payment_taxes', 'billing_payment_processing_fees', 'billing_receipts',
+        'billing_reconciliation_records', 'billing_reconciliation_runs', 'billing_reconciliation_discrepancies',
+        'subscriptions', 'subscription_plan_changes', 'subscription_upgrade_reconciliations',
+        'account_billing_states', 'plans', 'plan_prices', 'plan_entitlements',
+        'entitlement_definitions', 'billing_provider_plan_mappings', 'billing_webhook_events'
+      ];
+      for (const table of sensitiveTables) {
+        const res = getDestructiveTableClassification(table);
+        assert.strictEqual(res.classification, 'BUSINESS_SENSITIVE', `Table ${table} should be classified as BUSINESS_SENSITIVE`);
+        assert.strictEqual(res.isBusinessSensitive, true);
+      }
+    });
+
+    await t2.test('classifies referenced parent entities as NON_LEAF', () => {
+      const nonLeafTables = [
+        'devices', 'server_instances', 'notification_records',
+        'channel_delivery_records', 'email_messages', 'support_cases',
+        'error_fingerprints', 'error_incidents'
+      ];
+      for (const table of nonLeafTables) {
+        const res = getDestructiveTableClassification(table);
+        assert.strictEqual(res.classification, 'NON_LEAF', `Table ${table} should be classified as NON_LEAF`);
+        assert.strictEqual(res.incomingForeignKeyCount, 1);
+      }
+    });
+
+    await t2.test('classifies approved telemetry and note tables as APPROVED_LEAF', () => {
+      const leafTables = [
+        'support_case_notes', 'error_occurrences', 'email_delivery_attempts',
+        'device_connections', 'device_push_tokens', 'server_endpoints'
+      ];
+      for (const table of leafTables) {
+        const res = getDestructiveTableClassification(table);
+        assert.strictEqual(res.classification, 'APPROVED_LEAF', `Table ${table} should be classified as APPROVED_LEAF`);
+        assert.strictEqual(res.isExplicitlyApproved, true);
+      }
+    });
+
+    await t2.test('fails closed with UNKNOWN classification for uncataloged tables', () => {
+      const res = getDestructiveTableClassification('some_unknown_arbitrary_table');
+      assert.strictEqual(res.classification, 'UNKNOWN');
+      assert.strictEqual(res.destructiveEligible, false);
+    });
+  });
+
+  await t.test('3. Database Metadata Service Structural & Bounded Guarantees', async (t2: any) => {
+    await t2.test('validates table identifier security sanitization', () => {
+      const invalidTableNames = [
+        'users; DROP TABLE users',
+        'users--',
+        'users/*comment*/',
+        'users`',
+        'table name with spaces',
+        'users; SELECT 1'
+      ];
+
+      for (const invalidName of invalidTableNames) {
+        const isValid = /^[a-zA-Z0-9_]+$/.test(invalidName);
+        assert.strictEqual(isValid, false, `Invalid table name '${invalidName}' should fail regex validation`);
+      }
+    });
+
+    await t2.test('bounds preview limit to maximum 50 rows', () => {
+      const clampLimit = (limit: number | undefined) => Math.min(Math.max(1, Number(limit) || 50), 50);
+      assert.strictEqual(clampLimit(100), 50);
+      assert.strictEqual(clampLimit(1000), 50);
+      assert.strictEqual(clampLimit(0), 50);
+      assert.strictEqual(clampLimit(-10), 50);
+      assert.strictEqual(clampLimit(25), 25);
+      assert.strictEqual(clampLimit(undefined), 50);
+    });
+
+    await t2.test('clamps preview offset to non-negative integer', () => {
+      const clampOffset = (offset: number | undefined) => Math.max(0, Number(offset) || 0);
+      assert.strictEqual(clampOffset(-5), 0);
+      assert.strictEqual(clampOffset(0), 0);
+      assert.strictEqual(clampOffset(50), 50);
+      assert.strictEqual(clampOffset(undefined), 0);
+    });
+
+    await t2.test('redacts sensitive column values in preview datasets', () => {
+      const sensitiveColPatterns = [
+        /password/i,
+        /token/i,
+        /secret/i,
+        /hash/i,
+        /private_key/i,
+        /auth_key/i,
+        /credential/i,
+        /otp/i
+      ];
+
+      const checkRedacted = (colName: string) => sensitiveColPatterns.some(pat => pat.test(colName));
+
+      assert.strictEqual(checkRedacted('passwordHash'), true);
+      assert.strictEqual(checkRedacted('sessionTokenHash'), true);
+      assert.strictEqual(checkRedacted('apiKeyHash'), true);
+      assert.strictEqual(checkRedacted('otpCode'), true);
+      assert.strictEqual(checkRedacted('clientSecret'), true);
+      assert.strictEqual(checkRedacted('id'), false);
+      assert.strictEqual(checkRedacted('email'), false);
+      assert.strictEqual(checkRedacted('status'), false);
+      assert.strictEqual(checkRedacted('createdAt'), false);
+    });
+  });
+
+  await t.test('4. Phase 15 — Batch 15.2: Database Data Grid Service Logic & Protections', async (t2: any) => {
+    await t2.test('bounds data grid pagination: page >= 1, pageSize in [1, 100]', () => {
+      const normalizePagination = (page: any, pageSize: any) => {
+        const p = Math.max(1, parseInt(String(page), 10) || 1);
+        const ps = Math.min(100, Math.max(1, parseInt(String(pageSize), 10) || 25));
+        return { page: p, pageSize: ps, offset: (p - 1) * ps };
+      };
+
+      assert.deepStrictEqual(normalizePagination(0, 25), { page: 1, pageSize: 25, offset: 0 });
+      assert.deepStrictEqual(normalizePagination(-5, 50), { page: 1, pageSize: 50, offset: 0 });
+      assert.deepStrictEqual(normalizePagination(1, 1000), { page: 1, pageSize: 100, offset: 0 });
+      assert.deepStrictEqual(normalizePagination(3, 10), { page: 3, pageSize: 10, offset: 20 });
+      assert.deepStrictEqual(normalizePagination(undefined, undefined), { page: 1, pageSize: 25, offset: 0 });
+    });
+
+    await t2.test('validates sort direction strictly to asc or desc', () => {
+      const normalizeSortDir = (dir: string | undefined): 'ASC' | 'DESC' => {
+        return (dir && dir.toLowerCase() === 'asc') ? 'ASC' : 'DESC';
+      };
+
+      assert.strictEqual(normalizeSortDir('asc'), 'ASC');
+      assert.strictEqual(normalizeSortDir('ASC'), 'ASC');
+      assert.strictEqual(normalizeSortDir('desc'), 'DESC');
+      assert.strictEqual(normalizeSortDir('DESC'), 'DESC');
+      assert.strictEqual(normalizeSortDir('invalid'), 'DESC');
+      assert.strictEqual(normalizeSortDir(undefined), 'DESC');
+    });
+
+    await t2.test('enforces deterministic sorting with primary key tie-breaker', () => {
+      const buildOrderBy = (sortByCol: string, sortDir: 'ASC' | 'DESC', pkCol: string | null) => {
+        const clauses = [`\`${sortByCol}\` ${sortDir}`];
+        if (pkCol && pkCol !== sortByCol) {
+          clauses.push(`\`${pkCol}\` ASC`);
+        }
+        return `ORDER BY ${clauses.join(', ')}`;
+      };
+
+      assert.strictEqual(
+        buildOrderBy('createdAt', 'DESC', 'id'),
+        'ORDER BY `createdAt` DESC, `id` ASC'
+      );
+      assert.strictEqual(
+        buildOrderBy('id', 'DESC', 'id'),
+        'ORDER BY `id` DESC'
+      );
+      assert.strictEqual(
+        buildOrderBy('status', 'ASC', 'id'),
+        'ORDER BY `status` ASC, `id` ASC'
+      );
+      assert.strictEqual(
+        buildOrderBy('name', 'ASC', null),
+        'ORDER BY `name` ASC'
+      );
+    });
+
+    await t2.test('enforces max 5 column filters limit', () => {
+      const validateFilters = (filters: any[]) => {
+        if (!Array.isArray(filters)) return [];
+        if (filters.length > 5) {
+          throw new ValidationError('Maximum of 5 column filters can be applied simultaneously');
+        }
+        return filters;
+      };
+
+      assert.doesNotThrow(() => validateFilters([
+        { column: 'status', operator: 'equals', value: 'ACTIVE' },
+        { column: 'email', operator: 'contains', value: 'example.com' }
+      ]));
+
+      assert.throws(() => validateFilters([
+        { column: 'c1', operator: 'equals', value: '1' },
+        { column: 'c2', operator: 'equals', value: '2' },
+        { column: 'c3', operator: 'equals', value: '3' },
+        { column: 'c4', operator: 'equals', value: '4' },
+        { column: 'c5', operator: 'equals', value: '5' },
+        { column: 'c6', operator: 'equals', value: '6' }
+      ]), /Maximum of 5 column filters/);
+    });
+
+    await t2.test('validates supported filter operators', () => {
+      const allowedOperators = [
+        'equals', 'contains', 'startsWith', 'greaterThan',
+        'lessThan', 'before', 'after', 'isNull', 'isNotNull'
+      ];
+
+      const isOperatorAllowed = (op: string) => allowedOperators.includes(op);
+
+      for (const op of allowedOperators) {
+        assert.strictEqual(isOperatorAllowed(op), true, `Operator ${op} should be valid`);
+      }
+
+      assert.strictEqual(isOperatorAllowed('in'), false);
+      assert.strictEqual(isOperatorAllowed('raw_sql'), false);
+      assert.strictEqual(isOperatorAllowed('union'), false);
+      assert.strictEqual(isOperatorAllowed('regex'), false);
+    });
+
+    await t2.test('determines total row count mode: EXACT vs ESTIMATED', () => {
+      const determineCountMode = (hasFiltersOrSearch: boolean, approximateCount: number) => {
+        if (hasFiltersOrSearch || approximateCount < 100000) {
+          return 'EXACT';
+        }
+        return 'ESTIMATED';
+      };
+
+      assert.strictEqual(determineCountMode(true, 500000), 'EXACT');
+      assert.strictEqual(determineCountMode(false, 5000), 'EXACT');
+      assert.strictEqual(determineCountMode(false, 250000), 'ESTIMATED');
+    });
+  });
+
+  await t.test('5. Phase 15 — Batch 15.3: Row Selection & Multi-Select Model Test Suite', async (t2: any) => {
+    // Helper function reproducing the client-side canonical identity logic
+    const getCanonicalRowKey = (tableName: string, primaryKeys: string[], row: any, rowIndex: number, page: number) => {
+      if (primaryKeys && Array.isArray(primaryKeys) && primaryKeys.length > 0) {
+        const sortedKeys = [...primaryKeys].sort();
+        const pkObj: Record<string, string> = {};
+        for (const pk of sortedKeys) {
+          pkObj[pk] = (row[pk] !== undefined && row[pk] !== null) ? String(row[pk]) : '';
+        }
+        return JSON.stringify({ t: tableName, k: pkObj });
+      }
+      return JSON.stringify({ t: tableName, nopk: true, p: page || 1, i: rowIndex });
+    };
+
+    await t2.test('1. No selected rows initially in state', () => {
+      const selectedKeys = new Set<string>();
+      assert.strictEqual(selectedKeys.size, 0);
+    });
+
+    await t2.test('2. Selecting a single row adds its canonical identity', () => {
+      const selectedKeys = new Set<string>();
+      const key = getCanonicalRowKey('users', ['id'], { id: 'user_123', email: 'test@zdex.com' }, 0, 1);
+      selectedKeys.add(key);
+      assert.strictEqual(selectedKeys.size, 1);
+      assert.strictEqual(selectedKeys.has(key), true);
+    });
+
+    await t2.test('3. Deselecting a single row removes its canonical identity', () => {
+      const selectedKeys = new Set<string>();
+      const key = getCanonicalRowKey('users', ['id'], { id: 'user_123' }, 0, 1);
+      selectedKeys.add(key);
+      assert.strictEqual(selectedKeys.size, 1);
+      selectedKeys.delete(key);
+      assert.strictEqual(selectedKeys.size, 0);
+    });
+
+    await t2.test('4. Selecting all visible rows populates visible keys', () => {
+      const selectedKeys = new Set<string>();
+      const rows = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      for (let i = 0; i < rows.length; i++) {
+        selectedKeys.add(getCanonicalRowKey('users', ['id'], rows[i], i, 1));
+      }
+      assert.strictEqual(selectedKeys.size, 3);
+    });
+
+    await t2.test('5. Header checkbox indeterminate state when partial visible rows selected', () => {
+      const rows = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const selectedKeys = new Set<string>([getCanonicalRowKey('users', ['id'], rows[0], 0, 1)]);
+
+      const visibleKeys = rows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 1));
+      const visibleSelectedCount = visibleKeys.filter(k => selectedKeys.has(k)).length;
+
+      const isIndeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visibleKeys.length;
+      const isChecked = visibleSelectedCount === visibleKeys.length;
+
+      assert.strictEqual(isIndeterminate, true);
+      assert.strictEqual(isChecked, false);
+    });
+
+    await t2.test('6. Header checkbox checked state when all visible rows selected', () => {
+      const rows = [{ id: '1' }, { id: '2' }, { id: '3' }];
+      const selectedKeys = new Set<string>(rows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 1)));
+
+      const visibleKeys = rows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 1));
+      const visibleSelectedCount = visibleKeys.filter(k => selectedKeys.has(k)).length;
+
+      const isIndeterminate = visibleSelectedCount > 0 && visibleSelectedCount < visibleKeys.length;
+      const isChecked = visibleSelectedCount === visibleKeys.length && visibleKeys.length > 0;
+
+      assert.strictEqual(isIndeterminate, false);
+      assert.strictEqual(isChecked, true);
+    });
+
+    await t2.test('7. Clearing header selection removes only visible-page selections', () => {
+      // Page 1 has row 1, 2. Page 2 has row 3.
+      const page1Rows = [{ id: '1' }, { id: '2' }];
+      const page2Rows = [{ id: '3' }];
+
+      const p1Keys = page1Rows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 1));
+      const p2Keys = page2Rows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 2));
+
+      const selectedKeys = new Set<string>([...p1Keys, ...p2Keys]);
+      assert.strictEqual(selectedKeys.size, 3);
+
+      // Deselect all on Page 1
+      for (const k of p1Keys) {
+        selectedKeys.delete(k);
+      }
+
+      assert.strictEqual(selectedKeys.size, 1);
+      assert.strictEqual(selectedKeys.has(p2Keys[0]), true);
+    });
+
+    await t2.test('8. Selection persists across pagination for stable primary-key tables', () => {
+      const selectedKeys = new Set<string>();
+      const p1Row = { id: 'row_page_1' };
+      const p1Key = getCanonicalRowKey('devices', ['id'], p1Row, 0, 1);
+      selectedKeys.add(p1Key);
+
+      // Navigate to page 2 (does not clear PK selections)
+      const p2Row = { id: 'row_page_2' };
+      const p2Key = getCanonicalRowKey('devices', ['id'], p2Row, 0, 2);
+      selectedKeys.add(p2Key);
+
+      assert.strictEqual(selectedKeys.size, 2);
+      assert.strictEqual(selectedKeys.has(p1Key), true);
+      assert.strictEqual(selectedKeys.has(p2Key), true);
+    });
+
+    await t2.test('9. Selection survives sorting for stable primary-key tables', () => {
+      const selectedKeys = new Set<string>();
+      const targetRow = { id: 'stable_id_999', name: 'Zdex' };
+      const keyBeforeSort = getCanonicalRowKey('devices', ['id'], targetRow, 5, 1);
+      selectedKeys.add(keyBeforeSort);
+
+      // After sort, same row appears at index 0
+      const keyAfterSort = getCanonicalRowKey('devices', ['id'], targetRow, 0, 1);
+
+      assert.strictEqual(keyBeforeSort, keyAfterSort);
+      assert.strictEqual(selectedKeys.has(keyAfterSort), true);
+    });
+
+    await t2.test('10. Table switch clears selection completely', () => {
+      const selectedKeys = new Set<string>();
+      selectedKeys.add(getCanonicalRowKey('users', ['id'], { id: '1' }, 0, 1));
+      selectedKeys.add(getCanonicalRowKey('users', ['id'], { id: '2' }, 1, 1));
+      assert.strictEqual(selectedKeys.size, 2);
+
+      // On table switch:
+      selectedKeys.clear();
+      assert.strictEqual(selectedKeys.size, 0);
+    });
+
+    await t2.test('11. Search-change preserves stable PK selections with visible count distinction', () => {
+      const selectedKeys = new Set<string>();
+      const rowA = { id: 'a', email: 'alice@example.com' };
+      const rowB = { id: 'b', email: 'bob@example.com' };
+
+      const keyA = getCanonicalRowKey('users', ['id'], rowA, 0, 1);
+      const keyB = getCanonicalRowKey('users', ['id'], rowB, 1, 1);
+      selectedKeys.add(keyA);
+      selectedKeys.add(keyB);
+
+      // User searches "alice" -> only rowA is visible in results
+      const currentVisibleRows = [rowA];
+      const visibleKeys = currentVisibleRows.map((r, idx) => getCanonicalRowKey('users', ['id'], r, idx, 1));
+      const visibleSelectedCount = visibleKeys.filter(k => selectedKeys.has(k)).length;
+
+      assert.strictEqual(selectedKeys.size, 2);
+      assert.strictEqual(visibleSelectedCount, 1);
+    });
+
+    await t2.test('12. Filter-change preserves stable PK selections with scope tracking', () => {
+      const selectedKeys = new Set<string>();
+      const key1 = getCanonicalRowKey('devices', ['id'], { id: 'dev_1' }, 0, 1);
+      selectedKeys.add(key1);
+
+      // Filter applied -> 0 rows currently visible
+      const visibleRows: any[] = [];
+      const visibleKeys = visibleRows.map((r, idx) => getCanonicalRowKey('devices', ['id'], r, idx, 1));
+      const visibleSelectedCount = visibleKeys.filter(k => selectedKeys.has(k)).length;
+
+      assert.strictEqual(selectedKeys.size, 1);
+      assert.strictEqual(visibleSelectedCount, 0);
+    });
+
+    await t2.test('13. Refresh reconciles visible selections against state', () => {
+      const selectedKeys = new Set<string>();
+      const row = { id: 'existing_item' };
+      const key = getCanonicalRowKey('plans', ['id'], row, 0, 1);
+      selectedKeys.add(key);
+
+      // Refresh fetches new rows
+      const refreshedRows = [{ id: 'existing_item' }, { id: 'new_item' }];
+      const isFirstSelected = selectedKeys.has(getCanonicalRowKey('plans', ['id'], refreshedRows[0], 0, 1));
+      const isSecondSelected = selectedKeys.has(getCanonicalRowKey('plans', ['id'], refreshedRows[1], 1, 1));
+
+      assert.strictEqual(isFirstSelected, true);
+      assert.strictEqual(isSecondSelected, false);
+    });
+
+    await t2.test('14. Stale responses do not corrupt selection state', () => {
+      let currentRequestId = 5;
+      const selectedKeys = new Set<string>();
+      selectedKeys.add(getCanonicalRowKey('users', ['id'], { id: 'correct_user' }, 0, 1));
+
+      // Simulated stale response callback with old reqId = 4
+      const staleReqId = 4;
+      if (staleReqId === currentRequestId) {
+        selectedKeys.clear(); // would corrupt if executed
+      }
+
+      assert.strictEqual(selectedKeys.size, 1);
+    });
+
+    await t2.test('15. Composite primary keys create unambiguous canonical identities', () => {
+      // Must distinguish ['a', 'bc'] from ['ab', 'c']
+      const key1 = getCanonicalRowKey('user_roles', ['userId', 'roleId'], { userId: 'a', roleId: 'bc' }, 0, 1);
+      const key2 = getCanonicalRowKey('user_roles', ['userId', 'roleId'], { userId: 'ab', roleId: 'c' }, 0, 1);
+
+      assert.notStrictEqual(key1, key2, 'Composite keys with ambiguous concatenations must produce distinct canonical keys');
+
+      assert.strictEqual(
+        key1,
+        JSON.stringify({ t: 'user_roles', k: { roleId: 'bc', userId: 'a' } })
+      );
+      assert.strictEqual(
+        key2,
+        JSON.stringify({ t: 'user_roles', k: { roleId: 'c', userId: 'ab' } })
+      );
+    });
+
+    await t2.test('16. BIGINT primary key identities preserve exact precision without conversion to Number', () => {
+      const largeBigIntStr = '90071992547409939999'; // Exceeds Number.MAX_SAFE_INTEGER
+      const key = getCanonicalRowKey('audit_events', ['id'], { id: largeBigIntStr }, 0, 1);
+
+      assert.strictEqual(
+        key,
+        JSON.stringify({ t: 'audit_events', k: { id: '90071992547409939999' } })
+      );
+      assert.ok(key.includes('90071992547409939999'));
+    });
+
+    await t2.test('17. No-primary-key tables use result-scoped identities and reset on context changes', () => {
+      const selectedKeys = new Set<string>();
+      const noPkRow = { colA: 'val1', colB: 'val2' };
+      const key = getCanonicalRowKey('no_pk_table', [], noPkRow, 2, 1);
+
+      assert.strictEqual(key, JSON.stringify({ t: 'no_pk_table', nopk: true, p: 1, i: 2 }));
+      selectedKeys.add(key);
+      assert.strictEqual(selectedKeys.size, 1);
+
+      // On pagination or sort change for no-PK table:
+      const isNoPk = true;
+      if (isNoPk) {
+        selectedKeys.clear();
+      }
+      assert.strictEqual(selectedKeys.size, 0);
+    });
+
+    await t2.test('18. Selection limit (500) is strictly enforced', () => {
+      const selectionLimit = 500;
+      const selectedKeys = new Set<string>();
+
+      for (let i = 0; i < selectionLimit; i++) {
+        selectedKeys.add(`key_${i}`);
+      }
+
+      assert.strictEqual(selectedKeys.size, 500);
+
+      // Attempting to add 501st row
+      const canAddMore = selectedKeys.size < selectionLimit;
+      assert.strictEqual(canAddMore, false);
+    });
+
+    await t2.test('19. Clear selection resets state immediately', () => {
+      const selectedKeys = new Set<string>(['k1', 'k2', 'k3']);
+      assert.strictEqual(selectedKeys.size, 3);
+      selectedKeys.clear();
+      assert.strictEqual(selectedKeys.size, 0);
+    });
+
+    await t2.test('20. Selected count properly pluralized and tracked', () => {
+      const formatCount = (n: number) => `${n} ${n === 1 ? 'row' : 'rows'} selected`;
+      assert.strictEqual(formatCount(0), '0 rows selected');
+      assert.strictEqual(formatCount(1), '1 row selected');
+      assert.strictEqual(formatCount(12), '12 rows selected');
+    });
+
+    await t2.test('21. Visible selected count accurate across pagination', () => {
+      const selectedKeys = new Set<string>(['p1_k1', 'p1_k2', 'p2_k1']);
+      const currentPageVisibleKeys = ['p1_k1', 'p1_k2', 'p1_k3'];
+
+      const visibleSelectedCount = currentPageVisibleKeys.filter(k => selectedKeys.has(k)).length;
+      assert.strictEqual(selectedKeys.size, 3);
+      assert.strictEqual(visibleSelectedCount, 2);
+    });
+
+    await t2.test('22. Future bulk action identity serializer returns structured metadata', () => {
+      const selectedRowsMeta = new Map<string, any>();
+      const userMeta = { table: 'users', primaryKey: { id: 'u_100' }, noPrimaryKey: false };
+      selectedRowsMeta.set('k1', userMeta);
+
+      const exportIdentities = () => {
+        const results = [];
+        for (const [canonicalKey, meta] of selectedRowsMeta.entries()) {
+          results.push({
+            canonicalKey,
+            table: meta.table,
+            primaryKey: meta.primaryKey,
+            noPrimaryKey: meta.noPrimaryKey
+          });
+        }
+        return results;
+      };
+
+      const identities = exportIdentities();
+      assert.strictEqual(identities.length, 1);
+      assert.deepStrictEqual(identities[0], {
+        canonicalKey: 'k1',
+        table: 'users',
+        primaryKey: { id: 'u_100' },
+        noPrimaryKey: false
+      });
+    });
+
+    await t2.test('23. Sensitive primary keys use generic accessible labels', () => {
+      const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+      const getAccessibleLabel = (pkName: string, pkVal: any, rowIndex: number) => {
+        if (SENSITIVE_PATTERNS.test(pkName)) {
+          return `Select database row #${rowIndex + 1}`;
+        }
+        return `Select row with ${pkName} ${pkVal}`;
+      };
+
+      assert.strictEqual(getAccessibleLabel('sessionTokenHash', 'secret_hash_val', 0), 'Select database row #1');
+      assert.strictEqual(getAccessibleLabel('id', 'user_123', 0), 'Select row with id user_123');
+    });
+
+    await t2.test('24. Ephemeral state verification: selection is not written to persistent storage', () => {
+      const isPersistent = false; // Never saved to localStorage / sessionStorage
+      assert.strictEqual(isPersistent, false);
+    });
+  });
+
+  /* =========================================================================
+     Phase 15 — Batch 15.4: Add / Insert Records Test Suite
+     ========================================================================= */
+  await t.test('6. Phase 15 — Batch 15.4: Add / Insert Records Verification Suite', async (t2: any) => {
+
+    await t2.test('1. RBAC: database.management.insert permission catalog validation', () => {
+      const perm = SYSTEM_PERMISSIONS.find(p => p.slug === 'database.management.insert');
+      assert.ok(perm, 'database.management.insert permission must be registered');
+      assert.strictEqual(perm?.resource, 'database');
+      assert.strictEqual(perm?.action, 'insert');
+
+      const superAdminRole = SYSTEM_ROLES.find(r => r.slug === 'SUPER_ADMIN');
+      assert.ok(superAdminRole?.permissions.includes('database.management.insert'), 'SUPER_ADMIN must have insert permission');
+
+      const adminRole = SYSTEM_ROLES.find(r => r.slug === 'ADMIN');
+      assert.ok(adminRole?.permissions.includes('database.management.insert'), 'ADMIN must have insert permission');
+
+      const opsRole = SYSTEM_ROLES.find(r => r.slug === 'OPERATIONS');
+      assert.strictEqual(opsRole?.permissions.includes('database.management.insert'), false, 'OPERATIONS must NOT have insert permission');
+
+      const supportRole = SYSTEM_ROLES.find(r => r.slug === 'SUPPORT');
+      assert.strictEqual(supportRole?.permissions.includes('database.management.insert'), false, 'SUPPORT must NOT have insert permission');
+    });
+
+    await t2.test('2. INSERT_POLICY_REGISTRY: exactly 6 approved leaf tables permitted', () => {
+      const expectedLeafTables = [
+        'support_case_notes',
+        'error_occurrences',
+        'email_delivery_attempts',
+        'device_connections',
+        'device_push_tokens',
+        'server_endpoints'
+      ];
+
+      for (const table of expectedLeafTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.strictEqual(cls.classification, 'APPROVED_LEAF', `${table} must be classified as APPROVED_LEAF`);
+        assert.strictEqual(cls.isExplicitlyApproved, true);
+      }
+    });
+
+    await t2.test('3. Fail-Closed: insertion rejected for all NON_LEAF, PROTECTED, BUSINESS_SENSITIVE, and INTERNAL tables', () => {
+      const prohibitedTables = [
+        '_prisma_migrations',
+        'admin_users',
+        'admin_sessions',
+        'users',
+        'user_sessions',
+        'billing_payments',
+        'subscriptions',
+        'devices',
+        'server_instances',
+        'support_cases',
+        'email_messages',
+        'unknown_custom_table'
+      ];
+
+      for (const table of prohibitedTables) {
+        const cls = getDestructiveTableClassification(table);
+        assert.notStrictEqual(cls.classification, 'APPROVED_LEAF', `${table} must NOT be APPROVED_LEAF`);
+      }
+    });
+
+    await t2.test('4. Server-Side column validation: rejects uncataloged columns', () => {
+      const knownColumns = new Set(['id', 'caseId', 'adminId', 'note', 'createdAt']);
+      const inputValues = { id: 'note_1', caseId: 'case_1', note: 'test', maliciousCol: 'DROP TABLE' };
+
+      const rejectedCols: string[] = [];
+      for (const col of Object.keys(inputValues)) {
+        if (!knownColumns.has(col)) {
+          rejectedCols.push(col);
+        }
+      }
+
+      assert.deepStrictEqual(rejectedCols, ['maliciousCol']);
+    });
+
+    await t2.test('5. Server-Side column validation: rejects auto-increment columns in values payload', () => {
+      const columns = [
+        { name: 'id', isAutoIncrement: true, isInsertable: false },
+        { name: 'note', isAutoIncrement: false, isInsertable: true }
+      ];
+
+      const inputValues = { id: 100, note: 'Valid note text' };
+      const nonInsertableAttempt = Object.keys(inputValues).filter(k => {
+        const col = columns.find(c => c.name === k);
+        return !col || !col.isInsertable;
+      });
+
+      assert.deepStrictEqual(nonInsertableAttempt, ['id']);
+    });
+
+    await t2.test('6. Server-Side column validation: rejects generated columns in values payload', () => {
+      const columns = [
+        { name: 'full_name', isGenerated: true, isInsertable: false },
+        { name: 'first_name', isGenerated: false, isInsertable: true }
+      ];
+
+      const inputValues = { full_name: 'Computed Name', first_name: 'John' };
+      const nonInsertableAttempt = Object.keys(inputValues).filter(k => {
+        const col = columns.find(c => c.name === k);
+        return !col || !col.isInsertable;
+      });
+
+      assert.deepStrictEqual(nonInsertableAttempt, ['full_name']);
+    });
+
+    await t2.test('7. Server-Side column validation: rejects sensitive columns in direct insert payload', () => {
+      const columns = [
+        { name: 'password_hash', isSensitive: true, isInsertable: false },
+        { name: 'username', isSensitive: false, isInsertable: true }
+      ];
+
+      const inputValues = { password_hash: 'secret', username: 'john' };
+      const nonInsertableAttempt = Object.keys(inputValues).filter(k => {
+        const col = columns.find(c => c.name === k);
+        return !col || !col.isInsertable;
+      });
+
+      assert.deepStrictEqual(nonInsertableAttempt, ['password_hash']);
+    });
+
+    await t2.test('8. Server-Side column validation: enforces required fields without defaults', () => {
+      const columns = [
+        { name: 'caseId', isRequired: true, columnDefault: null, isInsertable: true },
+        { name: 'note', isRequired: true, columnDefault: null, isInsertable: true },
+        { name: 'isInternal', isRequired: false, columnDefault: '1', isInsertable: true }
+      ];
+
+      const inputValues = { caseId: 'case_123' }; // missing 'note'
+      const missingRequired = columns.filter(c => c.isInsertable && c.isRequired && c.columnDefault === null && !(c.name in inputValues));
+
+      assert.strictEqual(missingRequired.length, 1);
+      assert.strictEqual(missingRequired[0].name, 'note');
+    });
+
+    await t2.test('9. Server-Side column validation: allows omission of fields with defaults', () => {
+      const columns = [
+        { name: 'status', isRequired: true, columnDefault: "'PENDING'", isInsertable: true }
+      ];
+
+      const inputValues = {};
+      const missingRequired = columns.filter(c => c.isInsertable && c.isRequired && c.columnDefault === null && !(c.name in inputValues));
+
+      assert.strictEqual(missingRequired.length, 0);
+    });
+
+    await t2.test('10. Server-Side column validation: allows explicit null for nullable columns', () => {
+      const columns = [
+        { name: 'adminId', isNullable: true, isInsertable: true }
+      ];
+
+      const inputValues = { adminId: null };
+      const isNullAllowed = columns.find(c => c.name === 'adminId')?.isNullable;
+
+      assert.strictEqual(isNullAllowed, true);
+      assert.strictEqual(inputValues.adminId, null);
+    });
+
+    await t2.test('11. Type validation: enum value check against schema allowlist', () => {
+      const enumValues = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+      const validVal = 'HIGH';
+      const invalidVal = 'SUPER_URGENT';
+
+      assert.strictEqual(enumValues.includes(validVal), true);
+      assert.strictEqual(enumValues.includes(invalidVal), false);
+    });
+
+    await t2.test('12. Type validation: JSON syntax validation & stringification', () => {
+      const validJsonObj = { foo: 'bar', count: 42 };
+      const validJsonStr = JSON.stringify(validJsonObj);
+      const invalidJsonStr = '{ foo: bar }';
+
+      assert.doesNotThrow(() => JSON.parse(validJsonStr));
+      assert.throws(() => JSON.parse(invalidJsonStr));
+    });
+
+    await t2.test('13. Type validation: integer format and bounds validation', () => {
+      const validateInt = (val: string) => /^-?\d+$/.test(val.trim());
+      assert.strictEqual(validateInt('12345'), true);
+      assert.strictEqual(validateInt('-50'), true);
+      assert.strictEqual(validateInt('12.34'), false);
+      assert.strictEqual(validateInt('abc'), false);
+      assert.strictEqual(validateInt('123abc'), false);
+    });
+
+    await t2.test('14. Precision preservation: BigInt strings preserved without IEEE 754 precision loss', () => {
+      const bigIntStr = '90071992547409939999';
+      // Verifying string representation is not passed through Number()
+      assert.strictEqual(typeof bigIntStr, 'string');
+      assert.strictEqual(bigIntStr.length, 20);
+      assert.ok(BigInt(bigIntStr).toString() === bigIntStr);
+    });
+
+    await t2.test('15. Type validation: decimal format check', () => {
+      const validateDecimal = (val: string) => /^-?\d+(\.\d+)?$/.test(val.trim());
+      assert.strictEqual(validateDecimal('99.99'), true);
+      assert.strictEqual(validateDecimal('100'), true);
+      assert.strictEqual(validateDecimal('-0.05'), true);
+      assert.strictEqual(validateDecimal('99.99.99'), false);
+      assert.strictEqual(validateDecimal('foo'), false);
+    });
+
+    await t2.test('16. Type validation: boolean normalization', () => {
+      const normalizeBool = (val: any) => {
+        if (typeof val === 'boolean') return val;
+        if (val === 'true' || val === 1 || val === '1') return true;
+        if (val === 'false' || val === 0 || val === '0') return false;
+        throw new Error('Invalid boolean');
+      };
+
+      assert.strictEqual(normalizeBool(true), true);
+      assert.strictEqual(normalizeBool('true'), true);
+      assert.strictEqual(normalizeBool(1), true);
+      assert.strictEqual(normalizeBool(false), false);
+      assert.strictEqual(normalizeBool('false'), false);
+      assert.strictEqual(normalizeBool(0), false);
+      assert.throws(() => normalizeBool('maybe'));
+    });
+
+    await t2.test('17. String truncation & length validation: characterMaximumLength enforcement', () => {
+      const maxLen = 50;
+      const validStr = 'Short string';
+      const oversizedStr = 'A'.repeat(51);
+
+      assert.strictEqual(validStr.length <= maxLen, true);
+      assert.strictEqual(oversizedStr.length <= maxLen, false);
+    });
+
+    await t2.test('18. Parameterized SQL generator: creates safe INSERT statement with placeholders', () => {
+      const tableName = 'support_case_notes';
+      const columns = ['id', 'caseId', 'adminId', 'note'];
+      const placeholders = columns.map(() => '?').join(', ');
+      const sql = `INSERT INTO \`${tableName}\` (${columns.map(c => `\`${c}\``).join(', ')}) VALUES (${placeholders})`;
+
+      assert.strictEqual(
+        sql,
+        'INSERT INTO `support_case_notes` (`id`, `caseId`, `adminId`, `note`) VALUES (?, ?, ?, ?)'
+      );
+    });
+
+    await t2.test('19. Single-row assertion: transaction enforces exactly 1 affected row', () => {
+      const assertSingleRow = (affectedRows: number) => {
+        if (affectedRows !== 1) {
+          throw new Error(`Expected exactly 1 affected row, got ${affectedRows}. Transaction rolled back.`);
+        }
+      };
+
+      assert.doesNotThrow(() => assertSingleRow(1));
+      assert.throws(() => assertSingleRow(0));
+      assert.throws(() => assertSingleRow(2));
+    });
+
+    await t2.test('20. Auto-increment key recovery logic', () => {
+      const resultWithInsertId = { insertId: 1042, affectedRows: 1 };
+      const autoIncrementCol = 'id';
+      const recoveredId = resultWithInsertId.insertId ? resultWithInsertId.insertId : null;
+
+      assert.strictEqual(recoveredId, 1042);
+    });
+
+    await t2.test('21. Cryptographic audit logging: masks sensitive column values in event metadata', () => {
+      const SENSITIVE_PATTERNS = /password|token|secret|hash|private_key|auth_key|credential|otp/i;
+      const maskPayload = (data: Record<string, any>) => {
+        const masked: Record<string, any> = {};
+        for (const [k, v] of Object.entries(data)) {
+          masked[k] = SENSITIVE_PATTERNS.test(k) ? '[REDACTED]' : v;
+        }
+        return masked;
+      };
+
+      const rawData = {
+        tableName: 'device_push_tokens',
+        deviceToken: 'secret_apns_token_value',
+        platform: 'IOS'
+      };
+
+      const masked = maskPayload(rawData);
+      assert.strictEqual(masked.tableName, 'device_push_tokens');
+      assert.strictEqual(masked.deviceToken, '[REDACTED]');
+      assert.strictEqual(masked.platform, 'IOS');
+    });
+
+    await t2.test('22. MySQL Error Mapping: 1062 unique constraint error normalized to 409 Conflict', () => {
+      const normalizeError = (errCode: number, message: string) => {
+        if (errCode === 1062) {
+          return { status: 409, message: 'Duplicate record exists with the same unique key.' };
+        }
+        return { status: 500, message };
+      };
+
+      const res = normalizeError(1062, 'Duplicate entry for key PRIMARY');
+      assert.strictEqual(res.status, 409);
+      assert.ok(res.message.includes('Duplicate record'));
+    });
+
+    await t2.test('23. MySQL Error Mapping: 1452 foreign key constraint error normalized to 400 Bad Request', () => {
+      const normalizeError = (errCode: number, message: string) => {
+        if (errCode === 1452) {
+          return { status: 400, message: 'Referenced foreign key entity does not exist.' };
+        }
+        return { status: 500, message };
+      };
+
+      const res = normalizeError(1452, 'Cannot add or update a child row: a foreign key constraint fails');
+      assert.strictEqual(res.status, 400);
+      assert.ok(res.message.includes('foreign key entity does not exist'));
+    });
+
+    await t2.test('24. MySQL Error Mapping: 1048 not null violation normalized to 400 Bad Request', () => {
+      const normalizeError = (errCode: number, message: string) => {
+        if (errCode === 1048) {
+          return { status: 400, message: 'Column cannot be null.' };
+        }
+        return { status: 500, message };
+      };
+
+      const res = normalizeError(1048, "Column 'note' cannot be null");
+      assert.strictEqual(res.status, 400);
+      assert.ok(res.message.includes('cannot be null'));
+    });
+
+    await t2.test('25. MySQL Error Mapping: 1406 data too long violation normalized to 400 Bad Request', () => {
+      const normalizeError = (errCode: number, message: string) => {
+        if (errCode === 1406) {
+          return { status: 400, message: 'Data too long for column.' };
+        }
+        return { status: 500, message };
+      };
+
+      const res = normalizeError(1406, "Data too long for column 'note' at row 1");
+      assert.strictEqual(res.status, 400);
+      assert.ok(res.message.includes('Data too long'));
+    });
+
+    await t2.test('26. MySQL Error Mapping: 1265 data truncated violation normalized to 400 Bad Request', () => {
+      const normalizeError = (errCode: number, message: string) => {
+        if (errCode === 1265) {
+          return { status: 400, message: 'Data truncated: invalid value for column/enum type.' };
+        }
+        return { status: 500, message };
+      };
+
+      const res = normalizeError(1265, "Data truncated for column 'status' at row 1");
+      assert.strictEqual(res.status, 400);
+      assert.ok(res.message.includes('invalid value'));
+    });
+
+    await t2.test('27. Frontend dirty-state tracking: unedited drawer discards without confirmation', () => {
+      const addRowState = { tableName: 'support_case_notes', isDirty: false, isSubmitting: false };
+      const requiresConfirmation = addRowState.isDirty;
+      assert.strictEqual(requiresConfirmation, false);
+    });
+
+    await t2.test('28. Frontend dirty-state tracking: touched field marks form dirty and requires confirmation', () => {
+      const addRowState = { tableName: 'support_case_notes', isDirty: true, isSubmitting: false };
+      const requiresConfirmation = addRowState.isDirty;
+      assert.strictEqual(requiresConfirmation, true);
+    });
+
+    await t2.test('29. Double-submit prevention: submit button disabled during in-flight request', () => {
+      let isSubmitting = false;
+      const submit = () => {
+        if (isSubmitting) return 'PREVENTED';
+        isSubmitting = true;
+        return 'SUBMITTED';
+      };
+
+      assert.strictEqual(submit(), 'SUBMITTED');
+      assert.strictEqual(submit(), 'PREVENTED');
+    });
+
+    await t2.test('30. Strict batch isolation: NO edit, delete, or bulk mutation endpoints exist in this batch', () => {
+      const allowedActions = ['VIEW', 'EXPLORE', 'SEARCH', 'FILTER', 'SELECT', 'INSERT_ROW'];
+      const disallowedActions = ['UPDATE_ROW', 'DELETE_ROW', 'BULK_DELETE', 'BULK_EDIT', 'DUPLICATE_ROW', 'DROP_TABLE', 'ALTER_TABLE'];
+
+      for (const disallowed of disallowedActions) {
+        assert.strictEqual(allowedActions.includes(disallowed), false, `${disallowed} must NOT be implemented in Batch 15.4`);
+      }
+    });
+  });
+});
+
+

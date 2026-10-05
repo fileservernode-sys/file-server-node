@@ -323,8 +323,54 @@
     executeDestructiveQuery(sql, confirmed = true) {
       return this.post('/admin/sql/destructive', { sql, confirmed });
     }
+
+    // =========================================================================
+    // Database Management API Methods (Phase 15 Batch 15.1)
+    // =========================================================================
+    getDatabaseOverview() {
+      return this.get('/admin/database/overview');
+    }
+
+    getDatabaseTables() {
+      return this.get('/admin/database/tables');
+    }
+
+    getTableDetails(tableName) {
+      return this.get(`/admin/database/tables/${encodeURIComponent(tableName)}`);
+    }
+
+    getTablePreview(tableName, params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/database/tables/${encodeURIComponent(tableName)}/preview${qs ? `?${qs}` : ''}`);
+    }
+
+    getTableRows(tableName, params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          if (key === 'filters' && Array.isArray(value)) {
+            searchParams.append('filters', JSON.stringify(value));
+          } else {
+            searchParams.append(key, String(value));
+          }
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/database/tables/${encodeURIComponent(tableName)}/rows${qs ? `?${qs}` : ''}`);
+    }
+
+    insertTableRow(tableName, values = {}) {
+      return this.post(`/admin/database/tables/${encodeURIComponent(tableName)}/rows`, { values });
+    }
   }
 
   window.AdminApi = new AdminApiClient();
   window.AdminStorageKeys = STORAGE_KEYS;
+
 })(window);
