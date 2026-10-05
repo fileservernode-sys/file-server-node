@@ -723,7 +723,7 @@ export class SqlRunnerService {
       actor: { type: 'ADMIN', id: admin.id, email: admin.email },
       resource: { type: 'DATABASE', id: 'application_db' },
       action: 'SQL_DESTRUCTIVE_EXECUTE_ATTEMPT',
-      result: 'PENDING',
+      result: 'ALLOWED',
       requestId,
       ipAddress,
       userAgent,

@@ -4,7 +4,7 @@ import { SqlSafetyGuard } from '../src/utils/sql_safety_guard.js';
 import { SqlRunnerService, getActiveQueryCount, resetActiveQueryCount, MAX_CONCURRENT_QUERIES } from '../src/services/admin/sql_runner_service.js';
 import { buildApp } from '../src/app.js';
 import { generateCsrfToken } from '../src/utils/csrf.js';
-import { ValidationError, AppError } from '../src/errors/app-error.js';
+import { ValidationError, AppError, UnauthorizedError } from '../src/errors/app-error.js';
 
 test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Foundation', async (t) => {
 
@@ -3111,6 +3111,9 @@ test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Fo
         assert.ok(!err.message.includes('D:\\Backend'), 'Disk path must not leak');
         return true;
       });
+      _resetControlledDestructivePrismaClientForTest();
+    });
+  });
 
   await t.test('13. Phase 15.7-R2-R1 — Destructive Target Business-Sensitivity & Schema Inventory Reconciliation', async (t2: any) => {
     // 13.1 Exact Mechanical Model Inventory Assertion (49 application models + 1 internal table = 50 physical tables)
@@ -3173,7 +3176,7 @@ test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Fo
 
       for (const name of testUniverse) {
         const cls = SqlSafetyGuard.getDestructiveTableClassification(name);
-        counts[cls.classification]++;
+        counts[cls.classification as keyof typeof counts]++;
       }
 
       assert.strictEqual(counts.INTERNAL, 1);
@@ -3824,7 +3827,7 @@ test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Fo
     await t2.test('R2R3.05 no protected tables have SELECT privileges granted to destructive user', () => {
       const protectedList = Array.from(SqlSafetyGuard.PROTECTED_TABLE_NAMES);
       for (const pt of protectedList) {
-        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes(pt.toLowerCase()), false);
+        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes((pt as string).toLowerCase()), false);
       }
     });
 
@@ -3832,7 +3835,7 @@ test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Fo
     await t2.test('R2R3.06 no business-sensitive tables have SELECT privileges granted to destructive user', () => {
       const businessSensitiveList = Array.from(SqlSafetyGuard.BUSINESS_SENSITIVE_TABLE_NAMES);
       for (const bs of businessSensitiveList) {
-        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes(bs.toLowerCase()), false);
+        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes((bs as string).toLowerCase()), false);
       }
     });
 
@@ -3840,7 +3843,7 @@ test('Phase 15 — Batch 15.1-R1: SQL Query Runner — Hardened Read-Only SQL Fo
     await t2.test('R2R3.07 no non-leaf parent tables have SELECT privileges granted to destructive user', () => {
       const nonLeafList = Array.from(SqlSafetyGuard.NON_LEAF_TABLE_NAMES);
       for (const nl of nonLeafList) {
-        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes(nl.toLowerCase()), false);
+        assert.strictEqual(Object.keys(DESTRUCTIVE_WHERE_SELECT_COLUMNS).includes((nl as string).toLowerCase()), false);
       }
     });
 

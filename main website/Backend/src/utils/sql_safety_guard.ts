@@ -389,6 +389,7 @@ export type TableClassificationType =
 
 export interface TableClassificationResult {
   normalizedTable: string;
+  canonicalTable: string;
   classification: TableClassificationType;
   isProtected: boolean;
   isBusinessSensitive: boolean;
@@ -411,10 +412,12 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
     normalized = parts[parts.length - 1];
   }
   normalized = normalized.replace(/[`"']/g, '').trim().toUpperCase();
+  const canonical = normalized.toLowerCase();
 
   if (!normalized) {
     return {
       normalizedTable: '',
+      canonicalTable: '',
       classification: 'UNKNOWN',
       isProtected: false,
       isBusinessSensitive: false,
@@ -430,6 +433,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   if (INTERNAL_TABLE_NAMES.has(normalized)) {
     return {
       normalizedTable: normalized,
+      canonicalTable: canonical,
       classification: 'INTERNAL',
       isProtected: true,
       isBusinessSensitive: false,
@@ -445,6 +449,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   if (PROTECTED_TABLE_NAMES.has(normalized)) {
     return {
       normalizedTable: normalized,
+      canonicalTable: canonical,
       classification: 'PROTECTED',
       isProtected: true,
       isBusinessSensitive: false,
@@ -460,6 +465,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   if (BUSINESS_SENSITIVE_TABLE_NAMES.has(normalized)) {
     return {
       normalizedTable: normalized,
+      canonicalTable: canonical,
       classification: 'BUSINESS_SENSITIVE',
       isProtected: false,
       isBusinessSensitive: true,
@@ -475,6 +481,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   if (NON_LEAF_TABLE_NAMES.has(normalized)) {
     return {
       normalizedTable: normalized,
+      canonicalTable: canonical,
       classification: 'NON_LEAF',
       isProtected: false,
       isBusinessSensitive: false,
@@ -490,6 +497,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   if (APPROVED_LEAF_TABLE_NAMES.has(normalized)) {
     return {
       normalizedTable: normalized,
+      canonicalTable: canonical,
       classification: 'APPROVED_LEAF',
       isProtected: false,
       isBusinessSensitive: false,
@@ -502,6 +510,7 @@ export function getDestructiveTableClassification(rawTableName: string): TableCl
   // Fallback: UNKNOWN (Fail Closed)
   return {
     normalizedTable: normalized,
+    canonicalTable: canonical,
     classification: 'UNKNOWN',
     isProtected: false,
     isBusinessSensitive: false,
@@ -876,6 +885,16 @@ function stripComments(sql: string): string {
 }
 
 export class SqlSafetyGuard {
+  public static readonly INTERNAL_TABLE_NAMES = INTERNAL_TABLE_NAMES;
+  public static readonly PROTECTED_TABLE_NAMES = PROTECTED_TABLE_NAMES;
+  public static readonly BUSINESS_SENSITIVE_TABLE_NAMES = BUSINESS_SENSITIVE_TABLE_NAMES;
+  public static readonly NON_LEAF_TABLE_NAMES = NON_LEAF_TABLE_NAMES;
+  public static readonly APPROVED_LEAF_TABLE_NAMES = APPROVED_LEAF_TABLE_NAMES;
+  public static readonly UNSAFE_CASCADE_TABLE_NAMES = UNSAFE_CASCADE_TABLE_NAMES;
+  public static readonly DESTRUCTIVE_WHERE_SELECT_COLUMNS = DESTRUCTIVE_WHERE_SELECT_COLUMNS;
+  public static readonly CANONICAL_DESTRUCTIVE_SELECT_GRANTS = CANONICAL_DESTRUCTIVE_SELECT_GRANTS;
+  public static getDestructiveTableClassification = getDestructiveTableClassification;
+
   /**
    * Validates a SQL query string against ZdexCloud Read-Only Policy.
    * Fail-Closed: If anything is ambiguous or dangerous, rejects immediately.

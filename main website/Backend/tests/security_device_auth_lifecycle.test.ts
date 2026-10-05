@@ -70,7 +70,7 @@ describe('ZdexCloud — Persistent Server Authentication Lifecycle & Device Secu
       if (userId) {
         await prisma.auditEvent.deleteMany({ where: { userId } });
         await prisma.deviceAuthCredential.deleteMany({ where: { userId } });
-        await prisma.outboundConnection.deleteMany({ where: { deviceId } });
+        await prisma.deviceConnection.deleteMany({ where: { deviceId } });
         await prisma.serverInstance.deleteMany({ where: { deviceId } });
         await prisma.device.deleteMany({ where: { userId } });
         await prisma.userSession.deleteMany({ where: { userId } });
