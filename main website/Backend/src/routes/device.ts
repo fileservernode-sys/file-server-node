@@ -404,7 +404,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
-    const newAccessToken = generateSessionToken();
+    const newAccessToken = `dst_${deviceId}_${generateSessionToken()}`;
     const tokenHash = hashSessionToken(newAccessToken);
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
@@ -436,12 +436,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return reply.status(200).send(createSuccessResponse({
+      accessToken: newAccessToken,
+      token: newAccessToken,
       session: {
         accessToken: newAccessToken,
         refreshToken: newAccessToken,
         expiresAt: expiresAt.toISOString()
       },
-      token: newAccessToken
+      expiresAt: expiresAt.toISOString()
     }));
   });
 
@@ -500,7 +502,6 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
     const params = heartbeatSchema.safeParse(request.params);
 
     if (!params.success) {
@@ -508,6 +509,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const deviceId = params.data.deviceId;
+    const user = await getAuthUser(request, { allowDeviceRuntime: true, requiredDeviceId: deviceId });
     const device = await prisma.device.findUnique({ where: { id: deviceId } });
 
     if (!device) {

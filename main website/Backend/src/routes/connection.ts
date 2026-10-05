@@ -63,7 +63,6 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = request.user || await getAuthUser(request);
     const body = registerConnectionSchema.safeParse(request.body);
 
     if (!body.success) {
@@ -71,6 +70,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const { deviceId, gatewayNodeId, failedGatewayNodeId } = body.data;
+    const user = await getAuthUser(request, { allowDeviceRuntime: true, requiredDeviceId: deviceId });
 
     ConnectionObservability.emit({
       event: 'registration_started',
@@ -294,7 +294,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
+    const user = await getAuthUser(request, { allowDeviceRuntime: true });
     const params = connectionParamSchema.safeParse(request.params);
 
     if (!params.success) {
@@ -313,6 +313,10 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
     if (connection.device.userId !== user.id) {
       throw new ForbiddenError('You do not have permission to manage this remote connection');
+    }
+
+    if (request.deviceScope && request.deviceScope.deviceId !== connection.deviceId) {
+      throw new ForbiddenError('Device runtime token is not authorized for this remote connection');
     }
 
     const body = updateHeartbeatSchema.safeParse(request.body);
@@ -346,7 +350,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
+    const user = await getAuthUser(request, { allowDeviceRuntime: true });
     const params = connectionParamSchema.safeParse(request.params);
 
     if (!params.success) {
@@ -365,6 +369,10 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
     if (connection.device.userId !== user.id) {
       throw new ForbiddenError('You do not have permission to manage this remote connection');
+    }
+
+    if (request.deviceScope && request.deviceScope.deviceId !== connection.deviceId) {
+      throw new ForbiddenError('Device runtime token is not authorized for this remote connection');
     }
 
     const now = new Date();
@@ -403,7 +411,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
+    const user = await getAuthUser(request, { allowDeviceRuntime: true });
     const params = connectionParamSchema.safeParse(request.params);
 
     if (!params.success) {
@@ -422,6 +430,10 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
     if (connection.device.userId !== user.id) {
       throw new ForbiddenError('You do not have permission to view this remote connection');
+    }
+
+    if (request.deviceScope && request.deviceScope.deviceId !== connection.deviceId) {
+      throw new ForbiddenError('Device runtime token is not authorized for this remote connection');
     }
 
     const serverInst = await prisma.serverInstance.findFirst({
@@ -461,7 +473,6 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      const user = await getAuthUser(request);
       const parsed = reportTelemetryErrorSchema.safeParse(request.body);
 
       if (!parsed.success) {
@@ -469,6 +480,11 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const data = parsed.data;
+      const user = await getAuthUser(request, { allowDeviceRuntime: true });
+
+      if (request.deviceScope && data.deviceId && request.deviceScope.deviceId !== data.deviceId) {
+        throw new ForbiddenError('Device runtime token cannot submit telemetry for a different device');
+      }
 
       // Fail-safe ingestion
       try {

@@ -237,15 +237,15 @@
       icon: 'database'
     },
     {
-      id: 'sql-query-runner',
+      id: 'sql-runner',
       name: 'SQL Query Runner',
       category: 'System & Data',
-      route: null,
-      permission: 'sql.execute',
-      status: 'FUTURE',
+      route: '#sql-runner',
+      permission: 'sql.query.read',
+      status: 'IMPLEMENTED',
       phase: 'Phase 15',
-      description: 'Read-only administrative SQL query execution with immutable audit logging.',
-      apiNamespace: 'Scheduled for Phase 15',
+      description: 'Read-only administrative SQL query execution with sensitive data masking and immutable audit logging.',
+      apiNamespace: '/api/v1/admin/sql/*',
       icon: 'database'
     },
     {
@@ -388,6 +388,17 @@
           permission: 'audit.read'
         }
       ]
+    },
+    {
+      group: 'Developer Tools',
+      items: [
+        {
+          id: 'sql-runner',
+          label: 'SQL Query Runner',
+          icon: 'database',
+          permission: 'sql.query.read'
+        }
+      ]
     }
   ];
 
@@ -482,6 +493,29 @@
         isLoading: false,
         error: null
       };
+      this.sqlResultState = {
+        rows: [],
+        columns: [],
+        totalCount: 0,
+        filteredRows: [],
+        filterText: '',
+        executionTimeMs: 0,
+        statementType: '',
+        truncated: false,
+        hasExecuted: false
+      };
+      this.sqlHistoryState = {
+        entries: [],
+        filterText: '',
+        statusFilter: 'ALL',
+        expandedIds: new Set()
+      };
+      this.sqlSavedQueriesState = {
+        queries: [],
+        filterText: '',
+        expandedIds: new Set()
+      };
+      this.sqlMode = 'READ_ONLY'; // 'READ_ONLY' | 'CONTROLLED_WRITE'
     }
 
     async init() {
@@ -594,10 +628,38 @@
         btn.addEventListener('click', async (e) => {
           e.preventDefault();
           btn.disabled = true;
+          // Invariant: Immediately wipe in-memory SQL history & saved queries upon logout
+          this.sqlHistoryState.entries = [];
+          this.sqlHistoryState.expandedIds.clear();
+          this.sqlSavedQueriesState.queries = [];
+          this.sqlSavedQueriesState.expandedIds.clear();
           this.toast('Signing out of ZdexCloud Operations...', 'info');
           await window.AdminAuth.logout();
         });
       });
+
+      // Synchronize with AdminAuth changes (logout across tabs, account switching, session refresh)
+      if (window.AdminAuth && window.AdminAuth.subscribe) {
+        window.AdminAuth.subscribe(({ user }) => {
+          if (!user) {
+            // Unauthenticated state / logout / session expiration: wipe in-memory history & saved queries
+            this.sqlHistoryState.entries = [];
+            this.sqlHistoryState.expandedIds.clear();
+            this.sqlSavedQueriesState.queries = [];
+            this.sqlSavedQueriesState.expandedIds.clear();
+          } else {
+            const currentAdminId = user.id || user.userId || user.email;
+            if (currentAdminId) {
+              this._loadSqlHistory();
+              this._loadSqlSavedQueries();
+              if (this.currentSection === 'sql-runner') {
+                this._renderSqlSavedQueriesList();
+                this._renderSqlHistoryList();
+              }
+            }
+          }
+        });
+      }
 
       const menuToggle = document.getElementById('adminMenuToggle');
       const sidebar = document.getElementById('adminSidebar');
@@ -631,6 +693,11 @@
 
         if (this.idleSecondsRemaining <= 0) {
           clearInterval(this.idleTimerInterval);
+          // Invariant: Immediately purge in-memory history & saved queries on session expiry
+          this.sqlHistoryState.entries = [];
+          this.sqlHistoryState.expandedIds.clear();
+          this.sqlSavedQueriesState.queries = [];
+          this.sqlSavedQueriesState.expandedIds.clear();
           this.toast('Admin session expired due to inactivity.', 'danger');
           setTimeout(() => {
             window.AdminAuth.logout();
@@ -666,6 +733,7 @@
       if (rawHash === 'settlements' || rawHash === 'billing-settlements') hash = 'settlements';
       if (rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') hash = 'observability-center';
       if (rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') hash = 'email-operations';
+      if (rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') hash = 'sql-runner';
       this.currentSection = hash;
 
       const navItems = document.querySelectorAll('.admin-nav-item[data-id]');
@@ -683,7 +751,8 @@
           ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation') ||
           ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements') ||
           ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center') ||
-          ((rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') && itemId === 'email-operations')
+          ((rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') && itemId === 'email-operations') ||
+          ((rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') && itemId === 'sql-runner')
         ) {
           el.classList.add('active');
         } else {
@@ -794,6 +863,12 @@
         case 'email-analytics':
         case 'email-tracking':
           this._renderEmailOperationsView(container);
+          break;
+        case 'sql-runner':
+        case 'sql':
+        case 'sql-query':
+        case 'sql-query-runner':
+          this._renderSqlRunnerView(container);
           break;
         default:
           this._renderDashboardView(container);
@@ -6489,18 +6564,32 @@
       drawer.id = 'adminDetailDrawer';
       drawer.className = 'admin-drawer-container';
 
-      drawer.innerHTML = `
-        <div class="admin-drawer-header">
-          <h2 style="font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin:0;">${this._escape(title)}</h2>
-          <button class="admin-btn-icon" onclick="AdminShell._closeDrawer()" aria-label="Close drawer">
-            ${ICONS.x}
-          </button>
-        </div>
-        <div class="admin-drawer-body">
-          ${htmlContent}
-        </div>
-      `;
+      const header = document.createElement('div');
+      header.className = 'admin-drawer-header';
 
+      const titleEl = document.createElement('h2');
+      titleEl.style.cssText = 'font-size:1.125rem;font-weight:700;color:var(--admin-text-primary);margin:0;';
+      titleEl.textContent = title;
+      header.appendChild(titleEl);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'admin-btn-icon';
+      closeBtn.setAttribute('aria-label', 'Close drawer');
+      closeBtn.innerHTML = ICONS.x || '✕';
+      closeBtn.addEventListener('click', () => this._closeDrawer());
+      header.appendChild(closeBtn);
+
+      const body = document.createElement('div');
+      body.className = 'admin-drawer-body';
+
+      if (htmlContent instanceof Node) {
+        body.appendChild(htmlContent);
+      } else {
+        body.innerHTML = String(htmlContent);
+      }
+
+      drawer.appendChild(header);
+      drawer.appendChild(body);
       document.body.appendChild(drawer);
 
       if (backdrop) {
@@ -8562,6 +8651,2447 @@
         this._showDrawer(`Email Investigation: ${email.id.substring(0, 10)}...`, html);
       } catch (err) {
         this._showDrawer('Email Investigation Error', `<div style="padding:2rem;color:var(--admin-danger);text-align:center;">${this._escape(err.message)}</div>`);
+      }
+    }
+
+    /* =========================================================================
+       15. SQL QUERY RUNNER VIEW (Phase 15.2 - SQL Editor, 15.6 - Write Mode & 15.7 - Destructive Protection)
+       ========================================================================= */
+    async _renderSqlRunnerView(container) {
+      const isDestructiveMode = this.sqlMode === 'DESTRUCTIVE';
+      const isWriteMode = this.sqlMode === 'CONTROLLED_WRITE';
+      const isReadOnly = !isWriteMode && !isDestructiveMode;
+
+      const readOnlyTemplates = [
+        { label: 'Show Tables', sql: 'SHOW TABLES;' },
+        { label: 'Describe Users', sql: 'SHOW COLUMNS FROM users;' },
+        { label: 'Users Schema', sql: 'SHOW CREATE TABLE users;' },
+        { label: 'Users Indexes', sql: 'SHOW INDEX FROM users;' },
+        { label: 'Sample Users', sql: 'SELECT id, email, status, createdAt FROM users ORDER BY createdAt DESC LIMIT 10;' },
+        { label: 'Active Devices', sql: 'SELECT id, name, status, platform, lastSeenAt FROM devices ORDER BY lastSeenAt DESC LIMIT 10;' },
+        { label: 'Recent Audits', sql: 'SELECT id, action, status, createdAt FROM audit_events ORDER BY createdAt DESC LIMIT 10;' },
+        { label: 'Explain Query', sql: "EXPLAIN SELECT id, email FROM users WHERE status = 'ACTIVE';" }
+      ];
+
+      const writeTemplates = [
+        { label: 'Update User Status', sql: "UPDATE users SET status = 'ACTIVE' WHERE email = 'user@example.com' AND status = 'PENDING_VERIFICATION';" },
+        { label: 'Insert Support Note', sql: "INSERT INTO support_case_notes (id, supportCaseId, authorId, note, createdAt) VALUES (UUID(), 'case_123', 'admin_123', 'Manual resolution note.', NOW());" },
+        { label: 'Update Device Platform', sql: "UPDATE devices SET platform = 'ANDROID' WHERE id = 'device_123' AND userId = 'user_123';" }
+      ];
+
+      const destructiveTemplates = [
+        { label: 'Delete Support Notes', sql: "DELETE FROM support_case_notes WHERE note LIKE '%[TEST]%' AND createdAt < '2025-01-01';" },
+        { label: 'Delete Stale Error Occurrences', sql: "DELETE FROM error_occurrences WHERE createdAt < '2025-01-01';" },
+        { label: 'Delete Stale Delivery Attempts', sql: "DELETE FROM email_delivery_attempts WHERE status = 'FAILED' AND createdAt < '2025-01-01';" },
+        { label: 'Delete Disconnected Sessions', sql: "DELETE FROM device_connections WHERE status = 'DISCONNECTED' AND endedAt < '2025-01-01';" }
+      ];
+
+      const templates = isDestructiveMode ? destructiveTemplates : (isWriteMode ? writeTemplates : readOnlyTemplates);
+
+      container.innerHTML = `
+        <div class="admin-sql-container">
+          <div class="admin-view-header">
+            <div class="admin-view-title-wrap">
+              <h1>SQL Console</h1>
+              <p>Super-Admin SQL Console with strict read/write/destructive safety guards, transactional row bounding &amp; immutable audit logging.</p>
+            </div>
+            <div class="admin-header-actions" style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <!-- Mode Selector -->
+              <div class="admin-sql-mode-selector">
+                <button id="adminSqlModeReadOnlyBtn" type="button" class="admin-sql-mode-btn ${isReadOnly ? 'active' : ''}" onclick="AdminShell._setSqlMode('READ_ONLY')">
+                  ${ICONS.shield || ''} Read-Only
+                </button>
+                <button id="adminSqlModeWriteBtn" type="button" class="admin-sql-mode-btn ${isWriteMode ? 'active warning' : ''}" onclick="AdminShell._promptControlledWriteMode()">
+                  ${ICONS['alert-triangle'] || '⚠️'} Controlled Write
+                </button>
+                <button id="adminSqlModeDestructiveBtn" type="button" class="admin-sql-mode-btn ${isDestructiveMode ? 'active danger' : ''}" style="${isDestructiveMode ? 'background:#ef4444;color:#fff;border-color:#dc2626;' : ''}" onclick="AdminShell._promptDestructiveMode()">
+                  ${ICONS['trash-2'] || '🗑️'} Destructive
+                </button>
+              </div>
+
+              <span id="adminSqlStatusBadge" class="admin-sql-status-pill idle">
+                <span class="admin-status-dot"></span> IDLE
+              </span>
+              <span class="admin-badge ${isDestructiveMode ? 'admin-badge-danger' : (isWriteMode ? 'admin-badge-warning' : 'admin-badge-success')}" style="font-family:var(--font-mono);font-size:0.75rem;padding:0.35rem 0.6rem;">
+                <span class="admin-status-dot ${isDestructiveMode ? 'red' : (isWriteMode ? 'amber' : 'green')}"></span> ${isDestructiveMode ? 'DESTRUCTIVE MODE' : (isWriteMode ? 'CONTROLLED WRITE MODE' : 'READ-ONLY ENFORCED')}
+              </span>
+            </div>
+          </div>
+
+          <!-- Policy & Safety Banner -->
+          <div id="adminSqlPolicyBanner" class="${isDestructiveMode ? 'admin-banner-danger' : (isWriteMode ? 'admin-banner-warning' : 'admin-banner-info')}" style="padding:0.75rem 1.25rem;border-radius:var(--radius-sm);background:${isDestructiveMode ? 'rgba(239,68,68,0.08)' : (isWriteMode ? 'rgba(245,158,11,0.08)' : 'rgba(37,99,235,0.06)')};border:1px solid ${isDestructiveMode ? 'rgba(239,68,68,0.3)' : (isWriteMode ? 'rgba(245,158,11,0.3)' : 'rgba(37,99,235,0.2)')};font-size:0.8125rem;color:var(--admin-text-primary);display:flex;align-items:center;gap:0.75rem;">
+            <span style="color:${isDestructiveMode ? '#dc2626' : (isWriteMode ? '#d97706' : 'var(--admin-primary)')};display:flex;align-items:center;">
+              ${isDestructiveMode ? (ICONS['trash-2'] || '🗑️') : (isWriteMode ? (ICONS['alert-triangle'] || '⚠️') : (ICONS.shield || ''))}
+            </span>
+            <div>
+              ${isDestructiveMode
+                ? '<strong>Destructive Mode Active:</strong> Permitted statements: <code>DELETE FROM table WHERE ...</code> (single-statement with mandatory non-trivial <code>WHERE</code> strictly on approved operational leaf tables with zero foreign-key dependents). Direct DELETE affected-row ceiling (max 50 rows) with automatic rollback. TRUNCATE, DROP, ALTER, non-leaf, business-sensitive (financial/billing), and protected tables are strictly prohibited.'
+                : (isWriteMode
+                  ? '<strong>Controlled Write Mode Active:</strong> Permitted statements: <code>INSERT</code>, <code>UPDATE</code> (with mandatory non-trivial <code>WHERE</code>). Max 50 rows modified per transaction with automatic rollback. Protected system tables and sensitive columns are guarded.'
+                  : '<strong>Security Policy:</strong> Permitted statements: <code>SELECT</code>, <code>WITH ... SELECT</code>, <code>SHOW</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code>. Mutations (INSERT/UPDATE/DELETE/DROP/ALTER/CREATE), multi-statements, and OUTFILE exports are strictly blocked. Max 500 rows returned. 5,000ms query timeout.'
+                )
+              }
+            </div>
+          </div>
+
+          <!-- Safe Template Chips Bar -->
+          <div style="display:flex;flex-direction:column;gap:0.375rem;">
+            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--admin-text-muted);">
+              ${isDestructiveMode ? 'Destructive Delete Templates' : (isWriteMode ? 'Controlled Write Templates' : 'Quick Query Templates')}
+            </div>
+            <div class="admin-sql-templates-bar">
+              ${templates.map(t => `
+                <button type="button" class="admin-sql-template-chip" onclick="AdminShell._applySqlTemplate('${this._escape(t.sql.replace(/'/g, "\\'"))}')">
+                  ${ICONS.code || ''} ${this._escape(t.label)}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Professional SQL Editor Component -->
+          <div class="admin-sql-editor-wrapper">
+            <div class="admin-sql-editor-header">
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <strong>SQL Query Editor</strong>
+                <span style="font-size:0.75rem;color:var(--admin-text-muted);">(MySQL 8.0 Dialect &bull; ${isDestructiveMode ? 'Destructive Mode' : (isWriteMode ? 'Write Mode' : 'Read-Only Mode')})</span>
+              </div>
+              <div style="font-size:0.75rem;color:var(--admin-text-muted);">
+                Run: <kbd style="background:var(--admin-bg-surface);border:1px solid var(--admin-border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);">Ctrl + Enter</kbd> &bull; Indent: <kbd style="background:var(--admin-bg-surface);border:1px solid var(--admin-border);padding:2px 6px;border-radius:4px;font-family:var(--font-mono);">Tab</kbd>
+              </div>
+            </div>
+
+            <div class="admin-sql-editor-body">
+              <div id="adminSqlGutter" class="admin-sql-gutter" aria-hidden="true">1</div>
+              <textarea id="adminSqlQueryInput" 
+                class="admin-sql-textarea"
+                rows="7" 
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                placeholder="${isDestructiveMode ? "DELETE FROM support_case_notes WHERE note LIKE '%[TEST]%' AND createdAt < '2025-01-01';" : (isWriteMode ? "UPDATE users SET status = 'ACTIVE' WHERE email = 'user@example.com';" : 'SELECT id, email, status, createdAt FROM users ORDER BY createdAt DESC LIMIT 10;')}" 
+              >${isDestructiveMode ? "DELETE FROM support_case_notes WHERE note LIKE '%[TEST]%' AND createdAt < '2025-01-01';" : (isWriteMode ? "UPDATE users SET status = 'ACTIVE' WHERE email = 'user@example.com' AND status = 'PENDING_VERIFICATION';" : 'SELECT id, email, status, createdAt FROM users ORDER BY createdAt DESC LIMIT 10;')}</textarea>
+            </div>
+
+            <div class="admin-sql-meta-bar">
+              <div id="adminSqlCursorPos">Line 1, Col 1</div>
+              <div id="adminSqlMetaCount">1 line &bull; 78 characters</div>
+            </div>
+          </div>
+
+          <!-- Editor Actions Toolbar -->
+          <div class="admin-sql-toolbar">
+            <div class="admin-sql-toolbar-left">
+              ${isDestructiveMode ? `
+                <button id="adminSqlRunBtn" class="admin-btn admin-btn-danger" type="button" onclick="AdminShell._openExecuteDestructiveModal()">
+                  ${ICONS['trash-2'] || ICONS['alert-triangle']} <span>Execute Delete</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>
+                </button>
+              ` : (isWriteMode ? `
+                <button id="adminSqlRunBtn" class="admin-btn admin-btn-warning" type="button" onclick="AdminShell._openExecuteWriteModal()">
+                  ${ICONS['alert-triangle'] || ICONS['play']} <span>Execute Write</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>
+                </button>
+              ` : `
+                <button id="adminSqlRunBtn" class="admin-btn admin-btn-primary" type="button" onclick="AdminShell._executeSqlQuery()">
+                  ${ICONS['play']} <span>Execute Query</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>
+                </button>
+              `)}
+              <button id="adminSqlSaveBtn" class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._openSaveQueryModal()" title="Save current SQL query definition for future reuse">
+                ${ICONS['file-text'] || ''} Save Query
+              </button>
+              <button id="adminSqlFormatBtn" class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._formatSqlQuery()" title="Format SQL keywords and indentation">
+                ${ICONS.code || ''} Format SQL
+              </button>
+              <button id="adminSqlCopyBtn" class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._copySqlQuery()" title="Copy SQL statement to clipboard">
+                ${ICONS['copy']} Copy SQL
+              </button>
+              <button id="adminSqlClearBtn" class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._clearSqlQuery()" title="Clear SQL editor">
+                ${ICONS['trash-2'] || ''} Clear
+              </button>
+            </div>
+            <div class="admin-sql-toolbar-right">
+              ${isDestructiveMode ? `
+                <span class="admin-badge admin-badge-danger" style="font-size:0.75rem;font-family:var(--font-mono);">MAX 50 DELETIONS</span>
+                <span class="admin-badge admin-badge-danger" style="font-size:0.75rem;font-family:var(--font-mono);">AUTO ROLLBACK</span>
+                <span class="admin-badge admin-badge-danger" style="font-size:0.75rem;font-family:var(--font-mono);">WHERE ENFORCED</span>
+              ` : (isWriteMode ? `
+                <span class="admin-badge admin-badge-warning" style="font-size:0.75rem;font-family:var(--font-mono);">MAX 50 ROWS</span>
+                <span class="admin-badge admin-badge-warning" style="font-size:0.75rem;font-family:var(--font-mono);">AUTO ROLLBACK</span>
+                <span class="admin-badge admin-badge-warning" style="font-size:0.75rem;font-family:var(--font-mono);">WHERE ENFORCED</span>
+              ` : `
+                <span class="admin-badge admin-badge-info" style="font-size:0.75rem;font-family:var(--font-mono);">MAX 500 ROWS</span>
+                <span class="admin-badge admin-badge-info" style="font-size:0.75rem;font-family:var(--font-mono);">5,000MS TIMEOUT</span>
+                <span class="admin-badge admin-badge-info" style="font-size:0.75rem;font-family:var(--font-mono);">AST SAFEGUARD</span>
+              `)}
+            </div>
+          </div>
+
+          <!-- Query Results / Output Container -->
+          <div id="adminSqlResultsWrap">
+            <div class="admin-card" style="padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);border:1px dashed var(--admin-border);border-radius:var(--radius-md);">
+              <div style="font-size:1.5rem;margin-bottom:0.5rem;opacity:0.6;">${ICONS.database || '⚡'}</div>
+              <h4 style="margin:0 0 0.25rem 0;color:var(--admin-text-secondary);font-size:0.9375rem;">${isDestructiveMode ? 'Destructive Delete Console Ready' : (isWriteMode ? 'Controlled Write Console Ready' : 'Query Console Ready')}</h4>
+              <p style="margin:0;font-size:0.8125rem;">${isDestructiveMode ? 'Write or select a DELETE statement above and click <strong>Execute Delete</strong>.' : (isWriteMode ? 'Write or select an INSERT or UPDATE statement above and click <strong>Execute Write</strong>.' : 'Write or select a read-only SQL query above and click <strong>Execute Query</strong> or press <kbd style="background:var(--admin-bg-subtle);padding:1px 5px;border-radius:3px;">Ctrl+Enter</kbd>.')}</p>
+            </div>
+          </div>
+
+          <!-- Saved Queries Section (Phase 15.5) -->
+          <div id="adminSqlSavedQueriesWrap" style="margin-top:1.5rem;"></div>
+
+          <!-- Query History Section (Phase 15.4) -->
+          <div id="adminSqlHistoryWrap" style="margin-top:1.5rem;"></div>
+        </div>
+      `;
+
+      const input = document.getElementById('adminSqlQueryInput');
+      const gutter = document.getElementById('adminSqlGutter');
+
+      if (input) {
+        // Initial line gutter & counts
+        this._updateSqlEditorGutter();
+        this._updateSqlCursorPos();
+
+        // Synchronize scrolling between textarea and line numbers gutter
+        input.addEventListener('scroll', () => {
+          if (gutter) gutter.scrollTop = input.scrollTop;
+        });
+
+        // Input & key listeners
+        input.addEventListener('input', () => {
+          this._updateSqlEditorGutter();
+          this._updateSqlCursorPos();
+        });
+
+        input.addEventListener('click', () => {
+          this._updateSqlCursorPos();
+        });
+
+        input.addEventListener('keyup', () => {
+          this._updateSqlCursorPos();
+        });
+
+        input.addEventListener('keydown', (e) => {
+          // Tab key indentation handling (insert 2 spaces)
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const val = input.value;
+            input.value = val.substring(0, start) + '  ' + val.substring(end);
+            input.selectionStart = input.selectionEnd = start + 2;
+            this._updateSqlEditorGutter();
+            this._updateSqlCursorPos();
+            return;
+          }
+
+          // Ctrl+Enter or Cmd+Enter execution
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            if (this.sqlMode === 'DESTRUCTIVE') {
+              this._openExecuteDestructiveModal();
+            } else if (this.sqlMode === 'CONTROLLED_WRITE') {
+              this._openExecuteWriteModal();
+            } else {
+              this._executeSqlQuery();
+            }
+          }
+        });
+      }
+
+      if (this.sqlResultState && this.sqlResultState.hasExecuted) {
+        this._renderSqlResults();
+        this._updateSqlStatusBadge('success', 'SUCCESS', `${this.sqlResultState.totalCount} rows, ${this.sqlResultState.executionTimeMs}ms`);
+      }
+
+      this._loadSqlSavedQueries();
+      this._renderSqlSavedQueries();
+
+      this._loadSqlHistory();
+      this._renderSqlHistory();
+    }
+
+    _updateSqlEditorGutter() {
+      const input = document.getElementById('adminSqlQueryInput');
+      const gutter = document.getElementById('adminSqlGutter');
+      const metaCount = document.getElementById('adminSqlMetaCount');
+      if (!input || !gutter) return;
+
+      const lines = input.value.split('\n');
+      const lineCount = lines.length;
+      let gutterHtml = '';
+      for (let i = 1; i <= lineCount; i++) {
+        gutterHtml += i + '<br>';
+      }
+      gutter.innerHTML = gutterHtml;
+      gutter.scrollTop = input.scrollTop;
+
+      if (metaCount) {
+        const charCount = input.value.length;
+        metaCount.textContent = `${lineCount} line${lineCount === 1 ? '' : 's'} \u2022 ${charCount} character${charCount === 1 ? '' : 's'}`;
+      }
+    }
+
+    _updateSqlCursorPos() {
+      const input = document.getElementById('adminSqlQueryInput');
+      const posEl = document.getElementById('adminSqlCursorPos');
+      if (!input || !posEl) return;
+
+      const selStart = input.selectionStart || 0;
+      const textBefore = input.value.substring(0, selStart);
+      const lines = textBefore.split('\n');
+      const curLine = lines.length;
+      const curCol = lines[lines.length - 1].length + 1;
+
+      posEl.textContent = `Line ${curLine}, Col ${curCol}`;
+    }
+
+    _applySqlTemplate(sql) {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input) return;
+
+      input.value = sql;
+      this._updateSqlEditorGutter();
+      this._updateSqlCursorPos();
+      input.focus();
+      this.toast('Template loaded into editor', 'info', 2000);
+    }
+
+    _copySqlQuery() {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input || !input.value.trim()) {
+        this.toast('No SQL query to copy.', 'warning');
+        return;
+      }
+      navigator.clipboard.writeText(input.value.trim()).then(() => {
+        this.toast('SQL statement copied to clipboard.', 'success');
+      }).catch(() => {
+        this.toast('Failed to copy to clipboard.', 'danger');
+      });
+    }
+
+    _clearSqlQuery() {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input) return;
+      input.value = '';
+      this._updateSqlEditorGutter();
+      this._updateSqlCursorPos();
+      this._updateSqlStatusBadge('idle', 'IDLE');
+      input.focus();
+    }
+
+    _formatSqlQuery() {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input || !input.value.trim()) return;
+
+      let sql = input.value;
+
+      // Safe client-side keyword uppercase formatter (outside string literals)
+      const keywords = [
+        'SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'BETWEEN',
+        'LIKE', 'IS', 'NULL', 'ORDER BY', 'GROUP BY', 'HAVING', 'LIMIT', 'OFFSET',
+        'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'OUTER JOIN', 'CROSS JOIN',
+        'ON', 'AS', 'UNION', 'ALL', 'EXISTS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END',
+        'SHOW', 'TABLES', 'COLUMNS', 'CREATE TABLE', 'INDEX', 'STATUS', 'VARIABLES',
+        'DATABASES', 'DESCRIBE', 'DESC', 'EXPLAIN', 'WITH', 'ASC', 'DESC', 'COUNT',
+        'SUM', 'AVG', 'MIN', 'MAX', 'COALESCE', 'NOW', 'UTC_TIMESTAMP'
+      ];
+
+      // Tokenize strings to protect them from formatting
+      const stringLiterals = [];
+      sql = sql.replace(/'(?:''|\\'|[^'])*'|"(?:""|\\"|[^"])*"|`(?:``|\\`|[^`])*`/g, (match) => {
+        const placeholder = `__SQL_STR_TOKEN_${stringLiterals.length}__`;
+        stringLiterals.push(match);
+        return placeholder;
+      });
+
+      // Capitalize keywords with boundary checks
+      keywords.forEach(kw => {
+        const regex = new RegExp(`\\b${kw.replace(/\s+/g, '\\s+')}\\b`, 'gi');
+        sql = sql.replace(regex, kw);
+      });
+
+      // Restore string literals
+      stringLiterals.forEach((literal, idx) => {
+        sql = sql.replace(`__SQL_STR_TOKEN_${idx}__`, literal);
+      });
+
+      input.value = sql.trim();
+      this._updateSqlEditorGutter();
+      this._updateSqlCursorPos();
+      this.toast('SQL formatted', 'success', 2000);
+    }
+
+    _updateSqlStatusBadge(state, label, extra = '') {
+      const badge = document.getElementById('adminSqlStatusBadge');
+      if (!badge) return;
+
+      badge.className = `admin-sql-status-pill ${state.toLowerCase()}`;
+      let dotClass = '';
+      if (state === 'running') dotClass = 'blue';
+      else if (state === 'success') dotClass = 'green';
+      else if (state === 'rejected') dotClass = 'amber';
+      else if (state === 'error' || state === 'timeout') dotClass = 'red';
+
+      badge.innerHTML = `<span class="admin-status-dot ${dotClass}"></span> ${label}${extra ? ` (${extra})` : ''}`;
+    }
+
+    _populateSqlCell(td, val, rowIdx, col) {
+      if (val === null || val === undefined) {
+        const span = document.createElement('span');
+        span.className = 'admin-sql-null-val';
+        span.textContent = 'NULL';
+        td.appendChild(span);
+        return;
+      }
+
+      if (typeof val === 'boolean') {
+        const span = document.createElement('span');
+        span.className = `admin-sql-bool-val ${val ? 'true' : 'false'}`;
+        span.textContent = val ? 'TRUE' : 'FALSE';
+        td.appendChild(span);
+        return;
+      }
+
+      if (typeof val === 'number') {
+        const span = document.createElement('span');
+        span.className = 'admin-sql-num-val';
+        span.textContent = String(val);
+        td.appendChild(span);
+        return;
+      }
+
+      if (typeof val === 'string') {
+        if (val.includes('[REDACTED_SENSITIVE_DATA]') || val.startsWith('[REDACTED_')) {
+          const span = document.createElement('span');
+          span.className = 'admin-sql-redacted-val';
+          span.title = 'Sensitive value masked by backend security policy';
+          span.textContent = val.startsWith('[REDACTED_') && !val.includes('DATA') ? val : 'REDACTED';
+          td.appendChild(span);
+          return;
+        }
+
+        if (val.includes('[TRUNCATED_64KB_LIMIT]') || val.startsWith('[TRUNCATED_')) {
+          const span = document.createElement('span');
+          span.className = 'admin-sql-cell-truncated-val';
+          span.title = 'Cell content truncated at 64KB backend limit';
+          span.textContent = 'TRUNCATED (64KB)';
+          td.appendChild(span);
+          return;
+        }
+
+        const wrap = document.createElement('div');
+        wrap.className = 'admin-sql-cell-content';
+
+        const isDate = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}/.test(val);
+        const span = document.createElement('span');
+        span.className = isDate ? 'admin-sql-date-val' : 'admin-sql-cell-text';
+        span.title = isDate ? `Timestamp: ${val}` : val;
+        span.textContent = val;
+        wrap.appendChild(span);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'admin-sql-cell-copy-btn';
+        copyBtn.title = 'Copy cell value';
+        copyBtn.innerHTML = ICONS['copy'] || '📋';
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this._copySqlCellValue(rowIdx, col);
+        });
+        wrap.appendChild(copyBtn);
+
+        td.appendChild(wrap);
+        return;
+      }
+
+      if (typeof val === 'object') {
+        const jsonStr = JSON.stringify(val);
+        const preview = jsonStr.length > 35 ? jsonStr.substring(0, 35) + '...' : jsonStr;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'admin-sql-cell-content';
+
+        const code = document.createElement('code');
+        code.className = 'admin-sql-json-badge';
+        code.title = 'Click to inspect formatted JSON structure';
+        code.textContent = `{JSON} ${preview}`;
+        code.addEventListener('click', () => {
+          this._inspectSqlCellValue(rowIdx, col);
+        });
+        wrap.appendChild(code);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'admin-sql-cell-copy-btn';
+        copyBtn.title = 'Copy JSON value';
+        copyBtn.innerHTML = ICONS['copy'] || '📋';
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this._copySqlCellValue(rowIdx, col);
+        });
+        wrap.appendChild(copyBtn);
+
+        td.appendChild(wrap);
+        return;
+      }
+
+      const span = document.createElement('span');
+      span.className = 'admin-sql-cell-text';
+      span.textContent = String(val);
+      td.appendChild(span);
+    }
+
+    _inspectSqlCellValue(rowIdx, col) {
+      const row = this.sqlResultState.rows[rowIdx];
+      if (!row) return;
+
+      const val = row[col];
+      const prettyJson = typeof val === 'object' && val !== null ? JSON.stringify(val, null, 2) : String(val);
+
+      const container = document.createElement('div');
+      container.style.cssText = 'display:flex;flex-direction:column;gap:1rem;';
+
+      const topBar = document.createElement('div');
+      topBar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding-bottom:0.75rem;border-bottom:1px solid var(--admin-border-subtle);';
+
+      const labelWrap = document.createElement('div');
+      const colBadge = document.createElement('span');
+      colBadge.className = 'admin-badge admin-badge-info';
+      colBadge.style.fontFamily = 'var(--font-mono)';
+      colBadge.textContent = col;
+      labelWrap.appendChild(colBadge);
+
+      const rowSpan = document.createElement('span');
+      rowSpan.style.cssText = 'font-size:0.8125rem;color:var(--admin-text-muted);margin-left:0.5rem;';
+      rowSpan.textContent = `Row #${rowIdx + 1}`;
+      labelWrap.appendChild(rowSpan);
+      topBar.appendChild(labelWrap);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+      copyBtn.innerHTML = `${ICONS['copy'] || '📋'} Copy Value`;
+      copyBtn.addEventListener('click', () => this._copySqlCellValue(rowIdx, col));
+      topBar.appendChild(copyBtn);
+      container.appendChild(topBar);
+
+      const bodySection = document.createElement('div');
+      const heading = document.createElement('h4');
+      heading.style.cssText = 'font-size:0.8125rem;font-weight:700;margin-bottom:0.5rem;color:var(--admin-text-primary);text-transform:uppercase;letter-spacing:0.05em;';
+      heading.textContent = 'Formatted Cell Content';
+      bodySection.appendChild(heading);
+
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'background:var(--admin-bg-base);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--admin-border);font-family:var(--font-mono);font-size:0.8125rem;overflow-x:auto;max-height:380px;white-space:pre-wrap;word-break:break-all;';
+      pre.textContent = prettyJson;
+      bodySection.appendChild(pre);
+
+      container.appendChild(bodySection);
+
+      this._showDrawer(`Inspect Cell: ${col} (Row #${rowIdx + 1})`, container);
+    }
+
+    _copySqlCellValue(rowIdx, col) {
+      const row = this.sqlResultState.rows[rowIdx];
+      if (!row) return;
+
+      const val = row[col];
+      let strVal = '';
+      if (val === null || val === undefined) {
+        strVal = 'NULL';
+      } else if (typeof val === 'object') {
+        strVal = JSON.stringify(val, null, 2);
+      } else {
+        strVal = String(val);
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(strVal).then(() => {
+          this.toast(`Copied cell [${col}] to clipboard`, 'success', 2000);
+        }).catch(() => {
+          this.toast('Failed to copy to clipboard', 'danger');
+        });
+      } else {
+        this.toast('Clipboard API unavailable in this browser context', 'warning');
+      }
+    }
+
+    _copySqlRowAsJson(rowIdx) {
+      const row = this.sqlResultState.rows[rowIdx];
+      if (!row) return;
+
+      const jsonStr = JSON.stringify(row, null, 2);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonStr).then(() => {
+          this.toast(`Copied Row #${rowIdx + 1} as JSON to clipboard`, 'success', 2500);
+        }).catch(() => {
+          this.toast('Failed to copy row to clipboard', 'danger');
+        });
+      } else {
+        this.toast('Clipboard API unavailable', 'warning');
+      }
+    }
+
+    _copySqlResultsAsJson() {
+      try {
+        const rows = this.sqlResultState.filteredRows && this.sqlResultState.filteredRows.length > 0 
+          ? this.sqlResultState.filteredRows 
+          : this.sqlResultState.rows;
+
+        if (!rows || rows.length === 0) {
+          this.toast('No rows available to copy as JSON', 'warning');
+          return;
+        }
+
+        const jsonStr = JSON.stringify(rows, null, 2);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(jsonStr).then(() => {
+            this.toast(`Copied ${rows.length} rows as JSON to clipboard`, 'success');
+          }).catch(() => {
+            this.toast('Failed to copy JSON results', 'danger');
+          });
+        } else {
+          this.toast('Clipboard API unavailable', 'warning');
+        }
+      } catch (err) {
+        this.toast('Failed to serialize results as JSON', 'danger');
+      }
+    }
+
+    _copySqlResultsAsCsv() {
+      try {
+        const rows = this.sqlResultState.filteredRows && this.sqlResultState.filteredRows.length > 0 
+          ? this.sqlResultState.filteredRows 
+          : this.sqlResultState.rows;
+        const columns = this.sqlResultState.columns;
+
+        if (!rows || rows.length === 0 || !columns || columns.length === 0) {
+          this.toast('No rows available to export as CSV', 'warning');
+          return;
+        }
+
+        const escapeCsvCell = (val) => {
+          if (val === null || val === undefined) return '';
+          let str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+          if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+            str = '"' + str.replace(/"/g, '""') + '"';
+          }
+          return str;
+        };
+
+        const headerLine = columns.map(c => escapeCsvCell(c)).join(',');
+        const rowLines = rows.map(r => columns.map(col => escapeCsvCell(r[col])).join(','));
+        const csvContent = [headerLine, ...rowLines].join('\r\n');
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(csvContent).then(() => {
+            this.toast(`Copied ${rows.length} rows as CSV to clipboard`, 'success');
+          }).catch(() => {
+            this.toast('Failed to copy CSV results', 'danger');
+          });
+        } else {
+          this.toast('Clipboard API unavailable', 'warning');
+        }
+      } catch (err) {
+        this.toast('Failed to generate CSV results', 'danger');
+      }
+    }
+
+    _filterSqlResults(query) {
+      const q = (query || '').trim().toLowerCase();
+      this.sqlResultState.filterText = q;
+
+      if (!q) {
+        this.sqlResultState.filteredRows = this.sqlResultState.rows;
+      } else {
+        this.sqlResultState.filteredRows = this.sqlResultState.rows.filter(row => {
+          return this.sqlResultState.columns.some(col => {
+            const val = row[col];
+            if (val === null || val === undefined) return false;
+            const strVal = typeof val === 'object' ? JSON.stringify(val).toLowerCase() : String(val).toLowerCase();
+            return strVal.includes(q);
+          });
+        });
+      }
+
+      this._renderSqlResultsTableBody();
+      this._updateSqlResultsCountHeader();
+    }
+
+    _updateSqlResultsCountHeader() {
+      const countEl = document.getElementById('adminSqlResultsCountTitle');
+      if (!countEl) return;
+
+      const total = this.sqlResultState.totalCount;
+      const visible = this.sqlResultState.filteredRows.length;
+      const filter = this.sqlResultState.filterText;
+      const truncated = this.sqlResultState.truncated;
+
+      if (truncated) {
+        if (!filter) {
+          countEl.textContent = `Results — ${total}+ loaded rows (truncated)`;
+        } else {
+          countEl.textContent = `Results — ${visible} of ${total}+ loaded rows`;
+        }
+      } else {
+        if (!filter) {
+          countEl.textContent = `Results — ${total} row${total === 1 ? '' : 's'}`;
+        } else {
+          countEl.textContent = `Results — ${visible} of ${total} returned rows`;
+        }
+      }
+    }
+
+    _renderSqlResultsTableBody() {
+      const tbody = document.getElementById('adminSqlResultTableBody');
+      if (!tbody) return;
+
+      tbody.textContent = '';
+
+      const rows = this.sqlResultState.filteredRows;
+      const columns = this.sqlResultState.columns;
+      const total = this.sqlResultState.totalCount;
+      const filter = this.sqlResultState.filterText;
+
+      if (total === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = Math.max(columns.length + 1, 2);
+        td.style.cssText = 'padding:2.5rem;text-align:center;color:var(--admin-text-muted);';
+        td.textContent = 'Query executed successfully. 0 rows returned.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      if (rows.length === 0 && filter) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = Math.max(columns.length + 1, 2);
+        td.style.cssText = 'padding:2.5rem;text-align:center;color:var(--admin-text-muted);';
+        td.textContent = `No matching rows found for query filter "${filter}" among loaded results.`;
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      rows.forEach((r) => {
+        const originalIdx = this.sqlResultState.rows.indexOf(r);
+        const displayIdx = originalIdx >= 0 ? originalIdx : 0;
+
+        const tr = document.createElement('tr');
+
+        // Row Index column (#)
+        const tdIdx = document.createElement('td');
+        tdIdx.className = 'row-idx-col';
+        const rowBtn = document.createElement('button');
+        rowBtn.type = 'button';
+        rowBtn.className = 'admin-sql-row-copy-btn';
+        rowBtn.title = `Copy row #${displayIdx + 1} as JSON`;
+        rowBtn.textContent = String(displayIdx + 1);
+        rowBtn.addEventListener('click', () => this._copySqlRowAsJson(displayIdx));
+        tdIdx.appendChild(rowBtn);
+        tr.appendChild(tdIdx);
+
+        // Data cells
+        columns.forEach(col => {
+          const td = document.createElement('td');
+          this._populateSqlCell(td, r[col], displayIdx, col);
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    _renderSqlResults() {
+      const resultsWrap = document.getElementById('adminSqlResultsWrap');
+      if (!resultsWrap) return;
+
+      const { columns, totalCount, executionTimeMs, statementType, truncated, filterText } = this.sqlResultState;
+
+      resultsWrap.innerHTML = `
+        <div class="admin-sql-results-card">
+          ${truncated ? `
+            <div class="admin-sql-warning-banner">
+              <span style="display:flex;align-items:center;">${ICONS['alert-triangle'] || '⚠️'}</span>
+              <div><strong>Result Set Truncated:</strong> Query matched more than the maximum returned limit (500 rows). Only the first 500 rows were loaded into the console.</div>
+            </div>
+          ` : ''}
+
+          <div class="admin-sql-results-header">
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+              <h3 id="adminSqlResultsCountTitle" style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--admin-text-primary);">
+                Results — ${truncated ? `${totalCount}+ loaded rows (truncated)` : `${totalCount} row${totalCount === 1 ? '' : 's'}`}
+              </h3>
+              <span class="admin-badge admin-badge-info" style="font-family:var(--font-mono);font-size:0.75rem;">
+                ${this._escape(statementType)}
+              </span>
+              <span style="font-size:0.8125rem;color:var(--admin-text-secondary);font-family:var(--font-mono);">
+                Execution Time: <strong>${executionTimeMs}ms</strong>
+              </span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+              <!-- Client-Side Search / Filter Box -->
+              <div class="admin-sql-search-box">
+                ${ICONS.search || ''}
+                <input type="text" id="adminSqlResultSearchInput" class="admin-sql-search-input" placeholder="Filter loaded rows..." value="${this._escape(filterText)}" aria-label="Filter loaded query results">
+                <button type="button" id="adminSqlClearFilterBtn" style="border:none;background:transparent;cursor:pointer;color:var(--admin-text-muted);padding:0;display:${filterText ? 'inline' : 'none'};" title="Clear filter">&times;</button>
+              </div>
+
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._executeSqlQuery()" title="Re-run query">
+                ${ICONS['refresh-cw'] || ''} Re-run
+              </button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._copySqlResultsAsJson()" title="Copy all visible results as formatted JSON">
+                ${ICONS['copy']} Copy JSON
+              </button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._copySqlResultsAsCsv()" title="Copy all visible results as CSV">
+                ${ICONS.download || ''} Copy CSV
+              </button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" type="button" onclick="AdminShell._clearSqlResults()" title="Clear results view">
+                ${ICONS['trash-2'] || ''} Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="admin-sql-table-container">
+            <table class="admin-sql-table">
+              <thead id="adminSqlResultTableHead"></thead>
+              <tbody id="adminSqlResultTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      // Build table header with safe DOM nodes
+      const thead = document.getElementById('adminSqlResultTableHead');
+      if (thead) {
+        const theadTr = document.createElement('tr');
+
+        const thIdx = document.createElement('th');
+        thIdx.className = 'row-idx-col';
+        thIdx.title = 'Row Index / Click number to copy row as JSON';
+        thIdx.textContent = '#';
+        theadTr.appendChild(thIdx);
+
+        columns.forEach(col => {
+          const th = document.createElement('th');
+          th.textContent = col;
+          th.title = col;
+          theadTr.appendChild(th);
+        });
+
+        thead.appendChild(theadTr);
+      }
+
+      this._renderSqlResultsTableBody();
+      this._updateSqlResultsCountHeader();
+
+      // Search input bindings
+      const searchInput = document.getElementById('adminSqlResultSearchInput');
+      const clearBtn = document.getElementById('adminSqlClearFilterBtn');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          if (clearBtn) clearBtn.style.display = val ? 'inline' : 'none';
+          this._filterSqlResults(val);
+        });
+      }
+
+      if (clearBtn && searchInput) {
+        clearBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          clearBtn.style.display = 'none';
+          this._filterSqlResults('');
+          searchInput.focus();
+        });
+      }
+    }
+
+    _clearSqlResults() {
+      this.sqlResultState = {
+        rows: [],
+        columns: [],
+        totalCount: 0,
+        filteredRows: [],
+        filterText: '',
+        executionTimeMs: 0,
+        statementType: '',
+        truncated: false,
+        hasExecuted: false
+      };
+
+      const resultsWrap = document.getElementById('adminSqlResultsWrap');
+      if (resultsWrap) {
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);border:1px dashed var(--admin-border);border-radius:var(--radius-md);">
+            <div style="font-size:1.5rem;margin-bottom:0.5rem;opacity:0.6;">${ICONS.database || '⚡'}</div>
+            <h4 style="margin:0 0 0.25rem 0;color:var(--admin-text-secondary);font-size:0.9375rem;">Query Console Ready</h4>
+            <p style="margin:0;font-size:0.8125rem;">Write or select a read-only SQL query above and click <strong>Execute Query</strong> or press <kbd style="background:var(--admin-bg-subtle);padding:1px 5px;border-radius:3px;">Ctrl+Enter</kbd>.</p>
+          </div>
+        `;
+      }
+
+      this._updateSqlStatusBadge('idle', 'IDLE');
+    }
+
+    async _executeSqlQuery() {
+      const input = document.getElementById('adminSqlQueryInput');
+      const resultsWrap = document.getElementById('adminSqlResultsWrap');
+      const runBtn = document.getElementById('adminSqlRunBtn');
+      if (!input || !resultsWrap) return;
+
+      const sql = input.value.trim();
+      if (!sql) {
+        this.toast('Please enter a SQL query to execute.', 'warning');
+        return;
+      }
+
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.innerHTML = `${ICONS['refresh-cw']} <span>Running Query...</span>`;
+      }
+
+      this._updateSqlStatusBadge('running', 'RUNNING');
+
+      resultsWrap.innerHTML = `
+        <div class="admin-card" style="padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);border-radius:var(--radius-md);">
+          <div style="display:inline-block;animation:spin 1s linear infinite;font-size:1.5rem;margin-bottom:0.75rem;color:var(--admin-primary);">${ICONS['refresh-cw']}</div>
+          <h4 style="margin:0 0 0.25rem 0;color:var(--admin-text-primary);font-size:0.9375rem;">Executing Query Safely...</h4>
+          <p style="margin:0;font-size:0.8125rem;">Validating AST safeguards, enforcing read-only boundary &amp; masking sensitive columns.</p>
+        </div>
+      `;
+
+      try {
+        const response = await window.AdminApi.executeSqlQuery(sql);
+        if (!response.success) {
+          throw response;
+        }
+
+        const data = response.data || {};
+        const rows = data.rows || [];
+        const columns = data.columns || [];
+        const rowCount = data.rowCount !== undefined ? data.rowCount : rows.length;
+        const execTime = data.executionTimeMs !== undefined ? data.executionTimeMs : 0;
+        const stmtType = data.statementType || 'QUERY';
+        const isTruncated = Boolean(data.truncated);
+
+        this.sqlResultState = {
+          rows,
+          columns,
+          totalCount: rowCount,
+          filteredRows: rows,
+          filterText: '',
+          executionTimeMs: execTime,
+          statementType: stmtType,
+          truncated: isTruncated,
+          hasExecuted: true
+        };
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType: stmtType,
+          status: 'SUCCESS',
+          executionTimeMs: execTime,
+          rowCount,
+          truncated: isTruncated,
+          errorMessage: null
+        });
+
+        this._updateSqlStatusBadge('success', 'SUCCESS', `${rowCount} row${rowCount === 1 ? '' : 's'}, ${execTime}ms`);
+        this._renderSqlResults();
+      } catch (err) {
+        this.sqlResultState.hasExecuted = false;
+        const errObj = err.error || err;
+        const errCode = errObj.code || err.code || 'SQL_ERROR';
+        const errMsg = errObj.message || err.message || 'Execution failed';
+        const isTimeout = errCode === 'SQL_QUERY_TIMEOUT' || err.status === 408 || err.status === 504 || errMsg.toLowerCase().includes('timeout');
+        const isRejected = errCode === 'SQL_SAFETY_VIOLATION' || errCode === 'SQL_QUERY_REJECTED' || err.status === 400;
+
+        const outcomeStatus = isTimeout ? 'TIMEOUT' : (isRejected ? 'REJECTED' : 'ERROR');
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType: 'QUERY',
+          status: outcomeStatus,
+          executionTimeMs: 0,
+          rowCount: 0,
+          truncated: false,
+          errorMessage: `[${errCode}] ${errMsg}`
+        });
+
+        if (isTimeout) {
+          this._updateSqlStatusBadge('timeout', 'TIMEOUT');
+        } else if (isRejected) {
+          this._updateSqlStatusBadge('rejected', 'REJECTED');
+        } else {
+          this._updateSqlStatusBadge('error', 'ERROR');
+        }
+
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="border-left:4px solid ${isRejected ? 'var(--admin-warning, #f59e0b)' : 'var(--admin-danger, #ef4444)'};padding:1.5rem;border-radius:var(--radius-md);">
+            <div style="display:flex;align-items:flex-start;gap:1rem;">
+              <div style="color:${isRejected ? '#d97706' : '#dc2626'};font-size:1.25rem;line-height:1;margin-top:2px;">
+                ${ICONS['alert-triangle'] || '⚠️'}
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem;">
+                  <h4 style="margin:0;color:${isRejected ? '#b45309' : '#b91c1c'};font-size:0.9375rem;font-weight:700;">
+                    ${isTimeout ? 'Statement Timeout Exceeded (5,000ms)' : (isRejected ? 'SQL Safety Policy Violation' : 'Query Execution Error')}
+                  </h4>
+                  <span class="admin-badge ${isRejected ? 'admin-badge-warning' : 'admin-badge-danger'}" style="font-family:var(--font-mono);font-size:0.75rem;">
+                    ${this._escape(errCode)}
+                  </span>
+                </div>
+                <p style="margin:0 0 0.75rem 0;font-size:0.8125rem;color:var(--admin-text-secondary);">
+                  ${isRejected ? 'The requested statement was rejected before database execution by the read-only security safety guard.' : (isTimeout ? 'The query exceeded the maximum allowable execution window of 5,000ms and was terminated by MySQL optimizer timeout.' : 'The query encountered an execution error inside the database.')}
+                </p>
+                <div style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--admin-text-primary);background:var(--admin-bg-base);padding:0.75rem 1rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);white-space:pre-wrap;word-break:break-all;">${this._escape(errMsg)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } finally {
+        if (runBtn) {
+          runBtn.disabled = false;
+          if (this.sqlMode === 'CONTROLLED_WRITE') {
+            runBtn.innerHTML = `${ICONS['alert-triangle'] || ICONS['play']} <span>Execute Write</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>`;
+          } else {
+            runBtn.innerHTML = `${ICONS['play']} <span>Execute Query</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>`;
+          }
+        }
+      }
+    }
+
+    _setSqlMode(mode) {
+      this.sqlMode = mode;
+      const container = document.getElementById('adminViewContainer');
+      if (container) {
+        this._renderSqlRunnerView(container);
+      }
+    }
+
+    _promptControlledWriteMode() {
+      if (this.sqlMode === 'CONTROLLED_WRITE') return;
+
+      const content = document.createElement('div');
+      content.style.cssText = 'display:flex;flex-direction:column;gap:1.25rem;font-size:0.875rem;line-height:1.5;color:var(--admin-text-primary);';
+
+      const warningCard = document.createElement('div');
+      warningCard.style.cssText = 'background:rgba(245,158,11,0.1);border-left:4px solid #f59e0b;padding:0.875rem 1rem;border-radius:var(--radius-xs);';
+      warningCard.innerHTML = `
+        <strong style="color:#b45309;display:block;margin-bottom:0.25rem;">Warning: Direct Database Write Mode</strong>
+        <p style="margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);">
+          Controlled Write Mode enables administrative data updates and insertions directly against the application database.
+        </p>
+      `;
+      content.appendChild(warningCard);
+
+      const listDiv = document.createElement('div');
+      listDiv.innerHTML = `
+        <div style="font-weight:600;font-size:0.8125rem;margin-bottom:0.5rem;color:var(--admin-text-primary);">Safety &amp; Compliance Enforcements:</div>
+        <ul style="padding-left:1.25rem;margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);display:flex;flex-direction:column;gap:0.35rem;">
+          <li>Permitted operations: <code>INSERT</code> and <code>UPDATE</code> only.</li>
+          <li>All operations run in an atomic transaction with a strict <strong>50 row maximum modification limit</strong>.</li>
+          <li><code>UPDATE</code> queries MUST include a specific non-trivial <code>WHERE</code> clause.</li>
+          <li>Protected system tables (authentication, sessions, audit records) are completely guarded.</li>
+          <li>Every execution is immutably audited with actor credentials and IP address.</li>
+        </ul>
+      `;
+      content.appendChild(listDiv);
+
+      const notice = document.createElement('p');
+      notice.style.cssText = 'margin:0;font-size:0.75rem;color:var(--admin-text-muted);font-style:italic;';
+      notice.textContent = 'Controlled Write Mode is session-only and will automatically reset to Read-Only Mode on page reload or logout.';
+      content.appendChild(notice);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => this._closeDrawer();
+      actionsDiv.appendChild(cancelBtn);
+
+      const enableBtn = document.createElement('button');
+      enableBtn.type = 'button';
+      enableBtn.className = 'admin-btn admin-btn-warning admin-btn-sm';
+      enableBtn.textContent = 'Enable Controlled Write Mode';
+      enableBtn.onclick = () => {
+        this._closeDrawer();
+        this._setSqlMode('CONTROLLED_WRITE');
+        this.toast('Controlled Write Mode enabled for this session.', 'warning');
+      };
+      actionsDiv.appendChild(enableBtn);
+
+      content.appendChild(actionsDiv);
+
+      this._showDrawer('Enable Controlled Write Mode', content);
+    }
+
+    _openExecuteWriteModal() {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input) return;
+      const sql = input.value.trim();
+      if (!sql) {
+        this.toast('Please enter a SQL write statement to execute.', 'warning');
+        return;
+      }
+
+      const content = document.createElement('div');
+      content.style.cssText = 'display:flex;flex-direction:column;gap:1.25rem;font-size:0.875rem;line-height:1.5;';
+
+      const desc = document.createElement('p');
+      desc.style.cssText = 'margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);';
+      desc.textContent = 'Please review the SQL statement to execute within an isolated transactional boundary (max 50 rows affected):';
+      content.appendChild(desc);
+
+      const sqlBox = document.createElement('div');
+      sqlBox.style.cssText = 'background:var(--admin-bg-base);border:1px solid var(--admin-border);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-family:var(--font-mono);font-size:0.8125rem;color:var(--admin-text-primary);max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;';
+      sqlBox.textContent = sql;
+      content.appendChild(sqlBox);
+
+      const warnBox = document.createElement('div');
+      warnBox.style.cssText = 'background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:var(--radius-xs);padding:0.6rem 0.85rem;font-size:0.8125rem;color:#b45309;display:flex;align-items:center;gap:0.5rem;';
+      warnBox.innerHTML = `<span>${ICONS['alert-triangle'] || '⚠️'}</span> <span>Are you sure you want to commit these database modifications?</span>`;
+      content.appendChild(warnBox);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => this._closeDrawer();
+      actionsDiv.appendChild(cancelBtn);
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'admin-btn admin-btn-warning admin-btn-sm';
+      confirmBtn.textContent = 'Confirm & Execute Write';
+      confirmBtn.onclick = () => {
+        this._closeDrawer();
+        this._executeSqlWriteQuery(sql);
+      };
+      actionsDiv.appendChild(confirmBtn);
+
+      content.appendChild(actionsDiv);
+
+      this._showDrawer('Confirm Controlled SQL Write Execution', content);
+    }
+
+    async _executeSqlWriteQuery(sql) {
+      const resultsWrap = document.getElementById('adminSqlResultsWrap');
+      const runBtn = document.getElementById('adminSqlRunBtn');
+      if (!resultsWrap) return;
+
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.innerHTML = `${ICONS['refresh-cw']} <span>Writing...</span>`;
+      }
+
+      this._updateSqlStatusBadge('running', 'EXECUTING WRITE');
+
+      resultsWrap.innerHTML = `
+        <div class="admin-card" style="padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);border-radius:var(--radius-md);">
+          <div style="display:inline-block;animation:spin 1s linear infinite;font-size:1.5rem;margin-bottom:0.75rem;color:#d97706;">${ICONS['refresh-cw']}</div>
+          <h4 style="margin:0 0 0.25rem 0;color:var(--admin-text-primary);font-size:0.9375rem;">Executing Controlled Write...</h4>
+          <p style="margin:0;font-size:0.8125rem;">Enforcing transactional boundaries, verifying affected row limits &amp; logging immutable audit record.</p>
+        </div>
+      `;
+
+      try {
+        const response = await window.AdminApi.executeControlledWriteQuery(sql, true);
+        if (!response.success) {
+          throw response;
+        }
+
+        const data = response.data || {};
+        const statementType = data.statementType || 'WRITE';
+        const targetTable = data.targetTable || 'UNKNOWN';
+        const affectedRows = data.affectedRows !== undefined ? data.affectedRows : 0;
+        const execTime = data.executionTimeMs !== undefined ? data.executionTimeMs : 0;
+
+        this.sqlResultState = {
+          rows: [],
+          columns: [],
+          totalCount: affectedRows,
+          filteredRows: [],
+          filterText: '',
+          executionTimeMs: execTime,
+          statementType,
+          truncated: false,
+          hasExecuted: true
+        };
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType,
+          status: 'COMMITTED',
+          executionTimeMs: execTime,
+          rowCount: affectedRows,
+          truncated: false,
+          errorMessage: null
+        });
+
+        this._updateSqlStatusBadge('success', 'COMMITTED', `${affectedRows} row${affectedRows === 1 ? '' : 's'} affected, ${execTime}ms`);
+
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="border-left:4px solid #10b981;padding:1.5rem;border-radius:var(--radius-md);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#059669;display:flex;align-items:center;justify-content:center;font-size:1.125rem;">
+                  ${ICONS.check || '✓'}
+                </div>
+                <div>
+                  <h4 style="margin:0;color:var(--admin-text-primary);font-size:1rem;font-weight:700;">Transaction Committed Successfully</h4>
+                  <p style="margin:0.125rem 0 0 0;font-size:0.8125rem;color:var(--admin-text-muted);">
+                    Statement type: <strong>${this._escape(statementType)}</strong> &bull; Target table: <strong>${this._escape(targetTable)}</strong>
+                  </p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span class="admin-badge admin-badge-success" style="font-family:var(--font-mono);font-size:0.75rem;">COMMITTED</span>
+                <span class="admin-badge admin-badge-info" style="font-family:var(--font-mono);font-size:0.75rem;">${execTime}ms</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:1rem;background:var(--admin-bg-base);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--admin-border);">
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Rows Affected</div>
+                <div style="font-size:1.25rem;font-weight:700;color:#059669;margin-top:0.25rem;">${affectedRows}</div>
+              </div>
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Target Entity</div>
+                <div style="font-size:1.125rem;font-weight:600;color:var(--admin-text-primary);margin-top:0.25rem;font-family:var(--font-mono);">${this._escape(targetTable)}</div>
+              </div>
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Safety Ceiling</div>
+                <div style="font-size:0.875rem;font-weight:500;color:var(--admin-text-secondary);margin-top:0.25rem;">50 rows max / auto-rollback</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        this.sqlResultState.hasExecuted = false;
+        const errObj = err.error || err;
+        const errCode = errObj.code || err.code || 'SQL_WRITE_ERROR';
+        const errMsg = errObj.message || err.message || 'Write execution failed';
+        const isRolledBack = errCode === 'SQL_WRITE_AFFECTED_ROWS_EXCEEDED' || errMsg.toLowerCase().includes('rolled back');
+        const isTimeout = errCode === 'SQL_QUERY_TIMEOUT' || err.status === 408 || errMsg.toLowerCase().includes('timeout');
+
+        const outcomeStatus = isRolledBack ? 'ROLLED_BACK' : (isTimeout ? 'TIMEOUT' : 'REJECTED');
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType: 'WRITE',
+          status: outcomeStatus,
+          executionTimeMs: 0,
+          rowCount: 0,
+          truncated: false,
+          errorMessage: `[${errCode}] ${errMsg}`
+        });
+
+        if (isRolledBack) {
+          this._updateSqlStatusBadge('rejected', 'ROLLED BACK');
+        } else if (isTimeout) {
+          this._updateSqlStatusBadge('timeout', 'TIMEOUT');
+        } else {
+          this._updateSqlStatusBadge('rejected', 'REJECTED');
+        }
+
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="border-left:4px solid ${isRolledBack ? '#f59e0b' : '#ef4444'};padding:1.5rem;border-radius:var(--radius-md);">
+            <div style="display:flex;align-items:flex-start;gap:1rem;">
+              <div style="color:${isRolledBack ? '#d97706' : '#dc2626'};font-size:1.25rem;line-height:1;margin-top:2px;">
+                ${ICONS['alert-triangle'] || '⚠️'}
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem;">
+                  <h4 style="margin:0;color:${isRolledBack ? '#b45309' : '#b91c1c'};font-size:0.9375rem;font-weight:700;">
+                    ${isRolledBack ? 'Transaction Automatically Rolled Back' : 'Write Operation Rejected'}
+                  </h4>
+                  <span class="admin-badge ${isRolledBack ? 'admin-badge-warning' : 'admin-badge-danger'}" style="font-family:var(--font-mono);font-size:0.75rem;">
+                    ${this._escape(errCode)}
+                  </span>
+                </div>
+                <p style="margin:0 0 0.75rem 0;font-size:0.8125rem;color:var(--admin-text-secondary);">
+                  ${isRolledBack ? 'The write query modified more rows than the allowable safety ceiling (max 50 rows). The transaction was completely rolled back and no data was altered.' : 'The requested write statement was rejected by Controlled Write Mode safety policy.'}
+                </p>
+                <div style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--admin-text-primary);background:var(--admin-bg-base);padding:0.75rem 1rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);white-space:pre-wrap;word-break:break-all;">${this._escape(errMsg)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } finally {
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.innerHTML = `${ICONS['alert-triangle'] || ICONS['play']} <span>Execute Write</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>`;
+        }
+      }
+    }
+
+    _promptDestructiveMode() {
+      if (this.sqlMode === 'DESTRUCTIVE') return;
+
+      const content = document.createElement('div');
+      content.style.cssText = 'display:flex;flex-direction:column;gap:1.25rem;font-size:0.875rem;line-height:1.5;color:var(--admin-text-primary);';
+
+      const warningCard = document.createElement('div');
+      warningCard.style.cssText = 'background:rgba(239,68,68,0.1);border-left:4px solid #ef4444;padding:0.875rem 1rem;border-radius:var(--radius-xs);';
+      warningCard.innerHTML = `
+        <strong style="color:#b91c1c;display:block;margin-bottom:0.25rem;">Critical Warning: Destructive SQL Delete Mode</strong>
+        <p style="margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);">
+          Destructive Mode authorizes administrative row deletions directly from the application database. Data deleted in this mode cannot be undone.
+        </p>
+      `;
+      content.appendChild(warningCard);
+
+      const listDiv = document.createElement('div');
+      listDiv.innerHTML = `
+        <div style="font-weight:600;font-size:0.8125rem;margin-bottom:0.5rem;color:var(--admin-text-primary);">Destructive Safety &amp; Guardrail Enforcements:</div>
+        <ul style="padding-left:1.25rem;margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);display:flex;flex-direction:column;gap:0.35rem;">
+          <li>Permitted operations: Single-statement <code>DELETE FROM table WHERE ...</code> only.</li>
+          <li>All operations run in an atomic transaction with a strict <strong>50 row maximum deletion limit</strong>.</li>
+          <li><code>DELETE</code> queries MUST include a specific non-trivial <code>WHERE</code> clause.</li>
+          <li>Schema-destructive operations (<code>TRUNCATE</code>, <code>DROP</code>, <code>ALTER</code>) are strictly prohibited.</li>
+          <li>Protected system tables (authentication, audit records, credentials) are blocked.</li>
+          <li>Every execution is immutably audited with actor credentials, IP address, and cryptographic tamper-evident hash chaining.</li>
+        </ul>
+      `;
+      content.appendChild(listDiv);
+
+      const notice = document.createElement('p');
+      notice.style.cssText = 'margin:0;font-size:0.75rem;color:var(--admin-text-muted);font-style:italic;';
+      notice.textContent = 'Destructive Mode is session-only and will automatically reset to Read-Only Mode on page reload or logout.';
+      content.appendChild(notice);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => this._closeDrawer();
+      actionsDiv.appendChild(cancelBtn);
+
+      const enableBtn = document.createElement('button');
+      enableBtn.type = 'button';
+      enableBtn.className = 'admin-btn admin-btn-danger admin-btn-sm';
+      enableBtn.textContent = 'Enable Destructive Mode';
+      enableBtn.onclick = () => {
+        this._closeDrawer();
+        this._setSqlMode('DESTRUCTIVE');
+        this.toast('Destructive SQL Mode enabled for this session.', 'danger');
+      };
+      actionsDiv.appendChild(enableBtn);
+
+      content.appendChild(actionsDiv);
+
+      this._showDrawer('Enable Destructive SQL Mode', content);
+    }
+
+    _openExecuteDestructiveModal() {
+      const input = document.getElementById('adminSqlQueryInput');
+      if (!input) return;
+      const sql = input.value.trim();
+      if (!sql) {
+        this.toast('Please enter a SQL DELETE statement to execute.', 'warning');
+        return;
+      }
+
+      const content = document.createElement('div');
+      content.style.cssText = 'display:flex;flex-direction:column;gap:1.25rem;font-size:0.875rem;line-height:1.5;';
+
+      const desc = document.createElement('p');
+      desc.style.cssText = 'margin:0;font-size:0.8125rem;color:var(--admin-text-secondary);';
+      desc.textContent = 'Please review the destructive DELETE statement to execute within an isolated transactional boundary (max 50 deletions):';
+      content.appendChild(desc);
+
+      const sqlBox = document.createElement('div');
+      sqlBox.style.cssText = 'background:var(--admin-bg-base);border:1px solid var(--admin-border);padding:0.75rem 1rem;border-radius:var(--radius-xs);font-family:var(--font-mono);font-size:0.8125rem;color:var(--admin-text-primary);max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;';
+      sqlBox.textContent = sql;
+      content.appendChild(sqlBox);
+
+      const warnBox = document.createElement('div');
+      warnBox.style.cssText = 'background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius-xs);padding:0.6rem 0.85rem;font-size:0.8125rem;color:#b91c1c;display:flex;align-items:center;gap:0.5rem;';
+      warnBox.innerHTML = `<span>${ICONS['alert-triangle'] || '⚠️'}</span> <span><strong>Irreversible action:</strong> Deleted database rows cannot be restored. Proceed?</span>`;
+      content.appendChild(warnBox);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.cssText = 'display:flex;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn-secondary admin-btn-sm';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.onclick = () => this._closeDrawer();
+      actionsDiv.appendChild(cancelBtn);
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'admin-btn admin-btn-danger admin-btn-sm';
+      confirmBtn.textContent = 'Confirm & Execute Delete';
+      confirmBtn.onclick = () => {
+        this._closeDrawer();
+        this._executeSqlDestructiveQuery(sql);
+      };
+      actionsDiv.appendChild(confirmBtn);
+
+      content.appendChild(actionsDiv);
+
+      this._showDrawer('Confirm Destructive SQL Execution', content);
+    }
+
+    async _executeSqlDestructiveQuery(sql) {
+      const resultsWrap = document.getElementById('adminSqlResultsWrap');
+      const runBtn = document.getElementById('adminSqlRunBtn');
+      if (!resultsWrap) return;
+
+      if (runBtn) {
+        runBtn.disabled = true;
+        runBtn.innerHTML = `${ICONS['refresh-cw']} <span>Deleting...</span>`;
+      }
+
+      this._updateSqlStatusBadge('running', 'EXECUTING DELETION');
+
+      resultsWrap.innerHTML = `
+        <div class="admin-card" style="padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);border-radius:var(--radius-md);">
+          <div style="display:inline-block;animation:spin 1s linear infinite;font-size:1.5rem;margin-bottom:0.75rem;color:#dc2626;">${ICONS['refresh-cw']}</div>
+          <h4 style="margin:0 0 0.25rem 0;color:var(--admin-text-primary);font-size:0.9375rem;">Executing Destructive Delete...</h4>
+          <p style="margin:0;font-size:0.8125rem;">Enforcing transactional boundaries, verifying affected row limits &amp; logging tamper-evident audit record.</p>
+        </div>
+      `;
+
+      try {
+        const response = await window.AdminApi.executeDestructiveQuery(sql, true);
+        if (!response.success) {
+          throw response;
+        }
+
+        const data = response.data || {};
+        const statementType = data.statementType || 'DELETE';
+        const targetTable = data.targetTable || 'UNKNOWN';
+        const affectedRows = data.affectedRows !== undefined ? data.affectedRows : 0;
+        const execTime = data.executionTimeMs !== undefined ? data.executionTimeMs : 0;
+
+        this.sqlResultState = {
+          rows: [],
+          columns: [],
+          totalCount: affectedRows,
+          filteredRows: [],
+          filterText: '',
+          executionTimeMs: execTime,
+          statementType,
+          truncated: false,
+          hasExecuted: true
+        };
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType,
+          status: 'COMMITTED',
+          executionTimeMs: execTime,
+          rowCount: affectedRows,
+          truncated: false,
+          errorMessage: null
+        });
+
+        this._updateSqlStatusBadge('success', 'COMMITTED', `${affectedRows} row${affectedRows === 1 ? '' : 's'} deleted, ${execTime}ms`);
+
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="border-left:4px solid #10b981;padding:1.5rem;border-radius:var(--radius-md);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
+              <div style="display:flex;align-items:center;gap:0.75rem;">
+                <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.12);color:#059669;display:flex;align-items:center;justify-content:center;font-size:1.125rem;">
+                  ${ICONS.check || '✓'}
+                </div>
+                <div>
+                  <h4 style="margin:0;color:var(--admin-text-primary);font-size:1rem;font-weight:700;">Destructive Transaction Committed Successfully</h4>
+                  <p style="margin:0.125rem 0 0 0;font-size:0.8125rem;color:var(--admin-text-muted);">
+                    Statement type: <strong>${this._escape(statementType)}</strong> &bull; Target table: <strong>${this._escape(targetTable)}</strong>
+                  </p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <span class="admin-badge admin-badge-success" style="font-family:var(--font-mono);font-size:0.75rem;">COMMITTED</span>
+                <span class="admin-badge admin-badge-info" style="font-family:var(--font-mono);font-size:0.75rem;">${execTime}ms</span>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:1rem;background:var(--admin-bg-base);padding:1rem;border-radius:var(--radius-sm);border:1px solid var(--admin-border);">
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Rows Deleted</div>
+                <div style="font-size:1.25rem;font-weight:700;color:#dc2626;margin-top:0.25rem;">${affectedRows}</div>
+              </div>
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Target Entity</div>
+                <div style="font-size:1.125rem;font-weight:600;color:var(--admin-text-primary);margin-top:0.25rem;font-family:var(--font-mono);">${this._escape(targetTable)}</div>
+              </div>
+              <div>
+                <div style="font-size:0.75rem;color:var(--admin-text-muted);text-transform:uppercase;letter-spacing:0.05em;">Safety Ceiling</div>
+                <div style="font-size:0.875rem;font-weight:500;color:var(--admin-text-secondary);margin-top:0.25rem;">50 deletions max / auto-rollback</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        this.sqlResultState.hasExecuted = false;
+        const errObj = err.error || err;
+        const errCode = errObj.code || err.code || 'SQL_DESTRUCTIVE_ERROR';
+        const errMsg = errObj.message || err.message || 'Destructive execution failed';
+        const isRolledBack = errCode === 'SQL_DESTRUCTIVE_AFFECTED_ROWS_EXCEEDED' || errMsg.toLowerCase().includes('rolled back');
+        const isTimeout = errCode === 'SQL_QUERY_TIMEOUT' || err.status === 408 || errMsg.toLowerCase().includes('timeout');
+
+        const outcomeStatus = isRolledBack ? 'ROLLED_BACK' : (isTimeout ? 'TIMEOUT' : 'REJECTED');
+
+        this._recordSqlHistoryEntry({
+          sql,
+          statementType: 'DELETE',
+          status: outcomeStatus,
+          executionTimeMs: 0,
+          rowCount: 0,
+          truncated: false,
+          errorMessage: `[${errCode}] ${errMsg}`
+        });
+
+        if (isRolledBack) {
+          this._updateSqlStatusBadge('rejected', 'ROLLED BACK');
+        } else if (isTimeout) {
+          this._updateSqlStatusBadge('timeout', 'TIMEOUT');
+        } else {
+          this._updateSqlStatusBadge('rejected', 'REJECTED');
+        }
+
+        resultsWrap.innerHTML = `
+          <div class="admin-card" style="border-left:4px solid ${isRolledBack ? '#f59e0b' : '#ef4444'};padding:1.5rem;border-radius:var(--radius-md);">
+            <div style="display:flex;align-items:flex-start;gap:1rem;">
+              <div style="color:${isRolledBack ? '#d97706' : '#dc2626'};font-size:1.25rem;line-height:1;margin-top:2px;">
+                ${ICONS['alert-triangle'] || '⚠️'}
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.35rem;">
+                  <h4 style="margin:0;color:${isRolledBack ? '#b45309' : '#b91c1c'};font-size:0.9375rem;font-weight:700;">
+                    ${isRolledBack ? 'Transaction Automatically Rolled Back' : 'Destructive Operation Rejected'}
+                  </h4>
+                  <span class="admin-badge ${isRolledBack ? 'admin-badge-warning' : 'admin-badge-danger'}" style="font-family:var(--font-mono);font-size:0.75rem;">
+                    ${this._escape(errCode)}
+                  </span>
+                </div>
+                <p style="margin:0 0 0.75rem 0;font-size:0.8125rem;color:var(--admin-text-secondary);">
+                  ${isRolledBack ? 'The delete query matched more rows than the allowable safety ceiling (max 50 rows). The transaction was completely rolled back and no rows were deleted.' : 'The requested delete statement was rejected by Destructive Query Protection safety policy.'}
+                </p>
+                <div style="font-family:var(--font-mono);font-size:0.8125rem;color:var(--admin-text-primary);background:var(--admin-bg-base);padding:0.75rem 1rem;border-radius:var(--radius-xs);border:1px solid var(--admin-border);white-space:pre-wrap;word-break:break-all;">${this._escape(errMsg)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } finally {
+        if (runBtn) {
+          runBtn.disabled = false;
+          runBtn.innerHTML = `${ICONS['trash-2'] || ICONS['alert-triangle']} <span>Execute Delete</span> <kbd style="background:rgba(255,255,255,0.25);color:#fff;border-radius:3px;padding:1px 5px;font-size:0.75rem;margin-left:4px;font-family:var(--font-mono);">Ctrl+↵</kbd>`;
+        }
+      }
+    }
+
+    _getCurrentAdminId() {
+      if (!window.AdminAuth || !window.AdminAuth.currentUser) return null;
+      const user = window.AdminAuth.currentUser;
+      const id = user.id || user.userId || user.email;
+      if (!id || typeof id !== 'string') return null;
+      const clean = id.trim();
+      if (!clean || ['undefined', 'null', 'default', 'guest', 'admin'].includes(clean)) return null;
+      return clean;
+    }
+
+    _getSqlHistoryStorageKey() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) return null;
+      if (window.SqlHistory && window.SqlHistory.getSqlHistoryStorageKey) {
+        return window.SqlHistory.getSqlHistoryStorageKey(adminId);
+      }
+      return `zdex_admin_sql_history_${adminId}`;
+    }
+
+    _loadSqlHistory() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) {
+        this.sqlHistoryState.entries = [];
+        return;
+      }
+      if (window.SqlHistory && window.SqlHistory.loadSqlHistory) {
+        this.sqlHistoryState.entries = window.SqlHistory.loadSqlHistory(localStorage, adminId);
+      } else {
+        try {
+          const key = this._getSqlHistoryStorageKey();
+          if (!key) { this.sqlHistoryState.entries = []; return; }
+          const raw = localStorage.getItem(key);
+          this.sqlHistoryState.entries = raw ? JSON.parse(raw).slice(0, 50) : [];
+        } catch (_) {
+          this.sqlHistoryState.entries = [];
+        }
+      }
+    }
+
+    _saveSqlHistory() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) return;
+      if (window.SqlHistory && window.SqlHistory.saveSqlHistory) {
+        window.SqlHistory.saveSqlHistory(localStorage, adminId, this.sqlHistoryState.entries);
+      } else {
+        try {
+          const key = this._getSqlHistoryStorageKey();
+          if (key) localStorage.setItem(key, JSON.stringify(this.sqlHistoryState.entries.slice(0, 50)));
+        } catch (_) {}
+      }
+    }
+
+    _recordSqlHistoryEntry({ sql, statementType, status, executionTimeMs, rowCount, truncated, errorMessage }) {
+      if (!this._getCurrentAdminId()) return;
+
+      if (window.SqlHistory && window.SqlHistory.recordSqlHistoryEntry && window.SqlHistory.buildSqlHistoryEntry) {
+        const entry = window.SqlHistory.buildSqlHistoryEntry({
+          sql,
+          statementType,
+          status,
+          executionTimeMs,
+          rowCount,
+          truncated,
+          errorMessage
+        });
+        this.sqlHistoryState.entries = window.SqlHistory.recordSqlHistoryEntry(this.sqlHistoryState.entries, entry);
+      } else {
+        const entry = {
+          id: 'hist_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          executedAt: new Date().toISOString(),
+          sql: sql ? sql.trim() : '',
+          statementType: statementType || 'QUERY',
+          status: status || 'SUCCESS',
+          executionTimeMs: typeof executionTimeMs === 'number' ? executionTimeMs : 0,
+          rowCount: typeof rowCount === 'number' ? rowCount : 0,
+          truncated: Boolean(truncated),
+          errorMessage: errorMessage ? String(errorMessage).slice(0, 500) : null
+        };
+        this.sqlHistoryState.entries.unshift(entry);
+        if (this.sqlHistoryState.entries.length > 50) {
+          this.sqlHistoryState.entries = this.sqlHistoryState.entries.slice(0, 50);
+        }
+      }
+
+      this._saveSqlHistory();
+      this._renderSqlHistoryList();
+    }
+
+    _renderSqlHistory() {
+      const wrap = document.getElementById('adminSqlHistoryWrap');
+      if (!wrap) return;
+
+      if (!this._getCurrentAdminId()) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div class="admin-sql-history-card">
+          <div class="admin-sql-history-header">
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+              <h3 style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--admin-text-primary);display:flex;align-items:center;gap:0.5rem;">
+                <span>Query History</span>
+                <span id="adminSqlHistoryCountBadge" class="admin-badge admin-badge-neutral" style="font-family:var(--font-mono);font-size:0.75rem;">0 / 50</span>
+              </h3>
+              <span style="font-size:0.75rem;color:var(--admin-text-muted);" title="Per-administrator browser-local persistent query history. Browser storage is not a confidentiality boundary; stored SQL may contain administrator-supplied sensitive literals.">(Per-administrator browser-local persistent query history &bull; Max 50 queries)</span>
+            </div>
+            <div class="admin-sql-history-toolbar">
+              <div class="admin-sql-search-box" style="width:200px;">
+                ${ICONS.search || ''}
+                <input type="text" id="adminSqlHistorySearchInput" class="admin-sql-search-input" placeholder="Search history..." value="${this._escape(this.sqlHistoryState.filterText)}" aria-label="Search query history">
+              </div>
+              <select id="adminSqlHistoryStatusFilter" class="admin-select" style="padding:0.25rem 0.5rem;font-size:0.75rem;height:30px;">
+                <option value="ALL" ${this.sqlHistoryState.statusFilter === 'ALL' ? 'selected' : ''}>All Statuses</option>
+                <option value="SUCCESS" ${this.sqlHistoryState.statusFilter === 'SUCCESS' ? 'selected' : ''}>Success</option>
+                <option value="ERROR" ${this.sqlHistoryState.statusFilter === 'ERROR' ? 'selected' : ''}>Error</option>
+                <option value="REJECTED" ${this.sqlHistoryState.statusFilter === 'REJECTED' ? 'selected' : ''}>Rejected</option>
+                <option value="TIMEOUT" ${this.sqlHistoryState.statusFilter === 'TIMEOUT' ? 'selected' : ''}>Timeout</option>
+              </select>
+              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.confirmClearSqlHistory()" title="Clear all local query history">
+                ${ICONS['trash-2'] || ''} Clear History
+              </button>
+            </div>
+          </div>
+          <div id="adminSqlHistoryList" class="admin-sql-history-list"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('adminSqlHistorySearchInput');
+      const statusSelect = document.getElementById('adminSqlHistoryStatusFilter');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          this._filterSqlHistory(e.target.value, undefined);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this._filterSqlHistory(undefined, e.target.value);
+        });
+      }
+
+      this._renderSqlHistoryList();
+    }
+
+    _filterSqlHistory(query, status) {
+      if (query !== undefined) this.sqlHistoryState.filterText = (query || '').trim().toLowerCase();
+      if (status !== undefined) this.sqlHistoryState.statusFilter = status;
+      this._renderSqlHistoryList();
+    }
+
+    _renderSqlHistoryList() {
+      const listEl = document.getElementById('adminSqlHistoryList');
+      const countBadge = document.getElementById('adminSqlHistoryCountBadge');
+      if (!listEl) return;
+
+      if (!this._getCurrentAdminId()) {
+        this.sqlHistoryState.entries = [];
+        this.sqlHistoryState.expandedIds.clear();
+        listEl.textContent = '';
+        if (countBadge) countBadge.textContent = '0 / 50';
+        return;
+      }
+
+      if (countBadge) {
+        countBadge.textContent = `${this.sqlHistoryState.entries.length} / 50`;
+      }
+
+      listEl.textContent = '';
+
+      if (this.sqlHistoryState.entries.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.875rem;';
+        emptyDiv.textContent = 'No query history recorded yet. Executed queries will appear here automatically.';
+        listEl.appendChild(emptyDiv);
+        return;
+      }
+
+      const filterText = (this.sqlHistoryState.filterText || '').toLowerCase();
+      const statusFilter = this.sqlHistoryState.statusFilter || 'ALL';
+
+      const filtered = (window.SqlHistory && window.SqlHistory.filterSqlHistory)
+        ? window.SqlHistory.filterSqlHistory(this.sqlHistoryState.entries, filterText, statusFilter)
+        : this.sqlHistoryState.entries.filter(entry => {
+            if (statusFilter !== 'ALL' && entry.status !== statusFilter) return false;
+            if (filterText) {
+              const matchSql = entry.sql && entry.sql.toLowerCase().includes(filterText);
+              const matchErr = entry.errorMessage && entry.errorMessage.toLowerCase().includes(filterText);
+              const matchStmt = entry.statementType && entry.statementType.toLowerCase().includes(filterText);
+              if (!matchSql && !matchErr && !matchStmt) return false;
+            }
+            return true;
+          });
+
+      if (filtered.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.875rem;';
+        emptyDiv.textContent = 'No history queries match your filter criteria.';
+        listEl.appendChild(emptyDiv);
+        return;
+      }
+
+      filtered.forEach(entry => {
+        const item = document.createElement('div');
+        item.className = 'admin-sql-history-item';
+
+        // Top Row: Meta and Actions
+        const topRow = document.createElement('div');
+        topRow.className = 'admin-sql-history-item-top';
+
+        // Meta (Left)
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'admin-sql-history-meta';
+
+        // Status Badge
+        const statusBadge = document.createElement('span');
+        let statusBadgeClass = 'admin-badge-neutral';
+        if (entry.status === 'SUCCESS') statusBadgeClass = 'admin-badge-success';
+        else if (entry.status === 'REJECTED') statusBadgeClass = 'admin-badge-warning';
+        else if (entry.status === 'ERROR' || entry.status === 'TIMEOUT') statusBadgeClass = 'admin-badge-danger';
+        statusBadge.className = `admin-badge ${statusBadgeClass}`;
+        statusBadge.textContent = entry.status;
+        metaDiv.appendChild(statusBadge);
+
+        // Statement Type Badge
+        const stmtBadge = document.createElement('span');
+        stmtBadge.className = 'admin-badge admin-badge-info';
+        stmtBadge.textContent = entry.statementType || 'QUERY';
+        metaDiv.appendChild(stmtBadge);
+
+        // Stats summary
+        const statsSpan = document.createElement('span');
+        statsSpan.style.color = 'var(--admin-text-secondary)';
+        if (entry.status === 'SUCCESS') {
+          const rowText = `${entry.rowCount}${entry.truncated ? '+' : ''} row${entry.rowCount === 1 ? '' : 's'}`;
+          statsSpan.textContent = `• ${rowText} • ${entry.executionTimeMs}ms`;
+        } else {
+          statsSpan.textContent = `• Failed`;
+        }
+        metaDiv.appendChild(statsSpan);
+
+        // Executed Timestamp
+        const timeSpan = document.createElement('span');
+        timeSpan.style.color = 'var(--admin-text-muted)';
+        const dateObj = new Date(entry.executedAt);
+        timeSpan.textContent = `• ${dateObj.toLocaleTimeString()}`;
+        timeSpan.title = dateObj.toLocaleString();
+        metaDiv.appendChild(timeSpan);
+
+        topRow.appendChild(metaDiv);
+
+        // Actions (Right)
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'admin-sql-history-actions';
+
+        // Restore Query Button
+        const restoreBtn = document.createElement('button');
+        restoreBtn.type = 'button';
+        restoreBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        restoreBtn.title = 'Restore query to editor (does not execute)';
+        restoreBtn.textContent = 'Restore Query';
+        restoreBtn.addEventListener('click', () => this._restoreHistoryQuery(entry.id));
+        actionsDiv.appendChild(restoreBtn);
+
+        // Copy SQL Button
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        copyBtn.title = 'Copy SQL to clipboard';
+        copyBtn.textContent = 'Copy';
+        copyBtn.addEventListener('click', () => this._copyHistorySql(entry.id));
+        actionsDiv.appendChild(copyBtn);
+
+        // Details Toggle Button
+        const isExpanded = this.sqlHistoryState.expandedIds.has(entry.id);
+        const detailsBtn = document.createElement('button');
+        detailsBtn.type = 'button';
+        detailsBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        detailsBtn.title = isExpanded ? 'Collapse details' : 'Expand full query and error details';
+        detailsBtn.textContent = isExpanded ? 'Details ▲' : 'Details ▼';
+        detailsBtn.addEventListener('click', () => this._toggleHistoryDetails(entry.id));
+        actionsDiv.appendChild(detailsBtn);
+
+        topRow.appendChild(actionsDiv);
+        item.appendChild(topRow);
+
+        // One-line SQL Preview (clickable to restore)
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'admin-sql-history-sql-preview';
+        previewDiv.title = 'Click to restore query into editor';
+        const singleLineSql = entry.sql.replace(/\s+/g, ' ');
+        previewDiv.textContent = singleLineSql.length > 140 ? singleLineSql.substring(0, 140) + '...' : singleLineSql;
+        previewDiv.addEventListener('click', () => this._restoreHistoryQuery(entry.id));
+        item.appendChild(previewDiv);
+
+        // Expanded View (Full SQL + Sanitized Error Message)
+        if (isExpanded) {
+          const fullSqlPre = document.createElement('pre');
+          fullSqlPre.className = 'admin-sql-history-expanded-sql';
+          fullSqlPre.textContent = entry.sql;
+          item.appendChild(fullSqlPre);
+
+          if (entry.errorMessage) {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'admin-sql-history-error';
+            errDiv.textContent = entry.errorMessage;
+            item.appendChild(errDiv);
+          }
+        }
+
+        listEl.appendChild(item);
+      });
+    }
+
+    _restoreHistoryQuery(id) {
+      if (!this._getCurrentAdminId()) {
+        this.sqlHistoryState.entries = [];
+        this.sqlHistoryState.expandedIds.clear();
+        this.toast('Authentication required to access query history.', 'warning');
+        return;
+      }
+
+      const entry = this.sqlHistoryState.entries.find(e => e.id === id);
+      if (!entry || !entry.sql) {
+        this.toast('Query not found in history.', 'warning');
+        return;
+      }
+
+      const input = document.getElementById('adminSqlQueryInput');
+      if (input) {
+        input.value = entry.sql;
+        this._updateSqlEditorGutter();
+        this._updateSqlCursorPos();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus();
+        this.toast('Query restored to editor (not executed).', 'info', 2500);
+      }
+    }
+
+    _copyHistorySql(id) {
+      if (!this._getCurrentAdminId()) {
+        this.sqlHistoryState.entries = [];
+        this.sqlHistoryState.expandedIds.clear();
+        return;
+      }
+
+      const entry = this.sqlHistoryState.entries.find(e => e.id === id);
+      if (!entry || !entry.sql) return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(entry.sql).then(() => {
+          this.toast('SQL statement copied to clipboard.', 'success', 2000);
+        }).catch(() => {
+          this.toast('Failed to copy SQL to clipboard.', 'danger');
+        });
+      } else {
+        this.toast('Clipboard API unavailable in this browser.', 'warning');
+      }
+    }
+
+    _toggleHistoryDetails(id) {
+      if (this.sqlHistoryState.expandedIds.has(id)) {
+        this.sqlHistoryState.expandedIds.delete(id);
+      } else {
+        this.sqlHistoryState.expandedIds.add(id);
+      }
+      this._renderSqlHistoryList();
+    }
+
+    // =========================================================================
+    // Phase 15.5: Professional Saved Queries Engine Integration
+    // =========================================================================
+    _getSqlSavedQueriesStorageKey() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) return null;
+      if (window.SqlSavedQueries && window.SqlSavedQueries.getSqlSavedQueriesStorageKey) {
+        return window.SqlSavedQueries.getSqlSavedQueriesStorageKey(adminId);
+      }
+      return `zdex_admin_sql_saved_queries_${adminId}`;
+    }
+
+    _loadSqlSavedQueries() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) {
+        this.sqlSavedQueriesState.queries = [];
+        return;
+      }
+      if (window.SqlSavedQueries && window.SqlSavedQueries.loadSqlSavedQueries) {
+        this.sqlSavedQueriesState.queries = window.SqlSavedQueries.loadSqlSavedQueries(localStorage, adminId);
+      } else {
+        try {
+          const key = this._getSqlSavedQueriesStorageKey();
+          if (!key) { this.sqlSavedQueriesState.queries = []; return; }
+          const raw = localStorage.getItem(key);
+          this.sqlSavedQueriesState.queries = raw ? JSON.parse(raw) : [];
+        } catch (_) {
+          this.sqlSavedQueriesState.queries = [];
+        }
+      }
+    }
+
+    _saveSqlSavedQueries() {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) return;
+      if (window.SqlSavedQueries && window.SqlSavedQueries.saveSqlSavedQueries) {
+        window.SqlSavedQueries.saveSqlSavedQueries(localStorage, adminId, this.sqlSavedQueriesState.queries);
+      } else {
+        try {
+          const key = this._getSqlSavedQueriesStorageKey();
+          if (key) localStorage.setItem(key, JSON.stringify(this.sqlSavedQueriesState.queries.slice(0, 100)));
+        } catch (_) {}
+      }
+    }
+
+    _renderSqlSavedQueries() {
+      const wrap = document.getElementById('adminSqlSavedQueriesWrap');
+      if (!wrap) return;
+
+      if (!this._getCurrentAdminId()) {
+        wrap.innerHTML = '';
+        return;
+      }
+
+      wrap.innerHTML = `
+        <div class="admin-sql-saved-queries-card">
+          <div class="admin-sql-saved-queries-header">
+            <div style="display:flex;align-items:center;gap:0.75rem;">
+              <h3 style="margin:0;font-size:0.9375rem;font-weight:700;color:var(--admin-text-primary);display:flex;align-items:center;gap:0.5rem;">
+                <span>Saved Queries</span>
+                <span id="adminSqlSavedQueriesCountBadge" class="admin-badge admin-badge-neutral" style="font-family:var(--font-mono);font-size:0.75rem;">0 / 100</span>
+              </h3>
+              <span style="font-size:0.75rem;color:var(--admin-text-muted);" title="Saved Query SQL is administrator-authored data stored in browser-local storage. Browser storage is not a confidentiality boundary and may contain sensitive SQL literals.">(Per-administrator browser-local persistent definitions &bull; Max 100 queries)</span>
+            </div>
+            <div class="admin-sql-saved-queries-toolbar">
+              <div class="admin-sql-search-box" style="width:240px;">
+                ${ICONS.search || ''}
+                <input type="text" id="adminSqlSavedQueriesSearchInput" class="admin-sql-search-input" placeholder="Search saved queries..." value="${this._escape(this.sqlSavedQueriesState.filterText)}" aria-label="Search saved queries">
+              </div>
+              <button type="button" class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell._openSaveQueryModal()" title="Save current editor query definition">
+                ${ICONS['file-text'] || ''} + Save Current Query
+              </button>
+            </div>
+          </div>
+          <div id="adminSqlSavedQueriesList" class="admin-sql-saved-queries-list"></div>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('adminSqlSavedQueriesSearchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          this._filterSqlSavedQueries(e.target.value);
+        });
+      }
+
+      this._renderSqlSavedQueriesList();
+    }
+
+    _filterSqlSavedQueries(query) {
+      this.sqlSavedQueriesState.filterText = (query || '').trim().toLowerCase();
+      this._renderSqlSavedQueriesList();
+    }
+
+    _renderSqlSavedQueriesList() {
+      const listEl = document.getElementById('adminSqlSavedQueriesList');
+      const countBadge = document.getElementById('adminSqlSavedQueriesCountBadge');
+      if (!listEl) return;
+
+      if (!this._getCurrentAdminId()) {
+        this.sqlSavedQueriesState.queries = [];
+        this.sqlSavedQueriesState.expandedIds.clear();
+        listEl.textContent = '';
+        if (countBadge) countBadge.textContent = '0 / 100';
+        return;
+      }
+
+      if (countBadge) {
+        countBadge.textContent = `${this.sqlSavedQueriesState.queries.length} / 100`;
+      }
+
+      listEl.textContent = '';
+
+      if (this.sqlSavedQueriesState.queries.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:2.5rem 1.5rem;text-align:center;color:var(--admin-text-muted);font-size:0.875rem;';
+        emptyDiv.textContent = 'No saved queries yet. Write a query in the editor and click "+ Save Current Query" to store reusable SQL definitions.';
+        listEl.appendChild(emptyDiv);
+        return;
+      }
+
+      const filterText = (this.sqlSavedQueriesState.filterText || '').toLowerCase();
+      const filtered = (window.SqlSavedQueries && window.SqlSavedQueries.filterSqlSavedQueries)
+        ? window.SqlSavedQueries.filterSqlSavedQueries(this.sqlSavedQueriesState.queries, filterText)
+        : this.sqlSavedQueriesState.queries.filter(q => {
+            if (!filterText) return true;
+            const matchName = q.name && q.name.toLowerCase().includes(filterText);
+            const matchDesc = q.description && q.description.toLowerCase().includes(filterText);
+            const matchSql = q.sql && q.sql.toLowerCase().includes(filterText);
+            return Boolean(matchName || matchDesc || matchSql);
+          });
+
+      if (filtered.length === 0) {
+        const emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'padding:2rem;text-align:center;color:var(--admin-text-muted);font-size:0.875rem;';
+        emptyDiv.textContent = 'No saved queries match your search filter.';
+        listEl.appendChild(emptyDiv);
+        return;
+      }
+
+      filtered.forEach(query => {
+        const item = document.createElement('div');
+        item.className = 'admin-sql-saved-query-item';
+
+        // Top Row: Info and Actions
+        const topRow = document.createElement('div');
+        topRow.className = 'admin-sql-saved-query-item-top';
+
+        // Info (Left)
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'admin-sql-saved-query-info';
+
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'admin-sql-saved-query-name';
+        nameSpan.textContent = query.name;
+        infoDiv.appendChild(nameSpan);
+
+        if (query.description) {
+          const descSpan = document.createElement('div');
+          descSpan.className = 'admin-sql-saved-query-desc';
+          descSpan.textContent = query.description;
+          infoDiv.appendChild(descSpan);
+        }
+
+        const metaSpan = document.createElement('div');
+        metaSpan.className = 'admin-sql-saved-query-meta';
+        const updatedDate = new Date(query.updatedAt || query.createdAt);
+        metaSpan.textContent = `Updated: ${updatedDate.toLocaleDateString()} ${updatedDate.toLocaleTimeString()}`;
+        metaSpan.title = `Created: ${new Date(query.createdAt).toLocaleString()} | Updated: ${updatedDate.toLocaleString()}`;
+        infoDiv.appendChild(metaSpan);
+
+        topRow.appendChild(infoDiv);
+
+        // Actions (Right)
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'admin-sql-saved-query-actions';
+
+        // Restore Button
+        const restoreBtn = document.createElement('button');
+        restoreBtn.type = 'button';
+        restoreBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        restoreBtn.title = 'Load query into editor (does not execute)';
+        restoreBtn.textContent = 'Restore';
+        restoreBtn.addEventListener('click', () => this._restoreSavedQuery(query.id));
+        actionsDiv.appendChild(restoreBtn);
+
+        // Copy SQL Button
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        copyBtn.title = 'Copy SQL definition to clipboard';
+        copyBtn.textContent = 'Copy';
+        copyBtn.addEventListener('click', () => this._copySavedQuerySql(query.id));
+        actionsDiv.appendChild(copyBtn);
+
+        // Edit Button
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        editBtn.title = 'Edit saved query definition';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => this._openSaveQueryModal(query.id));
+        actionsDiv.appendChild(editBtn);
+
+        // Delete Button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        deleteBtn.title = 'Delete saved query';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => this.confirmDeleteSavedQuery(query.id));
+        actionsDiv.appendChild(deleteBtn);
+
+        // Details Toggle
+        const isExpanded = this.sqlSavedQueriesState.expandedIds.has(query.id);
+        const detailsBtn = document.createElement('button');
+        detailsBtn.type = 'button';
+        detailsBtn.className = 'admin-btn admin-btn-secondary admin-btn-xs';
+        detailsBtn.title = isExpanded ? 'Collapse SQL' : 'Expand full SQL definition';
+        detailsBtn.textContent = isExpanded ? 'SQL ▲' : 'SQL ▼';
+        detailsBtn.addEventListener('click', () => this._toggleSavedQueryDetails(query.id));
+        actionsDiv.appendChild(detailsBtn);
+
+        topRow.appendChild(actionsDiv);
+        item.appendChild(topRow);
+
+        // One-line SQL Preview (clickable to restore)
+        const previewDiv = document.createElement('div');
+        previewDiv.className = 'admin-sql-saved-query-sql-preview';
+        previewDiv.title = 'Click to restore query into editor';
+        const singleLineSql = query.sql.replace(/\s+/g, ' ');
+        previewDiv.textContent = singleLineSql.length > 140 ? singleLineSql.substring(0, 140) + '...' : singleLineSql;
+        previewDiv.addEventListener('click', () => this._restoreSavedQuery(query.id));
+        item.appendChild(previewDiv);
+
+        // Expanded View
+        if (isExpanded) {
+          const fullSqlPre = document.createElement('pre');
+          fullSqlPre.className = 'admin-sql-saved-query-expanded-sql';
+          fullSqlPre.textContent = query.sql;
+          item.appendChild(fullSqlPre);
+        }
+
+        listEl.appendChild(item);
+      });
+    }
+
+    _restoreSavedQuery(id) {
+      if (!this._getCurrentAdminId()) {
+        this.sqlSavedQueriesState.queries = [];
+        this.sqlSavedQueriesState.expandedIds.clear();
+        this.toast('Authentication required to access saved queries.', 'warning');
+        return;
+      }
+
+      const query = this.sqlSavedQueriesState.queries.find(q => q.id === id);
+      if (!query || !query.sql) {
+        this.toast('Saved query not found.', 'warning');
+        return;
+      }
+
+      const input = document.getElementById('adminSqlQueryInput');
+      if (input) {
+        input.value = query.sql;
+        this._updateSqlEditorGutter();
+        this._updateSqlCursorPos();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        input.focus();
+        this.toast(`Saved query "${query.name}" restored to editor (not executed).`, 'info', 2500);
+      }
+    }
+
+    _copySavedQuerySql(id) {
+      if (!this._getCurrentAdminId()) return;
+      const query = this.sqlSavedQueriesState.queries.find(q => q.id === id);
+      if (!query || !query.sql) return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(query.sql).then(() => {
+          this.toast(`SQL for "${query.name}" copied to clipboard.`, 'success', 2000);
+        }).catch(() => {
+          this.toast('Failed to copy SQL to clipboard.', 'danger');
+        });
+      } else {
+        this.toast('Clipboard API unavailable in this browser.', 'warning');
+      }
+    }
+
+    _toggleSavedQueryDetails(id) {
+      if (this.sqlSavedQueriesState.expandedIds.has(id)) {
+        this.sqlSavedQueriesState.expandedIds.delete(id);
+      } else {
+        this.sqlSavedQueriesState.expandedIds.add(id);
+      }
+      this._renderSqlSavedQueriesList();
+    }
+
+    _openSaveQueryModal(idToEdit = null) {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) {
+        this.toast('Authentication required to save queries.', 'warning');
+        return;
+      }
+
+      let existing = null;
+      let initialSql = '';
+      if (idToEdit) {
+        existing = this.sqlSavedQueriesState.queries.find(q => q.id === idToEdit);
+        if (!existing) {
+          this.toast('Saved query not found.', 'warning');
+          return;
+        }
+        initialSql = existing.sql;
+      } else {
+        const editorInput = document.getElementById('adminSqlQueryInput');
+        initialSql = editorInput ? editorInput.value.trim() : '';
+        if (!initialSql) {
+          this.toast('Please write or enter a SQL query in the editor first.', 'warning');
+          if (editorInput) editorInput.focus();
+          return;
+        }
+      }
+
+      const formContainer = document.createElement('div');
+      formContainer.style.cssText = 'display:flex;flex-direction:column;gap:1.25rem;';
+
+      // Security Notice
+      const noticeDiv = document.createElement('div');
+      noticeDiv.className = 'admin-banner-info';
+      noticeDiv.style.cssText = 'padding:0.625rem 0.875rem;font-size:0.75rem;line-height:1.4;background:var(--admin-bg-subtle);border-radius:var(--radius-sm);border:1px solid var(--admin-border-subtle);';
+      noticeDiv.textContent = 'Saved Query definitions are retained in browser-local storage for your administrator profile. Stored SQL may contain sensitive literals.';
+      formContainer.appendChild(noticeDiv);
+
+      // Name Input
+      const nameGroup = document.createElement('div');
+      nameGroup.style.cssText = 'display:flex;flex-direction:column;gap:0.375rem;';
+      const nameLabel = document.createElement('label');
+      nameLabel.style.cssText = 'font-size:0.8125rem;font-weight:600;color:var(--admin-text-primary);';
+      nameLabel.textContent = 'Query Name *';
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text';
+      nameInput.className = 'admin-search-input';
+      nameInput.style.cssText = 'padding:0.5rem 0.75rem;font-size:0.875rem;';
+      nameInput.placeholder = 'e.g. Active Customer Accounts';
+      nameInput.maxLength = 100;
+      nameInput.value = existing ? existing.name : '';
+      nameGroup.appendChild(nameLabel);
+      nameGroup.appendChild(nameInput);
+      formContainer.appendChild(nameGroup);
+
+      // Description Input
+      const descGroup = document.createElement('div');
+      descGroup.style.cssText = 'display:flex;flex-direction:column;gap:0.375rem;';
+      const descLabel = document.createElement('label');
+      descLabel.style.cssText = 'font-size:0.8125rem;font-weight:600;color:var(--admin-text-primary);';
+      descLabel.textContent = 'Description (Optional)';
+      const descInput = document.createElement('input');
+      descInput.type = 'text';
+      descInput.className = 'admin-search-input';
+      descInput.style.cssText = 'padding:0.5rem 0.75rem;font-size:0.875rem;';
+      descInput.placeholder = 'e.g. Returns verified active customer accounts ordered by creation date';
+      descInput.maxLength = 500;
+      descInput.value = existing && existing.description ? existing.description : '';
+      descGroup.appendChild(descLabel);
+      descGroup.appendChild(descInput);
+      formContainer.appendChild(descGroup);
+
+      // SQL Textarea
+      const sqlGroup = document.createElement('div');
+      sqlGroup.style.cssText = 'display:flex;flex-direction:column;gap:0.375rem;';
+      const sqlLabel = document.createElement('label');
+      sqlLabel.style.cssText = 'font-size:0.8125rem;font-weight:600;color:var(--admin-text-primary);';
+      sqlLabel.textContent = 'SQL Statement *';
+      const sqlTextarea = document.createElement('textarea');
+      sqlTextarea.className = 'admin-sql-textarea';
+      sqlTextarea.style.cssText = 'font-family:var(--font-mono);font-size:0.8125rem;padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);min-height:140px;background:var(--admin-bg-base);';
+      sqlTextarea.maxLength = 10000;
+      sqlTextarea.spellcheck = false;
+      sqlTextarea.value = initialSql;
+      sqlGroup.appendChild(sqlLabel);
+      sqlGroup.appendChild(sqlTextarea);
+      formContainer.appendChild(sqlGroup);
+
+      // Actions row
+      const actionsRow = document.createElement('div');
+      actionsRow.style.cssText = 'display:flex;justify-content:flex-end;gap:0.75rem;margin-top:0.5rem;';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn admin-btn-secondary';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', () => {
+        const drawerBackdrop = document.getElementById('adminDrawerBackdrop');
+        const drawer = document.getElementById('adminDrawer');
+        if (drawer) drawer.classList.remove('open');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('active');
+      });
+      actionsRow.appendChild(cancelBtn);
+
+      const submitBtn = document.createElement('button');
+      submitBtn.type = 'button';
+      submitBtn.className = 'admin-btn admin-btn-primary';
+      submitBtn.textContent = existing ? 'Update Saved Query' : 'Save Query';
+      submitBtn.addEventListener('click', () => {
+        const nameVal = nameInput.value.trim();
+        const sqlVal = sqlTextarea.value.trim();
+        const descVal = descInput.value.trim();
+
+        if (!nameVal) {
+          this.toast('Please enter a query name.', 'warning');
+          nameInput.focus();
+          return;
+        }
+
+        if (!sqlVal) {
+          this.toast('Please enter a SQL statement.', 'warning');
+          sqlTextarea.focus();
+          return;
+        }
+
+        try {
+          if (existing) {
+            window.SqlSavedQueries.updateSqlSavedQuery(localStorage, adminId, existing.id, {
+              name: nameVal,
+              description: descVal || null,
+              sql: sqlVal
+            });
+            this.toast(`Saved query "${nameVal}" updated successfully.`, 'success');
+          } else {
+            window.SqlSavedQueries.createSqlSavedQuery(localStorage, adminId, {
+              name: nameVal,
+              description: descVal || null,
+              sql: sqlVal
+            });
+            this.toast(`Query "${nameVal}" saved successfully.`, 'success');
+          }
+
+          this._loadSqlSavedQueries();
+          this._renderSqlSavedQueriesList();
+
+          const drawerBackdrop = document.getElementById('adminDrawerBackdrop');
+          const drawer = document.getElementById('adminDrawer');
+          if (drawer) drawer.classList.remove('open');
+          if (drawerBackdrop) drawerBackdrop.classList.remove('active');
+        } catch (err) {
+          const msg = err && err.message ? err.message : 'Failed to save query';
+          this.toast(msg, 'danger');
+        }
+      });
+      actionsRow.appendChild(submitBtn);
+
+      formContainer.appendChild(actionsRow);
+
+      this._showDrawer(existing ? 'Edit Saved Query' : 'Save Query Definition', formContainer);
+      setTimeout(() => nameInput.focus(), 150);
+    }
+
+    confirmDeleteSavedQuery(id) {
+      const adminId = this._getCurrentAdminId();
+      if (!adminId) {
+        this.toast('Authentication required to delete saved queries.', 'warning');
+        return;
+      }
+
+      const query = this.sqlSavedQueriesState.queries.find(q => q.id === id);
+      if (!query) {
+        this.toast('Saved query not found.', 'warning');
+        return;
+      }
+
+      this.showConfirmModal({
+        title: 'Delete Saved Query',
+        message: `Are you sure you want to delete the saved query "${query.name}"?`,
+        warningText: 'This definition will be permanently deleted from your saved queries list. Query History and backend audit logs are not affected.',
+        confirmLabel: 'Delete Query',
+        confirmType: 'danger',
+        requireReason: false,
+        onConfirm: () => {
+          const deleted = window.SqlSavedQueries.deleteSqlSavedQuery(localStorage, adminId, id);
+          if (deleted) {
+            this._loadSqlSavedQueries();
+            this._renderSqlSavedQueriesList();
+            this.toast(`Saved query "${query.name}" deleted.`, 'success');
+          } else {
+            this.toast('Failed to delete saved query.', 'danger');
+          }
+        }
+      });
+    }
+
+    confirmClearSqlHistory() {
+      if (!this.sqlHistoryState.entries || this.sqlHistoryState.entries.length === 0) {
+        this.toast('Query history is already empty.', 'info');
+        return;
+      }
+
+      this.showConfirmModal({
+        title: 'Clear Local Query History',
+        message: `Are you sure you want to clear your local SQL query history (${this.sqlHistoryState.entries.length} queries)?`,
+        warningText: 'This only clears your local browser history. Tamper-evident, hash-chained platform security audit logs are not affected.',
+        confirmLabel: 'Clear History',
+        confirmType: 'danger',
+        requireReason: false,
+        onConfirm: () => {
+          const adminId = this._getCurrentAdminId();
+          if (window.SqlHistory && window.SqlHistory.clearSqlHistory && adminId) {
+            window.SqlHistory.clearSqlHistory(localStorage, adminId);
+          } else {
+            const key = this._getSqlHistoryStorageKey();
+            if (key) localStorage.removeItem(key);
+          }
+          this.sqlHistoryState.entries = [];
+          this.sqlHistoryState.expandedIds.clear();
+          this._renderSqlHistoryList();
+          this.toast('Local SQL query history cleared.', 'success');
+        }
+      });
+    }
+
+    _wipeHistoryStateOnLogout() {
+      this.sqlHistoryState.entries = [];
+      this.sqlHistoryState.expandedIds.clear();
+      this.sqlHistoryState.filterText = '';
+      this.sqlHistoryState.statusFilter = 'ALL';
+      if (this.sqlSavedQueriesState) {
+        this.sqlSavedQueriesState.queries = [];
+        this.sqlSavedQueriesState.expandedIds.clear();
+        this.sqlSavedQueriesState.filterText = '';
       }
     }
 

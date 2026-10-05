@@ -308,6 +308,21 @@
     getEmailRetentionMetrics() {
       return this.get('/admin/emails/retention');
     }
+
+    // =========================================================================
+    // SQL Query Runner API Methods (Phase 15.1, 15.6 & 15.7)
+    // =========================================================================
+    executeSqlQuery(sql) {
+      return this.post('/admin/sql/query', { sql });
+    }
+
+    executeControlledWriteQuery(sql, confirmed = true) {
+      return this.post('/admin/sql/write', { sql, confirmed });
+    }
+
+    executeDestructiveQuery(sql, confirmed = true) {
+      return this.post('/admin/sql/destructive', { sql, confirmed });
+    }
   }
 
   window.AdminApi = new AdminApiClient();

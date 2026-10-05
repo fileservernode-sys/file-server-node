@@ -90,7 +90,7 @@ object RemoteNodeTunnelManager {
     private var activeWebSocket: WebSocket? = null
     private var pingFuture: java.util.concurrent.ScheduledFuture<*>? = null
     private var okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .pingInterval(10, TimeUnit.SECONDS)
+        .pingInterval(15, TimeUnit.SECONDS)
         .connectTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS) // Keep-alive socket
@@ -288,8 +288,15 @@ object RemoteNodeTunnelManager {
                 if (respCode == 200) {
                     val json = JSONObject(rawBody)
                     if (json.optBoolean("success")) {
-                        val data = json.getJSONObject("data")
-                        val newAccessToken = data.optString("accessToken")
+                        val data = json.optJSONObject("data") ?: json
+                        var newAccessToken = data.optString("accessToken")
+                        if (newAccessToken.isNullOrEmpty()) {
+                            newAccessToken = data.optString("token")
+                        }
+                        if (newAccessToken.isNullOrEmpty()) {
+                            val sessionObj = data.optJSONObject("session")
+                            newAccessToken = sessionObj?.optString("accessToken") ?: sessionObj?.optString("token") ?: ""
+                        }
                         if (!newAccessToken.isNullOrEmpty()) {
                             storedSessionToken = newAccessToken
                             appContext?.let { ctx ->
@@ -434,11 +441,25 @@ object RemoteNodeTunnelManager {
                 val apiBase = storedApiBaseUrl
                 var gatewayWs = storedGatewayWsUrl
 
-                if (devId.isNullOrEmpty() || sessionTok.isNullOrEmpty() || apiBase.isNullOrEmpty() || gatewayWs.isNullOrEmpty()) {
-                    Log.e(TAG, "[CONNECT_CONFIG_ERROR] gen=$generation devIdPresent=${!devId.isNullOrEmpty()} sessionTokPresent=${!sessionTok.isNullOrEmpty()} apiBasePresent=${!apiBase.isNullOrEmpty()} gwWsPresent=${!gatewayWs.isNullOrEmpty()}")
+                if (devId.isNullOrEmpty() || apiBase.isNullOrEmpty() || gatewayWs.isNullOrEmpty()) {
+                    Log.e(TAG, "[CONNECT_CONFIG_ERROR] gen=$generation devIdPresent=${!devId.isNullOrEmpty()} apiBasePresent=${!apiBase.isNullOrEmpty()} gwWsPresent=${!gatewayWs.isNullOrEmpty()}")
                     emitState(STATE_ERROR, "Missing device ID or configuration parameters")
                     isConnectingOrReconnecting = false
                     return@execute
+                }
+
+                if (sessionTok.isNullOrEmpty()) {
+                    Log.i(TAG, "[CONNECT_INITIAL_REFRESH] No session token present, attempting session refresh via persistent credential...")
+                    val refreshedToken = executeSessionRefresh(devId, apiBase)
+                    if (refreshedToken != null) {
+                        sessionTok = refreshedToken
+                        storedSessionToken = refreshedToken
+                    } else {
+                        Log.e(TAG, "[CONNECT_CONFIG_ERROR] No session token and persistent refresh failed.")
+                        emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
+                        isConnectingOrReconnecting = false
+                        return@execute
+                    }
                 }
 
                 // 1. Control Plane Registration Request (POST /connections/register)
@@ -504,7 +525,7 @@ object RemoteNodeTunnelManager {
                         } else if (respCode == 401) {
                             Log.w(TAG, "[REGISTRATION_AUTH_401] Control plane session expired (HTTP 401). Attempting persistent session renewal...")
                             val refreshedToken = executeSessionRefresh(devId, apiBase)
-                            if (refreshedToken != null && refreshedToken != sessionTok) {
+                            if (!refreshedToken.isNullOrEmpty()) {
                                 sessionTok = refreshedToken
                                 Log.i(TAG, "[REGISTRATION_AUTH_RENEWED] Retrying registration with renewed token...")
                                 continue
@@ -688,7 +709,10 @@ object RemoteNodeTunnelManager {
                                     val reason = msg.optString("reason", "Gateway authentication rejected")
                                     val isTransientTokenFailure = reason.contains("timeout", ignoreCase = true) ||
                                         reason.contains("revoked", ignoreCase = true) ||
-                                        reason.contains("invalid", ignoreCase = true)
+                                        reason.contains("invalid", ignoreCase = true) ||
+                                        reason.contains("expired", ignoreCase = true) ||
+                                        reason.contains("not found", ignoreCase = true) ||
+                                        reason.contains("mismatch", ignoreCase = true)
 
                                     Log.e(TAG, "[AUTH_FAILURE] gen=$generation reason=$reason isTransient=$isTransientTokenFailure attempt=$reconnectAttempts")
                                     AndroidErrorTelemetry.reportError(
@@ -711,8 +735,21 @@ object RemoteNodeTunnelManager {
                                         webSocket.close(1000, "Token refresh required")
                                         triggerReconnect()
                                     } else {
-                                        emitState(STATE_AUTH_FAILED, reason)
-                                        webSocket.close(1000, "Auth failure")
+                                        // Attempt persistent token renewal before declaring fatal auth failure
+                                        val renewedToken = storedDeviceId?.let { devId ->
+                                            storedApiBaseUrl?.let { apiBase ->
+                                                executeSessionRefresh(devId, apiBase)
+                                            }
+                                        }
+                                        if (renewedToken != null && !isExplicitlyStopped) {
+                                            reconnectAttempts++
+                                            emitState(STATE_RECONNECTING, "Session renewed. Reconnecting...")
+                                            webSocket.close(1000, "Token renewed")
+                                            triggerReconnect()
+                                        } else {
+                                            emitState(STATE_AUTH_FAILED, reason)
+                                            webSocket.close(1000, "Auth failure")
+                                        }
                                     }
                                 }
                                 "PONG" -> {
@@ -827,9 +864,9 @@ object RemoteNodeTunnelManager {
                 return@scheduleAtFixedRate
             }
 
-            // Monotonic silent heartbeat check: 2 missed pings or >35s without PONG
+            // Monotonic silent heartbeat check: 3 missed pings or >45s without PONG
             val elapsedSincePong = android.os.SystemClock.elapsedRealtime() - lastPongElapsedRealtime
-            if (missedPings >= 2 || (lastPongElapsedRealtime > 0 && elapsedSincePong > 35000L)) {
+            if (missedPings >= 3 || (lastPongElapsedRealtime > 0 && elapsedSincePong > 45000L)) {
                 Log.w(TAG, "[HEARTBEAT_FAILURE] gen=$generation missedPings=$missedPings elapsedSincePongMs=$elapsedSincePong. Triggering reconnect.")
                 AndroidErrorTelemetry.reportError(
                     storedApiBaseUrl, storedSessionToken,

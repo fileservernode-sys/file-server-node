@@ -761,7 +761,11 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         } catch (_) {}
       }
 
-      // 4. PART 10 — STATE CLEANUP: Reset setup state for THIS device only
+      // 4. PART 10 — STATE CLEANUP: Clean up device credential & reset setup state for THIS device only
+      try {
+        final secureStorage = _ref.read(secureStorageProvider);
+        await secureStorage.delete(key: 'device_credential');
+      } catch (_) {}
       state = const SetupState();
       return true;
     } catch (e) {

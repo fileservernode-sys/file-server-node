@@ -309,8 +309,8 @@ class RemoteNodeServerService : Service() {
                         val apiBase = tunnelConfig["apiBaseUrl"]
                         val gatewayWs = tunnelConfig["gatewayWsUrl"]
                         val cred = tunnelConfig["deviceCredential"]
-                        if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
-                            RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs, cred)
+                        if (!devId.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty() && (!token.isNullOrEmpty() || !cred.isNullOrEmpty())) {
+                            RemoteNodeTunnelManager.startTunnel(this, devId, token ?: "", apiBase, gatewayWs, cred)
                         }
                     }
                 } else {

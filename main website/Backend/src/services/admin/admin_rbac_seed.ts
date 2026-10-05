@@ -67,7 +67,12 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
 
   // System & Operations
   { slug: 'system.read', name: 'View System Config', resource: 'system', action: 'read', description: 'View system environment and health metrics' },
-  { slug: 'system.write', name: 'Manage System Config', resource: 'system', action: 'write', description: 'Modify system runtime parameters' }
+  { slug: 'system.write', name: 'Manage System Config', resource: 'system', action: 'write', description: 'Modify system runtime parameters' },
+
+  // SQL Query Runner (Phase 15)
+  { slug: 'sql.query.read', name: 'Execute Read-Only SQL', resource: 'sql', action: 'read', description: 'Execute read-only SQL queries via Admin SQL Runner' },
+  { slug: 'sql.query.write', name: 'Execute Controlled Write SQL', resource: 'sql', action: 'write', description: 'Execute authorized controlled write SQL statements via Admin SQL Console' },
+  { slug: 'sql.query.destructive', name: 'Execute Destructive SQL', resource: 'sql', action: 'destructive', description: 'Execute authorized destructive SQL statements (DELETE) via Admin SQL Console' }
 ];
 
 export const SYSTEM_ROLES: SystemRoleDef[] = [

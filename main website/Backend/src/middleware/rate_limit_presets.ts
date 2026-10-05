@@ -330,3 +330,54 @@ export const providerWebhookRateLimitConfig = {
   },
   errorResponseBuilder: buildRateLimitErrorResponse
 };
+
+/**
+ * TIER E: Admin SQL Runner (Read-Only SQL Query Execution)
+ * Limit: 30 req/min per (Admin ID + IP)
+ */
+export const adminSqlQueryRateLimitConfig = {
+  max: 30,
+  timeWindow: '1 minute',
+  hook: 'preHandler' as const,
+  keyGenerator: (req: FastifyRequest) => {
+    const ip = resolveClientIp(req) || '127.0.0.1';
+    const adminId = (req as any)?.admin?.id || 'anon_admin';
+    return `admin_sql_${adminId}_${ip}`;
+  },
+  errorResponseBuilder: buildRateLimitErrorResponse
+};
+
+/**
+ * TIER E: Admin SQL Controlled Write Runner (Mutating SQL Execution)
+ * Limit: 10 req/min per (Admin ID + IP)
+ */
+export const adminSqlControlledWriteRateLimitConfig = {
+  max: 10,
+  timeWindow: '1 minute',
+  hook: 'preHandler' as const,
+  keyGenerator: (req: FastifyRequest) => {
+    const ip = resolveClientIp(req) || '127.0.0.1';
+    const adminId = (req as any)?.admin?.id || 'anon_admin';
+    return `admin_sql_write_${adminId}_${ip}`;
+  },
+  errorResponseBuilder: buildRateLimitErrorResponse
+};
+
+/**
+ * TIER E: Admin SQL Destructive Runner (DELETE SQL Execution)
+ * Limit: 5 req/min per (Admin ID + IP)
+ */
+export const adminSqlDestructiveRateLimitConfig = {
+  max: 5,
+  timeWindow: '1 minute',
+  hook: 'preHandler' as const,
+  keyGenerator: (req: FastifyRequest) => {
+    const ip = resolveClientIp(req) || '127.0.0.1';
+    const adminId = (req as any)?.admin?.id || 'anon_admin';
+    return `admin_sql_destruct_${adminId}_${ip}`;
+  },
+  errorResponseBuilder: buildRateLimitErrorResponse
+};
+
+
+

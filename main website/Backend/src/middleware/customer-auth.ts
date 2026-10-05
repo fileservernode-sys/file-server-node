@@ -2,13 +2,18 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { User, UserStatus } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { hashSessionToken } from '../utils/crypto.js';
-import { UnauthorizedError } from '../errors/app-error.js';
+import { UnauthorizedError, ForbiddenError } from '../errors/app-error.js';
 import { CUSTOMER_SESSION_COOKIE_NAME } from '../config/cookie.js';
 import { verifyCsrf } from './csrf.js';
 
 export interface CustomerAuthContext {
   token: string | null;
   source: 'bearer' | 'cookie' | null;
+}
+
+export interface DeviceScopeContext {
+  deviceId: string;
+  scope: 'SERVER_RUNTIME';
 }
 
 declare module 'fastify' {
@@ -22,6 +27,7 @@ declare module 'fastify' {
       expiresAt: Date;
       createdAt: Date;
     };
+    deviceScope?: DeviceScopeContext;
   }
 }
 
@@ -77,13 +83,25 @@ export function extractCustomerToken(request: FastifyRequest): CustomerAuthConte
 
 /**
  * Authoritatively validates raw session token against UserSession table in MySQL.
- * Verifies token hash, expiration, revocation, and active user status.
+ * Verifies token hash, expiration, revocation, active user status, and device scope.
  */
 export async function resolveCustomerSession(rawToken: string): Promise<{
   session: any;
   user: User;
+  deviceScope?: DeviceScopeContext;
 } | null> {
   if (!rawToken || typeof rawToken !== 'string') return null;
+
+  let deviceScope: DeviceScopeContext | undefined;
+  if (rawToken.startsWith('dst_')) {
+    const parts = rawToken.split('_');
+    if (parts.length >= 3 && parts[1]) {
+      deviceScope = {
+        deviceId: parts[1],
+        scope: 'SERVER_RUNTIME'
+      };
+    }
+  }
 
   const tokenHash = hashSessionToken(rawToken);
   const session = await prisma.userSession.findFirst({
@@ -106,7 +124,8 @@ export async function resolveCustomerSession(rawToken: string): Promise<{
 
   return {
     session,
-    user: session.user
+    user: session.user,
+    deviceScope
   };
 }
 
@@ -115,7 +134,7 @@ export async function resolveCustomerSession(rawToken: string): Promise<{
  * 
  * Flow:
  * 1. Resolves identity from Bearer token (Android/CLI) or HttpOnly Cookie (Browser).
- * 2. Attaches request.user, request.customerSession, request.customerAuthSource.
+ * 2. Attaches request.user, request.customerSession, request.customerAuthSource, request.deviceScope.
  * 3. Enforces verifyCsrf if request is Cookie-authenticated and method is state-changing.
  */
 export async function customerAuthenticate(
@@ -136,6 +155,7 @@ export async function customerAuthenticate(
   request.user = resolved.user;
   request.customerSession = resolved.session;
   request.customerAuthSource = source || undefined;
+  request.deviceScope = resolved.deviceScope;
 
   // Enforce CSRF defense on state-changing cookie requests
   await verifyCsrf(request, reply);
@@ -144,11 +164,16 @@ export async function customerAuthenticate(
 /**
  * Helper: Extract and return authenticated platform user from request (Bearer or Cookie).
  * Automatically validates CSRF if request is state-changing and authenticated via Cookie.
- * Throws UnauthorizedError if unauthenticated or ForbiddenError if CSRF validation fails.
+ * Enforces strict device runtime scope boundaries to prevent privilege escalation.
+ * Throws UnauthorizedError if unauthenticated or ForbiddenError if scope validation fails.
  */
 export async function getAuthUser(
   request: FastifyRequest,
-  options: { skipCsrf?: boolean } = {}
+  options: {
+    skipCsrf?: boolean;
+    allowDeviceRuntime?: boolean;
+    requiredDeviceId?: string;
+  } = {}
 ): Promise<User> {
   const { token, source } = extractCustomerToken(request);
 
@@ -164,6 +189,16 @@ export async function getAuthUser(
   request.user = resolved.user;
   request.customerSession = resolved.session;
   request.customerAuthSource = source || undefined;
+  request.deviceScope = resolved.deviceScope;
+
+  // Security boundary enforcement: Device-scoped runtime tokens cannot access interactive user endpoints
+  if (resolved.deviceScope && !options.allowDeviceRuntime) {
+    throw new ForbiddenError('Device runtime tokens are restricted to server connection operations');
+  }
+
+  if (resolved.deviceScope && options.requiredDeviceId && resolved.deviceScope.deviceId !== options.requiredDeviceId) {
+    throw new ForbiddenError('Device runtime token is not authorized for the requested device');
+  }
 
   // Enforce CSRF check unless explicitly bypassed
   if (!options.skipCsrf) {
