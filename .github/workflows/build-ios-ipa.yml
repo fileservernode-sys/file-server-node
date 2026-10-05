@@ -1,0 +1,83 @@
+name: Build iOS Application (.IPA)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Android app/**'
+      - '.github/workflows/build-ios-ipa.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Android app/**'
+      - '.github/workflows/build-ios-ipa.yml'
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Build Mode'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - release
+          - debug
+          - profile
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    name: Build & Package iOS IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Environment & Flutter Doctor
+        run: |
+          flutter --version
+          flutter doctor -v
+
+      - name: Install Flutter Dependencies
+        run: |
+          cd "Android app/Android app code"
+          flutter pub get
+
+      - name: Build iOS Application Bundle
+        run: |
+          cd "Android app/Android app code"
+          BUILD_MODE="${{ github.event.inputs.build_mode || 'release' }}"
+          echo "Building Flutter iOS in $BUILD_MODE mode (no-codesign)..."
+          flutter build ios --$BUILD_MODE --no-codesign
+
+      - name: Package Application into .IPA Archive
+        run: |
+          cd "Android app/Android app code/build/ios/iphoneos"
+          
+          # Create Payload directory required by iOS IPA format
+          mkdir -p Payload
+          
+          # Copy compiled Runner.app bundle into Payload/
+          cp -r Runner.app Payload/
+          
+          # Zip into .ipa package with symlink preservation (-y)
+          zip -r -y zdexcloud-app.ipa Payload
+          
+          echo "IPA archive created successfully:"
+          ls -la zdexcloud-app.ipa
+
+      - name: Upload .IPA Artifact for Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: zdexcloud-ios-ipa
+          path: Android app/Android app code/build/ios/iphoneos/zdexcloud-app.ipa
+          retention-days: 30
+          if-no-files-found: error

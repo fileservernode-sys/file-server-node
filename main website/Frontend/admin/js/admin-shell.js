@@ -11975,13 +11975,37 @@
           <!-- Active Filter Chips Bar -->
           ${filters.length > 0 ? `
             <div class="admin-db-grid-filters-row">
-              <span style="font-size:0.6875rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Filters:</span>
-              ${filters.map((f, idx) => `
-                <span class="admin-db-active-filter-chip">
-                  <strong>${this._escape(f.column)}</strong> ${this._escape(f.operator)} ${f.value !== undefined && f.value !== null ? `"${this._escape(String(f.value))}"` : ''}
-                  <button class="admin-db-active-filter-remove" onclick="AdminShell._removeDbFilter(${idx})" title="Remove filter">✕</button>
-                </span>
-              `).join('')}
+              <span style="font-size:0.6875rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Filters (${filters.length}):</span>
+              ${filters.map((f, idx) => {
+                let text = '';
+                const op = f.operator;
+                if (op === 'between') {
+                  text = `between "${this._escape(String(f.value))}" and "${this._escape(String(f.value2 ?? ''))}"`;
+                } else if (op === 'isNull' || op === 'is_null') {
+                  text = 'is NULL';
+                } else if (op === 'isNotNull' || op === 'is_not_null') {
+                  text = 'is NOT NULL';
+                } else if (op === 'isEmpty' || op === 'is_empty') {
+                  text = 'is empty';
+                } else if (op === 'isNotEmpty' || op === 'is_not_empty') {
+                  text = 'is not empty';
+                } else if (op === 'isTrue' || op === 'is_true') {
+                  text = 'is TRUE';
+                } else if (op === 'isFalse' || op === 'is_false') {
+                  text = 'is FALSE';
+                } else {
+                  text = `${this._escape(op)} "${this._escape(String(f.value ?? ''))}"`;
+                }
+                return `
+                  <span class="admin-db-active-filter-chip">
+                    <strong>${this._escape(f.column)}</strong> ${text}
+                    <button class="admin-db-active-filter-remove" onclick="AdminShell._removeDbFilter(${idx})" title="Remove filter">✕</button>
+                  </span>
+                `;
+              }).join('')}
+              <button class="admin-btn admin-btn-secondary admin-btn-xs" style="margin-left:auto; color:var(--admin-danger); font-size:0.6875rem;" onclick="AdminShell._clearDbFilters()">
+                Clear All
+              </button>
             </div>
           ` : ''}
 
@@ -12362,16 +12386,19 @@
       let modalEl = document.getElementById('adminDbFilterModal');
       if (modalEl) modalEl.remove();
 
-      const columns = details.columns;
+      const columns = details.columns.filter(c => {
+        // Exclude sensitive columns from filtering
+        return !/password|token|secret|hash|private_key|auth_key|credential|otp/i.test(c.name);
+      });
 
       const modalHtml = `
         <div class="admin-db-filter-modal-backdrop" id="adminDbFilterModal">
-          <div class="admin-db-filter-modal">
+          <div class="admin-db-filter-modal" style="max-width: 480px;">
             <div class="admin-db-filter-modal-header">
               <span>Add Column Filter</span>
               <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell._closeDbFilterModal()">✕</button>
             </div>
-            <div class="admin-db-filter-modal-body">
+            <div class="admin-db-filter-modal-body" style="display:flex; flex-direction:column; gap:1rem;">
               <div>
                 <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Column</label>
                 <select id="dbFilterColumnSelect" class="admin-db-page-size-select" style="width:100%;" onchange="AdminShell._updateDbFilterOperators()">
@@ -12382,21 +12409,18 @@
               <div>
                 <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Operator</label>
                 <select id="dbFilterOperatorSelect" class="admin-db-page-size-select" style="width:100%;">
-                  <option value="contains">contains</option>
-                  <option value="equals">equals (=)</option>
-                  <option value="startsWith">starts with</option>
-                  <option value="greaterThan">greater than (&gt;)</option>
-                  <option value="lessThan">less than (&lt;)</option>
-                  <option value="before">before (date &lt;)</option>
-                  <option value="after">after (date &gt;)</option>
-                  <option value="isNull">is NULL</option>
-                  <option value="isNotNull">is NOT NULL</option>
+                  <!-- Populated dynamically based on column type -->
                 </select>
               </div>
 
               <div id="dbFilterValueWrap">
-                <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Value</label>
-                <input type="text" id="dbFilterValueInput" class="admin-db-search-input" placeholder="Filter value..." />
+                <label id="dbFilterValueLabel" style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Value</label>
+                <input type="text" id="dbFilterValueInput" class="admin-db-search-input" style="width:100%;" placeholder="Filter value..." />
+              </div>
+
+              <div id="dbFilterValue2Wrap" style="display:none;">
+                <label style="display:block; font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">End Value (To)</label>
+                <input type="text" id="dbFilterValue2Input" class="admin-db-search-input" style="width:100%;" placeholder="End range value..." />
               </div>
             </div>
             <div class="admin-db-filter-modal-footer">
@@ -12415,33 +12439,56 @@
       const colSelect = document.getElementById('dbFilterColumnSelect');
       const opSelect = document.getElementById('dbFilterOperatorSelect');
       const valWrap = document.getElementById('dbFilterValueWrap');
+      const val2Wrap = document.getElementById('dbFilterValue2Wrap');
+      const valLabel = document.getElementById('dbFilterValueLabel');
       if (!colSelect || !opSelect) return;
 
       const opt = colSelect.options[colSelect.selectedIndex];
       const dataType = (opt?.getAttribute('data-type') || '').toLowerCase();
 
       let allowedOps = [];
-      if (dataType.includes('int') || dataType.includes('decimal') || dataType.includes('float') || dataType.includes('double') || dataType.includes('numeric')) {
+      const isBool = dataType === 'tinyint(1)' || dataType === 'boolean' || dataType === 'bool';
+      const isNum = !isBool && (dataType.includes('int') || dataType.includes('decimal') || dataType.includes('float') || dataType.includes('double') || dataType.includes('numeric'));
+      const isDate = dataType.includes('date') || dataType.includes('time') || dataType.includes('year');
+
+      if (isBool) {
         allowedOps = [
-          { val: 'equals', label: 'equals (=)' },
-          { val: 'greaterThan', label: 'greater than (>)' },
-          { val: 'lessThan', label: 'less than (<)' },
+          { val: 'is_true', label: 'is TRUE' },
+          { val: 'is_false', label: 'is FALSE' },
           { val: 'isNull', label: 'is NULL' },
           { val: 'isNotNull', label: 'is NOT NULL' }
         ];
-      } else if (dataType.includes('date') || dataType.includes('time')) {
+      } else if (isNum) {
+        allowedOps = [
+          { val: 'equals', label: 'equals (=)' },
+          { val: 'not_equals', label: 'not equals (!=)' },
+          { val: 'greaterThan', label: 'greater than (>)' },
+          { val: 'greaterThanOrEqual', label: 'greater than or equal (>=)' },
+          { val: 'lessThan', label: 'less than (<)' },
+          { val: 'lessThanOrEqual', label: 'less than or equal (<=)' },
+          { val: 'between', label: 'between (range)' },
+          { val: 'isNull', label: 'is NULL' },
+          { val: 'isNotNull', label: 'is NOT NULL' }
+        ];
+      } else if (isDate) {
         allowedOps = [
           { val: 'equals', label: 'equals (=)' },
           { val: 'before', label: 'before (<)' },
           { val: 'after', label: 'after (>)' },
+          { val: 'between', label: 'between (date range)' },
           { val: 'isNull', label: 'is NULL' },
           { val: 'isNotNull', label: 'is NOT NULL' }
         ];
       } else {
         allowedOps = [
           { val: 'contains', label: 'contains' },
+          { val: 'not_contains', label: 'does not contain' },
           { val: 'equals', label: 'equals (=)' },
+          { val: 'not_equals', label: 'not equals (!=)' },
           { val: 'startsWith', label: 'starts with' },
+          { val: 'endsWith', label: 'ends with' },
+          { val: 'isEmpty', label: 'is empty (empty or NULL)' },
+          { val: 'isNotEmpty', label: 'is not empty' },
           { val: 'isNull', label: 'is NULL' },
           { val: 'isNotNull', label: 'is NOT NULL' }
         ];
@@ -12449,11 +12496,25 @@
 
       opSelect.innerHTML = allowedOps.map(o => `<option value="${o.val}">${o.label}</option>`).join('');
 
-      opSelect.onchange = () => {
+      const syncInputs = () => {
+        const op = opSelect.value;
+        const noValOps = ['isNull', 'isNotNull', 'isEmpty', 'isNotEmpty', 'is_true', 'is_false', 'is_null', 'is_not_null', 'is_empty', 'is_not_empty'];
+        const isNoVal = noValOps.includes(op);
+        const isBetween = op === 'between';
+
         if (valWrap) {
-          valWrap.style.display = (opSelect.value === 'isNull' || opSelect.value === 'isNotNull') ? 'none' : 'block';
+          valWrap.style.display = isNoVal ? 'none' : 'block';
+        }
+        if (val2Wrap) {
+          val2Wrap.style.display = isBetween ? 'block' : 'none';
+        }
+        if (valLabel) {
+          valLabel.textContent = isBetween ? 'Start Value (From)' : 'Value';
         }
       };
+
+      opSelect.onchange = syncInputs;
+      syncInputs();
     }
 
     _closeDbFilterModal() {
@@ -12465,23 +12526,39 @@
       const colSelect = document.getElementById('dbFilterColumnSelect');
       const opSelect = document.getElementById('dbFilterOperatorSelect');
       const valInput = document.getElementById('dbFilterValueInput');
+      const val2Input = document.getElementById('dbFilterValue2Input');
       if (!colSelect || !opSelect) return;
 
       const column = colSelect.value;
       const operator = opSelect.value;
-      const value = (operator === 'isNull' || operator === 'isNotNull') ? null : (valInput?.value || '').trim();
+      const noValOps = ['isNull', 'isNotNull', 'isEmpty', 'isNotEmpty', 'is_true', 'is_false', 'is_null', 'is_not_null', 'is_empty', 'is_not_empty'];
+      const isNoVal = noValOps.includes(operator);
+      const isBetween = operator === 'between';
 
-      if (operator !== 'isNull' && operator !== 'isNotNull' && !value) {
+      let value = isNoVal ? null : (valInput?.value || '').trim();
+      let value2 = isBetween ? (val2Input?.value || '').trim() : undefined;
+
+      if (!isNoVal && !value) {
         this.toast('Please specify a filter value.', 'warning');
         return;
       }
 
-      if (this.dbManagementState.filters.length >= 5) {
-        this.toast('Maximum of 5 active filters allowed.', 'warning');
+      if (isBetween && !value2) {
+        this.toast('Please specify both start and end values for between range.', 'warning');
         return;
       }
 
-      this.dbManagementState.filters.push({ column, operator, value });
+      if (this.dbManagementState.filters.length >= 10) {
+        this.toast('Maximum of 10 active filters allowed.', 'warning');
+        return;
+      }
+
+      const newFilter = { column, operator, value };
+      if (isBetween) {
+        newFilter.value2 = value2;
+      }
+
+      this.dbManagementState.filters.push(newFilter);
       this._closeDbFilterModal();
       this.dbManagementState.page = 1;
       this._checkNoPkReset();

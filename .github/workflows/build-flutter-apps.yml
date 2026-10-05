@@ -91,21 +91,21 @@ jobs:
           cd "Android app/Android app code"
           flutter pub get
 
-      - name: Build iOS Application (No Codesign)
+      - name: Build iOS Application (Release, No Codesign)
         run: |
           cd "Android app/Android app code"
-          flutter build ios --no-codesign
+          flutter build ios --release --no-codesign
 
-      - name: Compress iOS App Payload into Zip
+      - name: Package iOS App into .IPA Archive
         run: |
           cd "Android app/Android app code/build/ios/iphoneos"
-          mkdir Payload
+          mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r remote-node-ios-app.zip Payload
+          zip -r -y remote-node-ios-app.ipa Payload
 
-      - name: Upload iOS App Bundle Artifact
+      - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: remote-node-ios-app
-          path: Android app/Android app code/build/ios/iphoneos/remote-node-ios-app.zip
+          name: remote-node-ios-ipa
+          path: Android app/Android app code/build/ios/iphoneos/remote-node-ios-app.ipa
           retention-days: 30

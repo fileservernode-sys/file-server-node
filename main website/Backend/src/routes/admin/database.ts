@@ -35,17 +35,35 @@ const filterRuleSchema = z.object({
     .max(64, 'Filter column exceeds maximum length')
     .regex(/^[a-zA-Z0-9_]+$/, 'Invalid filter column identifier format'),
   operator: z.enum([
-    'contains',
-    'equals',
-    'startsWith',
-    'greaterThan',
-    'lessThan',
+    'contains', 'notContains', 'not_contains',
+    'equals', 'notEquals', 'not_equals',
+    'startsWith', 'starts_with',
+    'endsWith', 'ends_with',
+    'isEmpty', 'is_empty',
+    'isNotEmpty', 'is_not_empty',
+    'greaterThan', 'gt',
+    'greaterThanOrEqual', 'gte',
+    'lessThan', 'lt',
+    'lessThanOrEqual', 'lte',
+    'between',
     'before',
     'after',
-    'isNull',
-    'isNotNull'
+    'isTrue', 'is_true',
+    'isFalse', 'is_false',
+    'isNull', 'is_null',
+    'isNotNull', 'is_not_null'
   ], { required_error: 'Filter operator is required' }),
-  value: z.union([z.string().max(255), z.number(), z.boolean()]).optional().nullable()
+  value: z.union([
+    z.string().max(256),
+    z.number(),
+    z.boolean(),
+    z.array(z.union([z.string().max(256), z.number(), z.boolean()]))
+  ]).optional().nullable(),
+  value2: z.union([
+    z.string().max(256),
+    z.number(),
+    z.boolean()
+  ]).optional().nullable()
 });
 
 const insertRowBodySchema = z.object({
@@ -73,7 +91,7 @@ const rowsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   sortBy: z.string().trim().min(1).max(64).regex(/^[a-zA-Z0-9_]+$/).optional(),
   sortDirection: z.enum(['asc', 'desc']).default('asc'),
-  search: z.string().trim().max(100).optional(),
+  search: z.string().trim().max(256).optional(),
   filters: z.string().optional().transform((val, ctx) => {
     if (!val || val.trim() === '') return undefined;
     try {
@@ -82,8 +100,8 @@ const rowsQuerySchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'filters parameter must be a JSON array' });
         return z.NEVER;
       }
-      if (parsed.length > 5) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum of 5 filters allowed per query' });
+      if (parsed.length > 10) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Maximum of 10 filters allowed per query' });
         return z.NEVER;
       }
       return z.array(filterRuleSchema).parse(parsed);

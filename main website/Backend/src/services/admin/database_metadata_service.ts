@@ -316,10 +316,34 @@ export interface TablePreviewResult {
   truncated: boolean;
 }
 
+export function escapeLikeWildcards(str: string): string {
+  return str.replace(/([\\%_])/g, '\\$1');
+}
+
+export type TableFilterOperator =
+  | 'contains' | 'notContains' | 'not_contains'
+  | 'equals' | 'notEquals' | 'not_equals'
+  | 'startsWith' | 'starts_with'
+  | 'endsWith' | 'ends_with'
+  | 'isEmpty' | 'is_empty'
+  | 'isNotEmpty' | 'is_not_empty'
+  | 'greaterThan' | 'gt'
+  | 'greaterThanOrEqual' | 'gte'
+  | 'lessThan' | 'lt'
+  | 'lessThanOrEqual' | 'lte'
+  | 'between'
+  | 'before'
+  | 'after'
+  | 'isTrue' | 'is_true'
+  | 'isFalse' | 'is_false'
+  | 'isNull' | 'is_null'
+  | 'isNotNull' | 'is_not_null';
+
 export interface TableFilterRule {
   column: string;
-  operator: 'contains' | 'equals' | 'startsWith' | 'greaterThan' | 'lessThan' | 'before' | 'after' | 'isNull' | 'isNotNull';
-  value?: string | number | boolean | null;
+  operator: TableFilterOperator | string;
+  value?: any;
+  value2?: any;
 }
 
 export interface GetTableRowsOptions {
@@ -889,19 +913,22 @@ export class DatabaseMetadataService {
     const matchedSearchColumns: string[] = [];
 
     if (options.search && typeof options.search === 'string' && options.search.trim().length > 0) {
-      const searchVal = options.search.trim().substring(0, 100);
+      const searchVal = options.search.trim().substring(0, 256);
+      const escapedSearch = escapeLikeWildcards(searchVal);
       const searchableColumns = tableDetails.columns.filter(col => {
         const isSensitive = SENSITIVE_COLUMN_PATTERNS.some(pat => pat.test(col.name));
         if (isSensitive) return false;
         const dt = col.dataType.toLowerCase();
-        return dt.includes('char') || dt.includes('text') || dt.includes('enum') || dt.includes('json');
+        // Exclude binary, blob, bytea
+        if (dt.includes('blob') || dt.includes('binary') || dt.includes('bytea')) return false;
+        return dt.includes('char') || dt.includes('text') || dt.includes('enum') || dt.includes('json') || dt.includes('varchar');
       });
 
       if (searchableColumns.length > 0) {
         const searchSubClauses: string[] = [];
         for (const col of searchableColumns) {
           searchSubClauses.push(`\`${col.name}\` LIKE ?`);
-          queryParams.push(`%${searchVal}%`);
+          queryParams.push(`%${escapedSearch}%`);
           matchedSearchColumns.push(col.name);
         }
         whereConditions.push(`(${searchSubClauses.join(' OR ')})`);
@@ -911,7 +938,7 @@ export class DatabaseMetadataService {
     // 4. Column Filter Construction
     const appliedFilters: TableFilterRule[] = [];
     if (options.filters && Array.isArray(options.filters)) {
-      const filterRules = options.filters.slice(0, 5); // Bound to maximum 5 filters
+      const filterRules = options.filters.slice(0, 10); // Bound to maximum 10 filters
       for (const rule of filterRules) {
         if (!rule || typeof rule !== 'object') continue;
         const colName = (rule.column || '').trim();
@@ -919,54 +946,152 @@ export class DatabaseMetadataService {
           throw new ValidationError(`Filter column '${colName}' does not exist on table '${tableName}'`);
         }
 
+        const isSensitive = SENSITIVE_COLUMN_PATTERNS.some(pat => pat.test(colName));
+        if (isSensitive) {
+          throw new ValidationError(`Filtering on protected sensitive column '${colName}' is not permitted`);
+        }
+
         const colMeta = columnMap.get(colName)!;
-        const op = rule.operator;
+        const op = String(rule.operator || '').trim();
         const rawVal = rule.value;
+        const rawVal2 = rule.value2;
 
         switch (op) {
-          case 'contains':
+          case 'contains': {
+            const escaped = escapeLikeWildcards(String(rawVal ?? '').substring(0, 256));
             whereConditions.push(`\`${colName}\` LIKE ?`);
-            queryParams.push(`%${String(rawVal || '').substring(0, 255)}%`);
+            queryParams.push(`%${escaped}%`);
             appliedFilters.push({ column: colName, operator: 'contains', value: rawVal });
             break;
-          case 'startsWith':
-            whereConditions.push(`\`${colName}\` LIKE ?`);
-            queryParams.push(`${String(rawVal || '').substring(0, 255)}%`);
-            appliedFilters.push({ column: colName, operator: 'startsWith', value: rawVal });
+          }
+          case 'not_contains':
+          case 'notContains': {
+            const escaped = escapeLikeWildcards(String(rawVal ?? '').substring(0, 256));
+            whereConditions.push(`(\`${colName}\` NOT LIKE ? OR \`${colName}\` IS NULL)`);
+            queryParams.push(`%${escaped}%`);
+            appliedFilters.push({ column: colName, operator: 'not_contains', value: rawVal });
             break;
-          case 'equals':
+          }
+          case 'starts_with':
+          case 'startsWith': {
+            const escaped = escapeLikeWildcards(String(rawVal ?? '').substring(0, 256));
+            whereConditions.push(`\`${colName}\` LIKE ?`);
+            queryParams.push(`${escaped}%`);
+            appliedFilters.push({ column: colName, operator: 'starts_with', value: rawVal });
+            break;
+          }
+          case 'ends_with':
+          case 'endsWith': {
+            const escaped = escapeLikeWildcards(String(rawVal ?? '').substring(0, 256));
+            whereConditions.push(`\`${colName}\` LIKE ?`);
+            queryParams.push(`%${escaped}`);
+            appliedFilters.push({ column: colName, operator: 'ends_with', value: rawVal });
+            break;
+          }
+          case 'is_empty':
+          case 'isEmpty': {
+            whereConditions.push(`(\`${colName}\` = '' OR \`${colName}\` IS NULL)`);
+            appliedFilters.push({ column: colName, operator: 'is_empty' });
+            break;
+          }
+          case 'is_not_empty':
+          case 'isNotEmpty': {
+            whereConditions.push(`(\`${colName}\` != '' AND \`${colName}\` IS NOT NULL)`);
+            appliedFilters.push({ column: colName, operator: 'is_not_empty' });
+            break;
+          }
+          case 'equals': {
             whereConditions.push(`\`${colName}\` = ?`);
             queryParams.push(rawVal);
             appliedFilters.push({ column: colName, operator: 'equals', value: rawVal });
             break;
+          }
+          case 'not_equals':
+          case 'notEquals': {
+            whereConditions.push(`(\`${colName}\` != ? OR \`${colName}\` IS NULL)`);
+            queryParams.push(rawVal);
+            appliedFilters.push({ column: colName, operator: 'not_equals', value: rawVal });
+            break;
+          }
           case 'greaterThan':
+          case 'gt': {
             whereConditions.push(`\`${colName}\` > ?`);
             queryParams.push(rawVal);
             appliedFilters.push({ column: colName, operator: 'greaterThan', value: rawVal });
             break;
+          }
+          case 'greaterThanOrEqual':
+          case 'gte': {
+            whereConditions.push(`\`${colName}\` >= ?`);
+            queryParams.push(rawVal);
+            appliedFilters.push({ column: colName, operator: 'greaterThanOrEqual', value: rawVal });
+            break;
+          }
           case 'lessThan':
+          case 'lt': {
             whereConditions.push(`\`${colName}\` < ?`);
             queryParams.push(rawVal);
             appliedFilters.push({ column: colName, operator: 'lessThan', value: rawVal });
             break;
-          case 'before':
+          }
+          case 'lessThanOrEqual':
+          case 'lte': {
+            whereConditions.push(`\`${colName}\` <= ?`);
+            queryParams.push(rawVal);
+            appliedFilters.push({ column: colName, operator: 'lessThanOrEqual', value: rawVal });
+            break;
+          }
+          case 'between': {
+            let v1 = rawVal;
+            let v2 = rawVal2;
+            if (Array.isArray(rawVal) && rawVal.length >= 2) {
+              v1 = rawVal[0];
+              v2 = rawVal[1];
+            }
+            if (v1 === undefined || v2 === undefined || v1 === null || v2 === null) {
+              throw new ValidationError(`Operator 'between' for column '${colName}' requires both start and end boundary values`);
+            }
+            whereConditions.push(`\`${colName}\` BETWEEN ? AND ?`);
+            queryParams.push(v1, v2);
+            appliedFilters.push({ column: colName, operator: 'between', value: v1, value2: v2 });
+            break;
+          }
+          case 'before': {
             whereConditions.push(`\`${colName}\` < ?`);
             queryParams.push(rawVal);
             appliedFilters.push({ column: colName, operator: 'before', value: rawVal });
             break;
-          case 'after':
+          }
+          case 'after': {
             whereConditions.push(`\`${colName}\` > ?`);
             queryParams.push(rawVal);
             appliedFilters.push({ column: colName, operator: 'after', value: rawVal });
             break;
-          case 'isNull':
+          }
+          case 'is_true':
+          case 'isTrue': {
+            whereConditions.push(`(\`${colName}\` = 1 OR \`${colName}\` = TRUE)`);
+            appliedFilters.push({ column: colName, operator: 'is_true' });
+            break;
+          }
+          case 'is_false':
+          case 'isFalse': {
+            whereConditions.push(`(\`${colName}\` = 0 OR \`${colName}\` = FALSE)`);
+            appliedFilters.push({ column: colName, operator: 'is_false' });
+            break;
+          }
+          case 'is_null':
+          case 'isNull': {
             whereConditions.push(`\`${colName}\` IS NULL`);
             appliedFilters.push({ column: colName, operator: 'isNull' });
             break;
-          case 'isNotNull':
+          }
+          case 'is_not_null':
+          case 'isNotNull': {
             whereConditions.push(`\`${colName}\` IS NOT NULL`);
             appliedFilters.push({ column: colName, operator: 'isNotNull' });
             break;
+          }
           default:
             throw new ValidationError(`Unsupported filter operator: '${op}'`);
         }

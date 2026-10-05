@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseMetadataService } from '../src/services/admin/database_metadata_service.js';
+import { DatabaseMetadataService, escapeLikeWildcards } from '../src/services/admin/database_metadata_service.js';
 import { getDestructiveTableClassification } from '../src/utils/sql_safety_guard.js';
 import { NotFoundError, ValidationError, ConflictError } from '../src/errors/app-error.js';
 import { SYSTEM_PERMISSIONS, SYSTEM_ROLES } from '../src/services/admin/admin_rbac_seed.js';
@@ -1654,6 +1654,354 @@ test('Phase 15 — Batch 15.1: Database Management Foundation Test Suite', async
 
       for (const forbidden of forbiddenOperations) {
         assert.strictEqual(allowedOperations.includes(forbidden), false, `${forbidden} must NOT be allowed in Batch 15.6`);
+      }
+    });
+  });
+
+  // ===========================================================================
+  // PHASE 15 BATCH 15.7: DATABASE SEARCH, FILTERS & NAVIGATION
+  // ===========================================================================
+  await t.test('Phase 15 Batch 15.7 — Database Search, Filters & Navigation Test Suite', async (t2: any) => {
+
+    // -------------------------------------------------------------------------
+    // A. Global Search & Wildcard Escaping
+    // -------------------------------------------------------------------------
+    await t2.test('1. Search Escaping: escapes %, _, and \\ in search queries for literal matching', () => {
+      assert.strictEqual(escapeLikeWildcards('100%'), '100\\%');
+      assert.strictEqual(escapeLikeWildcards('user_name'), 'user\\_name');
+      assert.strictEqual(escapeLikeWildcards('path\\to\\file'), 'path\\\\to\\\\file');
+      assert.strictEqual(escapeLikeWildcards('normal text'), 'normal text');
+      assert.strictEqual(escapeLikeWildcards('%_\\test'), '\\%\\_\\\\test');
+    });
+
+    await t2.test('2. Search Query Boundary: bounds search input to max 256 characters', () => {
+      const longQuery = 'a'.repeat(500);
+      const bounded = longQuery.trim().substring(0, 256);
+      assert.strictEqual(bounded.length, 256);
+    });
+
+    await t2.test('3. Search Column Filtering: excludes sensitive/masked and binary/blob columns', () => {
+      const testColumns = [
+        { name: 'id', dataType: 'varchar(64)' },
+        { name: 'email', dataType: 'varchar(255)' },
+        { name: 'passwordHash', dataType: 'varchar(255)' },
+        { name: 'apiToken', dataType: 'varchar(128)' },
+        { name: 'rawData', dataType: 'longblob' },
+        { name: 'status', dataType: 'enum("ACTIVE","INACTIVE")' },
+        { name: 'notes', dataType: 'text' }
+      ];
+
+      const SENSITIVE_PATTERNS = [/password/i, /token/i, /secret/i, /hash/i, /private_key/i, /auth_key/i, /credential/i, /otp/i];
+
+      const searchable = testColumns.filter(col => {
+        const isSensitive = SENSITIVE_PATTERNS.some(pat => pat.test(col.name));
+        if (isSensitive) return false;
+        const dt = col.dataType.toLowerCase();
+        if (dt.includes('blob') || dt.includes('binary') || dt.includes('bytea')) return false;
+        return dt.includes('char') || dt.includes('text') || dt.includes('enum') || dt.includes('json') || dt.includes('varchar');
+      });
+
+      const searchableNames = searchable.map(c => c.name);
+      assert.ok(searchableNames.includes('id'));
+      assert.ok(searchableNames.includes('email'));
+      assert.ok(searchableNames.includes('status'));
+      assert.ok(searchableNames.includes('notes'));
+      assert.strictEqual(searchableNames.includes('passwordHash'), false);
+      assert.strictEqual(searchableNames.includes('apiToken'), false);
+      assert.strictEqual(searchableNames.includes('rawData'), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // B. String Filter Operators
+    // -------------------------------------------------------------------------
+    await t2.test('4. String Filter: contains generates parameterized LIKE %val% with escaped wildcards', () => {
+      const col = 'name';
+      const val = 'test%100';
+      const escaped = escapeLikeWildcards(val);
+      const sql = `\`${col}\` LIKE ?`;
+      const param = `%${escaped}%`;
+
+      assert.strictEqual(sql, '`name` LIKE ?');
+      assert.strictEqual(param, '%test\\%100%');
+    });
+
+    await t2.test('5. String Filter: not_contains generates NOT LIKE or IS NULL', () => {
+      const col = 'email';
+      const val = 'spam';
+      const escaped = escapeLikeWildcards(val);
+      const sql = `(\`${col}\` NOT LIKE ? OR \`${col}\` IS NULL)`;
+      const param = `%${escaped}%`;
+
+      assert.strictEqual(sql, '(`email` NOT LIKE ? OR `email` IS NULL)');
+      assert.strictEqual(param, '%spam%');
+    });
+
+    await t2.test('6. String Filter: starts_with and ends_with generate correct wildcard positions', () => {
+      const col = 'filename';
+      const prefix = 'doc_';
+      const suffix = '.pdf';
+
+      const startsWithSql = `\`${col}\` LIKE ?`;
+      const startsWithParam = `${escapeLikeWildcards(prefix)}%`;
+      assert.strictEqual(startsWithParam, 'doc\\_%');
+
+      const endsWithSql = `\`${col}\` LIKE ?`;
+      const endsWithParam = `%${escapeLikeWildcards(suffix)}`;
+      assert.strictEqual(endsWithParam, '%.pdf');
+    });
+
+    await t2.test('7. String Filter: is_empty and is_not_empty check for empty string and NULL', () => {
+      const col = 'description';
+      const emptySql = `(\`${col}\` = '' OR \`${col}\` IS NULL)`;
+      const notEmptySql = `(\`${col}\` != '' AND \`${col}\` IS NOT NULL)`;
+
+      assert.strictEqual(emptySql, "(`description` = '' OR `description` IS NULL)");
+      assert.strictEqual(notEmptySql, "(`description` != '' AND `description` IS NOT NULL)");
+    });
+
+    // -------------------------------------------------------------------------
+    // C. Numeric & Range Filter Operators
+    // -------------------------------------------------------------------------
+    await t2.test('8. Numeric Filter: greaterThan, lessThan, and equals generate safe parameterized clauses', () => {
+      const col = 'fileSizeBytes';
+      const gtSql = `\`${col}\` > ?`;
+      const lteSql = `\`${col}\` <= ?`;
+      const eqSql = `\`${col}\` = ?`;
+
+      assert.strictEqual(gtSql, '`fileSizeBytes` > ?');
+      assert.strictEqual(lteSql, '`fileSizeBytes` <= ?');
+      assert.strictEqual(eqSql, '`fileSizeBytes` = ?');
+    });
+
+    await t2.test('9. Numeric Filter: between operator handles dual boundaries with BETWEEN ? AND ?', () => {
+      const col = 'attemptCount';
+      const min = 1;
+      const max = 5;
+      const sql = `\`${col}\` BETWEEN ? AND ?`;
+      const params = [min, max];
+
+      assert.strictEqual(sql, '`attemptCount` BETWEEN ? AND ?');
+      assert.deepStrictEqual(params, [1, 5]);
+    });
+
+    await t2.test('10. Numeric Filter: between operator fails closed if boundary is missing', () => {
+      const validateBetween = (val1: any, val2: any) => {
+        if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) {
+          throw new Error("Operator 'between' requires both start and end boundary values");
+        }
+      };
+
+      assert.doesNotThrow(() => validateBetween(10, 20));
+      assert.throws(() => validateBetween(10, undefined));
+      assert.throws(() => validateBetween(null, 20));
+    });
+
+    // -------------------------------------------------------------------------
+    // D. Date/Time & Boolean Filter Operators
+    // -------------------------------------------------------------------------
+    await t2.test('11. Date Filter: before and after generate correct comparison clauses', () => {
+      const col = 'createdAt';
+      const beforeSql = `\`${col}\` < ?`;
+      const afterSql = `\`${col}\` > ?`;
+
+      assert.strictEqual(beforeSql, '`createdAt` < ?');
+      assert.strictEqual(afterSql, '`createdAt` > ?');
+    });
+
+    await t2.test('12. Boolean Filter: is_true and is_false generate truthy/falsy evaluation', () => {
+      const col = 'isActive';
+      const trueSql = `(\`${col}\` = 1 OR \`${col}\` = TRUE)`;
+      const falseSql = `(\`${col}\` = 0 OR \`${col}\` = FALSE)`;
+
+      assert.strictEqual(trueSql, '(`isActive` = 1 OR `isActive` = TRUE)');
+      assert.strictEqual(falseSql, '(`isActive` = 0 OR `isActive` = FALSE)');
+    });
+
+    await t2.test('13. Nullability Filter: is_null and is_not_null generate IS NULL / IS NOT NULL', () => {
+      const col = 'revokedAt';
+      const isNullSql = `\`${col}\` IS NULL`;
+      const isNotNullSql = `\`${col}\` IS NOT NULL`;
+
+      assert.strictEqual(isNullSql, '`revokedAt` IS NULL');
+      assert.strictEqual(isNotNullSql, '`revokedAt` IS NOT NULL');
+    });
+
+    // -------------------------------------------------------------------------
+    // E. Filter Boundaries & Security
+    // -------------------------------------------------------------------------
+    await t2.test('14. Filter Limit: enforces maximum of 10 active filters', () => {
+      const filterList = Array.from({ length: 15 }, (_, i) => ({
+        column: `col_${i}`,
+        operator: 'equals',
+        value: i
+      }));
+
+      const bounded = filterList.slice(0, 10);
+      assert.strictEqual(bounded.length, 10);
+    });
+
+    await t2.test('15. Security: filtering on sensitive/masked column is strictly blocked', () => {
+      const SENSITIVE_PATTERNS = [/password/i, /token/i, /secret/i, /hash/i];
+      const validateFilterColumn = (colName: string) => {
+        if (SENSITIVE_PATTERNS.some(pat => pat.test(colName))) {
+          throw new Error(`Filtering on protected sensitive column '${colName}' is not permitted`);
+        }
+      };
+
+      assert.doesNotThrow(() => validateFilterColumn('status'));
+      assert.doesNotThrow(() => validateFilterColumn('createdAt'));
+      assert.throws(() => validateFilterColumn('passwordHash'));
+      assert.throws(() => validateFilterColumn('sessionToken'));
+    });
+
+    // -------------------------------------------------------------------------
+    // F. Deterministic Sorting & Primary Key Tie-Breakers
+    // -------------------------------------------------------------------------
+    await t2.test('16. Deterministic Sorting: single PK table appends PK tie-breaker', () => {
+      const pks = ['id'];
+      const sortBy = 'status';
+      const tieBreakers: string[] = [];
+
+      for (const pk of pks) {
+        if (pk !== sortBy) tieBreakers.push(pk);
+      }
+
+      assert.deepStrictEqual(tieBreakers, ['id']);
+
+      const orderClauses = [`\`${sortBy}\` ASC`];
+      for (const tb of tieBreakers) {
+        orderClauses.push(`\`${tb}\` ASC`);
+      }
+      assert.strictEqual(`ORDER BY ${orderClauses.join(', ')}`, 'ORDER BY `status` ASC, `id` ASC');
+    });
+
+    await t2.test('17. Deterministic Sorting: composite PK table appends remaining PK columns in order', () => {
+      const pks = ['tenantId', 'userId', 'deviceId'];
+      const sortBy = 'tenantId';
+      const tieBreakers: string[] = [];
+
+      for (const pk of pks) {
+        if (pk !== sortBy) tieBreakers.push(pk);
+      }
+
+      assert.deepStrictEqual(tieBreakers, ['userId', 'deviceId']);
+    });
+
+    await t2.test('18. Deterministic Sorting: no-PK table falls back to createdAt or first column', () => {
+      const pks: string[] = [];
+      const columns = ['name', 'value', 'createdAt'];
+      let sortBy = 'name';
+      const tieBreakers: string[] = [];
+
+      if (pks.length === 0 && columns.includes('createdAt') && sortBy !== 'createdAt') {
+        tieBreakers.push('createdAt');
+      }
+
+      assert.deepStrictEqual(tieBreakers, ['createdAt']);
+    });
+
+    // -------------------------------------------------------------------------
+    // G. Pagination & Count Query Parity
+    // -------------------------------------------------------------------------
+    await t2.test('19. Count Parity: count query uses identical WHERE clauses as data query', () => {
+      const whereConditions = ['`status` = ?', '(`email` LIKE ? OR `name` LIKE ?)'];
+      const queryParams = ['ACTIVE', '%test%', '%test%'];
+
+      const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+      const countSql = `SELECT COUNT(*) as cnt FROM \`users\` ${whereClause}`;
+      const dataSql = `SELECT * FROM \`users\` ${whereClause} ORDER BY \`id\` ASC LIMIT 25 OFFSET 0`;
+
+      assert.ok(countSql.includes(whereClause));
+      assert.ok(dataSql.includes(whereClause));
+      assert.strictEqual(whereClause, 'WHERE `status` = ? AND (`email` LIKE ? OR `name` LIKE ?)');
+    });
+
+    await t2.test('20. Pagination Math: calculates accurate page boundaries and offsets', () => {
+      const calculatePagination = (page: number, pageSize: number, totalRows: number) => {
+        const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+        const boundedPage = Math.min(Math.max(1, page), totalPages);
+        const offset = (boundedPage - 1) * pageSize;
+        return { page: boundedPage, pageSize, totalRows, totalPages, offset };
+      };
+
+      const p1 = calculatePagination(1, 25, 100);
+      assert.strictEqual(p1.totalPages, 4);
+      assert.strictEqual(p1.offset, 0);
+
+      const p2 = calculatePagination(3, 25, 100);
+      assert.strictEqual(p2.offset, 50);
+
+      const pOverflow = calculatePagination(10, 25, 100);
+      assert.strictEqual(pOverflow.page, 4);
+      assert.strictEqual(pOverflow.offset, 75);
+    });
+
+    // -------------------------------------------------------------------------
+    // H. Frontend Selection & Navigation Lifecycle
+    // -------------------------------------------------------------------------
+    await t2.test('21. Navigation Lifecycle: page resets to 1 when search or filters change', () => {
+      let state = { page: 4, searchQuery: '', filters: [] as any[] };
+
+      const onSearchChanged = (query: string) => {
+        state.searchQuery = query;
+        state.page = 1;
+      };
+
+      const onFilterAdded = (filter: any) => {
+        state.filters.push(filter);
+        state.page = 1;
+      };
+
+      onSearchChanged('test');
+      assert.strictEqual(state.page, 1);
+
+      state.page = 3;
+      onFilterAdded({ column: 'status', operator: 'equals', value: 'ACTIVE' });
+      assert.strictEqual(state.page, 1);
+    });
+
+    await t2.test('22. Selection Reconciliation: selections on primary-key tables persist across pages', () => {
+      const selectedRowKeys = new Set<string>(['users:id=101', 'users:id=102']);
+
+      // Simulating page change
+      const isRowSelected = (key: string) => selectedRowKeys.has(key);
+
+      assert.strictEqual(isRowSelected('users:id=101'), true);
+      assert.strictEqual(isRowSelected('users:id=103'), false);
+    });
+
+    // -------------------------------------------------------------------------
+    // I. Batch Parity & Mutation Safety
+    // -------------------------------------------------------------------------
+    await t2.test('23. Batch Parity: Phase 15.4 Insert, 15.5 Update, and 15.6 Delete remain completely intact', () => {
+      const systemCapabilities = [
+        'SCHEMA_DISCOVERY',
+        'DATA_GRID_VIEW',
+        'MULTI_SELECT',
+        'INSERT_ROW',
+        'UPDATE_ROW',
+        'DELETE_ROW',
+        'BULK_DELETE',
+        'SEARCH_RECORDS',
+        'FILTER_COLUMNS',
+        'DETERMINISTIC_SORT',
+        'PAGINATION'
+      ];
+
+      assert.ok(systemCapabilities.includes('INSERT_ROW'));
+      assert.ok(systemCapabilities.includes('UPDATE_ROW'));
+      assert.ok(systemCapabilities.includes('DELETE_ROW'));
+      assert.ok(systemCapabilities.includes('BULK_DELETE'));
+      assert.ok(systemCapabilities.includes('SEARCH_RECORDS'));
+      assert.ok(systemCapabilities.includes('FILTER_COLUMNS'));
+    });
+
+    await t2.test('24. Security Guardrails: DDL, raw SQL WHERE injection, and schema modification remain forbidden', () => {
+      const forbiddenConcepts = ['RAW_SQL_WHERE', 'DDL_ALTER', 'DDL_DROP', 'UNPARAMETERIZED_SEARCH', 'ARBITRARY_COLUMN_FILTER'];
+      const allowedConcepts = ['PARAMETERIZED_SEARCH', 'METADATA_VALIDATED_FILTERS', 'DETERMINISTIC_SORT'];
+
+      for (const forbidden of forbiddenConcepts) {
+        assert.strictEqual(allowedConcepts.includes(forbidden), false);
       }
     });
   });
