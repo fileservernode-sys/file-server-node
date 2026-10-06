@@ -25,6 +25,7 @@ describe('Track 4 — Batch NT-1.4 End-to-End Notification Pipeline Tests', () =
   let mockEmail: MockEmailService;
   let testUser: any;
   let testUserB: any;
+  let testDevice: any;
 
   before(async () => {
     mockEmail = emailService as MockEmailService;
@@ -33,7 +34,17 @@ describe('Track 4 — Batch NT-1.4 End-to-End Notification Pipeline Tests', () =
       data: {
         email: `nt14.user1.${timestamp}@remotenode.io`,
         fullName: 'NT14 User One',
+        status: 'ACTIVE',
         emailVerified: true
+      }
+    });
+
+    testDevice = await prisma.device.create({
+      data: {
+        userId: testUser.id,
+        deviceName: 'Pixel 8 Storm Device',
+        installationId: `inst_storm_${timestamp}`,
+        platform: 'Android'
       }
     });
 
@@ -41,6 +52,7 @@ describe('Track 4 — Batch NT-1.4 End-to-End Notification Pipeline Tests', () =
       data: {
         email: `nt14.user2.${timestamp}@remotenode.io`,
         fullName: 'NT14 User Two',
+        status: 'ACTIVE',
         emailVerified: true
       }
     });
@@ -51,11 +63,13 @@ describe('Track 4 — Batch NT-1.4 End-to-End Notification Pipeline Tests', () =
       if (testUser) {
         await prisma.channelDeliveryRecord.deleteMany({ where: { notification: { userId: testUser.id } } });
         await prisma.notificationRecord.deleteMany({ where: { userId: testUser.id } });
+        await prisma.device.deleteMany({ where: { userId: testUser.id } });
         await prisma.user.delete({ where: { id: testUser.id } });
       }
       if (testUserB) {
         await prisma.channelDeliveryRecord.deleteMany({ where: { notification: { userId: testUserB.id } } });
         await prisma.notificationRecord.deleteMany({ where: { userId: testUserB.id } });
+        await prisma.device.deleteMany({ where: { userId: testUserB.id } });
         await prisma.user.delete({ where: { id: testUserB.id } });
       }
     } catch {}
@@ -338,7 +352,7 @@ describe('Track 4 — Batch NT-1.4 End-to-End Notification Pipeline Tests', () =
       const res = await notificationService.dispatchEvent({
         eventType: NotificationType.DEVICE_OFFLINE,
         userId: testUser.id,
-        deviceId: 'dev_storm_1',
+        deviceId: testDevice.id,
         category: NotificationCategory.DEVICE_SERVER,
         severity: NotificationSeverity.WARNING,
         metadata: { deviceName: 'Flapping Device' }

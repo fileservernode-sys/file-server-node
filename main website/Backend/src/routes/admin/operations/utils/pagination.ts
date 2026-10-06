@@ -8,6 +8,10 @@ export interface PaginationMeta {
 export interface PaginatedResult<T> {
   items: T[];
   pagination: PaginationMeta;
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export function createPaginatedResponse<T>(
@@ -27,6 +31,10 @@ export function createPaginatedResponse<T>(
       pageSize: safePageSize,
       total,
       totalPages
-    }
+    },
+    total,
+    page: safePage,
+    pageSize: safePageSize,
+    totalPages
   };
 }

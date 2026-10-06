@@ -37,7 +37,11 @@ const SENSITIVE_KEY_PATTERNS = [
   /session/i,
   /csrf/i,
   /database/i,
-  /private/i
+  /private/i,
+  /filecontent/i,
+  /payload/i,
+  /base64/i,
+  /buffer/i
 ];
 
 /**

@@ -394,6 +394,424 @@
     duplicateTableRow(tableName, { primaryKey = {}, overrides = {} } = {}) {
       return this.post(`/admin/database/tables/${encodeURIComponent(tableName)}/rows/duplicate`, { primaryKey, overrides });
     }
+
+    // =========================================================================
+    // System Management API Methods (Phase 17 Batch 17.1)
+    // =========================================================================
+    getSystemOverview() {
+      return this.get('/admin/system/overview');
+    }
+
+    // =========================================================================
+    // User & Account Administration API Methods (Phase 17 Batch 17.2)
+    // =========================================================================
+    getUserMetrics() {
+      return this.get('/admin/users/metrics');
+    }
+
+    listUsers(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/users${qs ? `?${qs}` : ''}`);
+    }
+
+    getUser(userId) {
+      return this.get(`/admin/users/${encodeURIComponent(userId)}`);
+    }
+
+    suspendUser(userId, reason = '') {
+      return this.post(`/admin/users/${encodeURIComponent(userId)}/suspend`, { reason });
+    }
+
+    restoreUser(userId, reason = '') {
+      return this.post(`/admin/users/${encodeURIComponent(userId)}/restore`, { reason });
+    }
+
+    revokeUserSessions(userId, reason = '') {
+      return this.post(`/admin/users/${encodeURIComponent(userId)}/revoke-sessions`, { reason });
+    }
+
+    // =========================================================================
+    // Device & Server Management API Methods (Phase 17 Batch 17.3)
+    // =========================================================================
+    getDeviceMetrics() {
+      return this.get('/admin/devices/metrics');
+    }
+
+    listDevices(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/devices${qs ? `?${qs}` : ''}`);
+    }
+
+    getDevice(deviceId) {
+      return this.get(`/admin/devices/${encodeURIComponent(deviceId)}`);
+    }
+
+    disconnectDevice(deviceId, reason = '') {
+      return this.post(`/admin/devices/${encodeURIComponent(deviceId)}/disconnect`, { reason });
+    }
+
+    getServerMetrics() {
+      return this.get('/admin/servers/metrics');
+    }
+
+    listServers(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/servers${qs ? `?${qs}` : ''}`);
+    }
+
+    getServer(serverId) {
+      return this.get(`/admin/servers/${encodeURIComponent(serverId)}`);
+    }
+
+    startServer(serverId, reason = '') {
+      return this.post(`/admin/servers/${encodeURIComponent(serverId)}/start`, { reason });
+    }
+
+    stopServer(serverId, reason = '') {
+      return this.post(`/admin/servers/${encodeURIComponent(serverId)}/stop`, { reason });
+    }
+
+    restartServer(serverId, reason = '') {
+      return this.post(`/admin/servers/${encodeURIComponent(serverId)}/restart`, { reason });
+    }
+
+    // =========================================================================
+    // Notifications & Communication Management API Methods (Phase 17 Batch 17.4)
+    // =========================================================================
+    getNotificationMetrics() {
+      return this.get('/admin/notifications/metrics');
+    }
+
+    listNotifications(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/notifications${qs ? `?${qs}` : ''}`);
+    }
+
+    getNotification(notificationId) {
+      return this.get(`/admin/notifications/${encodeURIComponent(notificationId)}`);
+    }
+
+    listFailedDeliveries(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/notifications/deliveries/failures${qs ? `?${qs}` : ''}`);
+    }
+
+    listPushTokens(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/notifications/tokens${qs ? `?${qs}` : ''}`);
+    }
+
+    retryNotificationDelivery(deliveryId, reason = '') {
+      return this.post(`/admin/notifications/deliveries/${encodeURIComponent(deliveryId)}/retry`, { reason });
+    }
+
+    revokePushToken(tokenId, reason = '') {
+      return this.post(`/admin/notifications/tokens/${encodeURIComponent(tokenId)}/revoke`, { reason });
+    }
+
+    /* =========================================================================
+       Phase 17 Batch 17.5: System Logs & Diagnostics API Methods
+       ========================================================================= */
+
+    getSystemLogsMetrics() {
+      return this.get('/admin/system/logs/metrics');
+    }
+
+    listSystemErrors(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/logs/errors${qs ? `?${qs}` : ''}`);
+    }
+
+    getSystemErrorDetail(errorId) {
+      return this.get(`/admin/system/logs/errors/${encodeURIComponent(errorId)}`);
+    }
+
+    listSystemEvents(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/logs/events${qs ? `?${qs}` : ''}`);
+    }
+
+    getGatewayDiagnostics(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/logs/gateway${qs ? `?${qs}` : ''}`);
+    }
+
+    listSystemIncidents(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/logs/incidents${qs ? `?${qs}` : ''}`);
+    }
+
+    async exportSystemLogs(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      const token = window.AdminAuth?.sessionToken || '';
+      const response = await fetch(`/api/v1/admin/system/logs/export${qs ? `?${qs}` : ''}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Accept': params.format === 'json' ? 'application/json' : 'text/csv'
+        }
+      });
+      if (!response.ok) {
+        throw new Error(`Export failed with HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') || '';
+      let filename = `zdexcloud_system_logs_${params.category || 'errors'}_export.${params.format || 'csv'}`;
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) filename = match[1];
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      return { success: true, filename };
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.6 — BACKGROUND JOBS & OPERATIONS API
+    // =========================================================================
+
+    getBackgroundJobsMetrics() {
+      return this.get('/admin/system/jobs/metrics');
+    }
+
+    listBackgroundQueues() {
+      return this.get('/admin/system/jobs/queues');
+    }
+
+    listBackgroundWorkers() {
+      return this.get('/admin/system/jobs/workers');
+    }
+
+    listBackgroundJobs(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/jobs${qs ? `?${qs}` : ''}`);
+    }
+
+    getBackgroundJobDetail(jobId) {
+      return this.get(`/admin/system/jobs/${encodeURIComponent(jobId)}`);
+    }
+
+    listFailedBackgroundJobs(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/jobs/failed${qs ? `?${qs}` : ''}`);
+    }
+
+    retryBackgroundJob(jobId) {
+      return this.post(`/admin/system/jobs/${encodeURIComponent(jobId)}/retry`, {});
+    }
+
+    async exportBackgroundJobs(params = {}) {
+      const token = window.AdminAuth?.sessionToken || '';
+      const response = await fetch('/api/v1/admin/system/jobs/export', {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+          'Accept': params.format === 'json' ? 'application/json' : 'text/csv'
+        },
+        body: JSON.stringify(params)
+      });
+      if (!response.ok) {
+        throw new Error(`Export failed with HTTP ${response.status}`);
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') || '';
+      let filename = `zdexcloud_background_jobs_export.${params.format || 'csv'}`;
+      const match = disposition.match(/filename="?([^";]+)"?/i);
+      if (match && match[1]) filename = match[1];
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      return { success: true, filename };
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.7 — SYSTEM CONFIGURATION & FEATURE FLAGS API
+    // =========================================================================
+
+    getSystemConfigOverview() {
+      return this.get('/admin/system/config');
+    }
+
+    listSystemSettings(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/config/settings${qs ? `?${qs}` : ''}`);
+    }
+
+    getSystemSettingDetail(key) {
+      return this.get(`/admin/system/config/settings/${encodeURIComponent(key)}`);
+    }
+
+    updateSystemSetting(key, payload) {
+      return this.put(`/admin/system/config/settings/${encodeURIComponent(key)}`, payload);
+    }
+
+    listFeatureFlags() {
+      return this.get('/admin/system/config/flags');
+    }
+
+    updateFeatureFlag(key, payload) {
+      return this.put(`/admin/system/config/flags/${encodeURIComponent(key)}`, payload);
+    }
+
+    getEnvironmentInventory() {
+      return this.get('/admin/system/config/environment');
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.8 — SYSTEM SECURITY CONTROLS API
+    // =========================================================================
+
+    getSecurityOverview() {
+      return this.get('/admin/system/security/overview');
+    }
+
+    listAdminSessions(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/security/sessions${qs ? `?${qs}` : ''}`);
+    }
+
+    revokeAdminSession(sessionId, reason = 'ADMINISTRATIVE_REVOCATION') {
+      return this.post(`/admin/system/security/sessions/${encodeURIComponent(sessionId)}/revoke`, { reason });
+    }
+
+    revokeAllAdminSessions(adminId, reason = 'ADMINISTRATIVE_BULK_REVOCATION') {
+      return this.post(`/admin/system/security/sessions/admins/${encodeURIComponent(adminId)}/revoke-all`, { reason });
+    }
+
+    listAdminLockouts() {
+      return this.get('/admin/system/security/lockouts');
+    }
+
+    unlockAdminLockout(payload) {
+      return this.post('/admin/system/security/lockouts/unlock', payload);
+    }
+
+    listSecurityEvents(params = {}) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, String(value));
+        }
+      }
+      const qs = searchParams.toString();
+      return this.get(`/admin/system/security/events${qs ? `?${qs}` : ''}`);
+    }
+
+    getSecurityEventDetail(eventId) {
+      return this.get(`/admin/system/security/events/${encodeURIComponent(eventId)}`);
+    }
+
+    getRbacInventory() {
+      return this.get('/admin/system/security/rbac');
+    }
+
+    getAdminCredentialPosture() {
+      return this.get('/admin/system/security/credentials');
+    }
   }
 
   window.AdminApi = new AdminApiClient();

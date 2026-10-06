@@ -10,13 +10,29 @@ import {
   userListQuerySchema,
   userParamSchema,
   userSuspendSchema,
-  userRestoreSchema
+  userRestoreSchema,
+  userRevokeSessionsSchema
 } from './schemas.js';
 
 export * from './schemas.js';
 export * from './service.js';
 
 export async function adminUserOperationsRoutes(app: FastifyInstance): Promise<void> {
+  /**
+   * GET /api/v1/admin/operations/users/metrics
+   * Retrieves summary count metrics across customer accounts.
+   */
+  app.get(
+    '/admin/operations/users/metrics',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('users.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const metrics = await AdminUserService.getUserSummaryMetrics();
+      return reply.status(200).send(createSuccessResponse({ metrics }));
+    }
+  );
+
   /**
    * GET /api/v1/admin/operations/users
    * Lists customer accounts with allowlisted filtering, search, and pagination.
@@ -168,6 +184,59 @@ export async function adminUserOperationsRoutes(app: FastifyInstance): Promise<v
       return reply.status(200).send(createSuccessResponse({
         user: result,
         message: `User '${result.email}' has been restored successfully`
+      }));
+    }
+  );
+
+  /**
+   * POST /api/v1/admin/operations/users/:userId/revoke-sessions
+   * Forcefully invalidates all active sessions for a customer user account.
+   */
+  app.post(
+    '/admin/operations/users/:userId/revoke-sessions',
+    {
+      config: {
+        rateLimit: {
+          max: 20,
+          timeWindow: '1 minute',
+          keyGenerator: (req: FastifyRequest) => {
+            const adminId = req.admin?.id || 'anonymous';
+            const clientIp = resolveClientIp(req) || 'unknown';
+            return `user_revoke_sessions_${adminId}_${clientIp}`;
+          }
+        }
+      },
+      preHandler: [adminAuthenticate, requireOperationPermission('users.suspend')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsedParam = userParamSchema.safeParse(request.params);
+      if (!parsedParam.success) {
+        throw new ValidationError(parsedParam.error.errors[0]?.message || 'Invalid userId parameter');
+      }
+
+      const parsedBody = userRevokeSessionsSchema.safeParse(request.body || {});
+      if (!parsedBody.success) {
+        throw new ValidationError(parsedBody.error.errors[0]?.message || 'Invalid payload');
+      }
+
+      const { userId } = parsedParam.data;
+
+      await assertAdminCanOperateOnResource({
+        resourceType: 'user',
+        resourceId: userId,
+        operation: 'revoke_sessions',
+        context: request.operationContext!
+      });
+
+      const result = await AdminUserService.revokeUserSessions(
+        userId,
+        request.operationContext!,
+        parsedBody.data.reason
+      );
+
+      return reply.status(200).send(createSuccessResponse({
+        user: result,
+        message: `All active sessions (${result.revokedSessionsCount}) for '${result.email}' have been revoked successfully`
       }));
     }
   );

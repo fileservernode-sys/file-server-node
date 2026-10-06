@@ -39,6 +39,7 @@ before(async () => {
     data: {
       email: `nt12.user1.${timestamp}@remotenode.io`,
       fullName: 'NT12 User One',
+      status: 'ACTIVE',
       emailVerified: true
     }
   });
@@ -77,6 +78,7 @@ before(async () => {
     data: {
       email: `nt12.user2.${timestamp}@remotenode.io`,
       fullName: 'NT12 User Two',
+      status: 'ACTIVE',
       emailVerified: true
     }
   });

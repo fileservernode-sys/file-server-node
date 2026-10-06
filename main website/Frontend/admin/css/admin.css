@@ -4079,6 +4079,340 @@ button, input, select, textarea {
   }
 }
 
+/* =========================================================================
+   PHASE 17 BATCH 17.1: SYSTEM OVERVIEW & OPERATIONAL HEALTH DASHBOARD
+   ========================================================================= */
+
+.admin-sys-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.admin-sys-overall-banner {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-sys-overall-banner.status-healthy {
+  border-left: 4px solid var(--admin-success);
+}
+
+.admin-sys-overall-banner.status-degraded {
+  border-left: 4px solid var(--admin-warning);
+}
+
+.admin-sys-overall-banner.status-unhealthy {
+  border-left: 4px solid var(--admin-danger);
+}
+
+.admin-sys-overall-banner.status-unknown {
+  border-left: 4px solid var(--admin-text-muted);
+}
+
+.admin-sys-overall-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.admin-sys-overall-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.admin-sys-overall-pill.HEALTHY {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.admin-sys-overall-pill.DEGRADED {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.admin-sys-overall-pill.UNHEALTHY {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.admin-sys-overall-pill.UNKNOWN {
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-sys-overall-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.admin-sys-overall-desc {
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+}
+
+.admin-sys-overall-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+}
+
+.admin-sys-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.admin-sys-card {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.admin-sys-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.admin-sys-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-sys-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.admin-sys-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+}
+
+.admin-sys-prop-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--admin-border-subtle, rgba(226, 232, 240, 0.4));
+}
+
+.admin-sys-prop-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.admin-sys-prop-label {
+  color: var(--admin-text-secondary);
+  font-size: 0.75rem;
+}
+
+.admin-sys-prop-value {
+  color: var(--admin-text-primary);
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-align: right;
+  word-break: break-all;
+}
+
+.admin-sys-env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.875rem 1.5rem;
+  padding: 1.25rem;
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+}
+
+.admin-sys-table-wrap {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-sys-signals-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.admin-sys-signals-table th {
+  background: var(--admin-bg-subtle);
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-sys-signals-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
+.admin-sys-signals-table tr:last-child td {
+  border-bottom: none;
+}
+
+@media (max-width: 768px) {
+  .admin-sys-overall-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .admin-sys-overall-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .admin-sys-overall-stats {
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .admin-sys-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sys-env-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================================
+   USER & ACCOUNT ADMINISTRATION (Phase 17 Batch 17.2)
+   ========================================================================= */
+.admin-user-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-user-metric-card {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-user-metric-card:hover {
+  border-color: var(--admin-border-focus);
+}
+
+.admin-user-metric-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-bg-subtle);
+  color: var(--admin-accent);
+  flex-shrink: 0;
+}
+
+.admin-user-metric-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-user-metric-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.admin-user-metric-value {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  line-height: 1.2;
+  margin-top: 0.125rem;
+}
+
+.admin-user-device-card {
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.admin-user-device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-user-server-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  color: var(--admin-text-secondary);
+}
+
+
 
 
 

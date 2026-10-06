@@ -167,7 +167,7 @@ export async function adminSupportOperationsRoutes(app: FastifyInstance): Promis
     async (request: FastifyRequest, reply: FastifyReply) => {
       const context = request.operationContext!;
       const result = await AdminSupportService.listEligibleAssignees(context);
-      return reply.status(200).send(createSuccessResponse(result));
+      return reply.status(200).send(createSuccessResponse({ assignees: result }));
     }
   );
 

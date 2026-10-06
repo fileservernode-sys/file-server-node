@@ -27,6 +27,14 @@ export interface ServerSummaryItem {
   }>;
 }
 
+export interface ServerSummaryMetrics {
+  totalServers: number;
+  runningServers: number;
+  stoppedServers: number;
+  startingServers: number;
+  errorServers: number;
+}
+
 export interface ServerDetailResult {
   id: string;
   deviceId: string;
@@ -69,6 +77,27 @@ export interface ServerDetailResult {
 }
 
 export class AdminServerService {
+  /**
+   * Retrieves summary metric counts across all server instances.
+   */
+  static async getServerSummaryMetrics(): Promise<ServerSummaryMetrics> {
+    const [totalServers, runningServers, stoppedServers, startingServers, errorServers] = await Promise.all([
+      prisma.serverInstance.count(),
+      prisma.serverInstance.count({ where: { status: 'RUNNING' } }),
+      prisma.serverInstance.count({ where: { status: 'STOPPED' } }),
+      prisma.serverInstance.count({ where: { status: 'STARTING' } }),
+      prisma.serverInstance.count({ where: { status: 'ERROR' } })
+    ]);
+
+    return {
+      totalServers,
+      runningServers,
+      stoppedServers,
+      startingServers,
+      errorServers
+    };
+  }
+
   /**
    * Lists customer server instances with safe allowlisted filters, search, and pagination.
    */
@@ -549,10 +578,6 @@ export class AdminServerService {
 
     if (server.status === 'STOPPED') {
       throw new ConflictError(`Cannot restart a stopped server instance; use start instead`);
-    }
-
-    if (server.status === 'STARTING') {
-      throw new ConflictError(`Server instance '${server.serverName || server.id}' is currently starting`);
     }
 
     const previousStatus = server.status;

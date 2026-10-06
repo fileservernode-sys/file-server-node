@@ -75,6 +75,15 @@ describe('Billing Phase 6.6 — Authoritative Gateway Reconciliation Layer', () 
       }
     });
 
+    await prisma.planPrice.create({
+      data: {
+        planId: testPlan.id,
+        currency: CurrencyCode.USD,
+        amountMinorUnits: 999,
+        version: 1
+      }
+    });
+
     // 3. Create active subscription
     testSub = await prisma.subscription.create({
       data: {
@@ -914,5 +923,18 @@ describe('Billing Phase 6.6 — Authoritative Gateway Reconciliation Layer', () 
     assert.strictEqual(summary.id, run.id);
     assert.ok(Array.isArray(summary.records));
     assert.ok(Array.isArray(summary.discrepancies));
+  });
+
+  after(async () => {
+    try {
+      if (testPlan) {
+        await prisma.subscription.deleteMany({ where: { planId: testPlan.id } });
+        await prisma.planPrice.deleteMany({ where: { planId: testPlan.id } });
+        await prisma.plan.delete({ where: { id: testPlan.id } });
+      }
+      if (testUser) {
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    } catch {}
   });
 });

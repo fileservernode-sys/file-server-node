@@ -37,7 +37,7 @@
       icon: 'file-text'
     },
 
-    // --- Phase 8: Core Operations ---
+    // --- Phase 17: System & Operations Management ---
     {
       id: 'users',
       name: 'Customer Accounts',
@@ -45,9 +45,9 @@
       route: '#users',
       permission: 'users.read',
       status: 'IMPLEMENTED',
-      phase: 'Phase 8',
+      phase: 'Phase 17 Batch 17.2',
       description: 'Customer directory, identity verification, account suspension, and session revocation.',
-      apiNamespace: '/api/v1/admin/operations/users/*',
+      apiNamespace: '/api/v1/admin/users/*',
       icon: 'users'
     },
     {
@@ -57,9 +57,9 @@
       route: '#devices',
       permission: 'devices.read',
       status: 'IMPLEMENTED',
-      phase: 'Phase 8',
-      description: 'Registered hardware edge nodes, platform telemetry, and session disconnect controls.',
-      apiNamespace: '/api/v1/admin/operations/devices/*',
+      phase: 'Phase 17 Batch 17.3',
+      description: 'Registered hardware edge nodes, OS telemetry, live gateway tunnels, and session disconnect controls.',
+      apiNamespace: '/api/v1/admin/devices/*',
       icon: 'server'
     },
     {
@@ -69,10 +69,22 @@
       route: '#servers',
       permission: 'servers.read',
       status: 'IMPLEMENTED',
-      phase: 'Phase 8',
-      description: 'Local file server daemons, health status, and administrative power controls.',
-      apiNamespace: '/api/v1/admin/operations/servers/*',
+      phase: 'Phase 17 Batch 17.3',
+      description: 'Local file server daemons, DNS endpoint routing, health heartbeats, and administrative power controls.',
+      apiNamespace: '/api/v1/admin/servers/*',
       icon: 'hard-drive'
+    },
+    {
+      id: 'notifications',
+      name: 'Notifications & Communications',
+      category: 'Core Operations',
+      route: '#notifications',
+      permission: 'notifications.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.4',
+      description: 'Notification delivery logs, channel routing, FCM push token health, delivery failure diagnostics, and safe retries.',
+      apiNamespace: '/api/v1/admin/notifications/*',
+      icon: 'bell'
     },
     {
       id: 'gateway',
@@ -175,18 +187,17 @@
       icon: 'life-buoy'
     },
 
-    // --- Future Scheduled Modules (Honest Roadmap Tracking) ---
     {
-      id: 'communication-infra',
-      name: 'Communication & Push Relays',
-      category: 'Infrastructure',
-      route: null,
-      permission: 'communication.read',
-      status: 'FUTURE',
-      phase: 'Phase 11',
-      description: 'Notification dispatch, push notification delivery, and outbound messaging queues.',
-      apiNamespace: 'Scheduled for Phase 11',
-      icon: 'radio'
+      id: 'notifications',
+      name: 'Notifications & Relays',
+      category: 'Core Operations',
+      route: '#notifications',
+      permission: 'notifications.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.4',
+      description: 'Centralized notification telemetry, multichannel history, failed delivery diagnostics, retry mechanisms, and push token lifecycle management.',
+      apiNamespace: '/api/v1/admin/operations/notifications/*',
+      icon: 'bell'
     },
     {
       id: 'gateway-resilience',
@@ -249,16 +260,64 @@
       icon: 'database'
     },
     {
-      id: 'system-settings',
-      name: 'System Settings & Config',
+      id: 'system-overview',
+      name: 'System Overview & Health',
+      category: 'Observability & Diagnostics',
+      route: '#system-overview',
+      permission: 'system.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.1',
+      description: 'Centralized operational health dashboard, subsystem diagnostics, gateway relays, and environment metadata.',
+      apiNamespace: '/api/v1/admin/system/*',
+      icon: 'activity'
+    },
+    {
+      id: 'system-logs',
+      name: 'System Logs & Diagnostics',
+      category: 'Observability & Diagnostics',
+      route: '#system-logs',
+      permission: 'system.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.5',
+      description: 'Comprehensive administrative logging, runtime error telemetry, operational event streams, gateway diagnostics, and sanitized log export.',
+      apiNamespace: '/api/v1/admin/system/logs/*',
+      icon: 'file-text'
+    },
+    {
+      id: 'background-jobs',
+      name: 'Background Jobs & Operations',
+      category: 'Observability & Diagnostics',
+      route: '#background-jobs',
+      permission: 'system.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.6',
+      description: 'Centralized background job queue management, worker health telemetry, failure triage, retry controls, and job exports.',
+      apiNamespace: '/api/v1/admin/system/jobs/*',
+      icon: 'cpu'
+    },
+    {
+      id: 'system-config',
+      name: 'System Configuration & Flags',
       category: 'System & Data',
-      route: null,
-      permission: 'system.admin',
-      status: 'FUTURE',
-      phase: 'Phase 16',
-      description: 'Platform runtime configuration, feature flags, and maintenance mode toggles.',
-      apiNamespace: 'Scheduled for Phase 16',
-      icon: 'server'
+      route: '#system-config',
+      permission: 'system.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.7',
+      description: 'Platform runtime configuration, feature flags, operational thresholds, and environment inventory.',
+      apiNamespace: '/api/v1/admin/system/config/*',
+      icon: 'settings'
+    },
+    {
+      id: 'system-security',
+      name: 'System Security Controls',
+      category: 'Security & Access',
+      route: '#system-security',
+      permission: 'system.read',
+      status: 'IMPLEMENTED',
+      phase: 'Phase 17 Batch 17.8',
+      description: 'Administrative session management, active lockout clearance, RBAC inventory matrix, security event audit trails, and credential posture.',
+      apiNamespace: '/api/v1/admin/system/security/*',
+      icon: 'shield'
     }
   ];
 
@@ -294,6 +353,12 @@
           label: 'Server Instances',
           icon: 'hard-drive',
           permission: 'servers.read'
+        },
+        {
+          id: 'notifications',
+          label: 'Notifications & Relays',
+          icon: 'bell',
+          permission: 'notifications.read'
         },
         {
           id: 'gateway',
@@ -359,6 +424,30 @@
       group: 'Observability & Health',
       items: [
         {
+          id: 'system-overview',
+          label: 'System Overview & Health',
+          icon: 'activity',
+          permission: 'system.read'
+        },
+        {
+          id: 'system-logs',
+          label: 'System Logs & Diagnostics',
+          icon: 'file-text',
+          permission: 'system.read'
+        },
+        {
+          id: 'background-jobs',
+          label: 'Background Jobs & Queues',
+          icon: 'cpu',
+          permission: 'system.read'
+        },
+        {
+          id: 'system-config',
+          label: 'System Configuration',
+          icon: 'settings',
+          permission: 'system.read'
+        },
+        {
           id: 'observability-center',
           label: 'Error & Incident Center',
           icon: 'alert-triangle',
@@ -375,6 +464,12 @@
     {
       group: 'Security & Access',
       items: [
+        {
+          id: 'system-security',
+          label: 'System Security Controls',
+          icon: 'shield',
+          permission: 'system.read'
+        },
         {
           id: 'admin-roles',
           label: 'Roles & RBAC Matrix',
@@ -409,6 +504,8 @@
   ];
 
   const ICONS = {
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    activity: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
     mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>',
     'alert-triangle': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="admin-nav-icon"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>',
@@ -449,6 +546,46 @@
       this.userState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.deviceState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', platform: '' };
       this.serverState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
+      this.notificationState = {
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        items: [],
+        search: '',
+        status: '',
+        channel: '',
+        category: '',
+        severity: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+      this.failedDeliveriesState = {
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        items: [],
+        search: '',
+        channel: '',
+        failureCategory: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      };
+      this.pushTokensState = {
+        page: 1,
+        pageSize: 20,
+        total: 0,
+        items: [],
+        search: '',
+        platform: '',
+        isActive: '',
+        sortBy: 'lastSeenAt',
+        sortOrder: 'desc'
+      };
+      this.notificationActiveTab = 'history'; // 'history' | 'failures' | 'tokens'
       this.gatewayState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.connectionsState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '' };
       this.subscriptionState = { page: 1, pageSize: 20, total: 0, items: [], search: '', status: '', planCode: '' };
@@ -549,6 +686,78 @@
         requestId: 0,
         searchDebounceTimer: null,
         error: null
+      };
+      this.systemOverviewState = {
+        data: null,
+        isLoading: false,
+        lastRefresh: null,
+        error: null
+      };
+      this.systemLogsState = {
+        activeTab: 'errors', // 'errors' | 'events' | 'gateway' | 'incidents'
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        items: [],
+        search: '',
+        severity: '',
+        component: '',
+        errorCode: '',
+        status: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'occurredAt',
+        sortOrder: 'desc',
+        metrics: null,
+        isLoading: false
+      };
+      this.backgroundJobsState = {
+        activeTab: 'overview', // 'overview' | 'jobs' | 'failed' | 'workers'
+        page: 1,
+        pageSize: 25,
+        total: 0,
+        items: [],
+        search: '',
+        queueName: '',
+        category: '',
+        status: '',
+        workerId: '',
+        startDate: '',
+        endDate: '',
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        metrics: null,
+        queues: [],
+        workers: [],
+        isLoading: false
+      };
+      this.systemConfigState = {
+        activeTab: 'overview', // 'overview' | 'settings' | 'flags' | 'environment'
+        category: '',
+        search: '',
+        editableOnly: false,
+        settings: [],
+        flags: [],
+        overview: null,
+        environment: null,
+        selectedSetting: null,
+        isLoading: false
+      };
+      this.systemSecurityState = {
+        activeTab: 'overview', // 'overview' | 'sessions' | 'lockouts' | 'events' | 'rbac' | 'credentials'
+        overview: null,
+        sessions: [],
+        sessionsPage: 1,
+        sessionsTotalPages: 1,
+        sessionsFilter: { status: 'ALL', search: '' },
+        lockouts: [],
+        events: [],
+        eventsPage: 1,
+        eventsTotalPages: 1,
+        eventsFilter: { action: '', status: '', search: '' },
+        rbac: null,
+        credentials: [],
+        isLoading: false
       };
     }
 
@@ -780,6 +989,8 @@
       if (rawHash === 'billing-refunds') hash = 'refunds';
       if (rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') hash = 'reconciliation';
       if (rawHash === 'settlements' || rawHash === 'billing-settlements') hash = 'settlements';
+      if (rawHash === 'notifications' || rawHash === 'notification' || rawHash === 'communication' || rawHash === 'communication-infra' || rawHash === 'comms' || rawHash === 'push') hash = 'notifications';
+      if (rawHash === 'system-logs' || rawHash === 'system-log' || rawHash === 'logs' || rawHash === 'diagnostics') hash = 'system-logs';
       if (rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') hash = 'observability-center';
       if (rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') hash = 'email-operations';
       if (rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') hash = 'sql-runner';
@@ -800,6 +1011,8 @@
           (rawHash === 'billing-refunds' && itemId === 'refunds') ||
           ((rawHash === 'recon' || rawHash === 'reconciliation' || rawHash === 'billing-reconciliation') && itemId === 'reconciliation') ||
           ((rawHash === 'settlements' || rawHash === 'billing-settlements') && itemId === 'settlements') ||
+          ((rawHash === 'notifications' || rawHash === 'notification' || rawHash === 'communication' || rawHash === 'communication-infra' || rawHash === 'comms' || rawHash === 'push') && itemId === 'notifications') ||
+          ((rawHash === 'system-logs' || rawHash === 'system-log' || rawHash === 'logs' || rawHash === 'diagnostics') && itemId === 'system-logs') ||
           ((rawHash === 'errors' || rawHash === 'error-center' || rawHash === 'observability' || rawHash === 'observability-center') && itemId === 'observability-center') ||
           ((rawHash === 'emails' || rawHash === 'email' || rawHash === 'email-operations' || rawHash === 'email-analytics' || rawHash === 'email-tracking') && itemId === 'email-operations') ||
           ((rawHash === 'sql' || rawHash === 'sql-query' || rawHash === 'sql-runner' || rawHash === 'sql-query-runner') && itemId === 'sql-runner') ||
@@ -831,7 +1044,7 @@
         breadcrumbGroup.textContent = currentGroup ? currentGroup.group : 'Overview';
         breadcrumbItem.textContent = currentItem
           ? currentItem.label
-          : (hash === 'users' ? 'Customer Accounts' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : (hash === 'email-operations' ? 'Email Operations' : (hash === 'database' ? 'Database Management' : 'Dashboard'))))))))));
+          : (hash === 'users' ? 'Customer Accounts' : (hash === 'notifications' ? 'Notifications & Relays' : (hash === 'system-logs' ? 'System Logs & Diagnostics' : (hash === 'billing-overview' ? 'Financial & Billing Overview' : (hash === 'subscriptions' ? 'Subscriptions & Dunning' : (hash === 'payments' ? 'Payments & Transactions' : (hash === 'refunds' ? 'Refunds & Returns' : (hash === 'reconciliation' ? 'Billing Reconciliation & Drift' : (hash === 'settlements' ? 'Settlements & Payouts' : (hash === 'observability-center' ? 'Error & Incident Center' : (hash === 'email-operations' ? 'Email Operations' : (hash === 'database' ? 'Database Management' : 'Dashboard'))))))))))));
       }
 
       if (currentItem && currentItem.permission && !window.AdminAuth.hasPermission(currentItem.permission)) {
@@ -859,6 +1072,14 @@
           break;
         case 'servers':
           this._renderServersView(container);
+          break;
+        case 'notifications':
+        case 'notification':
+        case 'communication':
+        case 'communication-infra':
+        case 'comms':
+        case 'push':
+          this._renderNotificationsView(container);
           break;
         case 'gateway':
           this._renderGatewayView(container);
@@ -901,6 +1122,41 @@
         case 'audit-logs':
         case 'audit':
           this._renderAuditLogsView(container);
+          break;
+        case 'system-overview':
+        case 'system':
+        case 'system-health':
+        case 'overview':
+          this._renderSystemOverviewView(container);
+          break;
+        case 'system-logs':
+        case 'system-log':
+        case 'logs':
+        case 'diagnostics':
+          this._renderSystemLogsView(container);
+          break;
+        case 'background-jobs':
+        case 'jobs':
+        case 'queues':
+        case 'workers':
+        case 'job-operations':
+          this._renderBackgroundJobsView(container);
+          break;
+        case 'system-config':
+        case 'config':
+        case 'settings':
+        case 'system-settings':
+        case 'feature-flags':
+        case 'flags':
+          this._renderSystemConfigView(container);
+          break;
+        case 'system-security':
+        case 'security':
+        case 'security-controls':
+        case 'admin-sessions':
+        case 'lockouts':
+        case 'security-events':
+          this._renderSystemSecurityView(container);
           break;
         case 'observability-center':
         case 'errors':
@@ -1180,48 +1436,97 @@
       container.innerHTML = `
         <div class="admin-view-header">
           <div class="admin-view-title-wrap">
-            <h1>Customer Accounts</h1>
-            <p>Manage customer identities, verification status, and administrative account suspensions.</p>
+            <h1>User &amp; Account Administration</h1>
+            <p>Manage customer identities, verification states, edge device pairings, active sessions, and account lifecycle states.</p>
           </div>
           <div class="admin-header-actions">
-            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadUsers()">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadUsers(true)">
               ${ICONS['refresh-cw']} Refresh
             </button>
           </div>
         </div>
 
+        <!-- Summary Metrics Cards -->
+        <div id="userMetricsGrid" class="admin-user-metrics-grid">
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon">${ICONS.users}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Total Accounts</span>
+              <span id="metricTotalAccounts" class="admin-user-metric-value">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-success);">${ICONS['check-circle']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Active Accounts</span>
+              <span id="metricActiveAccounts" class="admin-user-metric-value" style="color:var(--admin-success);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-danger);">${ICONS['slash'] || ICONS['shield']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Suspended</span>
+              <span id="metricSuspendedAccounts" class="admin-user-metric-value" style="color:var(--admin-danger);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-warning);">${ICONS.clock}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Pending Verification</span>
+              <span id="metricPendingAccounts" class="admin-user-metric-value" style="color:var(--admin-warning);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-accent);">${ICONS.server}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">With Edge Devices</span>
+              <span id="metricDevicesAccounts" class="admin-user-metric-value">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Toolbar -->
         <div class="admin-toolbar">
           <div class="admin-toolbar-left">
             <div class="admin-search-wrap">
               ${ICONS.search}
-              <input type="text" id="userSearchInput" class="admin-search-input" placeholder="Search by email or name..." value="${this._escape(this.userState.search)}">
+              <input type="text" id="userSearchInput" class="admin-search-input" placeholder="Search accounts by email or full name..." value="${this._escape(this.userState.search)}">
             </div>
-            <select id="userStatusSelect" class="admin-select">
+            <select id="userStatusSelect" class="admin-select" aria-label="Filter by account status">
               <option value="" ${this.userState.status === '' ? 'selected' : ''}>All Statuses</option>
-              <option value="ACTIVE" ${this.userState.status === 'ACTIVE' ? 'selected' : ''}>Active</option>
-              <option value="SUSPENDED" ${this.userState.status === 'SUSPENDED' ? 'selected' : ''}>Suspended</option>
+              <option value="ACTIVE" ${this.userState.status === 'ACTIVE' ? 'selected' : ''}>Active Accounts</option>
+              <option value="SUSPENDED" ${this.userState.status === 'SUSPENDED' ? 'selected' : ''}>Suspended Accounts</option>
               <option value="PENDING_VERIFICATION" ${this.userState.status === 'PENDING_VERIFICATION' ? 'selected' : ''}>Pending Verification</option>
+            </select>
+            <select id="userPageSizeSelect" class="admin-select" aria-label="Accounts per page">
+              <option value="10" ${this.userState.pageSize === 10 ? 'selected' : ''}>10 / page</option>
+              <option value="20" ${this.userState.pageSize === 20 ? 'selected' : ''}>20 / page</option>
+              <option value="50" ${this.userState.pageSize === 50 ? 'selected' : ''}>50 / page</option>
+              <option value="100" ${this.userState.pageSize === 100 ? 'selected' : ''}>100 / page</option>
             </select>
           </div>
         </div>
 
+        <!-- Accounts Table Card -->
         <div class="admin-table-card">
           <div class="admin-table-wrap">
-            <table class="admin-table">
+            <table class="admin-table" aria-label="Customer accounts directory">
               <thead>
                 <tr>
-                  <th>User / Email</th>
+                  <th>Account / Email</th>
                   <th>Full Name</th>
                   <th>Status</th>
-                  <th>Verified</th>
+                  <th>Verification</th>
+                  <th>Auth Type</th>
                   <th>Devices</th>
+                  <th>Servers</th>
                   <th>Sessions</th>
-                  <th>Created</th>
+                  <th>Created Date</th>
                   <th style="text-align:right;">Actions</th>
                 </tr>
               </thead>
               <tbody id="userTableBody">
-                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading customer directory...</td></tr>
+                <tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);">Loading customer accounts...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1231,41 +1536,78 @@
 
       const searchInput = document.getElementById('userSearchInput');
       const statusSelect = document.getElementById('userStatusSelect');
+      const pageSizeSelect = document.getElementById('userPageSizeSelect');
 
       let debounceTimer = null;
-      searchInput.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          this.userState.search = e.target.value.trim();
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.userState.search = e.target.value.trim();
+            this.userState.page = 1;
+            this.loadUsers();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.userState.status = e.target.value;
           this.userState.page = 1;
           this.loadUsers();
-        }, 300);
-      });
+        });
+      }
 
-      statusSelect.addEventListener('change', (e) => {
-        this.userState.status = e.target.value;
-        this.userState.page = 1;
-        this.loadUsers();
-      });
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+          this.userState.pageSize = parseInt(e.target.value, 10) || 20;
+          this.userState.page = 1;
+          this.loadUsers();
+        });
+      }
 
+      this.loadUserMetrics();
       this.loadUsers();
     }
 
-    async loadUsers() {
+    async loadUserMetrics() {
+      try {
+        const res = await window.AdminApi.getUserMetrics();
+        const metrics = res?.data?.metrics || {};
+        const totalEl = document.getElementById('metricTotalAccounts');
+        const activeEl = document.getElementById('metricActiveAccounts');
+        const suspendedEl = document.getElementById('metricSuspendedAccounts');
+        const pendingEl = document.getElementById('metricPendingAccounts');
+        const devicesEl = document.getElementById('metricDevicesAccounts');
+
+        if (totalEl) totalEl.textContent = (metrics.totalAccounts || 0).toLocaleString();
+        if (activeEl) activeEl.textContent = (metrics.activeAccounts || 0).toLocaleString();
+        if (suspendedEl) suspendedEl.textContent = (metrics.suspendedAccounts || 0).toLocaleString();
+        if (pendingEl) pendingEl.textContent = (metrics.pendingAccounts || 0).toLocaleString();
+        if (devicesEl) devicesEl.textContent = (metrics.accountsWithDevices || 0).toLocaleString();
+      } catch (err) {
+        console.warn('[AdminShell] Failed to load user metrics:', err);
+      }
+    }
+
+    async loadUsers(reloadMetrics = false) {
       const tbody = document.getElementById('userTableBody');
       if (!tbody) return;
 
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading users...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);"><div class="admin-loading-spinner" style="margin:0 auto 0.5rem auto;"></div>Loading accounts directory...</td></tr>`;
+
+      if (reloadMetrics) {
+        this.loadUserMetrics();
+      }
 
       try {
-        const queryParams = new URLSearchParams({
-          page: this.userState.page.toString(),
-          pageSize: this.userState.pageSize.toString()
+        const res = await window.AdminApi.listUsers({
+          page: this.userState.page,
+          pageSize: this.userState.pageSize,
+          search: this.userState.search,
+          status: this.userState.status
         });
-        if (this.userState.search) queryParams.set('search', this.userState.search);
-        if (this.userState.status) queryParams.set('status', this.userState.status);
 
-        const res = await window.AdminApi.get(`/admin/operations/users?${queryParams.toString()}`);
         const data = res.data;
         this.userState.items = data.items || [];
         this.userState.total = data.total || 0;
@@ -1273,11 +1615,11 @@
         if (this.userState.items.length === 0) {
           tbody.innerHTML = `
             <tr>
-              <td colspan="8">
-                <div class="admin-empty-box">
+              <td colspan="10">
+                <div class="admin-empty-box" style="padding:3rem 1.5rem;">
                   ${ICONS.users}
                   <div class="admin-empty-title">No customer accounts found</div>
-                  <div class="admin-empty-desc">No accounts match your current filter parameters.</div>
+                  <div class="admin-empty-desc">No accounts match your search or filter parameters.</div>
                 </div>
               </td>
             </tr>
@@ -1291,27 +1633,31 @@
         tbody.innerHTML = this.userState.items.map(u => `
           <tr>
             <td>
-              <strong style="color:var(--admin-text-primary);">${this._escape(u.email)}</strong>
+              <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(u.email)}</strong>
               <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(u.id)}</div>
             </td>
             <td>${this._escape(u.fullName || '—')}</td>
             <td>${this._renderStatusBadge(u.status)}</td>
             <td>${u.emailVerified ? '<span class="admin-badge admin-badge-success">Verified</span>' : '<span class="admin-badge admin-badge-neutral">Unverified</span>'}</td>
+            <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(u.authProvider || 'PASSWORD')}</span></td>
             <td><strong>${u.deviceCount}</strong></td>
-            <td>${u.activeSessionCount}</td>
+            <td><strong>${u.serverCount !== undefined ? u.serverCount : '—'}</strong></td>
+            <td>
+              ${u.activeSessionCount > 0 ? `<span class="admin-badge admin-badge-info" style="font-size:0.6875rem;">${u.activeSessionCount} active</span>` : `<span style="color:var(--admin-text-muted);font-size:0.75rem;">0</span>`}
+            </td>
             <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${new Date(u.createdAt).toLocaleDateString()}</td>
             <td style="text-align:right;">
-              <div style="display:inline-flex;gap:4px;">
-                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectUser('${u.id}')" title="Inspect user profile">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectUser('${u.id}')" title="Inspect user profile &amp; devices">
                   ${ICONS.eye} Inspect
                 </button>
                 ${canSuspend && u.status === 'ACTIVE' ? `
-                  <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.confirmSuspendUser('${u.id}', '${this._escape(u.email)}')" title="Suspend account">
+                  <button class="admin-btn admin-btn-danger admin-btn-xs" onclick="AdminShell.confirmSuspendUser('${u.id}', '${this._escape(u.email)}')" title="Suspend account">
                     Suspend
                   </button>
                 ` : ''}
                 ${canSuspend && u.status === 'SUSPENDED' ? `
-                  <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.confirmRestoreUser('${u.id}', '${this._escape(u.email)}')" title="Restore account">
+                  <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.confirmRestoreUser('${u.id}', '${this._escape(u.email)}')" title="Restore account">
                     Restore
                   </button>
                 ` : ''}
@@ -1322,18 +1668,18 @@
 
         this._renderPagination('userPaginationBar', this.userState, (p) => { this.userState.page = p; this.loadUsers(); });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load users')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load customer accounts')}</td></tr>`;
       }
     }
 
     async inspectUser(userId) {
       try {
-        const res = await window.AdminApi.get(`/admin/operations/users/${userId}`);
+        const res = await window.AdminApi.getUser(userId);
         const user = res.data.user;
 
         const content = `
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Identity & Account</div>
+            <div class="admin-drawer-section-title">Identity &amp; Account Information</div>
             <div class="admin-property-grid">
               <span class="admin-property-label">User ID:</span>
               <span class="admin-property-value"><code class="admin-code-pill">${this._escape(user.id)}</code></span>
@@ -1344,32 +1690,81 @@
               <span class="admin-property-label">Status:</span>
               <span class="admin-property-value">${this._renderStatusBadge(user.status)}</span>
               <span class="admin-property-label">Email Verified:</span>
-              <span class="admin-property-value">${user.emailVerified ? 'Yes' : 'No'}</span>
-              <span class="admin-property-label">Created At:</span>
+              <span class="admin-property-value">${user.emailVerified ? '<span class="admin-badge admin-badge-success">Verified</span>' : '<span class="admin-badge admin-badge-neutral">Unverified</span>'}</span>
+              <span class="admin-property-label">Auth Provider:</span>
+              <span class="admin-property-value"><span class="admin-badge admin-badge-neutral">${this._escape(user.authProvider || 'PASSWORD')}</span></span>
+              <span class="admin-property-label">Created Timestamp:</span>
               <span class="admin-property-value">${new Date(user.createdAt).toLocaleString()}</span>
+              <span class="admin-property-label">Last Updated:</span>
+              <span class="admin-property-value">${new Date(user.updatedAt).toLocaleString()}</span>
             </div>
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Linked Edge Devices (${user.devices ? user.devices.length : 0})</div>
+            <div class="admin-drawer-section-title">Linked Edge Devices &amp; Servers (${user.devices ? user.devices.length : 0} devices &bull; ${user.serverCount || 0} servers)</div>
             ${user.devices && user.devices.length > 0 ? `
-              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+              <div style="display:flex;flex-direction:column;gap:0.75rem;">
                 ${user.devices.map(d => `
-                  <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                      <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(d.deviceName)}</strong>
-                      <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(d.platform)} &bull; ${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}</div>
+                  <div class="admin-user-device-card">
+                    <div class="admin-user-device-header">
+                      <div>
+                        <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(d.deviceName)}</strong>
+                        <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">
+                          ${this._escape(d.platform || 'Android')} ${d.osVersion ? `&bull; OS ${this._escape(d.osVersion)}` : ''} ${d.appVersion ? `&bull; App v${this._escape(d.appVersion)}` : ''} &bull; Last seen: ${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:0.5rem;">
+                        ${this._renderStatusBadge(d.status)}
+                        <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectDevice('${d.id}')" title="Inspect device topology">
+                          ${ICONS.eye}
+                        </button>
+                      </div>
                     </div>
-                    <div style="display:flex;align-items:center;gap:0.5rem;">
-                      ${this._renderStatusBadge(d.status)}
-                      <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectDevice('${d.id}')" title="Inspect device details">
-                        ${ICONS.eye}
-                      </button>
-                    </div>
+
+                    <!-- Server Daemons on this Device -->
+                    ${d.servers && d.servers.length > 0 ? `
+                      <div style="border-top:1px solid var(--admin-border);padding-top:0.5rem;margin-top:0.25rem;">
+                        <div style="font-size:0.6875rem;font-weight:600;color:var(--admin-text-muted);text-transform:uppercase;margin-bottom:0.375rem;">Running Server Instances (${d.servers.length})</div>
+                        <div style="display:flex;flex-direction:column;gap:0.375rem;">
+                          ${d.servers.map(s => `
+                            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.375rem 0.625rem;background:var(--admin-bg-surface);border:1px solid var(--admin-border);border-radius:var(--radius-xs);">
+                              <div>
+                                <span style="font-size:0.8125rem;font-weight:600;">${this._escape(s.serverName || 'File Server')}</span>
+                                ${s.endpoints && s.endpoints.length > 0 ? `
+                                  <div style="font-size:0.6875rem;color:var(--admin-accent);font-family:var(--font-mono);margin-top:1px;">
+                                    ${this._escape(s.endpoints[0].hostname)}
+                                  </div>
+                                ` : ''}
+                              </div>
+                              <div style="display:flex;align-items:center;gap:0.375rem;">
+                                ${this._renderStatusBadge(s.status)}
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+                      </div>
+                    ` : '<div style="font-size:0.75rem;color:var(--admin-text-muted);font-style:italic;">No active file server daemons on this device.</div>'}
                   </div>
                 `).join('')}
               </div>
-            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No hardware devices paired to this account.</p>'}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No edge devices registered to this customer account.</p>'}
+          </div>
+
+          <div class="admin-drawer-section">
+            <div class="admin-drawer-section-title">Security &amp; Active Sessions</div>
+            <div class="admin-property-grid">
+              <span class="admin-property-label">Active Login Sessions:</span>
+              <span class="admin-property-value">
+                <strong>${user.activeSessionCount || 0}</strong>
+                ${user.activeSessionCount > 0 && window.AdminAuth.hasPermission('users.suspend') ? `
+                  <button class="admin-btn admin-btn-danger admin-btn-xs" style="margin-left:0.75rem;" onclick="AdminShell.confirmRevokeUserSessions('${user.id}', '${this._escape(user.email)}')">
+                    ${ICONS['slash'] || ICONS['shield']} Force Logout
+                  </button>
+                ` : ''}
+              </span>
+              <span class="admin-property-label">Security Audit Events:</span>
+              <span class="admin-property-value"><span class="admin-badge admin-badge-neutral">${user.totalAuditEvents || 0} logged</span></span>
+            </div>
           </div>
 
           ${user.billing ? `
@@ -1391,15 +1786,20 @@
             </div>
           ` : ''}
 
-          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;border-top:1px solid var(--admin-border);padding-top:1.25rem;">
             ${window.AdminAuth.hasPermission('users.suspend') && user.status === 'ACTIVE' ? `
               <button class="admin-btn admin-btn-danger" onclick="AdminShell.confirmSuspendUser('${user.id}', '${this._escape(user.email)}')">
-                Suspend Account
+                ${ICONS['slash'] || ICONS['shield']} Suspend Account
               </button>
             ` : ''}
             ${window.AdminAuth.hasPermission('users.suspend') && user.status === 'SUSPENDED' ? `
               <button class="admin-btn admin-btn-primary" onclick="AdminShell.confirmRestoreUser('${user.id}', '${this._escape(user.email)}')">
-                Restore Account
+                ${ICONS['check-circle']} Restore Account
+              </button>
+            ` : ''}
+            ${window.AdminAuth.hasPermission('users.suspend') && user.activeSessionCount > 0 ? `
+              <button class="admin-btn admin-btn-secondary" onclick="AdminShell.confirmRevokeUserSessions('${user.id}', '${this._escape(user.email)}')">
+                Force Logout All Sessions
               </button>
             ` : ''}
           </div>
@@ -1407,22 +1807,27 @@
 
         this._showDrawer(`Customer: ${user.email}`, content);
       } catch (err) {
-        this.toast(err.message || 'Failed to inspect customer', 'danger');
+        this.toast(err.message || 'Failed to inspect customer account', 'danger');
       }
     }
 
     confirmSuspendUser(userId, email) {
       this.showConfirmModal({
         title: 'Suspend Customer Account',
-        message: `Are you sure you want to suspend account <strong>${this._escape(email)}</strong>? This will revoke all active login sessions and restrict node access.`,
+        message: `Are you sure you want to suspend account <strong>${this._escape(email)}</strong>? This will immediately revoke all active customer login sessions and restrict node access.`,
         warningText: 'Administrative suspension takes immediate effect.',
         confirmLabel: 'Suspend Account',
         confirmType: 'danger',
         requireReason: true,
         onConfirm: async (reason) => {
-          await window.AdminApi.post(`/admin/operations/users/${userId}/suspend`, { reason });
-          this.toast(`User '${email}' suspended successfully.`, 'success');
-          this.loadUsers();
+          try {
+            await window.AdminApi.suspendUser(userId, reason);
+            this.toast(`User '${email}' suspended successfully.`, 'success');
+            this.loadUsers(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to suspend account', 'danger');
+          }
         }
       });
     }
@@ -1435,62 +1840,137 @@
         confirmType: 'primary',
         requireReason: true,
         onConfirm: async (reason) => {
-          await window.AdminApi.post(`/admin/operations/users/${userId}/restore`, { reason });
-          this.toast(`User '${email}' restored successfully.`, 'success');
-          this.loadUsers();
+          try {
+            await window.AdminApi.restoreUser(userId, reason);
+            this.toast(`User '${email}' restored successfully.`, 'success');
+            this.loadUsers(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to restore account', 'danger');
+          }
         }
       });
     }
 
+    confirmRevokeUserSessions(userId, email) {
+      this.showConfirmModal({
+        title: 'Force Logout / Invalidate Sessions',
+        message: `Are you sure you want to revoke all active login sessions for <strong>${this._escape(email)}</strong>? The user will be immediately logged out across all devices.`,
+        warningText: 'Customer sessions will be invalidated immediately. Admin sessions are not affected.',
+        confirmLabel: 'Revoke Sessions',
+        confirmType: 'danger',
+        requireReason: true,
+        onConfirm: async (reason) => {
+          try {
+            const res = await window.AdminApi.revokeUserSessions(userId, reason);
+            const count = res?.data?.user?.revokedSessionsCount || 0;
+            this.toast(`Successfully revoked ${count} active session(s) for '${email}'.`, 'success');
+            this.loadUsers(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to revoke sessions', 'danger');
+          }
+        }
+      });
+    }
+
+
     /* =========================================================================
-       3. DEVICES MANAGEMENT VIEW
+       3. DEVICES MANAGEMENT VIEW (Phase 17 Batch 17.3)
        ========================================================================= */
     async _renderDevicesView(container) {
       container.innerHTML = `
         <div class="admin-view-header">
           <div class="admin-view-title-wrap">
-            <h1>Devices & Edge Nodes</h1>
-            <p>Inspect connected edge hardware, platform metadata, and perform administrative session evictions.</p>
+            <h1>Devices &amp; Edge Nodes</h1>
+            <p>Inspect registered hardware edge nodes, OS telemetry, live gateway tunnels, and perform administrative session evictions.</p>
           </div>
           <div class="admin-header-actions">
-            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadDevices()">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadDevices(true)">
               ${ICONS['refresh-cw']} Refresh
             </button>
           </div>
         </div>
 
+        <!-- Device Summary Metrics Cards -->
+        <div id="deviceMetricsGrid" class="admin-user-metrics-grid">
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon">${ICONS.server}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Total Devices</span>
+              <span id="metricTotalDevices" class="admin-user-metric-value">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-success);">${ICONS['check-circle']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Online</span>
+              <span id="metricOnlineDevices" class="admin-user-metric-value" style="color:var(--admin-success);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-text-muted);">${ICONS['cloud-off'] || ICONS['shield']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Offline</span>
+              <span id="metricOfflineDevices" class="admin-user-metric-value" style="color:var(--admin-text-muted);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-warning);">${ICONS.clock}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Connecting</span>
+              <span id="metricConnectingDevices" class="admin-user-metric-value" style="color:var(--admin-warning);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-accent);">${ICONS.hardDrive || ICONS.server}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Android Nodes</span>
+              <span id="metricAndroidDevices" class="admin-user-metric-value">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Toolbar -->
         <div class="admin-toolbar">
           <div class="admin-toolbar-left">
             <div class="admin-search-wrap">
               ${ICONS.search}
-              <input type="text" id="deviceSearchInput" class="admin-search-input" placeholder="Search by name, OS, or user..." value="${this._escape(this.deviceState.search)}">
+              <input type="text" id="deviceSearchInput" class="admin-search-input" placeholder="Search devices by name, OS, ID, or owner email..." value="${this._escape(this.deviceState.search)}">
             </div>
-            <select id="deviceStatusSelect" class="admin-select">
+            <select id="deviceStatusSelect" class="admin-select" aria-label="Filter by connection status">
               <option value="" ${this.deviceState.status === '' ? 'selected' : ''}>All Statuses</option>
               <option value="ONLINE" ${this.deviceState.status === 'ONLINE' ? 'selected' : ''}>Online</option>
               <option value="OFFLINE" ${this.deviceState.status === 'OFFLINE' ? 'selected' : ''}>Offline</option>
               <option value="CONNECTING" ${this.deviceState.status === 'CONNECTING' ? 'selected' : ''}>Connecting</option>
             </select>
+            <select id="devicePageSizeSelect" class="admin-select" aria-label="Devices per page">
+              <option value="10" ${this.deviceState.pageSize === 10 ? 'selected' : ''}>10 / page</option>
+              <option value="20" ${this.deviceState.pageSize === 20 ? 'selected' : ''}>20 / page</option>
+              <option value="50" ${this.deviceState.pageSize === 50 ? 'selected' : ''}>50 / page</option>
+              <option value="100" ${this.deviceState.pageSize === 100 ? 'selected' : ''}>100 / page</option>
+            </select>
           </div>
         </div>
 
+        <!-- Devices Table Card -->
         <div class="admin-table-card">
           <div class="admin-table-wrap">
-            <table class="admin-table">
+            <table class="admin-table" aria-label="Edge devices inventory">
               <thead>
                 <tr>
-                  <th>Device Name</th>
+                  <th>Device Name / Node ID</th>
                   <th>Owner</th>
-                  <th>Platform</th>
+                  <th>Platform / OS</th>
                   <th>Status</th>
                   <th>Servers</th>
                   <th>Last Seen</th>
-                  <th>Created</th>
+                  <th>Registered Date</th>
                   <th style="text-align:right;">Actions</th>
                 </tr>
               </thead>
               <tbody id="deviceTableBody">
-                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading devices...</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);"><div class="admin-loading-spinner" style="margin:0 auto 0.5rem auto;"></div>Loading devices inventory...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1500,41 +1980,78 @@
 
       const searchInput = document.getElementById('deviceSearchInput');
       const statusSelect = document.getElementById('deviceStatusSelect');
+      const pageSizeSelect = document.getElementById('devicePageSizeSelect');
 
       let debounceTimer = null;
-      searchInput.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          this.deviceState.search = e.target.value.trim();
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.deviceState.search = e.target.value.trim();
+            this.deviceState.page = 1;
+            this.loadDevices();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.deviceState.status = e.target.value;
           this.deviceState.page = 1;
           this.loadDevices();
-        }, 300);
-      });
+        });
+      }
 
-      statusSelect.addEventListener('change', (e) => {
-        this.deviceState.status = e.target.value;
-        this.deviceState.page = 1;
-        this.loadDevices();
-      });
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+          this.deviceState.pageSize = parseInt(e.target.value, 10) || 20;
+          this.deviceState.page = 1;
+          this.loadDevices();
+        });
+      }
 
+      this.loadDeviceMetrics();
       this.loadDevices();
     }
 
-    async loadDevices() {
+    async loadDeviceMetrics() {
+      try {
+        const res = await window.AdminApi.getDeviceMetrics();
+        const metrics = res?.data?.metrics || {};
+        const totalEl = document.getElementById('metricTotalDevices');
+        const onlineEl = document.getElementById('metricOnlineDevices');
+        const offlineEl = document.getElementById('metricOfflineDevices');
+        const connectingEl = document.getElementById('metricConnectingDevices');
+        const androidEl = document.getElementById('metricAndroidDevices');
+
+        if (totalEl) totalEl.textContent = (metrics.totalDevices || 0).toLocaleString();
+        if (onlineEl) onlineEl.textContent = (metrics.onlineDevices || 0).toLocaleString();
+        if (offlineEl) offlineEl.textContent = (metrics.offlineDevices || 0).toLocaleString();
+        if (connectingEl) connectingEl.textContent = (metrics.connectingDevices || 0).toLocaleString();
+        if (androidEl) androidEl.textContent = (metrics.androidDevices || 0).toLocaleString();
+      } catch (err) {
+        console.warn('[AdminShell] Failed to load device metrics:', err);
+      }
+    }
+
+    async loadDevices(reloadMetrics = false) {
       const tbody = document.getElementById('deviceTableBody');
       if (!tbody) return;
 
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading devices...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);"><div class="admin-loading-spinner" style="margin:0 auto 0.5rem auto;"></div>Loading devices inventory...</td></tr>`;
+
+      if (reloadMetrics) {
+        this.loadDeviceMetrics();
+      }
 
       try {
-        const queryParams = new URLSearchParams({
-          page: this.deviceState.page.toString(),
-          pageSize: this.deviceState.pageSize.toString()
+        const res = await window.AdminApi.listDevices({
+          page: this.deviceState.page,
+          pageSize: this.deviceState.pageSize,
+          search: this.deviceState.search,
+          status: this.deviceState.status
         });
-        if (this.deviceState.search) queryParams.set('search', this.deviceState.search);
-        if (this.deviceState.status) queryParams.set('status', this.deviceState.status);
 
-        const res = await window.AdminApi.get(`/admin/operations/devices?${queryParams.toString()}`);
         const data = res.data;
         this.deviceState.items = data.items || [];
         this.deviceState.total = data.total || 0;
@@ -1543,10 +2060,10 @@
           tbody.innerHTML = `
             <tr>
               <td colspan="8">
-                <div class="admin-empty-box">
+                <div class="admin-empty-box" style="padding:3rem 1.5rem;">
                   ${ICONS.server}
-                  <div class="admin-empty-title">No devices found</div>
-                  <div class="admin-empty-desc">No hardware devices match your current filters.</div>
+                  <div class="admin-empty-title">No edge devices found</div>
+                  <div class="admin-empty-desc">No registered devices match your search or filter criteria.</div>
                 </div>
               </td>
             </tr>
@@ -1560,22 +2077,27 @@
         tbody.innerHTML = this.deviceState.items.map(d => `
           <tr>
             <td>
-              <strong style="color:var(--admin-text-primary);">${this._escape(d.deviceName)}</strong>
+              <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(d.deviceName)}</strong>
               <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(d.id)}</div>
             </td>
-            <td><span style="color:var(--admin-text-secondary);">${this._escape(d.userEmail)}</span></td>
-            <td>${this._escape(d.platform)} ${d.osVersion ? `<span style="font-size:0.75rem;color:var(--admin-text-muted);">(v${this._escape(d.osVersion)})</span>` : ''}</td>
+            <td>
+              <span style="color:var(--admin-text-secondary);font-size:0.8125rem;">${this._escape(d.userEmail || d.user?.email || '—')}</span>
+            </td>
+            <td>
+              <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(d.platform)}</span>
+              ${d.osVersion ? `<span style="font-size:0.75rem;color:var(--admin-text-muted);margin-left:4px;">(v${this._escape(d.osVersion)})</span>` : ''}
+            </td>
             <td>${this._renderStatusBadge(d.status)}</td>
-            <td><strong>${d.serverCount}</strong></td>
+            <td><strong>${d.serverCount !== undefined ? d.serverCount : (d.servers?.length || 0)}</strong></td>
             <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString() : 'Never'}</td>
             <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${new Date(d.createdAt).toLocaleDateString()}</td>
             <td style="text-align:right;">
-              <div style="display:inline-flex;gap:4px;">
-                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectDevice('${d.id}')" title="Inspect device">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectDevice('${d.id}')" title="Inspect device topology &amp; details">
                   ${ICONS.eye} Inspect
                 </button>
                 ${canDisconnect && d.status !== 'OFFLINE' ? `
-                  <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.confirmDisconnectDevice('${d.id}', '${this._escape(d.deviceName)}')" title="Disconnect session">
+                  <button class="admin-btn admin-btn-danger admin-btn-xs" onclick="AdminShell.confirmDisconnectDevice('${d.id}', '${this._escape(d.deviceName)}')" title="Evict active gateway tunnel">
                     Disconnect
                   </button>
                 ` : ''}
@@ -1586,18 +2108,18 @@
 
         this._renderPagination('devicePaginationBar', this.deviceState, (p) => { this.deviceState.page = p; this.loadDevices(); });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load devices')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load edge devices')}</td></tr>`;
       }
     }
 
     async inspectDevice(deviceId) {
       try {
-        const res = await window.AdminApi.get(`/admin/operations/devices/${deviceId}`);
+        const res = await window.AdminApi.getDevice(deviceId);
         const dev = res.data.device;
 
         const content = `
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Device Identity</div>
+            <div class="admin-drawer-section-title">Edge Device Identity</div>
             <div class="admin-property-grid">
               <span class="admin-property-label">Device ID:</span>
               <span class="admin-property-value"><code class="admin-code-pill">${this._escape(dev.id)}</code></span>
@@ -1605,19 +2127,25 @@
               <span class="admin-property-value"><strong>${this._escape(dev.deviceName)}</strong></span>
               <span class="admin-property-label">Owner Email:</span>
               <span class="admin-property-value">${this._escape(dev.user?.email || 'Unknown')}</span>
-              <span class="admin-property-label">Platform / OS:</span>
-              <span class="admin-property-value">${this._escape(dev.platform)} ${dev.osVersion ? `(${this._escape(dev.osVersion)})` : ''}</span>
+              <span class="admin-property-label">User ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(dev.userId || dev.user?.id || '—')}</code></span>
+              <span class="admin-property-label">Platform:</span>
+              <span class="admin-property-value"><span class="admin-badge admin-badge-neutral">${this._escape(dev.platform)}</span></span>
+              <span class="admin-property-label">OS Version:</span>
+              <span class="admin-property-value">${this._escape(dev.osVersion || '—')}</span>
               <span class="admin-property-label">App Version:</span>
               <span class="admin-property-value">${this._escape(dev.appVersion || '—')}</span>
               <span class="admin-property-label">Status:</span>
               <span class="admin-property-value">${this._renderStatusBadge(dev.status)}</span>
               <span class="admin-property-label">Last Seen:</span>
               <span class="admin-property-value">${dev.lastSeenAt ? new Date(dev.lastSeenAt).toLocaleString() : 'Never'}</span>
+              <span class="admin-property-label">Registered:</span>
+              <span class="admin-property-value">${new Date(dev.createdAt).toLocaleString()}</span>
             </div>
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Active Gateway Connection</div>
+            <div class="admin-drawer-section-title">Active Gateway Tunnel</div>
             ${dev.activeConnection ? `
               <div class="admin-property-grid">
                 <span class="admin-property-label">Tunnel Status:</span>
@@ -1627,25 +2155,35 @@
                 <span class="admin-property-label">Connected At:</span>
                 <span class="admin-property-value">${dev.activeConnection.connectedAt ? new Date(dev.activeConnection.connectedAt).toLocaleString() : '—'}</span>
               </div>
-            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No active gateway tunnel connection.</p>'}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No active gateway tunnel connection established.</p>'}
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Linked Server Instances (${dev.servers.length})</div>
-            ${dev.servers.length > 0 ? `
+            <div class="admin-drawer-section-title">Linked Server Instances (${dev.servers?.length || 0})</div>
+            ${dev.servers && dev.servers.length > 0 ? `
               <div style="display:flex;flex-direction:column;gap:0.5rem;">
                 ${dev.servers.map(s => `
                   <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
                     <div>
                       <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(s.serverName || 'Default Server')}</strong>
-                      <div style="font-size:0.75rem;color:var(--admin-text-muted);">${s.endpoints.map(e => e.hostname).join(', ') || 'No endpoint'}</div>
+                      <div style="font-size:0.75rem;color:var(--admin-text-muted);margin-top:2px;">
+                        ${s.endpoints && s.endpoints.length > 0 ? s.endpoints.map(e => this._escape(e.hostname)).join(', ') : 'No endpoints assigned'}
+                      </div>
                     </div>
                     ${this._renderStatusBadge(s.status)}
                   </div>
                 `).join('')}
               </div>
-            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No server instances running on this device.</p>'}
+            ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No server instances running on this device node.</p>'}
           </div>
+
+          ${window.AdminAuth.hasPermission('devices.disconnect') && dev.status !== 'OFFLINE' ? `
+            <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;border-top:1px solid var(--admin-border);padding-top:1.25rem;">
+              <button class="admin-btn admin-btn-danger" onclick="AdminShell.confirmDisconnectDevice('${dev.id}', '${this._escape(dev.deviceName)}')">
+                ${ICONS['slash'] || ICONS['shield']} Evict / Disconnect Session
+              </button>
+            </div>
+          ` : ''}
         `;
 
         this._showDrawer(`Device: ${dev.deviceName}`, content);
@@ -1657,58 +2195,110 @@
     confirmDisconnectDevice(deviceId, deviceName) {
       this.showConfirmModal({
         title: 'Disconnect Edge Device Session',
-        message: `Forcibly disconnect device <strong>${this._escape(deviceName)}</strong>? This will terminate its active WebSocket connection on the gateway cluster.`,
-        warningText: 'The device will need to reconnect to resume server relay operations.',
+        message: `Forcibly disconnect device <strong>${this._escape(deviceName)}</strong>? This will terminate its active WebSocket tunnel on the gateway cluster.`,
+        warningText: 'The device client will need to re-authenticate to resume file server relay operations.',
         confirmLabel: 'Disconnect Device',
         confirmType: 'danger',
         requireReason: true,
         onConfirm: async (reason) => {
-          await window.AdminApi.post(`/admin/operations/devices/${deviceId}/disconnect`, { reason });
-          this.toast(`Device '${deviceName}' disconnected successfully.`, 'success');
-          this.loadDevices();
+          try {
+            await window.AdminApi.disconnectDevice(deviceId, reason);
+            this.toast(`Device '${deviceName}' disconnected successfully.`, 'success');
+            this.loadDevices(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to disconnect device', 'danger');
+          }
         }
       });
     }
 
     /* =========================================================================
-       4. SERVERS MANAGEMENT VIEW
+       4. SERVERS MANAGEMENT VIEW (Phase 17 Batch 17.3)
        ========================================================================= */
     async _renderServersView(container) {
       container.innerHTML = `
         <div class="admin-view-header">
           <div class="admin-view-title-wrap">
             <h1>Server Instances</h1>
-            <p>Control customer edge file servers, DNS endpoint routing, and power states.</p>
+            <p>Control customer edge file servers, DNS endpoint routing, health heartbeats, and administrative power controls.</p>
           </div>
           <div class="admin-header-actions">
-            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadServers()">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadServers(true)">
               ${ICONS['refresh-cw']} Refresh
             </button>
           </div>
         </div>
 
+        <!-- Server Summary Metrics Cards -->
+        <div id="serverMetricsGrid" class="admin-user-metrics-grid">
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon">${ICONS['hard-drive']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Total Servers</span>
+              <span id="metricTotalServers" class="admin-user-metric-value">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-success);">${ICONS['check-circle']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Running</span>
+              <span id="metricRunningServers" class="admin-user-metric-value" style="color:var(--admin-success);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-text-muted);">${ICONS.square || ICONS['shield']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Stopped</span>
+              <span id="metricStoppedServers" class="admin-user-metric-value" style="color:var(--admin-text-muted);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-warning);">${ICONS.clock}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Starting</span>
+              <span id="metricStartingServers" class="admin-user-metric-value" style="color:var(--admin-warning);">—</span>
+            </div>
+          </div>
+          <div class="admin-user-metric-card">
+            <div class="admin-user-metric-icon" style="color:var(--admin-danger);">${ICONS['alert-triangle']}</div>
+            <div class="admin-user-metric-content">
+              <span class="admin-user-metric-label">Error State</span>
+              <span id="metricErrorServers" class="admin-user-metric-value" style="color:var(--admin-danger);">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Toolbar -->
         <div class="admin-toolbar">
           <div class="admin-toolbar-left">
             <div class="admin-search-wrap">
               ${ICONS.search}
-              <input type="text" id="serverSearchInput" class="admin-search-input" placeholder="Search by name, host, or user..." value="${this._escape(this.serverState.search)}">
+              <input type="text" id="serverSearchInput" class="admin-search-input" placeholder="Search servers by name, hostname, server ID, or owner email..." value="${this._escape(this.serverState.search)}">
             </div>
-            <select id="serverStatusSelect" class="admin-select">
+            <select id="serverStatusSelect" class="admin-select" aria-label="Filter by server status">
               <option value="" ${this.serverState.status === '' ? 'selected' : ''}>All Statuses</option>
               <option value="RUNNING" ${this.serverState.status === 'RUNNING' ? 'selected' : ''}>Running</option>
               <option value="STARTING" ${this.serverState.status === 'STARTING' ? 'selected' : ''}>Starting</option>
               <option value="STOPPED" ${this.serverState.status === 'STOPPED' ? 'selected' : ''}>Stopped</option>
               <option value="ERROR" ${this.serverState.status === 'ERROR' ? 'selected' : ''}>Error</option>
             </select>
+            <select id="serverPageSizeSelect" class="admin-select" aria-label="Servers per page">
+              <option value="10" ${this.serverState.pageSize === 10 ? 'selected' : ''}>10 / page</option>
+              <option value="20" ${this.serverState.pageSize === 20 ? 'selected' : ''}>20 / page</option>
+              <option value="50" ${this.serverState.pageSize === 50 ? 'selected' : ''}>50 / page</option>
+              <option value="100" ${this.serverState.pageSize === 100 ? 'selected' : ''}>100 / page</option>
+            </select>
           </div>
         </div>
 
+        <!-- Servers Table Card -->
         <div class="admin-table-card">
           <div class="admin-table-wrap">
-            <table class="admin-table">
+            <table class="admin-table" aria-label="Customer server instances directory">
               <thead>
                 <tr>
-                  <th>Server Name</th>
+                  <th>Server Name / ID</th>
                   <th>Owner</th>
                   <th>Device Node</th>
                   <th>Status</th>
@@ -1718,7 +2308,7 @@
                 </tr>
               </thead>
               <tbody id="serverTableBody">
-                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading servers...</td></tr>
+                <tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);"><div class="admin-loading-spinner" style="margin:0 auto 0.5rem auto;"></div>Loading server instances...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1728,41 +2318,78 @@
 
       const searchInput = document.getElementById('serverSearchInput');
       const statusSelect = document.getElementById('serverStatusSelect');
+      const pageSizeSelect = document.getElementById('serverPageSizeSelect');
 
       let debounceTimer = null;
-      searchInput.addEventListener('input', (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          this.serverState.search = e.target.value.trim();
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            this.serverState.search = e.target.value.trim();
+            this.serverState.page = 1;
+            this.loadServers();
+          }, 300);
+        });
+      }
+
+      if (statusSelect) {
+        statusSelect.addEventListener('change', (e) => {
+          this.serverState.status = e.target.value;
           this.serverState.page = 1;
           this.loadServers();
-        }, 300);
-      });
+        });
+      }
 
-      statusSelect.addEventListener('change', (e) => {
-        this.serverState.status = e.target.value;
-        this.serverState.page = 1;
-        this.loadServers();
-      });
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener('change', (e) => {
+          this.serverState.pageSize = parseInt(e.target.value, 10) || 20;
+          this.serverState.page = 1;
+          this.loadServers();
+        });
+      }
 
+      this.loadServerMetrics();
       this.loadServers();
     }
 
-    async loadServers() {
+    async loadServerMetrics() {
+      try {
+        const res = await window.AdminApi.getServerMetrics();
+        const metrics = res?.data?.metrics || {};
+        const totalEl = document.getElementById('metricTotalServers');
+        const runningEl = document.getElementById('metricRunningServers');
+        const stoppedEl = document.getElementById('metricStoppedServers');
+        const startingEl = document.getElementById('metricStartingServers');
+        const errorEl = document.getElementById('metricErrorServers');
+
+        if (totalEl) totalEl.textContent = (metrics.totalServers || 0).toLocaleString();
+        if (runningEl) runningEl.textContent = (metrics.runningServers || 0).toLocaleString();
+        if (stoppedEl) stoppedEl.textContent = (metrics.stoppedServers || 0).toLocaleString();
+        if (startingEl) startingEl.textContent = (metrics.startingServers || 0).toLocaleString();
+        if (errorEl) errorEl.textContent = (metrics.errorServers || 0).toLocaleString();
+      } catch (err) {
+        console.warn('[AdminShell] Failed to load server metrics:', err);
+      }
+    }
+
+    async loadServers(reloadMetrics = false) {
       const tbody = document.getElementById('serverTableBody');
       if (!tbody) return;
 
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading servers...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--admin-text-muted);"><div class="admin-loading-spinner" style="margin:0 auto 0.5rem auto;"></div>Loading server instances...</td></tr>`;
+
+      if (reloadMetrics) {
+        this.loadServerMetrics();
+      }
 
       try {
-        const queryParams = new URLSearchParams({
-          page: this.serverState.page.toString(),
-          pageSize: this.serverState.pageSize.toString()
+        const res = await window.AdminApi.listServers({
+          page: this.serverState.page,
+          pageSize: this.serverState.pageSize,
+          search: this.serverState.search,
+          status: this.serverState.status
         });
-        if (this.serverState.search) queryParams.set('search', this.serverState.search);
-        if (this.serverState.status) queryParams.set('status', this.serverState.status);
 
-        const res = await window.AdminApi.get(`/admin/operations/servers?${queryParams.toString()}`);
         const data = res.data;
         this.serverState.items = data.items || [];
         this.serverState.total = data.total || 0;
@@ -1771,10 +2398,10 @@
           tbody.innerHTML = `
             <tr>
               <td colspan="7">
-                <div class="admin-empty-box">
+                <div class="admin-empty-box" style="padding:3rem 1.5rem;">
                   ${ICONS['hard-drive']}
-                  <div class="admin-empty-title">No servers found</div>
-                  <div class="admin-empty-desc">No server instances match your current filters.</div>
+                  <div class="admin-empty-title">No server instances found</div>
+                  <div class="admin-empty-desc">No server instances match your current filter parameters.</div>
                 </div>
               </td>
             </tr>
@@ -1788,31 +2415,40 @@
         tbody.innerHTML = this.serverState.items.map(s => `
           <tr>
             <td>
-              <strong style="color:var(--admin-text-primary);">${this._escape(s.serverName || 'Storage Server')}</strong>
+              <strong style="color:var(--admin-text-primary);font-size:0.875rem;">${this._escape(s.serverName || 'Storage Server')}</strong>
               <div class="admin-code-pill" style="font-size:0.6875rem;margin-top:2px;">${this._escape(s.id)}</div>
             </td>
-            <td><span style="color:var(--admin-text-secondary);">${this._escape(s.userEmail)}</span></td>
-            <td><span style="color:var(--admin-text-secondary);">${this._escape(s.deviceName)}</span></td>
+            <td>
+              <span style="color:var(--admin-text-secondary);font-size:0.8125rem;">${this._escape(s.userEmail || s.user?.email || '—')}</span>
+            </td>
+            <td>
+              <span style="color:var(--admin-text-secondary);font-size:0.8125rem;">${this._escape(s.deviceName || s.device?.deviceName || '—')}</span>
+            </td>
             <td>${this._renderStatusBadge(s.status)}</td>
-            <td><code class="admin-code-pill">${s.endpoints.map(e => this._escape(e.hostname)).join(', ') || 'No DNS record'}</code></td>
+            <td>
+              ${s.endpoints && s.endpoints.length > 0
+                ? s.endpoints.map(e => `<code class="admin-code-pill" style="font-size:0.6875rem;">${this._escape(e.hostname)}</code>`).join(' ')
+                : '<span style="color:var(--admin-text-muted);font-size:0.75rem;">No DNS endpoint</span>'
+              }
+            </td>
             <td style="font-size:0.8125rem;color:var(--admin-text-muted);">${s.startedAt ? new Date(s.startedAt).toLocaleString() : 'Stopped'}</td>
             <td style="text-align:right;">
-              <div style="display:inline-flex;gap:4px;">
-                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectServer('${s.id}')" title="Inspect server">
+              <div style="display:inline-flex;gap:4px;flex-wrap:nowrap;">
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.inspectServer('${s.id}')" title="Inspect server topology &amp; details">
                   ${ICONS.eye} Inspect
                 </button>
                 ${canPower && (s.status === 'STOPPED' || s.status === 'ERROR') ? `
-                  <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.executeStartServer('${s.id}')" title="Start server">
+                  <button class="admin-btn admin-btn-primary admin-btn-xs" onclick="AdminShell.executeStartServer('${s.id}')" title="Start server">
                     ${ICONS.play} Start
                   </button>
                 ` : ''}
                 ${canPower && (s.status === 'RUNNING' || s.status === 'STARTING') ? `
-                  <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.confirmStopServer('${s.id}', '${this._escape(s.serverName || s.id)}')" title="Stop server">
+                  <button class="admin-btn admin-btn-danger admin-btn-xs" onclick="AdminShell.confirmStopServer('${s.id}', '${this._escape(s.serverName || s.id)}')" title="Stop server">
                     ${ICONS.square} Stop
                   </button>
                 ` : ''}
                 ${canPower && s.status === 'RUNNING' ? `
-                  <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.confirmRestartServer('${s.id}', '${this._escape(s.serverName || s.id)}')" title="Restart server">
+                  <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="AdminShell.confirmRestartServer('${s.id}', '${this._escape(s.serverName || s.id)}')" title="Restart server">
                     ${ICONS.rotate} Restart
                   </button>
                 ` : ''}
@@ -1823,13 +2459,13 @@
 
         this._renderPagination('serverPaginationBar', this.serverState, (p) => { this.serverState.page = p; this.loadServers(); });
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load servers')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--admin-danger);">${this._escape(err.message || 'Failed to load server instances')}</td></tr>`;
       }
     }
 
     async inspectServer(serverId) {
       try {
-        const res = await window.AdminApi.get(`/admin/operations/servers/${serverId}`);
+        const res = await window.AdminApi.getServer(serverId);
         const srv = res.data.server;
 
         const content = `
@@ -1848,22 +2484,28 @@
               <span class="admin-property-value">${srv.startedAt ? new Date(srv.startedAt).toLocaleString() : 'Stopped'}</span>
               <span class="admin-property-label">Last Heartbeat:</span>
               <span class="admin-property-value">${srv.lastHeartbeatAt ? new Date(srv.lastHeartbeatAt).toLocaleString() : 'None'}</span>
+              <span class="admin-property-label">Created At:</span>
+              <span class="admin-property-value">${new Date(srv.createdAt).toLocaleString()}</span>
             </div>
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Host Device & Owner</div>
+            <div class="admin-drawer-section-title">Host Device &amp; Owner</div>
             <div class="admin-property-grid">
               <span class="admin-property-label">Device Name:</span>
-              <span class="admin-property-value">${this._escape(srv.device?.deviceName || 'Unknown Device')}</span>
+              <span class="admin-property-value"><strong>${this._escape(srv.device?.deviceName || 'Unknown Device')}</strong></span>
+              <span class="admin-property-label">Device ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(srv.deviceId || srv.device?.id || '—')}</code></span>
               <span class="admin-property-label">Owner Email:</span>
               <span class="admin-property-value">${this._escape(srv.user?.email || 'Unknown')}</span>
+              <span class="admin-property-label">User ID:</span>
+              <span class="admin-property-value"><code class="admin-code-pill">${this._escape(srv.userId || srv.user?.id || '—')}</code></span>
             </div>
           </div>
 
           <div class="admin-drawer-section">
-            <div class="admin-drawer-section-title">Assigned Remote Endpoints (${srv.endpoints.length})</div>
-            ${srv.endpoints.length > 0 ? `
+            <div class="admin-drawer-section-title">Assigned Remote Endpoints (${srv.endpoints?.length || 0})</div>
+            ${srv.endpoints && srv.endpoints.length > 0 ? `
               <div style="display:flex;flex-direction:column;gap:0.5rem;">
                 ${srv.endpoints.map(e => `
                   <div style="background:var(--admin-bg-base);padding:0.75rem;border:1px solid var(--admin-border);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center;">
@@ -1874,6 +2516,26 @@
               </div>
             ` : '<p style="color:var(--admin-text-muted);font-size:0.875rem;">No DNS endpoints assigned.</p>'}
           </div>
+
+          ${window.AdminAuth.hasPermission('servers.power') ? `
+            <div class="admin-drawer-section" style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;border-top:1px solid var(--admin-border);padding-top:1.25rem;">
+              ${srv.status === 'STOPPED' || srv.status === 'ERROR' ? `
+                <button class="admin-btn admin-btn-primary" onclick="AdminShell.executeStartServer('${srv.id}')">
+                  ${ICONS.play} Start Server
+                </button>
+              ` : ''}
+              ${srv.status === 'RUNNING' || srv.status === 'STARTING' ? `
+                <button class="admin-btn admin-btn-danger" onclick="AdminShell.confirmStopServer('${srv.id}', '${this._escape(srv.serverName || srv.id)}')">
+                  ${ICONS.square} Stop Server
+                </button>
+              ` : ''}
+              ${srv.status === 'RUNNING' ? `
+                <button class="admin-btn admin-btn-secondary" onclick="AdminShell.confirmRestartServer('${srv.id}', '${this._escape(srv.serverName || srv.id)}')">
+                  ${ICONS.rotate} Restart Server
+                </button>
+              ` : ''}
+            </div>
+          ` : ''}
         `;
 
         this._showDrawer(`Server: ${srv.serverName || srv.id}`, content);
@@ -1884,10 +2546,11 @@
 
     async executeStartServer(serverId) {
       try {
-        this.toast('Initiating server start...', 'info');
-        await window.AdminApi.post(`/admin/operations/servers/${serverId}/start`, {});
-        this.toast('Server start initiated successfully.', 'success');
-        this.loadServers();
+        this.toast('Initiating server start sequence...', 'info');
+        await window.AdminApi.startServer(serverId);
+        this.toast('Server start sequence initiated successfully.', 'success');
+        this.loadServers(true);
+        this._closeDrawer();
       } catch (err) {
         this.toast(err.message || 'Failed to start server', 'danger');
       }
@@ -1902,9 +2565,14 @@
         confirmType: 'danger',
         requireReason: true,
         onConfirm: async (reason) => {
-          await window.AdminApi.post(`/admin/operations/servers/${serverId}/stop`, { reason });
-          this.toast(`Server '${serverName}' stopped successfully.`, 'success');
-          this.loadServers();
+          try {
+            await window.AdminApi.stopServer(serverId, reason);
+            this.toast(`Server '${serverName}' stopped successfully.`, 'success');
+            this.loadServers(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to stop server', 'danger');
+          }
         }
       });
     }
@@ -1913,13 +2581,19 @@
       this.showConfirmModal({
         title: 'Restart Server Instance',
         message: `Restart server instance <strong>${this._escape(serverName)}</strong>?`,
+        warningText: 'Active gateway relay sessions will reconnect upon startup.',
         confirmLabel: 'Restart Server',
         confirmType: 'primary',
         requireReason: true,
         onConfirm: async (reason) => {
-          await window.AdminApi.post(`/admin/operations/servers/${serverId}/restart`, { reason });
-          this.toast(`Server '${serverName}' restart initiated.`, 'success');
-          this.loadServers();
+          try {
+            await window.AdminApi.restartServer(serverId, reason);
+            this.toast(`Server '${serverName}' restart initiated.`, 'success');
+            this.loadServers(true);
+            this._closeDrawer();
+          } catch (err) {
+            this.toast(err.message || 'Failed to restart server', 'danger');
+          }
         }
       });
     }
@@ -14232,6 +14906,4328 @@
           }
         }
       });
+    }
+
+    /* =========================================================================
+       PHASE 17 BATCH 17.1: SYSTEM OVERVIEW & OPERATIONAL HEALTH DASHBOARD
+       ========================================================================= */
+    async _renderSystemOverviewView(container) {
+      if (!window.AdminAuth.hasPermission('system.read')) {
+        this._renderForbiddenView({ id: 'system-overview', label: 'System Overview & Health', permission: 'system.read' });
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-sys-container">
+          <!-- Page Header -->
+          <div class="admin-view-header">
+            <div class="admin-view-title-wrap">
+              <h1>System Overview &amp; Operational Health</h1>
+              <p>Authoritative system health telemetry, core subsystem runtime diagnostics, gateway relays, and platform metadata.</p>
+            </div>
+            <div class="admin-header-actions">
+              <span id="sysOverviewLastChecked" style="font-size:0.75rem; color:var(--admin-text-muted); align-self:center; margin-right:0.5rem;">Checking health...</span>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="btnRefreshSysOverview" onclick="AdminShell._loadSystemOverview()">
+                ${ICONS.rotate || ''} Refresh Health
+              </button>
+            </div>
+          </div>
+
+          <!-- Main Content Area (Populated dynamically) -->
+          <div id="sysOverviewContent">
+            <!-- Loading Skeleton State -->
+            <div class="admin-loading-state" style="padding: 4rem 2rem; text-align: center; color: var(--admin-text-muted);">
+              Introspecting system runtime health and diagnostic telemetry...
+            </div>
+          </div>
+        </div>
+      `;
+
+      await this._loadSystemOverview();
+    }
+
+    async _loadSystemOverview() {
+      const contentEl = document.getElementById('sysOverviewContent');
+      const lastCheckedEl = document.getElementById('sysOverviewLastChecked');
+      const refreshBtn = document.getElementById('btnRefreshSysOverview');
+
+      if (!contentEl) return;
+
+      try {
+        this.systemOverviewState.isLoading = true;
+        if (refreshBtn) {
+          refreshBtn.disabled = true;
+          refreshBtn.innerHTML = `${ICONS.rotate || ''} Refreshing...`;
+        }
+
+        const res = await window.AdminApi.getSystemOverview();
+
+        if (res && res.success && res.data) {
+          this.systemOverviewState.data = res.data;
+          this.systemOverviewState.lastRefresh = new Date();
+          this._renderSystemOverviewContent(res.data);
+          if (lastCheckedEl) {
+            lastCheckedEl.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+          }
+        } else {
+          throw new Error(res?.error?.message || 'Failed to retrieve system overview telemetry.');
+        }
+      } catch (err) {
+        console.error('Failed to load system overview:', err);
+        this.systemOverviewState.error = err.message;
+        contentEl.innerHTML = `
+          <div class="admin-error-banner" style="margin:2rem 0; padding:1.5rem;">
+            <strong>Failed to load System Overview.</strong>
+            <p style="margin:0.5rem 0 0 0; font-size:0.8125rem;">${this._escape(err.message || 'Error communicating with control plane.')}</p>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:1rem;" onclick="AdminShell._loadSystemOverview()">Retry Health Check</button>
+          </div>
+        `;
+        if (lastCheckedEl) {
+          lastCheckedEl.textContent = 'Check failed';
+        }
+      } finally {
+        this.systemOverviewState.isLoading = false;
+        if (refreshBtn) {
+          refreshBtn.disabled = false;
+          refreshBtn.innerHTML = `${ICONS.rotate || ''} Refresh Health`;
+        }
+      }
+    }
+
+    _renderSystemOverviewContent(data) {
+      const contentEl = document.getElementById('sysOverviewContent');
+      if (!contentEl || !data) return;
+
+      const { overall, application, backend, database, gateway, devices, environment, signals } = data;
+
+      const getStatusBadge = (status) => {
+        switch (status) {
+          case 'HEALTHY':
+            return `<span class="admin-badge admin-badge-success"><span class="admin-status-dot"></span> HEALTHY</span>`;
+          case 'DEGRADED':
+            return `<span class="admin-badge admin-badge-warning"><span class="admin-status-dot"></span> DEGRADED</span>`;
+          case 'UNHEALTHY':
+            return `<span class="admin-badge admin-badge-danger"><span class="admin-status-dot"></span> UNHEALTHY</span>`;
+          default:
+            return `<span class="admin-badge admin-badge-neutral"><span class="admin-status-dot"></span> UNKNOWN</span>`;
+        }
+      };
+
+      const overallStatusClass = (overall.status || 'UNKNOWN').toLowerCase();
+
+      contentEl.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:1.5rem;">
+          <!-- 1. Overall System Health Banner -->
+          <div class="admin-sys-overall-banner status-${overallStatusClass}">
+            <div class="admin-sys-overall-left">
+              <div class="admin-sys-overall-pill ${overall.status}">
+                <span class="admin-status-dot"></span>
+                <span>${overall.status}</span>
+              </div>
+              <div>
+                <div class="admin-sys-overall-title">Overall System Status: ${overall.status}</div>
+                <div class="admin-sys-overall-desc">${this._escape(overall.summary)}</div>
+              </div>
+            </div>
+            <div class="admin-sys-overall-stats">
+              <span><strong>${overall.healthySubsystems}/${overall.totalSubsystems}</strong> Subsystems Healthy</span>
+              ${overall.degradedSubsystems > 0 ? `<span style="color:var(--admin-warning);">• <strong>${overall.degradedSubsystems}</strong> Degraded</span>` : ''}
+              ${overall.unhealthySubsystems > 0 ? `<span style="color:var(--admin-danger);">• <strong>${overall.unhealthySubsystems}</strong> Unhealthy</span>` : ''}
+              ${overall.unknownSubsystems > 0 ? `<span>• <strong>${overall.unknownSubsystems}</strong> Unknown</span>` : ''}
+            </div>
+          </div>
+
+          <!-- 2. Core Subsystems Health Cards (5 Grid Cards) -->
+          <div class="admin-sys-cards-grid">
+            <!-- Application Health Card -->
+            <div class="admin-sys-card">
+              <div class="admin-sys-card-header">
+                <div class="admin-sys-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--admin-primary);"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                  <span>Application</span>
+                </div>
+                ${getStatusBadge(application.status)}
+              </div>
+              <div class="admin-sys-card-body">
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Version</span>
+                  <span class="admin-sys-prop-value"><code class="admin-code-pill">${this._escape(application.version)}</code></span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Uptime</span>
+                  <span class="admin-sys-prop-value">${this._escape(application.uptimeFormatted)}</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Runtime / Node</span>
+                  <span class="admin-sys-prop-value">${this._escape(application.nodeVersion)}</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Heap Memory</span>
+                  <span class="admin-sys-prop-value">${application.memoryUsageMb.heapUsed} MB / ${application.memoryUsageMb.heapTotal} MB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Backend API Card -->
+            <div class="admin-sys-card">
+              <div class="admin-sys-card-header">
+                <div class="admin-sys-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--admin-primary);"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+                  <span>Backend API</span>
+                </div>
+                ${getStatusBadge(backend.status)}
+              </div>
+              <div class="admin-sys-card-body">
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Framework Engine</span>
+                  <span class="admin-sys-prop-value">Fastify v4</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Process PID</span>
+                  <span class="admin-sys-prop-value"><code class="admin-code-pill">${backend.processId}</code></span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Internal Latency</span>
+                  <span class="admin-sys-prop-value">${backend.latencyMs} ms</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Process RSS</span>
+                  <span class="admin-sys-prop-value">${application.memoryUsageMb.rss} MB</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MySQL Database Card -->
+            <div class="admin-sys-card">
+              <div class="admin-sys-card-header">
+                <div class="admin-sys-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--admin-primary);"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                  <span>MySQL Database</span>
+                </div>
+                ${getStatusBadge(database.status)}
+              </div>
+              <div class="admin-sys-card-body">
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Database Engine</span>
+                  <span class="admin-sys-prop-value">MySQL (InnoDB)</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Server Version</span>
+                  <span class="admin-sys-prop-value">${this._escape(database.version)}</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Query Latency</span>
+                  <span class="admin-sys-prop-value">${database.latencyMs} ms</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Connection State</span>
+                  <span class="admin-sys-prop-value">${database.connected ? '<span style="color:#059669;font-weight:600;">Connected</span>' : '<span style="color:#dc2626;font-weight:600;">Disconnected</span>'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Gateway Relays Card -->
+            <div class="admin-sys-card">
+              <div class="admin-sys-card-header">
+                <div class="admin-sys-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--admin-primary);"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+                  <span>Gateway Relays</span>
+                </div>
+                ${getStatusBadge(gateway.status)}
+              </div>
+              <div class="admin-sys-card-body">
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Active Nodes</span>
+                  <span class="admin-sys-prop-value"><strong>${gateway.activeNodes}</strong> of ${gateway.totalNodes} Nodes</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Active Tunnels</span>
+                  <span class="admin-sys-prop-value"><strong>${gateway.activeConnections}</strong> Active Sockets</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Telemetry Latency</span>
+                  <span class="admin-sys-prop-value">${gateway.latencyMs !== null ? `${gateway.latencyMs} ms` : 'N/A'}</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Operational State</span>
+                  <span class="admin-sys-prop-value" style="font-size:0.6875rem;">${this._escape(gateway.details)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Android Edge Devices Card -->
+            <div class="admin-sys-card">
+              <div class="admin-sys-card-header">
+                <div class="admin-sys-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;color:var(--admin-primary);"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" x2="12.01" y1="18" y2="18"/></svg>
+                  <span>Android Devices</span>
+                </div>
+                ${getStatusBadge(devices.status)}
+              </div>
+              <div class="admin-sys-card-body">
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Connected Devices</span>
+                  <span class="admin-sys-prop-value"><strong>${devices.connectedDevices}</strong> of ${devices.registeredDevices} Online</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Running Servers</span>
+                  <span class="admin-sys-prop-value"><strong>${devices.runningServerInstances}</strong> of ${devices.totalServerInstances} Active</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Offline Devices</span>
+                  <span class="admin-sys-prop-value">${devices.offlineDevices} Devices</span>
+                </div>
+                <div class="admin-sys-prop-row">
+                  <span class="admin-sys-prop-label">Stopped Servers</span>
+                  <span class="admin-sys-prop-value">${devices.stoppedServerInstances} Daemons</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Operational Counters Strip -->
+          <div class="admin-summary-strip">
+            <div class="admin-summary-card">
+              <div class="admin-summary-label">Registered Edge Devices</div>
+              <div class="admin-summary-value">${devices.registeredDevices}</div>
+              <div class="admin-summary-subtext">Total paired hardware nodes</div>
+            </div>
+            <div class="admin-summary-card">
+              <div class="admin-summary-label">Connected Sockets</div>
+              <div class="admin-summary-value" style="color:var(--admin-success);">${devices.connectedDevices}</div>
+              <div class="admin-summary-subtext">Active WebSocket edge tunnels</div>
+            </div>
+            <div class="admin-summary-card">
+              <div class="admin-summary-label">Server Daemons</div>
+              <div class="admin-summary-value">${devices.totalServerInstances}</div>
+              <div class="admin-summary-subtext">Configured storage endpoints</div>
+            </div>
+            <div class="admin-summary-card">
+              <div class="admin-summary-label">Running Servers</div>
+              <div class="admin-summary-value" style="color:var(--admin-success);">${devices.runningServerInstances}</div>
+              <div class="admin-summary-subtext">Online file server processes</div>
+            </div>
+          </div>
+
+          <!-- 4. Environment & Platform Information -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h2 class="admin-card-title" style="font-size:0.9375rem; margin:0;">Platform &amp; Environment Configuration</h2>
+              <span class="admin-badge admin-badge-neutral">${this._escape(environment.name.toUpperCase())}</span>
+            </div>
+            <div class="admin-sys-env-grid">
+              <div>
+                <span class="admin-sys-prop-label">Environment Mode</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;"><strong>${this._escape(environment.name)}</strong></div>
+              </div>
+              <div>
+                <span class="admin-sys-prop-label">Application Version</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;"><code class="admin-code-pill">${this._escape(environment.appVersion)}</code></div>
+              </div>
+              <div>
+                <span class="admin-sys-prop-label">API Version</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;"><code class="admin-code-pill">${this._escape(environment.apiVersion)}</code></div>
+              </div>
+              <div>
+                <span class="admin-sys-prop-label">Node / Host Platform</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;">${this._escape(environment.nodeVersion)} • ${this._escape(environment.platform)}</div>
+              </div>
+              <div>
+                <span class="admin-sys-prop-label">Database Engine</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;">${this._escape(environment.databaseEngine)}</div>
+              </div>
+              <div>
+                <span class="admin-sys-prop-label">Process Started At</span>
+                <div class="admin-sys-prop-value" style="text-align:left; margin-top:2px;">${new Date(environment.startedAt).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Subsystem Diagnostic Signals Table -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h2 class="admin-card-title" style="font-size:0.9375rem; margin:0;">Subsystem Health Signals &amp; Latency</h2>
+              <span style="font-size:0.75rem; color:var(--admin-text-muted);">${signals.length} Subsystems Evaluated</span>
+            </div>
+            <div class="admin-sys-table-wrap">
+              <table class="admin-sys-signals-table">
+                <thead>
+                  <tr>
+                    <th>Subsystem</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Latency</th>
+                    <th>Operational Diagnostics</th>
+                    <th>Last Checked</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${signals.map(s => `
+                    <tr>
+                      <td><strong>${this._escape(s.name)}</strong></td>
+                      <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(s.subsystem)}</span></td>
+                      <td>${getStatusBadge(s.status)}</td>
+                      <td>${s.latencyMs !== null ? `${s.latencyMs} ms` : '—'}</td>
+                      <td><span style="font-size:0.75rem; color:var(--admin-text-secondary);">${this._escape(s.details)}</span></td>
+                      <td style="font-size:0.75rem; color:var(--admin-text-muted); white-space:nowrap;">${new Date(s.checkedAt).toLocaleTimeString()}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* =========================================================================
+       PHASE 17 BATCH 17.4: NOTIFICATIONS & COMMUNICATION MANAGEMENT
+       ========================================================================= */
+    async _renderNotificationsView(container) {
+      if (!window.AdminAuth.hasPermission('notifications.read')) {
+        this._renderForbiddenView({ id: 'notifications', label: 'Notifications & Relays', permission: 'notifications.read' });
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>Notifications &amp; Communication Management</h1>
+            <p>Authoritative notification dispatch telemetry, multichannel history, delivery failures, retries, and push device token lifecycle.</p>
+          </div>
+          <div class="admin-header-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadNotificationMetrics(); AdminShell.refreshNotificationTab();">
+              ${ICONS['refresh-cw']} Refresh Telemetry
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div id="notificationMetricsGrid" class="admin-grid-4" style="margin-bottom:var(--space-xl);">
+          <div class="admin-card"><div class="admin-stat-label">Total Notifications</div><div class="admin-stat-value" id="notifStatTotal">—</div><div class="admin-stat-subtext" id="notifStatTotalSub">Across all channels</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Success Rate</div><div class="admin-stat-value" id="notifStatSuccess">—</div><div class="admin-stat-subtext" id="notifStatSuccessSub">Delivered vs failed</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Active Push Tokens</div><div class="admin-stat-value" id="notifStatTokens">—</div><div class="admin-stat-subtext" id="notifStatTokensSub">Registered FCM tokens</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Provider Circuit Breakers</div><div class="admin-stat-value" id="notifStatCircuit">—</div><div class="admin-stat-subtext" id="notifStatCircuitSub">Email &amp; FCM health</div></div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="admin-tabs" style="margin-bottom:var(--space-lg);border-bottom:1px solid var(--admin-border-subtle);display:flex;gap:0.5rem;">
+          <button class="admin-tab-btn ${this.notificationActiveTab === 'history' ? 'active' : ''}" id="notifTabHistoryBtn" onclick="AdminShell.switchNotificationTab('history')">
+            Notification History &amp; Logs
+          </button>
+          <button class="admin-tab-btn ${this.notificationActiveTab === 'failures' ? 'active' : ''}" id="notifTabFailuresBtn" onclick="AdminShell.switchNotificationTab('failures')">
+            Failed Deliveries &amp; Retries
+          </button>
+          <button class="admin-tab-btn ${this.notificationActiveTab === 'tokens' ? 'active' : ''}" id="notifTabTokensBtn" onclick="AdminShell.switchNotificationTab('tokens')">
+            Push Device Tokens &amp; Health
+          </button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div id="notificationTabContent">
+          <!-- Populated dynamically -->
+        </div>
+      `;
+
+      await this.loadNotificationMetrics();
+      this.switchNotificationTab(this.notificationActiveTab || 'history');
+    }
+
+    async loadNotificationMetrics() {
+      try {
+        const res = await window.AdminApi.getNotificationMetrics();
+        if (res && res.success && res.data) {
+          const m = res.data;
+          const totalEl = document.getElementById('notifStatTotal');
+          const successEl = document.getElementById('notifStatSuccess');
+          const tokensEl = document.getElementById('notifStatTokens');
+          const circuitEl = document.getElementById('notifStatCircuit');
+
+          if (totalEl) totalEl.textContent = m.totalNotifications?.toLocaleString() || '0';
+          if (successEl) {
+            const rate = m.deliverySuccessRatePct !== undefined ? m.deliverySuccessRatePct : 100;
+            successEl.textContent = `${rate}%`;
+            successEl.style.color = rate >= 98 ? 'var(--admin-success)' : rate >= 90 ? 'var(--admin-warning)' : 'var(--admin-danger)';
+          }
+          if (tokensEl) tokensEl.textContent = m.activePushTokens?.toLocaleString() || '0';
+          if (circuitEl) {
+            const emailState = m.circuitBreakerStatus?.email?.state || 'CLOSED';
+            const fcmState = m.circuitBreakerStatus?.fcm?.state || 'CLOSED';
+            const allHealthy = emailState === 'CLOSED' && fcmState === 'CLOSED';
+            circuitEl.textContent = allHealthy ? 'HEALTHY' : 'DEGRADED';
+            circuitEl.style.color = allHealthy ? 'var(--admin-success)' : 'var(--admin-danger)';
+            const sub = document.getElementById('notifStatCircuitSub');
+            if (sub) sub.textContent = `Email: ${emailState} • FCM: ${fcmState}`;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load notification metrics:', err);
+      }
+    }
+
+    refreshNotificationTab() {
+      if (this.notificationActiveTab === 'history') {
+        this.loadNotifications(this.notificationState.page);
+      } else if (this.notificationActiveTab === 'failures') {
+        this.loadFailedDeliveries(this.failedDeliveriesState.page);
+      } else if (this.notificationActiveTab === 'tokens') {
+        this.loadPushTokens(this.pushTokensState.page);
+      }
+    }
+
+    switchNotificationTab(tabId) {
+      this.notificationActiveTab = tabId;
+      const historyBtn = document.getElementById('notifTabHistoryBtn');
+      const failuresBtn = document.getElementById('notifTabFailuresBtn');
+      const tokensBtn = document.getElementById('notifTabTokensBtn');
+
+      if (historyBtn) historyBtn.classList.toggle('active', tabId === 'history');
+      if (failuresBtn) failuresBtn.classList.toggle('active', tabId === 'failures');
+      if (tokensBtn) tokensBtn.classList.toggle('active', tabId === 'tokens');
+
+      const content = document.getElementById('notificationTabContent');
+      if (!content) return;
+
+      if (tabId === 'history') {
+        this._renderNotificationHistoryTab(content);
+      } else if (tabId === 'failures') {
+        this._renderFailedDeliveriesTab(content);
+      } else if (tabId === 'tokens') {
+        this._renderPushTokensTab(content);
+      }
+    }
+
+    /* ---------------- Tab 1: Notification History ---------------- */
+    _renderNotificationHistoryTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="notifSearchInput"
+                class="admin-input"
+                placeholder="Search subject, user, recipient, ID..."
+                value="${this._escape(this.notificationState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applyNotificationFilters()"
+              />
+            </div>
+            <select id="notifStatusFilter" class="admin-select" style="width:140px;" onchange="AdminShell.applyNotificationFilters()">
+              <option value="">All Statuses</option>
+              <option value="DELIVERED" ${this.notificationState.status === 'DELIVERED' ? 'selected' : ''}>Delivered</option>
+              <option value="FAILED" ${this.notificationState.status === 'FAILED' ? 'selected' : ''}>Failed</option>
+              <option value="PERMANENTLY_FAILED" ${this.notificationState.status === 'PERMANENTLY_FAILED' ? 'selected' : ''}>Perm Failed</option>
+              <option value="PROCESSING" ${this.notificationState.status === 'PROCESSING' ? 'selected' : ''}>Processing</option>
+              <option value="PENDING" ${this.notificationState.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+              <option value="CANCELLED" ${this.notificationState.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+            </select>
+            <select id="notifChannelFilter" class="admin-select" style="width:130px;" onchange="AdminShell.applyNotificationFilters()">
+              <option value="">All Channels</option>
+              <option value="EMAIL" ${this.notificationState.channel === 'EMAIL' ? 'selected' : ''}>Email</option>
+              <option value="FCM" ${this.notificationState.channel === 'FCM' ? 'selected' : ''}>FCM Push</option>
+              <option value="IN_APP" ${this.notificationState.channel === 'IN_APP' ? 'selected' : ''}>In-App</option>
+              <option value="SMS" ${this.notificationState.channel === 'SMS' ? 'selected' : ''}>SMS</option>
+              <option value="WEBHOOK" ${this.notificationState.channel === 'WEBHOOK' ? 'selected' : ''}>Webhook</option>
+            </select>
+            <select id="notifSeverityFilter" class="admin-select" style="width:130px;" onchange="AdminShell.applyNotificationFilters()">
+              <option value="">All Severities</option>
+              <option value="INFO" ${this.notificationState.severity === 'INFO' ? 'selected' : ''}>Info</option>
+              <option value="LOW" ${this.notificationState.severity === 'LOW' ? 'selected' : ''}>Low</option>
+              <option value="MEDIUM" ${this.notificationState.severity === 'MEDIUM' ? 'selected' : ''}>Medium</option>
+              <option value="HIGH" ${this.notificationState.severity === 'HIGH' ? 'selected' : ''}>High</option>
+              <option value="CRITICAL" ${this.notificationState.severity === 'CRITICAL' ? 'selected' : ''}>Critical</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applyNotificationFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetNotificationFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Notification ID</th>
+                  <th>Subject / Title</th>
+                  <th>Recipient / User</th>
+                  <th>Channel</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Dispatched At</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="notifTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading notification records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="notifPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="notifPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 records</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="notifPrevPageBtn" onclick="AdminShell.loadNotifications(AdminShell.notificationState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="notifNextPageBtn" onclick="AdminShell.loadNotifications(AdminShell.notificationState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadNotifications(1);
+    }
+
+    applyNotificationFilters() {
+      const searchInput = document.getElementById('notifSearchInput');
+      const statusSelect = document.getElementById('notifStatusFilter');
+      const channelSelect = document.getElementById('notifChannelFilter');
+      const severitySelect = document.getElementById('notifSeverityFilter');
+
+      this.notificationState.search = searchInput ? searchInput.value.trim() : '';
+      this.notificationState.status = statusSelect ? statusSelect.value : '';
+      this.notificationState.channel = channelSelect ? channelSelect.value : '';
+      this.notificationState.severity = severitySelect ? severitySelect.value : '';
+      this.loadNotifications(1);
+    }
+
+    resetNotificationFilters() {
+      this.notificationState.search = '';
+      this.notificationState.status = '';
+      this.notificationState.channel = '';
+      this.notificationState.severity = '';
+      const content = document.getElementById('notificationTabContent');
+      if (content) this._renderNotificationHistoryTab(content);
+    }
+
+    async loadNotifications(page = 1) {
+      if (page < 1) page = 1;
+      this.notificationState.page = page;
+
+      const tbody = document.getElementById('notifTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading notification records...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.notificationState.page,
+          pageSize: this.notificationState.pageSize,
+          search: this.notificationState.search || undefined,
+          status: this.notificationState.status || undefined,
+          channel: this.notificationState.channel || undefined,
+          severity: this.notificationState.severity || undefined,
+          sortBy: this.notificationState.sortBy,
+          sortOrder: this.notificationState.sortOrder
+        };
+
+        const res = await window.AdminApi.listNotifications(params);
+        if (res && res.success && res.data) {
+          this.notificationState.items = res.data.items || [];
+          this.notificationState.total = res.data.total || 0;
+          this._renderNotificationTableRows();
+          this._updateNotificationPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list notifications.');
+        }
+      } catch (err) {
+        console.error('Error loading notifications:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load notification logs: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderNotificationTableRows() {
+      const tbody = document.getElementById('notifTableBody');
+      if (!tbody) return;
+
+      const items = this.notificationState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No notification records found matching criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(n => {
+        const idShort = n.id ? n.id.slice(0, 8) + '...' : '—';
+        const channels = Array.isArray(n.channels) && n.channels.length > 0 ? n.channels.join(', ') : 'EMAIL';
+        
+        let statusBadge = '<span class="admin-badge admin-badge-neutral">PENDING</span>';
+        if (n.status === 'DELIVERED') statusBadge = '<span class="admin-badge admin-badge-success">DELIVERED</span>';
+        else if (n.status === 'FAILED') statusBadge = '<span class="admin-badge admin-badge-danger">FAILED</span>';
+        else if (n.status === 'PERMANENTLY_FAILED') statusBadge = '<span class="admin-badge admin-badge-danger">PERM FAILED</span>';
+        else if (n.status === 'PROCESSING') statusBadge = '<span class="admin-badge admin-badge-info">PROCESSING</span>';
+
+        let sevBadge = `<span class="admin-badge admin-badge-neutral">${this._escape(n.severity || 'INFO')}</span>`;
+        if (n.severity === 'CRITICAL' || n.severity === 'HIGH') sevBadge = `<span class="admin-badge admin-badge-danger">${this._escape(n.severity)}</span>`;
+        else if (n.severity === 'MEDIUM') sevBadge = `<span class="admin-badge admin-badge-warning">${this._escape(n.severity)}</span>`;
+
+        return `
+          <tr>
+            <td>
+              <code class="admin-code-pill" style="cursor:pointer;" onclick="AdminShell.inspectNotification('${this._escape(n.id)}')" title="${this._escape(n.id)}">${this._escape(idShort)}</code>
+            </td>
+            <td>
+              <strong>${this._escape(n.subject || 'Notification Dispatch')}</strong>
+              ${n.category ? `<div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(n.category)}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-size:0.8125rem;">${this._escape(n.recipient || n.userEmail || n.userId || '—')}</div>
+              ${n.userId ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">${this._escape(n.userId.slice(0, 10))}...</div>` : ''}
+            </td>
+            <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(channels)}</span></td>
+            <td>${sevBadge}</td>
+            <td>${statusBadge}</td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${n.createdAt ? new Date(n.createdAt).toLocaleString() : '—'}</td>
+            <td style="text-align:right;white-space:nowrap;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectNotification('${this._escape(n.id)}')">
+                ${ICONS.eye} Inspect
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateNotificationPagination() {
+      const infoEl = document.getElementById('notifPaginationInfo');
+      const prevBtn = document.getElementById('notifPrevPageBtn');
+      const nextBtn = document.getElementById('notifNextPageBtn');
+
+      const page = this.notificationState.page;
+      const pageSize = this.notificationState.pageSize;
+      const total = this.notificationState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} records (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    /* ---------------- Tab 2: Failed Deliveries & Retries ---------------- */
+    _renderFailedDeliveriesTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="failedDeliverySearch"
+                class="admin-input"
+                placeholder="Search error, recipient, delivery ID..."
+                value="${this._escape(this.failedDeliveriesState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applyFailedDeliveryFilters()"
+              />
+            </div>
+            <select id="failedDeliveryChannel" class="admin-select" style="width:140px;" onchange="AdminShell.applyFailedDeliveryFilters()">
+              <option value="">All Channels</option>
+              <option value="EMAIL" ${this.failedDeliveriesState.channel === 'EMAIL' ? 'selected' : ''}>Email</option>
+              <option value="FCM" ${this.failedDeliveriesState.channel === 'FCM' ? 'selected' : ''}>FCM Push</option>
+              <option value="SMS" ${this.failedDeliveriesState.channel === 'SMS' ? 'selected' : ''}>SMS</option>
+              <option value="WEBHOOK" ${this.failedDeliveriesState.channel === 'WEBHOOK' ? 'selected' : ''}>Webhook</option>
+            </select>
+            <select id="failedDeliveryCategory" class="admin-select" style="width:160px;" onchange="AdminShell.applyFailedDeliveryFilters()">
+              <option value="">All Failure Types</option>
+              <option value="INVALID_TOKEN" ${this.failedDeliveriesState.failureCategory === 'INVALID_TOKEN' ? 'selected' : ''}>Invalid Token</option>
+              <option value="RATE_LIMITED" ${this.failedDeliveriesState.failureCategory === 'RATE_LIMITED' ? 'selected' : ''}>Rate Limited</option>
+              <option value="AUTH_FAILURE" ${this.failedDeliveriesState.failureCategory === 'AUTH_FAILURE' ? 'selected' : ''}>Auth Failure</option>
+              <option value="NETWORK_TIMEOUT" ${this.failedDeliveriesState.failureCategory === 'NETWORK_TIMEOUT' ? 'selected' : ''}>Network Timeout</option>
+              <option value="TEMPLATE_ERROR" ${this.failedDeliveriesState.failureCategory === 'TEMPLATE_ERROR' ? 'selected' : ''}>Template Error</option>
+              <option value="PROVIDER_ERROR" ${this.failedDeliveriesState.failureCategory === 'PROVIDER_ERROR' ? 'selected' : ''}>Provider Error</option>
+              <option value="UNKNOWN" ${this.failedDeliveriesState.failureCategory === 'UNKNOWN' ? 'selected' : ''}>Unknown</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applyFailedDeliveryFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetFailedDeliveryFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Delivery ID</th>
+                  <th>Channel &amp; Provider</th>
+                  <th>Recipient / Endpoint</th>
+                  <th>Failure Category</th>
+                  <th>Error Diagnostics</th>
+                  <th>Attempts</th>
+                  <th>Failed At</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="failedDeliveryTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading failed delivery records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="failedDeliveryPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="failedDeliveryPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 records</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="failedPrevPageBtn" onclick="AdminShell.loadFailedDeliveries(AdminShell.failedDeliveriesState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="failedNextPageBtn" onclick="AdminShell.loadFailedDeliveries(AdminShell.failedDeliveriesState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadFailedDeliveries(1);
+    }
+
+    applyFailedDeliveryFilters() {
+      const searchInput = document.getElementById('failedDeliverySearch');
+      const channelSelect = document.getElementById('failedDeliveryChannel');
+      const categorySelect = document.getElementById('failedDeliveryCategory');
+
+      this.failedDeliveriesState.search = searchInput ? searchInput.value.trim() : '';
+      this.failedDeliveriesState.channel = channelSelect ? channelSelect.value : '';
+      this.failedDeliveriesState.failureCategory = categorySelect ? categorySelect.value : '';
+      this.loadFailedDeliveries(1);
+    }
+
+    resetFailedDeliveryFilters() {
+      this.failedDeliveriesState.search = '';
+      this.failedDeliveriesState.channel = '';
+      this.failedDeliveriesState.failureCategory = '';
+      const content = document.getElementById('notificationTabContent');
+      if (content) this._renderFailedDeliveriesTab(content);
+    }
+
+    async loadFailedDeliveries(page = 1) {
+      if (page < 1) page = 1;
+      this.failedDeliveriesState.page = page;
+
+      const tbody = document.getElementById('failedDeliveryTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading failed deliveries...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.failedDeliveriesState.page,
+          pageSize: this.failedDeliveriesState.pageSize,
+          search: this.failedDeliveriesState.search || undefined,
+          channel: this.failedDeliveriesState.channel || undefined,
+          failureCategory: this.failedDeliveriesState.failureCategory || undefined,
+          sortBy: this.failedDeliveriesState.sortBy,
+          sortOrder: this.failedDeliveriesState.sortOrder
+        };
+
+        const res = await window.AdminApi.listFailedDeliveries(params);
+        if (res && res.success && res.data) {
+          this.failedDeliveriesState.items = res.data.items || [];
+          this.failedDeliveriesState.total = res.data.total || 0;
+          this._renderFailedDeliveryRows();
+          this._updateFailedDeliveryPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list delivery failures.');
+        }
+      } catch (err) {
+        console.error('Error loading failed deliveries:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load delivery failures: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderFailedDeliveryRows() {
+      const tbody = document.getElementById('failedDeliveryTableBody');
+      if (!tbody) return;
+
+      const items = this.failedDeliveriesState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No failed deliveries recorded. All channels operating smoothly!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(d => {
+        const idShort = d.id ? d.id.slice(0, 8) + '...' : '—';
+        const notifIdShort = d.notificationId ? d.notificationId.slice(0, 8) + '...' : '—';
+        const attempts = `${d.attemptCount || 1} / ${d.maxAttempts || 3}`;
+
+        return `
+          <tr>
+            <td>
+              <code class="admin-code-pill" title="${this._escape(d.id)}">${this._escape(idShort)}</code>
+              ${d.notificationId ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">Parent: <code style="cursor:pointer;" onclick="AdminShell.inspectNotification('${this._escape(d.notificationId)}')">${this._escape(notifIdShort)}</code></div>` : ''}
+            </td>
+            <td>
+              <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(d.channel)}</span>
+              ${d.provider ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">${this._escape(d.provider)}</div>` : ''}
+            </td>
+            <td><div style="font-size:0.8125rem;">${this._escape(d.recipient || '—')}</div></td>
+            <td><span class="admin-badge admin-badge-danger" style="font-size:0.6875rem;">${this._escape(d.failureCategory || 'UNKNOWN')}</span></td>
+            <td>
+              <div style="font-size:0.75rem;color:var(--admin-danger);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${this._escape(d.errorMessage || '')}">
+                ${this._escape(d.errorMessage || 'Unknown delivery failure')}
+              </div>
+            </td>
+            <td><span style="font-size:0.75rem;font-weight:600;">${this._escape(attempts)}</span></td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${d.createdAt ? new Date(d.createdAt).toLocaleString() : '—'}</td>
+            <td style="text-align:right;white-space:nowrap;">
+              ${window.AdminAuth.hasPermission('notifications.write') ? `
+                <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.confirmRetryDelivery('${this._escape(d.id)}', '${this._escape(d.notificationId || '')}')">
+                  ${ICONS['refresh-cw']} Retry
+                </button>
+              ` : ''}
+              ${d.notificationId ? `
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectNotification('${this._escape(d.notificationId)}')">
+                  ${ICONS.eye}
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateFailedDeliveryPagination() {
+      const infoEl = document.getElementById('failedDeliveryPaginationInfo');
+      const prevBtn = document.getElementById('failedPrevPageBtn');
+      const nextBtn = document.getElementById('failedNextPageBtn');
+
+      const page = this.failedDeliveriesState.page;
+      const pageSize = this.failedDeliveriesState.pageSize;
+      const total = this.failedDeliveriesState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} failures (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    confirmRetryDelivery(deliveryId, notificationId) {
+      this.showCustomModal({
+        title: 'Retry Notification Delivery',
+        width: '480px',
+        content: `
+          <div style="margin-bottom:1rem;color:var(--admin-text-secondary);font-size:0.875rem;">
+            Are you sure you want to trigger an immediate administrative retry for this delivery attempt?
+          </div>
+          <div style="background:var(--admin-bg);padding:0.75rem;border-radius:var(--radius-md);font-size:0.75rem;border:1px solid var(--admin-border);margin-bottom:1rem;">
+            <div><strong>Delivery ID:</strong> <code class="admin-code-pill">${this._escape(deliveryId)}</code></div>
+            ${notificationId ? `<div style="margin-top:0.25rem;"><strong>Notification ID:</strong> <code class="admin-code-pill">${this._escape(notificationId)}</code></div>` : ''}
+          </div>
+          <p style="font-size:0.75rem;color:var(--admin-text-muted);margin:0;">
+            This operation is recorded in the cryptographically chained security audit log.
+          </p>
+        `,
+        confirmLabel: 'Dispatch Retry',
+        confirmType: 'primary',
+        onConfirm: async () => {
+          try {
+            const res = await window.AdminApi.retryNotificationDelivery(deliveryId);
+            if (res && res.success) {
+              this.toast('Delivery retry dispatched successfully.', 'success');
+              this.loadFailedDeliveries(this.failedDeliveriesState.page);
+              this.loadNotificationMetrics();
+              return true;
+            } else {
+              throw new Error(res?.error?.message || 'Delivery retry failed.');
+            }
+          } catch (err) {
+            this.toast(`Retry failed: ${err.message}`, 'danger');
+            return false;
+          }
+        }
+      });
+    }
+
+    /* ---------------- Tab 3: Push Device Tokens & Health ---------------- */
+    _renderPushTokensTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="pushTokenSearch"
+                class="admin-input"
+                placeholder="Search user ID, device ID, fingerprint..."
+                value="${this._escape(this.pushTokensState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applyPushTokenFilters()"
+              />
+            </div>
+            <select id="pushTokenPlatform" class="admin-select" style="width:140px;" onchange="AdminShell.applyPushTokenFilters()">
+              <option value="">All Platforms</option>
+              <option value="ANDROID" ${this.pushTokensState.platform === 'ANDROID' ? 'selected' : ''}>Android</option>
+              <option value="IOS" ${this.pushTokensState.platform === 'IOS' ? 'selected' : ''}>iOS</option>
+              <option value="WEB" ${this.pushTokensState.platform === 'WEB' ? 'selected' : ''}>Web</option>
+            </select>
+            <select id="pushTokenActive" class="admin-select" style="width:140px;" onchange="AdminShell.applyPushTokenFilters()">
+              <option value="">All States</option>
+              <option value="true" ${this.pushTokensState.isActive === 'true' ? 'selected' : ''}>Active</option>
+              <option value="false" ${this.pushTokensState.isActive === 'false' ? 'selected' : ''}>Revoked / Inactive</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applyPushTokenFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetPushTokenFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Token Fingerprint</th>
+                  <th>Platform</th>
+                  <th>User &amp; Device</th>
+                  <th>Status</th>
+                  <th>Failure Count</th>
+                  <th>Last Seen</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pushTokensTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading push token registry...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="pushTokensPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="pushTokensPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 tokens</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="tokensPrevPageBtn" onclick="AdminShell.loadPushTokens(AdminShell.pushTokensState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="tokensNextPageBtn" onclick="AdminShell.loadPushTokens(AdminShell.pushTokensState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadPushTokens(1);
+    }
+
+    applyPushTokenFilters() {
+      const searchInput = document.getElementById('pushTokenSearch');
+      const platformSelect = document.getElementById('pushTokenPlatform');
+      const activeSelect = document.getElementById('pushTokenActive');
+
+      this.pushTokensState.search = searchInput ? searchInput.value.trim() : '';
+      this.pushTokensState.platform = platformSelect ? platformSelect.value : '';
+      this.pushTokensState.isActive = activeSelect ? activeSelect.value : '';
+      this.loadPushTokens(1);
+    }
+
+    resetPushTokenFilters() {
+      this.pushTokensState.search = '';
+      this.pushTokensState.platform = '';
+      this.pushTokensState.isActive = '';
+      const content = document.getElementById('notificationTabContent');
+      if (content) this._renderPushTokensTab(content);
+    }
+
+    async loadPushTokens(page = 1) {
+      if (page < 1) page = 1;
+      this.pushTokensState.page = page;
+
+      const tbody = document.getElementById('pushTokensTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading push tokens...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.pushTokensState.page,
+          pageSize: this.pushTokensState.pageSize,
+          search: this.pushTokensState.search || undefined,
+          platform: this.pushTokensState.platform || undefined,
+          isActive: this.pushTokensState.isActive === '' ? undefined : this.pushTokensState.isActive === 'true',
+          sortBy: this.pushTokensState.sortBy,
+          sortOrder: this.pushTokensState.sortOrder
+        };
+
+        const res = await window.AdminApi.listPushTokens(params);
+        if (res && res.success && res.data) {
+          this.pushTokensState.items = res.data.items || [];
+          this.pushTokensState.total = res.data.total || 0;
+          this._renderPushTokenRows();
+          this._updatePushTokenPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list push tokens.');
+        }
+      } catch (err) {
+        console.error('Error loading push tokens:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load push tokens: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderPushTokenRows() {
+      const tbody = document.getElementById('pushTokensTableBody');
+      if (!tbody) return;
+
+      const items = this.pushTokensState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No push tokens registered.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(t => {
+        const fingerprint = t.tokenFingerprint || (t.id ? `fcm_...${t.id.slice(-8)}` : 'fcm_...masked');
+        const isActive = t.isActive !== false;
+        const statusBadge = isActive
+          ? '<span class="admin-badge admin-badge-success">ACTIVE</span>'
+          : '<span class="admin-badge admin-badge-neutral">REVOKED</span>';
+
+        return `
+          <tr>
+            <td>
+              <code class="admin-code-pill" title="Masked push token fingerprint">${this._escape(fingerprint)}</code>
+            </td>
+            <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(t.platform || 'ANDROID')}</span></td>
+            <td>
+              <div style="font-size:0.8125rem;">User: <code>${this._escape(t.userId ? t.userId.slice(0, 10) + '...' : '—')}</code></div>
+              ${t.deviceId ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">Device: <code>${this._escape(t.deviceId.slice(0, 10))}...</code></div>` : ''}
+            </td>
+            <td>${statusBadge}</td>
+            <td><span style="font-size:0.75rem;font-weight:600;color:${(t.failureCount || 0) > 0 ? 'var(--admin-danger)' : 'var(--admin-text-secondary)'};">${t.failureCount || 0}</span></td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${t.lastSeenAt ? new Date(t.lastSeenAt).toLocaleString() : (t.updatedAt ? new Date(t.updatedAt).toLocaleString() : '—')}</td>
+            <td style="text-align:right;white-space:nowrap;">
+              ${isActive && window.AdminAuth.hasPermission('notifications.write') ? `
+                <button class="admin-btn admin-btn-danger admin-btn-sm" onclick="AdminShell.confirmRevokeToken('${this._escape(t.id)}', '${this._escape(t.deviceId || '')}', '${this._escape(t.userId || '')}')">
+                  ${ICONS.x} Revoke Token
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updatePushTokenPagination() {
+      const infoEl = document.getElementById('pushTokensPaginationInfo');
+      const prevBtn = document.getElementById('tokensPrevPageBtn');
+      const nextBtn = document.getElementById('tokensNextPageBtn');
+
+      const page = this.pushTokensState.page;
+      const pageSize = this.pushTokensState.pageSize;
+      const total = this.pushTokensState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} tokens (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    confirmRevokeToken(tokenId, deviceId, userId) {
+      this.showCustomModal({
+        title: 'Revoke Push Device Token',
+        width: '480px',
+        content: `
+          <div style="margin-bottom:1rem;color:var(--admin-text-secondary);font-size:0.875rem;">
+            Are you sure you want to deactivate and revoke this push device token? The device will no longer receive FCM push relays until re-registered.
+          </div>
+          <div style="background:var(--admin-bg);padding:0.75rem;border-radius:var(--radius-md);font-size:0.75rem;border:1px solid var(--admin-border);margin-bottom:1rem;">
+            <div><strong>Token ID:</strong> <code class="admin-code-pill">${this._escape(tokenId)}</code></div>
+            ${userId ? `<div style="margin-top:0.25rem;"><strong>User ID:</strong> <code class="admin-code-pill">${this._escape(userId)}</code></div>` : ''}
+            ${deviceId ? `<div style="margin-top:0.25rem;"><strong>Device ID:</strong> <code class="admin-code-pill">${this._escape(deviceId)}</code></div>` : ''}
+          </div>
+          <div style="margin-bottom:0.75rem;">
+            <label for="revokeReasonInput" style="display:block;font-size:0.75rem;font-weight:600;margin-bottom:0.25rem;">Reason for Revocation (Audited):</label>
+            <input type="text" id="revokeReasonInput" class="admin-input" placeholder="e.g., Device decommissioned or token unregistration request" value="Administrative revocation via Admin Shell" />
+          </div>
+        `,
+        confirmLabel: 'Revoke Token',
+        confirmType: 'danger',
+        onConfirm: async () => {
+          const reasonInput = document.getElementById('revokeReasonInput');
+          const reason = reasonInput ? reasonInput.value.trim() : 'Administrative revocation via Admin Shell';
+
+          try {
+            const res = await window.AdminApi.revokePushToken(tokenId, { reason });
+            if (res && res.success) {
+              this.toast('Push token revoked successfully.', 'success');
+              this.loadPushTokens(this.pushTokensState.page);
+              this.loadNotificationMetrics();
+              return true;
+            } else {
+              throw new Error(res?.error?.message || 'Failed to revoke token.');
+            }
+          } catch (err) {
+            this.toast(`Revocation failed: ${err.message}`, 'danger');
+            return false;
+          }
+        }
+      });
+    }
+
+    /* ---------------- Inspection Modal ---------------- */
+    async inspectNotification(notificationId) {
+      try {
+        const res = await window.AdminApi.getNotification(notificationId);
+        if (!res || !res.success || !res.data) {
+          throw new Error(res?.error?.message || 'Notification record not found.');
+        }
+
+        const n = res.data;
+        const deliveries = n.deliveries || [];
+
+        const deliveriesHtml = deliveries.length > 0 ? `
+          <div style="margin-top:1rem;">
+            <h4 style="font-size:0.8125rem;font-weight:700;margin:0 0 0.5rem 0;color:var(--admin-text-primary);">Delivery Channel Attempts (${deliveries.length})</h4>
+            <div class="admin-table-wrap">
+              <table class="admin-table" style="font-size:0.75rem;">
+                <thead>
+                  <tr>
+                    <th>Channel</th>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>Attempt</th>
+                    <th>Latency</th>
+                    <th>Details / Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${deliveries.map(d => `
+                    <tr>
+                      <td><span class="admin-badge admin-badge-neutral">${this._escape(d.channel)}</span></td>
+                      <td>${this._escape(d.provider || 'default')}</td>
+                      <td><span class="admin-badge ${d.status === 'DELIVERED' ? 'admin-badge-success' : 'admin-badge-danger'}">${this._escape(d.status)}</span></td>
+                      <td>${d.attemptCount || 1} / ${d.maxAttempts || 3}</td>
+                      <td>${d.latencyMs !== null && d.latencyMs !== undefined ? `${d.latencyMs} ms` : '—'}</td>
+                      <td><span style="color:${d.status === 'FAILED' ? 'var(--admin-danger)' : 'var(--admin-text-secondary)'};">${this._escape(d.errorMessage || d.externalId || 'Delivered successfully')}</span></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : '';
+
+        this.showCustomModal({
+          title: `Notification Details: ${n.id.slice(0, 12)}...`,
+          width: '680px',
+          content: `
+            <div class="admin-grid-2" style="gap:0.75rem;margin-bottom:1rem;font-size:0.8125rem;">
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Notification ID</span>
+                <div><code class="admin-code-pill">${this._escape(n.id)}</code></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Status</span>
+                <div><span class="admin-badge ${n.status === 'DELIVERED' ? 'admin-badge-success' : 'admin-badge-neutral'}">${this._escape(n.status)}</span></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Subject / Title</span>
+                <div style="font-weight:600;">${this._escape(n.subject || '—')}</div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Category &amp; Severity</span>
+                <div>${this._escape(n.category || 'SYSTEM')} • <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(n.severity || 'INFO')}</span></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Recipient / User ID</span>
+                <div>${this._escape(n.recipient || n.userId || '—')}</div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Created At</span>
+                <div>${n.createdAt ? new Date(n.createdAt).toLocaleString() : '—'}</div>
+              </div>
+            </div>
+
+            ${n.contentPreview ? `
+              <div style="background:var(--admin-bg);padding:0.75rem;border-radius:var(--radius-md);font-size:0.75rem;border:1px solid var(--admin-border);margin-bottom:1rem;">
+                <div style="font-weight:600;margin-bottom:0.25rem;color:var(--admin-text-secondary);">Safe Content Preview (Zero Secret Exposure):</div>
+                <div style="white-space:pre-wrap;color:var(--admin-text-primary);">${this._escape(n.contentPreview)}</div>
+              </div>
+            ` : ''}
+
+            ${deliveriesHtml}
+          `,
+          confirmLabel: 'Close',
+          confirmType: 'secondary',
+          onConfirm: () => true
+        });
+      } catch (err) {
+        this.toast(`Failed to load notification details: ${err.message}`, 'danger');
+      }
+    }
+
+    /* =========================================================================
+       PHASE 17 BATCH 17.5: SYSTEM LOGS & DIAGNOSTICS
+       ========================================================================= */
+    async _renderSystemLogsView(container) {
+      if (!window.AdminAuth.hasPermission('system.read') && !window.AdminAuth.hasPermission('errors.read')) {
+        this._renderForbiddenView({ id: 'system-logs', label: 'System Logs & Diagnostics', permission: 'system.read' });
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div class="admin-view-title-wrap">
+            <h1>System Logs &amp; Operational Diagnostics</h1>
+            <p>Authoritative application errors, runtime telemetry, operational event streams, gateway diagnostics, and sanitized log exports.</p>
+          </div>
+          <div class="admin-header-actions" style="display:flex;gap:0.5rem;align-items:center;">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.triggerSystemLogsExport(AdminShell.systemLogsState.activeTab, 'csv')">
+              ${ICONS['file-text'] || ''} Export CSV
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.triggerSystemLogsExport(AdminShell.systemLogsState.activeTab, 'json')">
+              ${ICONS.copy || ''} Export JSON
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.loadSystemLogsMetrics(); AdminShell.refreshSystemLogsTab();">
+              ${ICONS['refresh-cw']} Refresh Diagnostics
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div id="systemLogsMetricsGrid" class="admin-grid-4" style="margin-bottom:var(--space-xl);">
+          <div class="admin-card"><div class="admin-stat-label">24h Error Volume</div><div class="admin-stat-value" id="sysLogStatErrors">—</div><div class="admin-stat-subtext" id="sysLogStatErrorsSub">Across all runtime components</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Open Incidents</div><div class="admin-stat-value" id="sysLogStatIncidents">—</div><div class="admin-stat-subtext" id="sysLogStatIncidentsSub">Active untriaged fingerprints</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Gateway Disconnects (24h)</div><div class="admin-stat-value" id="sysLogStatGateway">—</div><div class="admin-stat-subtext" id="sysLogStatGatewaySub">Socket failover &amp; resets</div></div>
+          <div class="admin-card"><div class="admin-stat-label">Operational Events (24h)</div><div class="admin-stat-value" id="sysLogStatEvents">—</div><div class="admin-stat-subtext" id="sysLogStatEventsSub">Customer &amp; control plane audits</div></div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="admin-tabs" style="margin-bottom:var(--space-lg);border-bottom:1px solid var(--admin-border-subtle);display:flex;gap:0.5rem;">
+          <button class="admin-tab-btn ${this.systemLogsState.activeTab === 'errors' ? 'active' : ''}" id="sysLogsTabErrorsBtn" onclick="AdminShell.switchSystemLogsTab('errors')">
+            Application &amp; Runtime Errors
+          </button>
+          <button class="admin-tab-btn ${this.systemLogsState.activeTab === 'events' ? 'active' : ''}" id="sysLogsTabEventsBtn" onclick="AdminShell.switchSystemLogsTab('events')">
+            Operational &amp; Audit Events
+          </button>
+          <button class="admin-tab-btn ${this.systemLogsState.activeTab === 'gateway' ? 'active' : ''}" id="sysLogsTabGatewayBtn" onclick="AdminShell.switchSystemLogsTab('gateway')">
+            Gateway Node Diagnostics
+          </button>
+          <button class="admin-tab-btn ${this.systemLogsState.activeTab === 'incidents' ? 'active' : ''}" id="sysLogsTabIncidentsBtn" onclick="AdminShell.switchSystemLogsTab('incidents')">
+            Incidents &amp; Fingerprints
+          </button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div id="systemLogsTabContent">
+          <!-- Populated dynamically -->
+        </div>
+      `;
+
+      await this.loadSystemLogsMetrics();
+      this.switchSystemLogsTab(this.systemLogsState.activeTab || 'errors');
+    }
+
+    async loadSystemLogsMetrics() {
+      try {
+        const res = await window.AdminApi.getSystemLogsMetrics();
+        if (res && res.success && res.data) {
+          const m = res.data.metrics || res.data;
+          this.systemLogsState.metrics = m;
+
+          const errorsEl = document.getElementById('sysLogStatErrors');
+          const errorsSub = document.getElementById('sysLogStatErrorsSub');
+          const incidentsEl = document.getElementById('sysLogStatIncidents');
+          const incidentsSub = document.getElementById('sysLogStatIncidentsSub');
+          const gatewayEl = document.getElementById('sysLogStatGateway');
+          const gatewaySub = document.getElementById('sysLogStatGatewaySub');
+          const eventsEl = document.getElementById('sysLogStatEvents');
+          const eventsSub = document.getElementById('sysLogStatEventsSub');
+
+          if (errorsEl) {
+            errorsEl.textContent = m.totalErrors24h?.toLocaleString() || '0';
+            errorsEl.style.color = (m.criticalErrors24h || 0) > 0 ? 'var(--admin-danger)' : 'var(--admin-text-primary)';
+          }
+          if (errorsSub) errorsSub.textContent = `Critical: ${m.criticalErrors24h || 0} • 7-Day: ${m.totalErrors7d || 0}`;
+
+          if (incidentsEl) {
+            incidentsEl.textContent = m.openIncidentsCount?.toLocaleString() || '0';
+            incidentsEl.style.color = (m.openIncidentsCount || 0) > 0 ? 'var(--admin-warning)' : 'var(--admin-success)';
+          }
+          if (incidentsSub) incidentsSub.textContent = `Acknowledged: ${m.acknowledgedIncidentsCount || 0} in triage`;
+
+          if (gatewayEl) gatewayEl.textContent = m.gatewayDisconnects24h?.toLocaleString() || '0';
+          if (eventsEl) eventsEl.textContent = m.operationalEvents24h?.toLocaleString() || '0';
+        }
+      } catch (err) {
+        console.error('Failed to load system logs metrics:', err);
+      }
+    }
+
+    refreshSystemLogsTab() {
+      if (this.systemLogsState.activeTab === 'errors') {
+        this.loadSystemErrors(this.systemLogsState.page);
+      } else if (this.systemLogsState.activeTab === 'events') {
+        this.loadSystemEvents(this.systemLogsState.page);
+      } else if (this.systemLogsState.activeTab === 'gateway') {
+        this.loadGatewayDiagnostics(this.systemLogsState.page);
+      } else if (this.systemLogsState.activeTab === 'incidents') {
+        this.loadSystemIncidents(this.systemLogsState.page);
+      }
+    }
+
+    switchSystemLogsTab(tabId) {
+      this.systemLogsState.activeTab = tabId;
+      const errorsBtn = document.getElementById('sysLogsTabErrorsBtn');
+      const eventsBtn = document.getElementById('sysLogsTabEventsBtn');
+      const gatewayBtn = document.getElementById('sysLogsTabGatewayBtn');
+      const incidentsBtn = document.getElementById('sysLogsTabIncidentsBtn');
+
+      if (errorsBtn) errorsBtn.classList.toggle('active', tabId === 'errors');
+      if (eventsBtn) eventsBtn.classList.toggle('active', tabId === 'events');
+      if (gatewayBtn) gatewayBtn.classList.toggle('active', tabId === 'gateway');
+      if (incidentsBtn) incidentsBtn.classList.toggle('active', tabId === 'incidents');
+
+      const content = document.getElementById('systemLogsTabContent');
+      if (!content) return;
+
+      if (tabId === 'errors') {
+        this._renderSystemErrorsTab(content);
+      } else if (tabId === 'events') {
+        this._renderSystemEventsTab(content);
+      } else if (tabId === 'gateway') {
+        this._renderGatewayDiagnosticsTab(content);
+      } else if (tabId === 'incidents') {
+        this._renderSystemIncidentsTab(content);
+      }
+    }
+
+    /* ---------------- Tab 1: Application & Runtime Errors ---------------- */
+    _renderSystemErrorsTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="sysErrorsSearch"
+                class="admin-input"
+                placeholder="Search error message, code, component, request ID..."
+                value="${this._escape(this.systemLogsState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applySystemErrorFilters()"
+              />
+            </div>
+            <select id="sysErrorsSeverity" class="admin-select" style="width:140px;" onchange="AdminShell.applySystemErrorFilters()">
+              <option value="">All Severities</option>
+              <option value="CRITICAL" ${this.systemLogsState.severity === 'CRITICAL' ? 'selected' : ''}>Critical</option>
+              <option value="ERROR" ${this.systemLogsState.severity === 'ERROR' ? 'selected' : ''}>Error</option>
+              <option value="WARNING" ${this.systemLogsState.severity === 'WARNING' ? 'selected' : ''}>Warning</option>
+              <option value="INFO" ${this.systemLogsState.severity === 'INFO' ? 'selected' : ''}>Info</option>
+            </select>
+            <input
+              type="text"
+              id="sysErrorsComponent"
+              class="admin-input"
+              style="width:140px;"
+              placeholder="Component..."
+              value="${this._escape(this.systemLogsState.component || '')}"
+              onkeydown="if(event.key==='Enter') AdminShell.applySystemErrorFilters()"
+            />
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applySystemErrorFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetSystemErrorFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Occurrence ID</th>
+                  <th>Component</th>
+                  <th>Severity</th>
+                  <th>Error Message</th>
+                  <th>HTTP Route / Code</th>
+                  <th>Request / Correlation ID</th>
+                  <th>Occurred At</th>
+                  <th style="text-align:right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sysErrorsTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading runtime error logs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="sysErrorsPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="sysErrorsPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 records</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysErrorsPrevBtn" onclick="AdminShell.loadSystemErrors(AdminShell.systemLogsState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysErrorsNextBtn" onclick="AdminShell.loadSystemErrors(AdminShell.systemLogsState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadSystemErrors(1);
+    }
+
+    applySystemErrorFilters() {
+      const searchInput = document.getElementById('sysErrorsSearch');
+      const sevSelect = document.getElementById('sysErrorsSeverity');
+      const compInput = document.getElementById('sysErrorsComponent');
+
+      this.systemLogsState.search = searchInput ? searchInput.value.trim() : '';
+      this.systemLogsState.severity = sevSelect ? sevSelect.value : '';
+      this.systemLogsState.component = compInput ? compInput.value.trim() : '';
+      this.loadSystemErrors(1);
+    }
+
+    resetSystemErrorFilters() {
+      this.systemLogsState.search = '';
+      this.systemLogsState.severity = '';
+      this.systemLogsState.component = '';
+      const content = document.getElementById('systemLogsTabContent');
+      if (content) this._renderSystemErrorsTab(content);
+    }
+
+    async loadSystemErrors(page = 1) {
+      if (page < 1) page = 1;
+      this.systemLogsState.page = page;
+
+      const tbody = document.getElementById('sysErrorsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading error records...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.systemLogsState.page,
+          pageSize: this.systemLogsState.pageSize,
+          search: this.systemLogsState.search || undefined,
+          severity: this.systemLogsState.severity || undefined,
+          component: this.systemLogsState.component || undefined,
+          sortBy: this.systemLogsState.sortBy,
+          sortOrder: this.systemLogsState.sortOrder
+        };
+
+        const res = await window.AdminApi.listSystemErrors(params);
+        if (res && res.success && res.data) {
+          this.systemLogsState.items = res.data.items || [];
+          this.systemLogsState.total = res.data.pagination?.total || res.data.total || 0;
+          this._renderSystemErrorRows();
+          this._updateSystemErrorPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list error occurrences.');
+        }
+      } catch (err) {
+        console.error('Error loading system errors:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load error logs: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderSystemErrorRows() {
+      const tbody = document.getElementById('sysErrorsTableBody');
+      if (!tbody) return;
+
+      const items = this.systemLogsState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No runtime errors found matching criteria. System is healthy!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(e => {
+        const idShort = e.id ? e.id.slice(0, 8) + '...' : '—';
+        let sevBadge = `<span class="admin-badge admin-badge-neutral">${this._escape(e.severity)}</span>`;
+        if (e.severity === 'CRITICAL') sevBadge = `<span class="admin-badge admin-badge-danger" style="font-weight:700;">CRITICAL</span>`;
+        else if (e.severity === 'ERROR') sevBadge = `<span class="admin-badge admin-badge-danger">ERROR</span>`;
+        else if (e.severity === 'WARNING') sevBadge = `<span class="admin-badge admin-badge-warning">WARNING</span>`;
+
+        const httpInfo = e.httpMethod && e.httpPath
+          ? `<code>${this._escape(e.httpMethod)} ${this._escape(e.httpPath)}</code> ${e.httpStatus ? `<span class="admin-badge admin-badge-neutral">${e.httpStatus}</span>` : ''}`
+          : (e.errorCode ? `<code class="admin-code-pill">${this._escape(e.errorCode)}</code>` : '—');
+
+        return `
+          <tr>
+            <td>
+              <code class="admin-code-pill" style="cursor:pointer;" onclick="AdminShell.inspectSystemError('${this._escape(e.id)}')" title="${this._escape(e.id)}">${this._escape(idShort)}</code>
+            </td>
+            <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(e.component)}</span></td>
+            <td>${sevBadge}</td>
+            <td>
+              <div style="font-size:0.8125rem;font-weight:600;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${this._escape(e.message)}">
+                ${this._escape(e.message)}
+              </div>
+              ${e.errorType ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">${this._escape(e.errorType)}</div>` : ''}
+            </td>
+            <td>${httpInfo}</td>
+            <td>
+              ${e.requestId ? `<code class="admin-code-pill" style="font-size:0.6875rem;" title="${this._escape(e.requestId)}">${this._escape(e.requestId.slice(0, 8))}...</code>` : '—'}
+            </td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${e.occurredAt ? new Date(e.occurredAt).toLocaleString() : '—'}</td>
+            <td style="text-align:right;white-space:nowrap;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.inspectSystemError('${this._escape(e.id)}')">
+                ${ICONS.eye} Inspect
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateSystemErrorPagination() {
+      const infoEl = document.getElementById('sysErrorsPaginationInfo');
+      const prevBtn = document.getElementById('sysErrorsPrevBtn');
+      const nextBtn = document.getElementById('sysErrorsNextBtn');
+
+      const page = this.systemLogsState.page;
+      const pageSize = this.systemLogsState.pageSize;
+      const total = this.systemLogsState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} errors (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    async inspectSystemError(errorId) {
+      try {
+        const res = await window.AdminApi.getSystemErrorDetail(errorId);
+        if (!res || !res.success || !res.data) {
+          throw new Error(res?.error?.message || 'Error details not found.');
+        }
+
+        const e = res.data.error || res.data;
+        const entities = e.linkedEntities || {};
+
+        this.showCustomModal({
+          title: `Error Occurrence: ${e.id.slice(0, 12)}...`,
+          width: '740px',
+          content: `
+            <div class="admin-grid-2" style="gap:0.75rem;margin-bottom:1rem;font-size:0.8125rem;">
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Occurrence ID</span>
+                <div><code class="admin-code-pill">${this._escape(e.id)}</code></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Component &amp; Severity</span>
+                <div><span class="admin-badge admin-badge-neutral">${this._escape(e.component)}</span> • <span class="admin-badge ${e.severity === 'CRITICAL' ? 'admin-badge-danger' : 'admin-badge-warning'}">${this._escape(e.severity)}</span></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">HTTP Route / Code</span>
+                <div>${e.httpMethod ? `<code>${this._escape(e.httpMethod)} ${this._escape(e.httpPath || '')}</code> (${e.httpStatus})` : (e.errorCode || '—')}</div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Request / Correlation ID</span>
+                <div><code>${this._escape(e.requestId || '—')}</code></div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Occurred Timestamp</span>
+                <div>${e.occurredAt ? new Date(e.occurredAt).toLocaleString() : '—'}</div>
+              </div>
+              <div>
+                <span class="admin-stat-label" style="font-size:0.6875rem;">Fingerprint Hash</span>
+                <div><code class="admin-code-pill">${this._escape(e.fingerprintHash || '—')}</code></div>
+              </div>
+            </div>
+
+            <!-- Error Message Banner -->
+            <div style="background:var(--admin-bg);padding:0.75rem;border-radius:var(--radius-md);font-size:0.8125rem;border:1px solid var(--admin-border);margin-bottom:1rem;">
+              <div style="font-weight:700;color:var(--admin-danger);margin-bottom:0.25rem;">Sanitized Error Message:</div>
+              <div style="color:var(--admin-text-primary);word-break:break-word;">${this._escape(e.message)}</div>
+            </div>
+
+            <!-- Linked Entities Strip -->
+            <div style="background:var(--admin-bg-subtle);padding:0.75rem;border-radius:var(--radius-md);font-size:0.75rem;border:1px solid var(--admin-border);margin-bottom:1rem;">
+              <div style="font-weight:700;margin-bottom:0.35rem;color:var(--admin-text-primary);">Correlated Topology Entities:</div>
+              <div class="admin-grid-2" style="gap:0.5rem;">
+                <div><strong>User:</strong> ${entities.user ? `${this._escape(entities.user.email)} (<code>${this._escape(entities.user.id.slice(0, 8))}...</code>)` : '—'}</div>
+                <div><strong>Device:</strong> ${entities.device ? `${this._escape(entities.device.deviceName)} (${this._escape(entities.device.platform)})` : '—'}</div>
+                <div><strong>Server:</strong> ${entities.serverInstance ? `${this._escape(entities.serverInstance.serverName || 'Instance')} (${this._escape(entities.serverInstance.status)})` : '—'}</div>
+                <div><strong>Gateway:</strong> ${entities.gatewayNode ? `${this._escape(entities.gatewayNode.hostname)} (${this._escape(entities.gatewayNode.region || 'Global')})` : '—'}</div>
+              </div>
+            </div>
+
+            ${e.stackTrace ? `
+              <div style="margin-top:0.75rem;">
+                <div style="font-weight:600;font-size:0.75rem;margin-bottom:0.25rem;color:var(--admin-text-secondary);">Sanitized Stack Trace (Zero Token Exposure):</div>
+                <pre style="background:#0f172a;color:#e2e8f0;padding:0.75rem;border-radius:var(--radius-md);font-size:0.6875rem;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-family:monospace;margin:0;">${this._escape(e.stackTrace)}</pre>
+              </div>
+            ` : ''}
+          `,
+          confirmLabel: 'Close',
+          confirmType: 'secondary',
+          onConfirm: () => true
+        });
+      } catch (err) {
+        this.toast(`Failed to load error detail: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 2: Operational & Audit Events ---------------- */
+    _renderSystemEventsTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="sysEventsSearch"
+                class="admin-input"
+                placeholder="Search event type, actor, IP address..."
+                value="${this._escape(this.systemLogsState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applySystemEventFilters()"
+              />
+            </div>
+            <select id="sysEventsSource" class="admin-select" style="width:170px;" onchange="AdminShell.applySystemEventFilters()">
+              <option value="CUSTOMER_AUDIT">Customer Audit Stream</option>
+              <option value="ADMIN_AUDIT">Admin Audit Stream</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applySystemEventFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetSystemEventFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Event ID</th>
+                  <th>Source</th>
+                  <th>Event Type / Action</th>
+                  <th>Actor / Identifier</th>
+                  <th>Target Entity</th>
+                  <th>IP / Origin</th>
+                  <th>Occurred At</th>
+                </tr>
+              </thead>
+              <tbody id="sysEventsTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading operational audit events...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="sysEventsPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="sysEventsPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 events</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysEventsPrevBtn" onclick="AdminShell.loadSystemEvents(AdminShell.systemLogsState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysEventsNextBtn" onclick="AdminShell.loadSystemEvents(AdminShell.systemLogsState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadSystemEvents(1);
+    }
+
+    applySystemEventFilters() {
+      const searchInput = document.getElementById('sysEventsSearch');
+      const sourceSelect = document.getElementById('sysEventsSource');
+
+      this.systemLogsState.search = searchInput ? searchInput.value.trim() : '';
+      this.systemLogsState.source = sourceSelect ? sourceSelect.value : 'CUSTOMER_AUDIT';
+      this.loadSystemEvents(1);
+    }
+
+    resetSystemEventFilters() {
+      this.systemLogsState.search = '';
+      this.systemLogsState.source = 'CUSTOMER_AUDIT';
+      const content = document.getElementById('systemLogsTabContent');
+      if (content) this._renderSystemEventsTab(content);
+    }
+
+    async loadSystemEvents(page = 1) {
+      if (page < 1) page = 1;
+      this.systemLogsState.page = page;
+
+      const tbody = document.getElementById('sysEventsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading events...</td></tr>`;
+
+      try {
+        const sourceSelect = document.getElementById('sysEventsSource');
+        const source = sourceSelect ? sourceSelect.value : (this.systemLogsState.source || 'CUSTOMER_AUDIT');
+
+        const params = {
+          page: this.systemLogsState.page,
+          pageSize: this.systemLogsState.pageSize,
+          search: this.systemLogsState.search || undefined,
+          source
+        };
+
+        const res = await window.AdminApi.listSystemEvents(params);
+        if (res && res.success && res.data) {
+          this.systemLogsState.items = res.data.items || [];
+          this.systemLogsState.total = res.data.pagination?.total || res.data.total || 0;
+          this._renderSystemEventRows();
+          this._updateSystemEventPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list events.');
+        }
+      } catch (err) {
+        console.error('Error loading system events:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load events: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderSystemEventRows() {
+      const tbody = document.getElementById('sysEventsTableBody');
+      if (!tbody) return;
+
+      const items = this.systemLogsState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No operational events recorded.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(ev => {
+        const idShort = ev.id ? ev.id.slice(0, 8) + '...' : '—';
+        const isAdm = ev.source === 'ADMIN_AUDIT';
+
+        return `
+          <tr>
+            <td><code class="admin-code-pill" title="${this._escape(ev.id)}">${this._escape(idShort)}</code></td>
+            <td><span class="admin-badge ${isAdm ? 'admin-badge-info' : 'admin-badge-neutral'}" style="font-size:0.6875rem;">${this._escape(ev.source)}</span></td>
+            <td><strong>${this._escape(ev.eventType)}</strong></td>
+            <td>
+              <div style="font-size:0.8125rem;">${this._escape(ev.actor?.identifier || '—')}</div>
+              ${ev.actor?.id ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">ID: ${this._escape(ev.actor.id.slice(0, 8))}...</div>` : ''}
+            </td>
+            <td>
+              <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(ev.targetEntity?.type || 'System')}</span>
+              ${ev.targetEntity?.id ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);"><code>${this._escape(ev.targetEntity.id.slice(0, 8))}...</code></div>` : ''}
+            </td>
+            <td>
+              <div style="font-size:0.75rem;color:var(--admin-text-secondary);">${this._escape(ev.ipAddress || 'Internal Relay')}</div>
+            </td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${ev.occurredAt ? new Date(ev.occurredAt).toLocaleString() : '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateSystemEventPagination() {
+      const infoEl = document.getElementById('sysEventsPaginationInfo');
+      const prevBtn = document.getElementById('sysEventsPrevBtn');
+      const nextBtn = document.getElementById('sysEventsNextBtn');
+
+      const page = this.systemLogsState.page;
+      const pageSize = this.systemLogsState.pageSize;
+      const total = this.systemLogsState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} events (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    /* ---------------- Tab 3: Gateway Node Diagnostics ---------------- */
+    _renderGatewayDiagnosticsTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="sysGatewaySearch"
+                class="admin-input"
+                placeholder="Search device, endpoint, user email..."
+                value="${this._escape(this.systemLogsState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applyGatewayDiagFilters()"
+              />
+            </div>
+            <select id="sysGatewayStatus" class="admin-select" style="width:160px;" onchange="AdminShell.applyGatewayDiagFilters()">
+              <option value="">All States</option>
+              <option value="CONNECTED">Connected</option>
+              <option value="DISCONNECTED">Disconnected</option>
+              <option value="CONNECTING">Connecting</option>
+              <option value="RECONNECTING">Reconnecting</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applyGatewayDiagFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetGatewayDiagFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Connection ID</th>
+                  <th>Gateway Node</th>
+                  <th>Edge Device</th>
+                  <th>Customer User</th>
+                  <th>Status</th>
+                  <th>Tunnel Duration</th>
+                  <th>Last Heartbeat</th>
+                </tr>
+              </thead>
+              <tbody id="sysGatewayTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading gateway diagnostic sessions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="sysGatewayPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="sysGatewayPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 sessions</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysGatewayPrevBtn" onclick="AdminShell.loadGatewayDiagnostics(AdminShell.systemLogsState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysGatewayNextBtn" onclick="AdminShell.loadGatewayDiagnostics(AdminShell.systemLogsState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadGatewayDiagnostics(1);
+    }
+
+    applyGatewayDiagFilters() {
+      const searchInput = document.getElementById('sysGatewaySearch');
+      const statusSelect = document.getElementById('sysGatewayStatus');
+
+      this.systemLogsState.search = searchInput ? searchInput.value.trim() : '';
+      this.systemLogsState.status = statusSelect ? statusSelect.value : '';
+      this.loadGatewayDiagnostics(1);
+    }
+
+    resetGatewayDiagFilters() {
+      this.systemLogsState.search = '';
+      this.systemLogsState.status = '';
+      const content = document.getElementById('systemLogsTabContent');
+      if (content) this._renderGatewayDiagnosticsTab(content);
+    }
+
+    async loadGatewayDiagnostics(page = 1) {
+      if (page < 1) page = 1;
+      this.systemLogsState.page = page;
+
+      const tbody = document.getElementById('sysGatewayTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading gateway diagnostics...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.systemLogsState.page,
+          pageSize: this.systemLogsState.pageSize,
+          search: this.systemLogsState.search || undefined,
+          status: this.systemLogsState.status || undefined
+        };
+
+        const res = await window.AdminApi.getGatewayDiagnostics(params);
+        if (res && res.success && res.data) {
+          this.systemLogsState.items = res.data.items || [];
+          this.systemLogsState.total = res.data.pagination?.total || res.data.total || 0;
+          this._renderGatewayDiagRows();
+          this._updateGatewayDiagPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list gateway diagnostics.');
+        }
+      } catch (err) {
+        console.error('Error loading gateway diagnostics:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load gateway diagnostics: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderGatewayDiagRows() {
+      const tbody = document.getElementById('sysGatewayTableBody');
+      if (!tbody) return;
+
+      const items = this.systemLogsState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No gateway diagnostic sessions recorded.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(g => {
+        const idShort = g.id ? g.id.slice(0, 8) + '...' : '—';
+        const isConn = g.connectionStatus === 'CONNECTED';
+        const durStr = g.durationSeconds !== null ? `${Math.floor(g.durationSeconds / 60)}m ${g.durationSeconds % 60}s` : '—';
+
+        return `
+          <tr>
+            <td><code class="admin-code-pill" title="${this._escape(g.id)}">${this._escape(idShort)}</code></td>
+            <td>
+              <strong>${this._escape(g.gatewayHostname || 'Default Node')}</strong>
+              ${g.gatewayRegion ? `<div style="font-size:0.6875rem;color:var(--admin-text-muted);">${this._escape(g.gatewayRegion)}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-size:0.8125rem;">${this._escape(g.deviceName || 'Android Node')}</div>
+              <div style="font-size:0.6875rem;color:var(--admin-text-muted);">${this._escape(g.devicePlatform || 'Android')} • <code>${this._escape(g.deviceId.slice(0, 8))}...</code></div>
+            </td>
+            <td>
+              <div style="font-size:0.8125rem;">${this._escape(g.userEmail || '—')}</div>
+            </td>
+            <td>
+              <span class="admin-badge ${isConn ? 'admin-badge-success' : 'admin-badge-neutral'}">${this._escape(g.connectionStatus)}</span>
+            </td>
+            <td style="font-size:0.75rem;font-weight:600;">${this._escape(durStr)}</td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${g.lastHeartbeatAt ? new Date(g.lastHeartbeatAt).toLocaleTimeString() : '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateGatewayDiagPagination() {
+      const infoEl = document.getElementById('sysGatewayPaginationInfo');
+      const prevBtn = document.getElementById('sysGatewayPrevBtn');
+      const nextBtn = document.getElementById('sysGatewayNextBtn');
+
+      const page = this.systemLogsState.page;
+      const pageSize = this.systemLogsState.pageSize;
+      const total = this.systemLogsState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} sessions (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    /* ---------------- Tab 4: Incidents & Fingerprints ---------------- */
+    _renderSystemIncidentsTab(container) {
+      container.innerHTML = `
+        <div class="admin-card">
+          <!-- Filter Controls -->
+          <div class="admin-filter-bar" style="display:flex;flex-wrap:wrap;gap:0.75rem;align-items:center;margin-bottom:var(--space-md);">
+            <div style="flex:1;min-width:220px;position:relative;">
+              <input
+                type="text"
+                id="sysIncidentsSearch"
+                class="admin-input"
+                placeholder="Search incident title, fingerprint, component..."
+                value="${this._escape(this.systemLogsState.search || '')}"
+                onkeydown="if(event.key==='Enter') AdminShell.applySystemIncidentFilters()"
+              />
+            </div>
+            <select id="sysIncidentsStatus" class="admin-select" style="width:150px;" onchange="AdminShell.applySystemIncidentFilters()">
+              <option value="">All Triage States</option>
+              <option value="OPEN">Open</option>
+              <option value="ACKNOWLEDGED">Acknowledged</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="MUTED">Muted</option>
+            </select>
+            <button class="admin-btn admin-btn-primary admin-btn-sm" onclick="AdminShell.applySystemIncidentFilters()">
+              Filter
+            </button>
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.resetSystemIncidentFilters()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Table Content -->
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Fingerprint / Hash</th>
+                  <th>Component</th>
+                  <th>Severity</th>
+                  <th>Status</th>
+                  <th>Occurrences</th>
+                  <th>First Seen</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody id="sysIncidentsTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading incidents and fingerprint aggregates...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Bar -->
+          <div class="admin-pagination-wrap" id="sysIncidentsPaginationWrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:var(--space-md);">
+            <div id="sysIncidentsPaginationInfo" style="font-size:0.8125rem;color:var(--admin-text-muted);">Showing 0 of 0 incidents</div>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysIncidentsPrevBtn" onclick="AdminShell.loadSystemIncidents(AdminShell.systemLogsState.page - 1)" disabled>Previous</button>
+              <button class="admin-btn admin-btn-secondary admin-btn-sm" id="sysIncidentsNextBtn" onclick="AdminShell.loadSystemIncidents(AdminShell.systemLogsState.page + 1)" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadSystemIncidents(1);
+    }
+
+    applySystemIncidentFilters() {
+      const searchInput = document.getElementById('sysIncidentsSearch');
+      const statusSelect = document.getElementById('sysIncidentsStatus');
+
+      this.systemLogsState.search = searchInput ? searchInput.value.trim() : '';
+      this.systemLogsState.status = statusSelect ? statusSelect.value : '';
+      this.loadSystemIncidents(1);
+    }
+
+    resetSystemIncidentFilters() {
+      this.systemLogsState.search = '';
+      this.systemLogsState.status = '';
+      const content = document.getElementById('systemLogsTabContent');
+      if (content) this._renderSystemIncidentsTab(content);
+    }
+
+    async loadSystemIncidents(page = 1) {
+      if (page < 1) page = 1;
+      this.systemLogsState.page = page;
+
+      const tbody = document.getElementById('sysIncidentsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">Loading incident records...</td></tr>`;
+
+      try {
+        const params = {
+          page: this.systemLogsState.page,
+          pageSize: this.systemLogsState.pageSize,
+          search: this.systemLogsState.search || undefined,
+          status: this.systemLogsState.status || undefined
+        };
+
+        const res = await window.AdminApi.listSystemIncidents(params);
+        if (res && res.success && res.data) {
+          this.systemLogsState.items = res.data.items || [];
+          this.systemLogsState.total = res.data.pagination?.total || res.data.total || 0;
+          this._renderSystemIncidentRows();
+          this._updateSystemIncidentPagination();
+        } else {
+          throw new Error(res?.error?.message || 'Failed to list incidents.');
+        }
+      } catch (err) {
+        console.error('Error loading system incidents:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load incidents: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _renderSystemIncidentRows() {
+      const tbody = document.getElementById('sysIncidentsTableBody');
+      if (!tbody) return;
+
+      const items = this.systemLogsState.items;
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No open error incidents recorded.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = items.map(inc => {
+        let statusBadge = `<span class="admin-badge admin-badge-neutral">${this._escape(inc.status)}</span>`;
+        if (inc.status === 'OPEN') statusBadge = `<span class="admin-badge admin-badge-danger">OPEN</span>`;
+        else if (inc.status === 'ACKNOWLEDGED') statusBadge = `<span class="admin-badge admin-badge-warning">ACKNOWLEDGED</span>`;
+        else if (inc.status === 'RESOLVED') statusBadge = `<span class="admin-badge admin-badge-success">RESOLVED</span>`;
+
+        return `
+          <tr>
+            <td>
+              <code class="admin-code-pill" title="${this._escape(inc.fingerprintHash)}">${this._escape(inc.fingerprintHash.slice(0, 10))}...</code>
+              ${inc.title ? `<div style="font-size:0.75rem;font-weight:600;margin-top:0.2rem;">${this._escape(inc.title)}</div>` : ''}
+            </td>
+            <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(inc.component)}</span></td>
+            <td><span class="admin-badge ${inc.severity === 'CRITICAL' ? 'admin-badge-danger' : 'admin-badge-warning'}">${this._escape(inc.severity)}</span></td>
+            <td>${statusBadge}</td>
+            <td><span style="font-size:0.8125rem;font-weight:700;">${inc.totalOccurrences || 1}</span></td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${inc.firstSeenAt ? new Date(inc.firstSeenAt).toLocaleString() : '—'}</td>
+            <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${inc.lastSeenAt ? new Date(inc.lastSeenAt).toLocaleString() : '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    _updateSystemIncidentPagination() {
+      const infoEl = document.getElementById('sysIncidentsPaginationInfo');
+      const prevBtn = document.getElementById('sysIncidentsPrevBtn');
+      const nextBtn = document.getElementById('sysIncidentsNextBtn');
+
+      const page = this.systemLogsState.page;
+      const pageSize = this.systemLogsState.pageSize;
+      const total = this.systemLogsState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} incidents (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    /* ---------------- Sanitized Log Export ---------------- */
+    async triggerSystemLogsExport(category = 'errors', format = 'csv') {
+      try {
+        this.toast(`Generating sanitized ${format.toUpperCase()} export for ${category}...`, 'info');
+        const res = await window.AdminApi.exportSystemLogs({
+          category,
+          format,
+          maxLimit: 500
+        });
+        if (res && res.success) {
+          this.toast(`Export completed: ${res.filename}`, 'success');
+        }
+      } catch (err) {
+        console.error('System logs export failed:', err);
+        this.toast(`Export failed: ${err.message}`, 'danger');
+      }
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.6 — BACKGROUND JOBS & OPERATIONS CONTROL PLANE
+    // =========================================================================
+
+    async _renderBackgroundJobsView(container) {
+      container.innerHTML = `
+        <div class="admin-view-header">
+          <div>
+            <h1 class="admin-view-title">Background Jobs & Operations</h1>
+            <p class="admin-view-subtitle">Authoritative queue depths, worker telemetry, failure triage, retry controls, and job lifecycle monitoring.</p>
+          </div>
+          <div class="admin-view-actions">
+            <button class="admin-btn admin-btn-secondary" onclick="AdminShell.loadBackgroundJobsMetrics(); AdminShell.toast('Refreshing jobs telemetry...', 'info');">
+              <span class="admin-icon">🔄</span> Refresh
+            </button>
+            <button class="admin-btn admin-btn-primary" onclick="AdminShell.triggerBackgroundJobsExport();">
+              <span class="admin-icon">📥</span> Export Jobs
+            </button>
+          </div>
+        </div>
+
+        <!-- KPI Metrics Grid -->
+        <div class="admin-kpi-grid" id="bgJobsKpiGrid">
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Queued Jobs</div>
+            <div class="admin-kpi-val" id="bgKpiQueued" style="color:var(--admin-primary);">—</div>
+            <div class="admin-kpi-sub">Awaiting worker claim</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Active / In-Flight</div>
+            <div class="admin-kpi-val" id="bgKpiActive" style="color:var(--admin-info, #0284c7);">—</div>
+            <div class="admin-kpi-sub">Currently executing</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Retrying</div>
+            <div class="admin-kpi-val" id="bgKpiRetrying" style="color:var(--admin-warning, #d97706);">—</div>
+            <div class="admin-kpi-sub">Scheduled backoff</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Failed (24h)</div>
+            <div class="admin-kpi-val" id="bgKpiFailed" style="color:var(--admin-danger, #dc2626);">—</div>
+            <div class="admin-kpi-sub">Unresolved failures</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Completed (24h)</div>
+            <div class="admin-kpi-val" id="bgKpiCompleted" style="color:var(--admin-success, #16a34a);">—</div>
+            <div class="admin-kpi-sub">Delivered / Finished</div>
+          </div>
+          <div class="admin-kpi-card">
+            <div class="admin-kpi-label">Active Workers</div>
+            <div class="admin-kpi-val" id="bgKpiWorkers" style="color:var(--admin-text);">—</div>
+            <div class="admin-kpi-sub" id="bgKpiWorkersSub">Background daemons</div>
+          </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="admin-tabs" style="margin-top:1.5rem; margin-bottom:1.5rem; display:flex; gap:0.5rem; border-bottom:1px solid var(--admin-border);">
+          <button class="admin-tab-btn ${this.backgroundJobsState.activeTab === 'overview' ? 'active' : ''}" onclick="AdminShell.switchBackgroundJobsTab('overview')">
+            Overview & Queues
+          </button>
+          <button class="admin-tab-btn ${this.backgroundJobsState.activeTab === 'jobs' ? 'active' : ''}" onclick="AdminShell.switchBackgroundJobsTab('jobs')">
+            All Jobs
+          </button>
+          <button class="admin-tab-btn ${this.backgroundJobsState.activeTab === 'failed' ? 'active' : ''}" onclick="AdminShell.switchBackgroundJobsTab('failed')">
+            Failed Jobs Queue
+          </button>
+          <button class="admin-tab-btn ${this.backgroundJobsState.activeTab === 'workers' ? 'active' : ''}" onclick="AdminShell.switchBackgroundJobsTab('workers')">
+            Workers & Telemetry
+          </button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div id="bgJobsTabContent"></div>
+      `;
+
+      this.loadBackgroundJobsMetrics();
+      this.switchBackgroundJobsTab(this.backgroundJobsState.activeTab || 'overview');
+    }
+
+    async loadBackgroundJobsMetrics() {
+      try {
+        const res = await window.AdminApi.getBackgroundJobsMetrics();
+        if (res && res.data && res.data.metrics) {
+          const m = res.data.metrics;
+          this.backgroundJobsState.metrics = m;
+
+          const qEl = document.getElementById('bgKpiQueued');
+          const aEl = document.getElementById('bgKpiActive');
+          const rEl = document.getElementById('bgKpiRetrying');
+          const fEl = document.getElementById('bgKpiFailed');
+          const cEl = document.getElementById('bgKpiCompleted');
+          const wEl = document.getElementById('bgKpiWorkers');
+          const wsEl = document.getElementById('bgKpiWorkersSub');
+
+          if (qEl) qEl.textContent = m.totalQueued.toLocaleString();
+          if (aEl) aEl.textContent = m.totalActive.toLocaleString();
+          if (rEl) rEl.textContent = m.totalRetrying.toLocaleString();
+          if (fEl) fEl.textContent = m.totalFailed24h.toLocaleString();
+          if (cEl) cEl.textContent = m.totalCompleted24h.toLocaleString();
+          if (wEl) wEl.textContent = `${m.activeWorkersCount} / ${m.totalWorkersCount}`;
+          if (wsEl) wsEl.textContent = `${m.failureRatePercent24h}% failure rate (24h)`;
+
+          if (this.backgroundJobsState.activeTab === 'overview') {
+            this._renderJobsOverviewTab();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load background jobs metrics:', err);
+      }
+    }
+
+    switchBackgroundJobsTab(tab) {
+      this.backgroundJobsState.activeTab = tab;
+      const tabBtns = document.querySelectorAll('.admin-tab-btn');
+      tabBtns.forEach(btn => btn.classList.remove('active'));
+
+      const currentIdx = tab === 'overview' ? 0 : tab === 'jobs' ? 1 : tab === 'failed' ? 2 : 3;
+      if (tabBtns[currentIdx]) tabBtns[currentIdx].classList.add('active');
+
+      const contentEl = document.getElementById('bgJobsTabContent');
+      if (!contentEl) return;
+
+      if (tab === 'overview') {
+        this._renderJobsOverviewTab();
+      } else if (tab === 'jobs') {
+        this._renderAllJobsTab();
+      } else if (tab === 'failed') {
+        this._renderFailedJobsTab();
+      } else if (tab === 'workers') {
+        this._renderWorkersTab();
+      }
+    }
+
+    /* ---------------- Tab 1: Overview & Queues ---------------- */
+    async _renderJobsOverviewTab() {
+      const container = document.getElementById('bgJobsTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Operational Queues Telemetry</h2>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadJobsOverview()">Refresh Queues</button>
+          </div>
+          <div class="admin-card-body" style="padding:0;">
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Queue Name</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Queued</th>
+                    <th>Active</th>
+                    <th>Retrying</th>
+                    <th>Failed (24h)</th>
+                    <th>Completed (24h)</th>
+                    <th>Est. Latency</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bgQueuesTableBody">
+                  <tr><td colspan="10" style="text-align:center;padding:2rem;">Loading queues...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadJobsOverview();
+    }
+
+    async loadJobsOverview() {
+      const tbody = document.getElementById('bgQueuesTableBody');
+      if (!tbody) return;
+
+      try {
+        const res = await window.AdminApi.listBackgroundQueues();
+        if (res && res.data && res.data.queues) {
+          const queues = res.data.queues;
+          this.backgroundJobsState.queues = queues;
+
+          if (queues.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No queues active.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = queues.map(q => {
+            const statusBadge = q.status === 'HEALTHY'
+              ? '<span class="admin-badge admin-badge-success">HEALTHY</span>'
+              : q.status === 'DEGRADED'
+              ? '<span class="admin-badge admin-badge-danger">DEGRADED</span>'
+              : '<span class="admin-badge admin-badge-neutral">IDLE</span>';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${this._escape(q.displayName)}</strong>
+                  <div style="font-size:0.75rem;color:var(--admin-text-muted);font-family:monospace;">${this._escape(q.name)}</div>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral">${this._escape(q.category)}</span></td>
+                <td>${statusBadge}</td>
+                <td><span style="font-weight:700;color:var(--admin-primary);">${q.queuedCount}</span></td>
+                <td><span style="font-weight:700;color:var(--admin-info, #0284c7);">${q.activeCount}</span></td>
+                <td><span style="font-weight:700;color:var(--admin-warning, #d97706);">${q.retryingCount}</span></td>
+                <td><span style="font-weight:700;color:var(--admin-danger, #dc2626);">${q.failedCount24h}</span></td>
+                <td><span style="font-weight:700;color:var(--admin-success, #16a34a);">${q.completedCount24h}</span></td>
+                <td><span style="font-size:0.75rem;color:var(--admin-text-muted);">${q.latencyEstimateMs}ms</span></td>
+                <td>
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.backgroundJobsState.queueName='${this._escape(q.name)}'; AdminShell.switchBackgroundJobsTab('jobs');">
+                    View Jobs
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load queues:', err);
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load queues telemetry: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    /* ---------------- Tab 2: All Jobs ---------------- */
+    async _renderAllJobsTab() {
+      const container = document.getElementById('bgJobsTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Background Jobs Dispatch Log</h2>
+          </div>
+          <div class="admin-card-body">
+            <!-- Filter Toolbar -->
+            <div class="admin-filter-bar" style="display:flex; flex-wrap:wrap; gap:0.75rem; margin-bottom:1rem;">
+              <input type="text" class="admin-input" id="bgJobSearchInput" placeholder="Search by Job ID, recipient, worker..." 
+                value="${this._escape(this.backgroundJobsState.search || '')}" style="flex:1; min-width:200px;">
+              
+              <select class="admin-select" id="bgJobStatusSelect" style="width:140px;">
+                <option value="">All Statuses</option>
+                <option value="QUEUED" ${this.backgroundJobsState.status === 'QUEUED' ? 'selected' : ''}>QUEUED</option>
+                <option value="ACTIVE" ${this.backgroundJobsState.status === 'ACTIVE' ? 'selected' : ''}>ACTIVE</option>
+                <option value="RETRYING" ${this.backgroundJobsState.status === 'RETRYING' ? 'selected' : ''}>RETRYING</option>
+                <option value="COMPLETED" ${this.backgroundJobsState.status === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+                <option value="FAILED" ${this.backgroundJobsState.status === 'FAILED' ? 'selected' : ''}>FAILED</option>
+              </select>
+
+              <select class="admin-select" id="bgJobQueueSelect" style="width:160px;">
+                <option value="">All Queues</option>
+                <option value="notification-email" ${this.backgroundJobsState.queueName === 'notification-email' ? 'selected' : ''}>Email Queue</option>
+                <option value="notification-push" ${this.backgroundJobsState.queueName === 'notification-push' ? 'selected' : ''}>Push Queue</option>
+                <option value="notification-inapp" ${this.backgroundJobsState.queueName === 'notification-inapp' ? 'selected' : ''}>In-App Queue</option>
+              </select>
+
+              <button class="admin-btn admin-btn-primary" onclick="AdminShell.applyAllJobsFilter()">Filter</button>
+              <button class="admin-btn admin-btn-secondary" onclick="AdminShell.resetAllJobsFilter()">Reset</button>
+            </div>
+
+            <!-- Table -->
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Job ID / Type</th>
+                    <th>Queue</th>
+                    <th>Status</th>
+                    <th>Attempts</th>
+                    <th>Worker</th>
+                    <th>Created At</th>
+                    <th>Duration</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bgJobsTableBody">
+                  <tr><td colspan="8" style="text-align:center;padding:2rem;">Loading jobs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="admin-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+              <span id="bgJobsPaginationInfo" style="font-size:0.8125rem; color:var(--admin-text-muted);">Showing 0 of 0 jobs</span>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" id="bgJobsPrevBtn" onclick="AdminShell.loadAllJobs(AdminShell.backgroundJobsState.page - 1)" disabled>Previous</button>
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" id="bgJobsNextBtn" onclick="AdminShell.loadAllJobs(AdminShell.backgroundJobsState.page + 1)" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadAllJobs(1);
+    }
+
+    applyAllJobsFilter() {
+      const sInput = document.getElementById('bgJobSearchInput');
+      const stSelect = document.getElementById('bgJobStatusSelect');
+      const qSelect = document.getElementById('bgJobQueueSelect');
+
+      this.backgroundJobsState.search = sInput ? sInput.value.trim() : '';
+      this.backgroundJobsState.status = stSelect ? stSelect.value : '';
+      this.backgroundJobsState.queueName = qSelect ? qSelect.value : '';
+      this.loadAllJobs(1);
+    }
+
+    resetAllJobsFilter() {
+      this.backgroundJobsState.search = '';
+      this.backgroundJobsState.status = '';
+      this.backgroundJobsState.queueName = '';
+      const sInput = document.getElementById('bgJobSearchInput');
+      const stSelect = document.getElementById('bgJobStatusSelect');
+      const qSelect = document.getElementById('bgJobQueueSelect');
+      if (sInput) sInput.value = '';
+      if (stSelect) stSelect.value = '';
+      if (qSelect) qSelect.value = '';
+      this.loadAllJobs(1);
+    }
+
+    async loadAllJobs(page = 1) {
+      this.backgroundJobsState.page = page;
+      const tbody = document.getElementById('bgJobsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;">Loading jobs...</td></tr>`;
+
+      try {
+        const res = await window.AdminApi.listBackgroundJobs({
+          page: this.backgroundJobsState.page,
+          pageSize: this.backgroundJobsState.pageSize,
+          search: this.backgroundJobsState.search || undefined,
+          status: this.backgroundJobsState.status || undefined,
+          queueName: this.backgroundJobsState.queueName || undefined,
+          sortBy: this.backgroundJobsState.sortBy,
+          sortOrder: this.backgroundJobsState.sortOrder
+        });
+
+        if (res && res.data) {
+          this.backgroundJobsState.items = res.data.items || [];
+          this.backgroundJobsState.total = res.data.pagination?.total || res.data.total || 0;
+
+          if (this.backgroundJobsState.items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-text-muted);">No background jobs found.</td></tr>`;
+            this._updateAllJobsPagination();
+            return;
+          }
+
+          tbody.innerHTML = this.backgroundJobsState.items.map(job => {
+            const statusBadge = job.status === 'COMPLETED'
+              ? '<span class="admin-badge admin-badge-success">COMPLETED</span>'
+              : job.status === 'ACTIVE'
+              ? '<span class="admin-badge admin-badge-info">ACTIVE</span>'
+              : job.status === 'RETRYING'
+              ? '<span class="admin-badge admin-badge-warning">RETRYING</span>'
+              : job.status === 'FAILED'
+              ? '<span class="admin-badge admin-badge-danger">FAILED</span>'
+              : '<span class="admin-badge admin-badge-neutral">QUEUED</span>';
+
+            const durationStr = job.durationMs !== null ? `${job.durationMs}ms` : '—';
+
+            return `
+              <tr>
+                <td>
+                  <code class="admin-code-pill" title="${this._escape(job.id)}">${this._escape(job.id.slice(0, 10))}...</code>
+                  <div style="font-size:0.75rem;font-weight:600;margin-top:0.2rem;">${this._escape(job.jobType)}</div>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(job.queueName)}</span></td>
+                <td>${statusBadge}</td>
+                <td><span style="font-size:0.8125rem;font-weight:700;">${job.attemptCount} / ${job.maxAttempts}</span></td>
+                <td><span style="font-size:0.75rem;color:var(--admin-text-muted);">${job.workerId ? this._escape(job.workerId) : '—'}</span></td>
+                <td style="font-size:0.75rem;color:var(--admin-text-muted);white-space:nowrap;">${new Date(job.createdAt).toLocaleString()}</td>
+                <td style="font-size:0.75rem;color:var(--admin-text-muted);">${durationStr}</td>
+                <td>
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.inspectBackgroundJob('${this._escape(job.id)}')">
+                    Inspect
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          this._updateAllJobsPagination();
+        }
+      } catch (err) {
+        console.error('Failed to load background jobs:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load jobs: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    _updateAllJobsPagination() {
+      const infoEl = document.getElementById('bgJobsPaginationInfo');
+      const prevBtn = document.getElementById('bgJobsPrevBtn');
+      const nextBtn = document.getElementById('bgJobsNextBtn');
+
+      const page = this.backgroundJobsState.page;
+      const pageSize = this.backgroundJobsState.pageSize;
+      const total = this.backgroundJobsState.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      if (infoEl) {
+        const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+        const end = Math.min(page * pageSize, total);
+        infoEl.textContent = `Showing ${start} - ${end} of ${total} jobs (Page ${page} of ${totalPages})`;
+      }
+
+      if (prevBtn) prevBtn.disabled = page <= 1;
+      if (nextBtn) nextBtn.disabled = page >= totalPages;
+    }
+
+    /* ---------------- Tab 3: Failed Jobs Queue ---------------- */
+    async _renderFailedJobsTab() {
+      const container = document.getElementById('bgJobsTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Failed & Dead-Letter Job Triage</h2>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadFailedJobs(1)">Refresh Failures</button>
+          </div>
+          <div class="admin-card-body">
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Job ID / Type</th>
+                    <th>Queue</th>
+                    <th>Status</th>
+                    <th>Attempts</th>
+                    <th>Failure Reason</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bgFailedJobsTableBody">
+                  <tr><td colspan="7" style="text-align:center;padding:2rem;">Loading failed jobs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-pagination" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+              <span id="bgFailedPaginationInfo" style="font-size:0.8125rem; color:var(--admin-text-muted);">Showing 0 failed jobs</span>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" id="bgFailedPrevBtn" onclick="AdminShell.loadFailedJobs(AdminShell.backgroundJobsState.page - 1)" disabled>Previous</button>
+                <button class="admin-btn admin-btn-secondary admin-btn-sm" id="bgFailedNextBtn" onclick="AdminShell.loadFailedJobs(AdminShell.backgroundJobsState.page + 1)" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadFailedJobs(1);
+    }
+
+    async loadFailedJobs(page = 1) {
+      this.backgroundJobsState.page = page;
+      const tbody = document.getElementById('bgFailedJobsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;">Loading failed jobs...</td></tr>`;
+
+      try {
+        const res = await window.AdminApi.listFailedBackgroundJobs({
+          page: this.backgroundJobsState.page,
+          pageSize: this.backgroundJobsState.pageSize
+        });
+
+        if (res && res.data) {
+          const items = res.data.items || [];
+          const total = res.data.pagination?.total || 0;
+
+          if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-success, #16a34a);">Zero active job failures! All background queues are operating normally.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = items.map(job => {
+            return `
+              <tr>
+                <td>
+                  <code class="admin-code-pill" title="${this._escape(job.id)}">${this._escape(job.id.slice(0, 10))}...</code>
+                  <div style="font-size:0.75rem;font-weight:600;margin-top:0.2rem;">${this._escape(job.jobType)}</div>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral">${this._escape(job.queueName)}</span></td>
+                <td><span class="admin-badge admin-badge-danger">${this._escape(job.rawStatus)}</span></td>
+                <td><span style="font-weight:700;">${job.attemptCount} / ${job.maxAttempts}</span></td>
+                <td><div style="font-size:0.75rem;color:var(--admin-danger);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${this._escape(job.failureReason || '')}">${this._escape(job.failureReason || 'Unknown error')}</div></td>
+                <td style="font-size:0.75rem;color:var(--admin-text-muted);">${new Date(job.createdAt).toLocaleString()}</td>
+                <td style="white-space:nowrap;">
+                  <button class="admin-btn admin-btn-xs admin-btn-primary" onclick="AdminShell.retryBackgroundJob('${this._escape(job.id)}')">Retry</button>
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.inspectBackgroundJob('${this._escape(job.id)}')">Inspect</button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load failed jobs:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--admin-danger);">Error loading failures: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    /* ---------------- Tab 4: Workers & Telemetry ---------------- */
+    async _renderWorkersTab() {
+      const container = document.getElementById('bgJobsTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Background Worker Telemetry & Health</h2>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadWorkersTelemetry()">Refresh Workers</button>
+          </div>
+          <div class="admin-card-body" style="padding:0;">
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Worker Name & Process</th>
+                    <th>Scope & Host</th>
+                    <th>Category</th>
+                    <th>Status</th>
+                    <th>Assigned Queues</th>
+                    <th>In-Flight</th>
+                    <th>Total Processed</th>
+                    <th>Last Heartbeat</th>
+                    <th>Last Error</th>
+                  </tr>
+                </thead>
+                <tbody id="bgWorkersTableBody">
+                  <tr><td colspan="9" style="text-align:center;padding:2rem;">Loading worker telemetry...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadWorkersTelemetry();
+    }
+
+    async loadWorkersTelemetry() {
+      const tbody = document.getElementById('bgWorkersTableBody');
+      if (!tbody) return;
+
+      try {
+        const res = await window.AdminApi.listBackgroundWorkers();
+        if (res && res.data && res.data.workers) {
+          const workers = res.data.workers;
+
+          tbody.innerHTML = workers.map(w => {
+            const statusBadge = w.status === 'RUNNING'
+              ? '<span class="admin-badge admin-badge-success">RUNNING</span>'
+              : w.status === 'IDLE'
+              ? '<span class="admin-badge admin-badge-neutral">IDLE</span>'
+              : '<span class="admin-badge admin-badge-danger">STOPPED</span>';
+
+            const queuesStr = w.assignedQueues.map(q => `<span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(q)}</span>`).join(' ');
+
+            const staleBadge = w.isHeartbeatStale
+              ? '<span class="admin-badge admin-badge-warning" style="margin-left:4px;" title="Heartbeat stale (>30s)">STALE</span>'
+              : '';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${this._escape(w.name)}</strong>
+                  <div style="font-size:0.75rem;color:var(--admin-text-muted);font-family:monospace;">${this._escape(w.workerId)} (PID: ${w.processId || '—'})</div>
+                </td>
+                <td>
+                  <span class="admin-badge admin-badge-neutral">${this._escape(w.scope || 'LOCAL_DAEMON')}</span>
+                  <div style="font-size:0.75rem;color:var(--admin-text-muted);">${this._escape(w.hostname || 'localhost')}</div>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral">${this._escape(w.category)}</span></td>
+                <td>${statusBadge}</td>
+                <td>${queuesStr}</td>
+                <td><span style="font-weight:700;color:var(--admin-info, #0284c7);">${w.currentProcessingCount}</span></td>
+                <td><span style="font-weight:700;color:var(--admin-success, #16a34a);">${w.totalProcessedCount.toLocaleString()}</span></td>
+                <td style="font-size:0.75rem;color:var(--admin-text-muted);">${w.lastHeartbeatAt ? new Date(w.lastHeartbeatAt).toLocaleTimeString() : '—'}${staleBadge}</td>
+                <td style="font-size:0.75rem;color:var(--admin-danger);">${w.lastErrorMessage ? this._escape(w.lastErrorMessage) : 'None'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load workers:', err);
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--admin-danger);">Failed to load worker telemetry: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    /* ---------------- Single Job Inspection & Actions ---------------- */
+    async inspectBackgroundJob(jobId) {
+      try {
+        this.toast('Loading job details...', 'info');
+        const res = await window.AdminApi.getBackgroundJobDetail(jobId);
+        if (!res || !res.data || !res.data.job) {
+          throw new Error('Job not found');
+        }
+
+        const job = res.data.job;
+
+        const modalHtml = `
+          <div class="admin-modal-overlay" id="jobDetailModal" style="display:flex;">
+            <div class="admin-modal" style="max-width:700px; max-height:85vh; overflow-y:auto;">
+              <div class="admin-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Job Inspection: ${this._escape(job.id.slice(0, 12))}...</h3>
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="document.getElementById('jobDetailModal').remove();">✕</button>
+              </div>
+              <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:1rem; padding:1.25rem 0;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; background:var(--admin-bg-secondary); padding:1rem; border-radius:6px;">
+                  <div><strong>Job Type:</strong> ${this._escape(job.jobType)}</div>
+                  <div><strong>Queue:</strong> ${this._escape(job.queueName)}</div>
+                  <div><strong>Status:</strong> <span class="admin-badge ${job.status === 'COMPLETED' ? 'admin-badge-success' : job.status === 'FAILED' ? 'admin-badge-danger' : 'admin-badge-warning'}">${this._escape(job.rawStatus)}</span></div>
+                  <div><strong>Attempts:</strong> ${job.attemptCount} / ${job.maxAttempts}</div>
+                  <div><strong>Worker:</strong> ${job.workerId ? this._escape(job.workerId) : 'None'}</div>
+                  <div><strong>Duration:</strong> ${job.durationMs !== null ? `${job.durationMs}ms` : '—'}</div>
+                </div>
+
+                ${job.failureReason ? `
+                  <div style="background:rgba(220,38,38,0.08); border-left:3px solid var(--admin-danger); padding:0.75rem 1rem; border-radius:4px;">
+                    <strong style="color:var(--admin-danger);">Failure Reason:</strong>
+                    <div style="font-family:monospace; font-size:0.8125rem; margin-top:0.25rem; word-break:break-all;">${this._escape(job.failureReason)}</div>
+                  </div>
+                ` : ''}
+
+                <div>
+                  <strong>Payload Summary (Sanitized):</strong>
+                  <pre style="background:var(--admin-bg-secondary); padding:0.75rem; border-radius:4px; font-size:0.75rem; overflow-x:auto;">${this._escape(JSON.stringify(job.payloadSummary, null, 2))}</pre>
+                </div>
+
+                <div>
+                  <strong>Lifecycle & Attempt History:</strong>
+                  <div style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+                    ${job.history.map(h => `
+                      <div style="display:flex; justify-content:space-between; font-size:0.75rem; border-bottom:1px solid var(--admin-border); padding-bottom:0.25rem;">
+                        <span><strong class="admin-badge admin-badge-neutral">${this._escape(h.status)}</strong> ${this._escape(h.note || '')}</span>
+                        <span style="color:var(--admin-text-muted);">${new Date(h.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+              <div class="admin-modal-footer" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                ${job.status === 'FAILED' || job.status === 'RETRYING' ? `
+                  <button class="admin-btn admin-btn-primary" onclick="AdminShell.retryBackgroundJob('${this._escape(job.id)}'); document.getElementById('jobDetailModal').remove();">Re-Enqueue / Retry</button>
+                ` : ''}
+                <button class="admin-btn admin-btn-secondary" onclick="document.getElementById('jobDetailModal').remove();">Close</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (err) {
+        console.error('Failed to inspect background job:', err);
+        this.toast(`Failed to inspect job: ${err.message}`, 'danger');
+      }
+    }
+
+    async retryBackgroundJob(jobId) {
+      if (!confirm(`Are you sure you want to re-enqueue job '${jobId}' for delivery retry?`)) {
+        return;
+      }
+
+      try {
+        this.toast(`Re-enqueuing job ${jobId}...`, 'info');
+        const res = await window.AdminApi.retryBackgroundJob(jobId);
+        if (res && res.success) {
+          this.toast(res.data?.message || 'Job successfully re-enqueued', 'success');
+          this.loadBackgroundJobsMetrics();
+          if (this.backgroundJobsState.activeTab === 'failed') this.loadFailedJobs(this.backgroundJobsState.page);
+          else if (this.backgroundJobsState.activeTab === 'jobs') this.loadAllJobs(this.backgroundJobsState.page);
+        }
+      } catch (err) {
+        console.error('Retry failed:', err);
+        this.toast(`Retry failed: ${err.message}`, 'danger');
+      }
+    }
+
+    async triggerBackgroundJobsExport(category = 'ALL', format = 'csv') {
+      try {
+        this.toast(`Generating ${format.toUpperCase()} export for background jobs...`, 'info');
+        const res = await window.AdminApi.exportBackgroundJobs({
+          category: category !== 'ALL' ? category : undefined,
+          format,
+          maxLimit: 500
+        });
+        if (res && res.success) {
+          this.toast(`Export completed: ${res.filename}`, 'success');
+        }
+      } catch (err) {
+        console.error('Jobs export failed:', err);
+        this.toast(`Export failed: ${err.message}`, 'danger');
+      }
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.7 — SYSTEM CONFIGURATION & FEATURE FLAGS UI
+    // =========================================================================
+
+    async _renderSystemConfigView(container) {
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-page-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+          <div>
+            <h1 class="admin-page-title" style="margin:0 0 0.25rem 0;">System Configuration &amp; Feature Flags</h1>
+            <p class="admin-page-subtitle" style="margin:0; color:var(--admin-text-muted);">
+              Authoritative platform runtime parameters, feature toggles, operational limits, and environment inventory.
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span class="admin-badge admin-badge-neutral" id="configEnvBadge">ENVIRONMENT: LOADING...</span>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.refreshCurrentConfigTab()">
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Top Overview Metric Cards -->
+        <div class="admin-grid-4" id="configMetricCards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+          <div class="admin-card" style="padding:1rem;">
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Total Parameters</div>
+            <div id="cfgTotalCount" style="font-size:1.75rem; font-weight:700; margin-top:0.25rem;">—</div>
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Tracked in registry</div>
+          </div>
+          <div class="admin-card" style="padding:1rem;">
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Editable Runtime</div>
+            <div id="cfgEditableCount" style="font-size:1.75rem; font-weight:700; color:var(--admin-info, #0284c7); margin-top:0.25rem;">—</div>
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Hot-tunable parameters</div>
+          </div>
+          <div class="admin-card" style="padding:1rem;">
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Overrides</div>
+            <div id="cfgOverridesCount" style="font-size:1.75rem; font-weight:700; color:var(--admin-warning, #d97706); margin-top:0.25rem;">—</div>
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Overridden at runtime</div>
+          </div>
+          <div class="admin-card" style="padding:1rem;">
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Feature Flags Active</div>
+            <div id="cfgFlagsCount" style="font-size:1.75rem; font-weight:700; color:var(--admin-success, #16a34a); margin-top:0.25rem;">—</div>
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Toggled ON</div>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="admin-tabs" style="display:flex; gap:0.5rem; border-bottom:1px solid var(--admin-border); margin-bottom:1.5rem;">
+          <button class="admin-tab-btn active" id="cfgTabBtn-overview" onclick="AdminShell.switchConfigTab('overview')">Overview &amp; Status</button>
+          <button class="admin-tab-btn" id="cfgTabBtn-settings" onclick="AdminShell.switchConfigTab('settings')">Runtime Settings</button>
+          <button class="admin-tab-btn" id="cfgTabBtn-flags" onclick="AdminShell.switchConfigTab('flags')">Feature Flags</button>
+          <button class="admin-tab-btn" id="cfgTabBtn-environment" onclick="AdminShell.switchConfigTab('environment')">Environment Inventory</button>
+        </div>
+
+        <!-- Tab Content Container -->
+        <div id="sysConfigTabContent">
+          <!-- Dynamic Content Rendered Here -->
+        </div>
+      `;
+
+      this.switchConfigTab(this.systemConfigState.activeTab || 'overview');
+    }
+
+    refreshCurrentConfigTab() {
+      const tab = this.systemConfigState.activeTab || 'overview';
+      this.switchConfigTab(tab);
+    }
+
+    switchConfigTab(tabName) {
+      this.systemConfigState.activeTab = tabName;
+
+      ['overview', 'settings', 'flags', 'environment'].forEach(t => {
+        const btn = document.getElementById(`cfgTabBtn-${t}`);
+        if (btn) {
+          if (t === tabName) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
+      });
+
+      if (tabName === 'overview') this._renderConfigOverviewTab();
+      else if (tabName === 'settings') this._renderSettingsTab();
+      else if (tabName === 'flags') this._renderFeatureFlagsTab();
+      else if (tabName === 'environment') this._renderEnvironmentTab();
+    }
+
+    /* ---------------- Tab 1: Overview ---------------- */
+    async _renderConfigOverviewTab() {
+      const container = document.getElementById('sysConfigTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card" style="margin-bottom:1.5rem;">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">Configuration Management &amp; Health</h2>
+          </div>
+          <div class="admin-card-body" id="cfgOverviewBody">
+            <div style="text-align:center; padding:2rem;">Loading configuration overview...</div>
+          </div>
+        </div>
+      `;
+
+      this.loadConfigOverview();
+    }
+
+    async loadConfigOverview() {
+      try {
+        const res = await window.AdminApi.getSystemConfigOverview();
+        if (res && res.data) {
+          const ov = res.data;
+          this.systemConfigState.overview = ov;
+
+          // Update metric counts
+          const totalEl = document.getElementById('cfgTotalCount');
+          const editableEl = document.getElementById('cfgEditableCount');
+          const overridesEl = document.getElementById('cfgOverridesCount');
+          const flagsEl = document.getElementById('cfgFlagsCount');
+          const envBadge = document.getElementById('configEnvBadge');
+
+          if (totalEl) totalEl.textContent = ov.totalSettingsCount;
+          if (editableEl) editableEl.textContent = ov.editableSettingsCount;
+          if (overridesEl) overridesEl.textContent = ov.runtimeOverridesCount;
+          if (flagsEl) flagsEl.textContent = `${ov.activeFeatureFlagsCount} / ${ov.totalFeatureFlagsCount}`;
+          if (envBadge) envBadge.textContent = `ENVIRONMENT: ${ov.environment.nodeEnv.toUpperCase()}`;
+
+          const body = document.getElementById('cfgOverviewBody');
+          if (!body) return;
+
+          body.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+              <div>
+                <h4 style="margin:0 0 0.75rem 0; font-size:0.9375rem;">Runtime Topology</h4>
+                <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8125rem;">
+                  <div><strong>Application:</strong> ZdexCloud Admin Platform v${this._escape(ov.environment.appVersion)} (${this._escape(ov.environment.apiVersion)})</div>
+                  <div><strong>Node.js Engine:</strong> ${this._escape(ov.environment.nodeVersion)} (${this._escape(ov.environment.platform)})</div>
+                  <div><strong>Database:</strong> ${this._escape(ov.environment.databaseEngine)}</div>
+                  <div><strong>Platform Uptime:</strong> ${this._escape(ov.environment.uptimeFormatted)}</div>
+                  <div><strong>Started At:</strong> ${new Date(ov.environment.startedAt).toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 style="margin:0 0 0.75rem 0; font-size:0.9375rem;">Governance &amp; Concurrency</h4>
+                <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.8125rem;">
+                  <div><strong>Optimistic Concurrency:</strong> <span class="admin-badge admin-badge-success">ACTIVE (Version-Checked)</span></div>
+                  <div><strong>Audit Tracking:</strong> <span class="admin-badge admin-badge-success">ACTIVE (SHA-256 Chained)</span></div>
+                  <div><strong>Settings Requiring Restart:</strong> <span class="admin-badge admin-badge-neutral">${ov.settingsRequiringRestartCount}</span></div>
+                  <div><strong>Last Modified:</strong> ${ov.lastConfigChangeAt ? new Date(ov.lastConfigChangeAt).toLocaleString() : 'None in this session'}</div>
+                  <div><strong>Changes (24h):</strong> <strong style="color:var(--admin-primary);">${ov.recentChangesCount24h}</strong> mutations</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load configuration overview:', err);
+        const body = document.getElementById('cfgOverviewBody');
+        if (body) body.innerHTML = `<div style="color:var(--admin-danger); padding:1.5rem; text-align:center;">Failed to load overview: ${this._escape(err.message)}</div>`;
+      }
+    }
+
+    /* ---------------- Tab 2: Runtime Settings ---------------- */
+    async _renderSettingsTab() {
+      const container = document.getElementById('sysConfigTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem;">
+            <h2 class="admin-card-title">System Settings Registry</h2>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <input type="text" id="cfgSearchInput" class="admin-input admin-input-sm" placeholder="Search settings..." style="width:200px;" value="${this._escape(this.systemConfigState.search || '')}" onkeydown="if(event.key==='Enter')AdminShell.applySettingsFilter()">
+              <select id="cfgCategorySelect" class="admin-select admin-select-sm" onchange="AdminShell.applySettingsFilter()">
+                <option value="">All Categories</option>
+                <option value="LOGGING_DIAGNOSTICS" ${this.systemConfigState.category === 'LOGGING_DIAGNOSTICS' ? 'selected' : ''}>Logging &amp; Diagnostics</option>
+                <option value="AUTHENTICATION_OTP" ${this.systemConfigState.category === 'AUTHENTICATION_OTP' ? 'selected' : ''}>Authentication &amp; OTP</option>
+                <option value="NOTIFICATION_DELIVERY" ${this.systemConfigState.category === 'NOTIFICATION_DELIVERY' ? 'selected' : ''}>Notification &amp; Delivery</option>
+                <option value="RETENTION_CLEANUP" ${this.systemConfigState.category === 'RETENTION_CLEANUP' ? 'selected' : ''}>Retention &amp; Cleanup</option>
+                <option value="ENVIRONMENT_DEPLOYMENT" ${this.systemConfigState.category === 'ENVIRONMENT_DEPLOYMENT' ? 'selected' : ''}>Deployment Topology</option>
+              </select>
+              <button class="admin-btn admin-btn-sm admin-btn-primary" onclick="AdminShell.applySettingsFilter()">Filter</button>
+              <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.resetSettingsFilter()">Reset</button>
+            </div>
+          </div>
+          <div class="admin-card-body" style="padding:0;">
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Setting Key &amp; Name</th>
+                    <th>Category</th>
+                    <th>Current Value</th>
+                    <th>Type</th>
+                    <th>Source</th>
+                    <th>Status</th>
+                    <th>Version</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cfgSettingsTableBody">
+                  <tr><td colspan="8" style="text-align:center; padding:2rem;">Loading system settings...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.loadSystemSettings();
+    }
+
+    applySettingsFilter() {
+      const sInput = document.getElementById('cfgSearchInput');
+      const cSelect = document.getElementById('cfgCategorySelect');
+      this.systemConfigState.search = sInput ? sInput.value.trim() : '';
+      this.systemConfigState.category = cSelect ? cSelect.value : '';
+      this.loadSystemSettings();
+    }
+
+    resetSettingsFilter() {
+      this.systemConfigState.search = '';
+      this.systemConfigState.category = '';
+      const sInput = document.getElementById('cfgSearchInput');
+      const cSelect = document.getElementById('cfgCategorySelect');
+      if (sInput) sInput.value = '';
+      if (cSelect) cSelect.value = '';
+      this.loadSystemSettings();
+    }
+
+    async loadSystemSettings() {
+      const tbody = document.getElementById('cfgSettingsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">Loading system settings...</td></tr>`;
+
+      try {
+        const res = await window.AdminApi.listSystemSettings({
+          category: this.systemConfigState.category || undefined,
+          search: this.systemConfigState.search || undefined
+        });
+
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemConfigState.settings = items;
+
+          if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--admin-text-muted);">No settings found matching current criteria.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = items.map(s => {
+            const isOverride = s.source === 'RUNTIME_OVERRIDE';
+            const sourceBadge = isOverride
+              ? '<span class="admin-badge admin-badge-warning" style="font-size:0.6875rem;">RUNTIME OVERRIDE</span>'
+              : '<span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">ENV DEFAULT</span>';
+
+            const editBadge = s.isEditable
+              ? '<span class="admin-badge admin-badge-success" style="font-size:0.6875rem;">EDITABLE</span>'
+              : '<span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">READ-ONLY</span>';
+
+            const restartWarning = s.restartRequired
+              ? '<span class="admin-badge admin-badge-danger" style="font-size:0.6875rem; margin-left:4px;">RESTART REQ</span>'
+              : '';
+
+            let valDisplay = String(s.currentValue);
+            if (s.valueType === 'BOOLEAN') {
+              valDisplay = s.currentValue ? 'true' : 'false';
+            }
+
+            return `
+              <tr>
+                <td>
+                  <strong>${this._escape(s.name)}</strong>
+                  <div style="font-family:monospace; font-size:0.75rem; color:var(--admin-text-muted);">${this._escape(s.key)}</div>
+                  <div style="font-size:0.75rem; color:var(--admin-text-muted); max-width:320px;">${this._escape(s.description)}</div>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(s.category)}</span></td>
+                <td>
+                  <code class="admin-code-pill" style="font-weight:700; ${isOverride ? 'color:var(--admin-warning);' : ''}">${this._escape(valDisplay)}</code>
+                </td>
+                <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(s.valueType)}</span></td>
+                <td>${sourceBadge}</td>
+                <td>${editBadge}${restartWarning}</td>
+                <td><span style="font-weight:700;">v${s.version}</span></td>
+                <td>
+                  ${s.isEditable ? `
+                    <button class="admin-btn admin-btn-xs admin-btn-primary" onclick="AdminShell.openEditSettingModal('${this._escape(s.key)}')">Edit</button>
+                  ` : `
+                    <span style="font-size:0.75rem; color:var(--admin-text-muted);">Immutable</span>
+                  `}
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load settings:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load settings: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async openEditSettingModal(key) {
+      try {
+        this.toast(`Loading setting '${key}'...`, 'info');
+        const res = await window.AdminApi.getSystemSettingDetail(key);
+        if (!res || !res.data || !res.data.setting) {
+          throw new Error('Setting not found');
+        }
+
+        const setting = res.data.setting;
+        this.systemConfigState.selectedSetting = setting;
+
+        let inputHtml = '';
+        if (setting.valueType === 'BOOLEAN') {
+          inputHtml = `
+            <select id="editSettingVal" class="admin-select" style="width:100%;">
+              <option value="true" ${setting.currentValue === true ? 'selected' : ''}>true (Enabled)</option>
+              <option value="false" ${setting.currentValue === false ? 'selected' : ''}>false (Disabled)</option>
+            </select>
+          `;
+        } else if (setting.valueType === 'ENUM' && setting.allowedValues) {
+          inputHtml = `
+            <select id="editSettingVal" class="admin-select" style="width:100%;">
+              ${setting.allowedValues.map(v => `
+                <option value="${this._escape(v)}" ${String(setting.currentValue).toLowerCase() === v.toLowerCase() ? 'selected' : ''}>${this._escape(v)}</option>
+              `).join('')}
+            </select>
+          `;
+        } else if (setting.valueType === 'NUMBER') {
+          inputHtml = `
+            <input type="number" id="editSettingVal" class="admin-input" style="width:100%;" value="${this._escape(setting.currentValue)}" ${setting.min !== undefined ? `min="${setting.min}"` : ''} ${setting.max !== undefined ? `max="${setting.max}"` : ''}>
+            <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">
+              Allowed Range: ${setting.min !== undefined ? setting.min : '-∞'} to ${setting.max !== undefined ? setting.max : '+∞'}
+            </div>
+          `;
+        } else {
+          inputHtml = `
+            <input type="text" id="editSettingVal" class="admin-input" style="width:100%;" value="${this._escape(setting.currentValue)}">
+          `;
+        }
+
+        const modalHtml = `
+          <div class="admin-modal-overlay" id="editSettingModal" style="display:flex;">
+            <div class="admin-modal" style="max-width:550px;">
+              <div class="admin-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Modify Setting: ${this._escape(setting.name)}</h3>
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="document.getElementById('editSettingModal').remove();">✕</button>
+              </div>
+              <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:1rem; padding:1.25rem 0;">
+                <div style="font-size:0.8125rem; color:var(--admin-text-muted);">
+                  ${this._escape(setting.description)}
+                </div>
+
+                <div style="background:var(--admin-bg-secondary); padding:0.75rem 1rem; border-radius:6px; font-size:0.8125rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                  <div><strong>Key:</strong> <code>${this._escape(setting.key)}</code></div>
+                  <div><strong>Category:</strong> ${this._escape(setting.category)}</div>
+                  <div><strong>Current Value:</strong> <code>${this._escape(setting.currentValue)}</code></div>
+                  <div><strong>Default Value:</strong> <code>${this._escape(setting.defaultValue)}</code></div>
+                  <div><strong>Version:</strong> v${setting.version}</div>
+                  <div><strong>Restart Required:</strong> ${setting.restartRequired ? '<span style="color:var(--admin-danger); font-weight:700;">YES</span>' : 'NO'}</div>
+                </div>
+
+                <div>
+                  <label style="display:block; font-weight:600; margin-bottom:0.25rem; font-size:0.8125rem;">New Value:</label>
+                  ${inputHtml}
+                </div>
+
+                ${setting.restartRequired ? `
+                  <div style="background:rgba(220,38,38,0.08); border-left:3px solid var(--admin-danger); padding:0.75rem; border-radius:4px; font-size:0.75rem;">
+                    <strong>Operational Notice:</strong> Modifying this parameter will require a platform process restart before it takes full effect.
+                  </div>
+                ` : ''}
+              </div>
+              <div class="admin-modal-footer" style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                <button class="admin-btn admin-btn-secondary" onclick="document.getElementById('editSettingModal').remove();">Cancel</button>
+                <button class="admin-btn admin-btn-primary" onclick="AdminShell.submitSettingUpdate('${this._escape(setting.key)}')">Save &amp; Apply</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (err) {
+        console.error('Failed to open edit modal:', err);
+        this.toast(`Failed to load setting: ${err.message}`, 'danger');
+      }
+    }
+
+    async submitSettingUpdate(key) {
+      const setting = this.systemConfigState.selectedSetting;
+      const inputEl = document.getElementById('editSettingVal');
+      if (!inputEl || !setting) return;
+
+      let newValue;
+      if (setting.valueType === 'BOOLEAN') {
+        newValue = inputEl.value === 'true';
+      } else if (setting.valueType === 'NUMBER') {
+        newValue = Number(inputEl.value);
+      } else {
+        newValue = inputEl.value;
+      }
+
+      if (!confirm(`Are you sure you want to update '${setting.name}' to '${newValue}'?`)) {
+        return;
+      }
+
+      try {
+        this.toast(`Updating setting '${key}'...`, 'info');
+        const res = await window.AdminApi.updateSystemSetting(key, {
+          value: newValue,
+          expectedVersion: setting.version
+        });
+
+        if (res && res.success) {
+          this.toast(res.data?.message || 'Setting updated successfully', 'success');
+          const modal = document.getElementById('editSettingModal');
+          if (modal) modal.remove();
+
+          this.loadSystemSettings();
+          this.loadConfigOverview();
+        }
+      } catch (err) {
+        console.error('Failed to update setting:', err);
+        this.toast(`Update failed: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 3: Feature Flags ---------------- */
+    async _renderFeatureFlagsTab() {
+      const container = document.getElementById('sysConfigTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 class="admin-card-title">Feature Flags Control Matrix</h2>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadFeatureFlags()">↻ Refresh Flags</button>
+          </div>
+          <div class="admin-card-body" id="cfgFlagsContainer">
+            <div style="text-align:center; padding:2rem;">Loading feature flags...</div>
+          </div>
+        </div>
+      `;
+
+      this.loadFeatureFlags();
+    }
+
+    async loadFeatureFlags() {
+      const container = document.getElementById('cfgFlagsContainer');
+      if (!container) return;
+
+      container.innerHTML = `<div style="text-align:center; padding:2rem;">Loading feature flags...</div>`;
+
+      try {
+        const res = await window.AdminApi.listFeatureFlags();
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemConfigState.flags = items;
+
+          if (items.length === 0) {
+            container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--admin-text-muted);">No feature flags registered.</div>`;
+            return;
+          }
+
+          container.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1rem;">
+              ${items.map(f => {
+                const isEnabled = f.enabled;
+                const statusBadge = isEnabled
+                  ? '<span class="admin-badge admin-badge-success">ENABLED</span>'
+                  : '<span class="admin-badge admin-badge-neutral">DISABLED</span>';
+
+                return `
+                  <div class="admin-card" style="padding:1.25rem; border:1px solid var(--admin-border); background:var(--admin-bg-secondary); border-radius:6px; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                        <span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(f.category)}</span>
+                        ${statusBadge}
+                      </div>
+                      <h3 style="margin:0 0 0.25rem 0; font-size:1rem;">${this._escape(f.name)}</h3>
+                      <div style="font-family:monospace; font-size:0.75rem; color:var(--admin-text-muted); margin-bottom:0.5rem;">${this._escape(f.key)}</div>
+                      <p style="font-size:0.8125rem; color:var(--admin-text-muted); margin:0 0 1rem 0;">${this._escape(f.description)}</p>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--admin-border); padding-top:0.75rem; margin-top:0.5rem;">
+                      <span style="font-size:0.75rem; color:var(--admin-text-muted);">Version v${f.version}</span>
+                      <button class="admin-btn admin-btn-sm ${isEnabled ? 'admin-btn-danger' : 'admin-btn-primary'}" onclick="AdminShell.toggleFeatureFlag('${this._escape(f.key)}', ${isEnabled})">
+                        ${isEnabled ? 'Disable Flag' : 'Enable Flag'}
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load feature flags:', err);
+        container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load flags: ${this._escape(err.message)}</div>`;
+      }
+    }
+
+    async toggleFeatureFlag(key, currentEnabled) {
+      const flag = this.systemConfigState.flags.find(f => f.key === key);
+      const newEnabled = !currentEnabled;
+      const actionName = newEnabled ? 'ENABLE' : 'DISABLE';
+
+      if (!confirm(`Are you sure you want to ${actionName} feature flag '${flag ? flag.name : key}'?`)) {
+        return;
+      }
+
+      try {
+        this.toast(`${newEnabled ? 'Enabling' : 'Disabling'} feature flag '${key}'...`, 'info');
+        const res = await window.AdminApi.updateFeatureFlag(key, {
+          enabled: newEnabled,
+          expectedVersion: flag ? flag.version : undefined
+        });
+
+        if (res && res.success) {
+          this.toast(res.data?.message || `Feature flag '${key}' updated`, 'success');
+          this.loadFeatureFlags();
+          this.loadConfigOverview();
+        }
+      } catch (err) {
+        console.error('Failed to toggle feature flag:', err);
+        this.toast(`Failed to update flag: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 4: Environment & Topology ---------------- */
+    async _renderEnvironmentTab() {
+      const container = document.getElementById('sysConfigTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 class="admin-card-title">Environment &amp; Infrastructure Inventory</h2>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadEnvironmentInventory()">↻ Refresh Inventory</button>
+          </div>
+          <div class="admin-card-body" id="cfgEnvContainer">
+            <div style="text-align:center; padding:2rem;">Loading environment inventory...</div>
+          </div>
+        </div>
+      `;
+
+      this.loadEnvironmentInventory();
+    }
+
+    async loadEnvironmentInventory() {
+      const container = document.getElementById('cfgEnvContainer');
+      if (!container) return;
+
+      container.innerHTML = `<div style="text-align:center; padding:2rem;">Loading environment inventory...</div>`;
+
+      try {
+        const res = await window.AdminApi.getEnvironmentInventory();
+        if (res && res.data && res.data.environment) {
+          const env = res.data.environment;
+
+          container.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+              <div class="admin-card" style="padding:1rem; background:var(--admin-bg-secondary);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Deployment Mode</div>
+                <div style="font-size:1.25rem; font-weight:700; margin-top:0.25rem;"><span class="admin-badge admin-badge-neutral">${this._escape(env.nodeEnv.toUpperCase())}</span></div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Node.js process environment</div>
+              </div>
+
+              <div class="admin-card" style="padding:1rem; background:var(--admin-bg-secondary);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Node Runtime</div>
+                <div style="font-size:1.25rem; font-weight:700; margin-top:0.25rem;">${this._escape(env.nodeVersion)}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Platform: ${this._escape(env.platform)}</div>
+              </div>
+
+              <div class="admin-card" style="padding:1rem; background:var(--admin-bg-secondary);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Platform Uptime</div>
+                <div style="font-size:1.25rem; font-weight:700; color:var(--admin-success, #16a34a); margin-top:0.25rem;">${this._escape(env.uptimeFormatted)}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Started: ${new Date(env.startedAt).toLocaleString()}</div>
+              </div>
+
+              <div class="admin-card" style="padding:1rem; background:var(--admin-bg-secondary);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Base Domain</div>
+                <div style="font-size:1.25rem; font-weight:700; margin-top:0.25rem;">${this._escape(env.baseDomain)}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Gateway: ${this._escape(env.gatewayDomain)}</div>
+              </div>
+            </div>
+
+            <div style="margin-top:1.5rem; background:var(--admin-bg-secondary); padding:1rem; border-radius:6px;">
+              <h4 style="margin:0 0 0.5rem 0; font-size:0.875rem;">Trusted Proxy Strategy</h4>
+              <p style="font-size:0.8125rem; color:var(--admin-text-muted); margin:0 0 0.5rem 0;">Configured proxy trust headers for Fastify connection handling:</p>
+              <code>${this._escape(env.trustedProxy)}</code>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load environment inventory:', err);
+        container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load environment: ${this._escape(err.message)}</div>`;
+      }
+    }
+
+    // =========================================================================
+    // PHASE 17 BATCH 17.8 — SYSTEM SECURITY CONTROLS UI MODULE
+    // =========================================================================
+
+    async _renderSystemSecurityView(container) {
+      this.currentSection = 'system-security';
+      this._updateActiveNavState();
+
+      container.innerHTML = `
+        <div class="admin-page-header">
+          <div>
+            <h1 class="admin-page-title">System Security &amp; Access Controls</h1>
+            <p class="admin-page-subtitle">Administrative session management, active lockout clearance, RBAC inventory matrix, security events, and credential posture.</p>
+          </div>
+          <div class="admin-page-actions">
+            <button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="AdminShell.refreshCurrentSecurityTab()">
+              ↻ Refresh
+            </button>
+          </div>
+        </div>
+
+        <div class="admin-tabs" id="sysSecTabs" style="margin-bottom:1.5rem;">
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'overview' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('overview')">Security Overview</button>
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'sessions' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('sessions')">Active Sessions</button>
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'lockouts' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('lockouts')">Lockouts &amp; Brute-Force</button>
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'events' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('events')">Security Events</button>
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'rbac' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('rbac')">RBAC Matrix</button>
+          <button class="admin-tab-btn ${this.systemSecurityState.activeTab === 'credentials' ? 'active' : ''}" onclick="AdminShell.switchSecurityTab('credentials')">Credential Posture</button>
+        </div>
+
+        <div id="sysSecTabContent">
+          <div style="text-align:center; padding:3rem;">Loading security controls...</div>
+        </div>
+      `;
+
+      this.switchSecurityTab(this.systemSecurityState.activeTab || 'overview');
+    }
+
+    refreshCurrentSecurityTab() {
+      this.switchSecurityTab(this.systemSecurityState.activeTab || 'overview');
+    }
+
+    switchSecurityTab(tab) {
+      this.systemSecurityState.activeTab = tab;
+      const tabBtns = document.querySelectorAll('#sysSecTabs .admin-tab-btn');
+      tabBtns.forEach(btn => {
+        if (btn.textContent.toLowerCase().includes(tab)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      if (tab === 'overview') {
+        this._renderSecurityOverviewTab();
+      } else if (tab === 'sessions') {
+        this._renderSecuritySessionsTab();
+      } else if (tab === 'lockouts') {
+        this._renderSecurityLockoutsTab();
+      } else if (tab === 'events') {
+        this._renderSecurityEventsTab();
+      } else if (tab === 'rbac') {
+        this._renderSecurityRbacTab();
+      } else if (tab === 'credentials') {
+        this._renderSecurityCredentialsTab();
+      }
+    }
+
+    /* ---------------- Tab 1: Security Overview ---------------- */
+    async _renderSecurityOverviewTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div id="sysSecOverviewContainer">
+          <div style="text-align:center; padding:3rem;">Loading security overview &amp; telemetry...</div>
+        </div>
+      `;
+
+      this.loadSecurityOverview();
+    }
+
+    async loadSecurityOverview() {
+      const container = document.getElementById('sysSecOverviewContainer');
+      if (!container) return;
+
+      try {
+        const res = await window.AdminApi.getSecurityOverview();
+        if (res && res.data) {
+          const ov = res.data;
+          this.systemSecurityState.overview = ov;
+
+          container.innerHTML = `
+            <div class="admin-kpi-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+              <div class="admin-kpi-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Sessions</div>
+                <div style="font-size:1.75rem; font-weight:700; color:var(--admin-primary); margin-top:0.25rem;">${ov.activeSessionsCount}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Live unrevoked admin sessions</div>
+              </div>
+
+              <div class="admin-kpi-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Successful Logins (24h)</div>
+                <div style="font-size:1.75rem; font-weight:700; color:var(--admin-success, #16a34a); margin-top:0.25rem;">${ov.recentLoginsCount24h}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Authenticated entries</div>
+              </div>
+
+              <div class="admin-kpi-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Failed Logins (24h)</div>
+                <div style="font-size:1.75rem; font-weight:700; color:${ov.failedLoginsCount24h > 0 ? 'var(--admin-warning, #d97706)' : 'var(--admin-text-muted)'}; margin-top:0.25rem;">${ov.failedLoginsCount24h}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Auth failures tracked</div>
+              </div>
+
+              <div class="admin-kpi-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Active Lockouts</div>
+                <div style="font-size:1.75rem; font-weight:700; color:${ov.activeLockoutsCount > 0 ? 'var(--admin-danger, #dc2626)' : 'var(--admin-success, #16a34a)'}; margin-top:0.25rem;">${ov.activeLockoutsCount}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">Brute-force blocks active</div>
+              </div>
+
+              <div class="admin-kpi-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); font-weight:600; text-transform:uppercase;">Authz Denials (24h)</div>
+                <div style="font-size:1.75rem; font-weight:700; color:${ov.permissionDenialsCount24h > 0 ? 'var(--admin-danger, #dc2626)' : 'var(--admin-text-muted)'}; margin-top:0.25rem;">${ov.permissionDenialsCount24h}</div>
+                <div style="font-size:0.75rem; color:var(--admin-text-muted); margin-top:0.25rem;">RBAC 403 Forbidden events</div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
+              <div class="admin-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <h3 style="margin:0 0 1rem 0; font-size:1rem; display:flex; align-items:center; gap:0.5rem;">
+                  <span class="admin-badge admin-badge-success">ENFORCED</span> CSRF Defense Posture
+                </h3>
+                <div style="font-size:0.8125rem; display:flex; flex-direction:column; gap:0.5rem;">
+                  <div><strong>Mode:</strong> <code>${this._escape(ov.csrfPosture.mode)}</code></div>
+                  <div><strong>Header:</strong> <code>${this._escape(ov.csrfPosture.header)}</code></div>
+                  <div><strong>Mutation Guard:</strong> ${ov.csrfPosture.enforcedOnMutations ? '<span style="color:var(--admin-success); font-weight:700;">ACTIVE (All POST/PUT/DELETE)</span>' : 'Inactive'}</div>
+                  <div style="color:var(--admin-text-muted); font-size:0.75rem; margin-top:0.5rem;">
+                    Origin &amp; Referer validation paired with session-bound HMAC tokens protect all state-modifying operations against cross-origin attacks.
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <h3 style="margin:0 0 1rem 0; font-size:1rem; display:flex; align-items:center; gap:0.5rem;">
+                  <span class="admin-badge admin-badge-success">ENFORCED</span> MFA &amp; 2FA Posture
+                </h3>
+                <div style="font-size:0.8125rem; display:flex; flex-direction:column; gap:0.5rem;">
+                  <div><strong>Status:</strong> <span class="admin-badge admin-badge-success">ENABLED</span></div>
+                  <div><strong>Challenge Method:</strong> <code>${this._escape(ov.mfaPosture.method)}</code></div>
+                  <div><strong>OTP Validity:</strong> ${ov.mfaPosture.validityMinutes} Minutes</div>
+                  <div style="color:var(--admin-text-muted); font-size:0.75rem; margin-top:0.5rem;">
+                    Two-factor authentication with cryptographically hashed one-time passwords delivered via transactional email channels.
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <h3 style="margin:0 0 1rem 0; font-size:1rem; display:flex; align-items:center; gap:0.5rem;">
+                  <span class="admin-badge admin-badge-neutral">POLICY</span> Session Lifetime Policy
+                </h3>
+                <div style="font-size:0.8125rem; display:flex; flex-direction:column; gap:0.5rem;">
+                  <div><strong>Absolute Lifetime:</strong> ${ov.sessionPolicy.absoluteLifetimeHours} Hours</div>
+                  <div><strong>Idle Timeout:</strong> ${ov.sessionPolicy.idleTimeoutMinutes} Minutes</div>
+                  <div><strong>Token Storage Mode:</strong> <code>${this._escape(ov.sessionPolicy.tokenStorageMode)}</code></div>
+                  <div style="color:var(--admin-text-muted); font-size:0.75rem; margin-top:0.5rem;">
+                    Tokens are hashed with SHA-256 before database storage. Raw session tokens are never persisted or returned in API responses.
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                <h3 style="margin:0 0 1rem 0; font-size:1rem; display:flex; align-items:center; gap:0.5rem;">
+                  <span class="admin-badge admin-badge-neutral">POLICY</span> Brute-Force Rate Limiting
+                </h3>
+                <div style="font-size:0.8125rem; display:flex; flex-direction:column; gap:0.5rem;">
+                  <div><strong>Max Failed Attempts:</strong> ${ov.bruteForcePolicy.maxFailedAttempts} attempts</div>
+                  <div><strong>Lockout Window:</strong> ${ov.bruteForcePolicy.lockoutDurationMinutes} Minutes</div>
+                  <div><strong>RBAC Roles / Permissions:</strong> ${ov.totalRolesCount} Roles / ${ov.totalPermissionsCount} Permissions</div>
+                  <div style="color:var(--admin-text-muted); font-size:0.75rem; margin-top:0.5rem;">
+                    Atomic composite IP+Email tracking throttles credential attacks with progressive distributed lockout enforcement.
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load security overview:', err);
+        container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load security overview: ${this._escape(err.message)}</div>`;
+      }
+    }
+
+    /* ---------------- Tab 2: Admin Sessions ---------------- */
+    async _renderSecuritySessionsTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <h2 class="admin-card-title">Administrative Sessions Registry</h2>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="secSessionStatusFilter" class="admin-select" style="font-size:0.8125rem; padding:0.25rem 0.5rem;" onchange="AdminShell.onSecuritySessionFilterChange()">
+                <option value="ALL">All Statuses</option>
+                <option value="ACTIVE" selected>Active Only</option>
+                <option value="REVOKED">Revoked Only</option>
+                <option value="EXPIRED">Expired Only</option>
+              </select>
+              <input type="text" id="secSessionSearch" class="admin-input" style="font-size:0.8125rem; padding:0.25rem 0.5rem; width:180px;" placeholder="Search email / IP..." onkeyup="if(event.key==='Enter') AdminShell.onSecuritySessionFilterChange()">
+              <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.onSecuritySessionFilterChange()">Filter</button>
+            </div>
+          </div>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Admin Identity</th>
+                  <th>Status</th>
+                  <th>IP Address</th>
+                  <th>User Agent</th>
+                  <th>Last Activity</th>
+                  <th>Expires At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="secSessionsTableBody">
+                <tr><td colspan="7" style="text-align:center; padding:2rem;">Loading sessions...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="secSessionsPagination" style="display:flex; justify-content:space-between; align-items:center; padding:1rem; border-top:1px solid var(--admin-border);">
+          </div>
+        </div>
+      `;
+
+      this.systemSecurityState.sessionsFilter.status = 'ACTIVE';
+      this.loadSecuritySessions(1);
+    }
+
+    onSecuritySessionFilterChange() {
+      const statusEl = document.getElementById('secSessionStatusFilter');
+      const searchEl = document.getElementById('secSessionSearch');
+      if (statusEl) this.systemSecurityState.sessionsFilter.status = statusEl.value;
+      if (searchEl) this.systemSecurityState.sessionsFilter.search = searchEl.value.trim();
+      this.loadSecuritySessions(1);
+    }
+
+    async loadSecuritySessions(page = 1) {
+      const tbody = document.getElementById('secSessionsTableBody');
+      const pagEl = document.getElementById('secSessionsPagination');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;">Loading sessions...</td></tr>`;
+
+      try {
+        const query = {
+          page,
+          limit: 20,
+          status: this.systemSecurityState.sessionsFilter.status,
+          search: this.systemSecurityState.sessionsFilter.search
+        };
+
+        const res = await window.AdminApi.listAdminSessions(query);
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemSecurityState.sessions = items;
+          this.systemSecurityState.sessionsPage = res.data.page;
+          this.systemSecurityState.sessionsTotalPages = res.data.totalPages;
+
+          if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--admin-text-muted);">No administrative sessions found matching criteria.</td></tr>`;
+            if (pagEl) pagEl.innerHTML = '';
+            return;
+          }
+
+          tbody.innerHTML = items.map(s => {
+            let statusBadge = '<span class="admin-badge admin-badge-success">ACTIVE</span>';
+            if (s.status === 'REVOKED') {
+              statusBadge = '<span class="admin-badge admin-badge-danger">REVOKED</span>';
+            } else if (s.status === 'EXPIRED') {
+              statusBadge = '<span class="admin-badge admin-badge-neutral">EXPIRED</span>';
+            }
+
+            const canRevoke = s.status === 'ACTIVE';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${this._escape(s.adminName)}</strong>
+                  ${s.isSuperAdmin ? '<span class="admin-badge admin-badge-primary" style="font-size:0.625rem; margin-left:4px;">SUPERADMIN</span>' : ''}
+                  <div style="font-size:0.75rem; color:var(--admin-text-muted);">${this._escape(s.adminEmail)}</div>
+                  <div style="font-family:monospace; font-size:0.6875rem; color:var(--admin-text-muted);">ID: ${this._escape(s.id.slice(0, 8))}...</div>
+                </td>
+                <td>${statusBadge}</td>
+                <td><code>${this._escape(s.ipAddress || 'unknown')}</code></td>
+                <td><div style="font-size:0.75rem; color:var(--admin-text-muted); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${this._escape(s.userAgent || '')}">${this._escape(s.userAgent || 'unknown')}</div></td>
+                <td><span style="font-size:0.75rem;">${new Date(s.lastActivityAt).toLocaleString()}</span></td>
+                <td><span style="font-size:0.75rem;">${new Date(s.expiresAt).toLocaleString()}</span></td>
+                <td>
+                  ${canRevoke ? `
+                    <div style="display:flex; gap:0.25rem;">
+                      <button class="admin-btn admin-btn-xs admin-btn-danger" onclick="AdminShell.revokeSingleSession('${this._escape(s.id)}')">Revoke</button>
+                      <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.revokeAllSessionsPrompt('${this._escape(s.adminId)}', '${this._escape(s.adminEmail)}')">Revoke All</button>
+                    </div>
+                  ` : `
+                    <span style="font-size:0.75rem; color:var(--admin-text-muted);">${s.revokedAt ? 'Revoked at ' + new Date(s.revokedAt).toLocaleTimeString() : 'Expired'}</span>
+                  `}
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          if (pagEl) {
+            pagEl.innerHTML = `
+              <span style="font-size:0.8125rem; color:var(--admin-text-muted);">
+                Page ${res.data.page} of ${res.data.totalPages} (${res.data.total} total sessions)
+              </span>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" ${res.data.page <= 1 ? 'disabled' : ''} onclick="AdminShell.loadSecuritySessions(${res.data.page - 1})">Previous</button>
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" ${res.data.page >= res.data.totalPages ? 'disabled' : ''} onclick="AdminShell.loadSecuritySessions(${res.data.page + 1})">Next</button>
+              </div>
+            `;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load sessions:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load sessions: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async revokeSingleSession(sessionId) {
+      if (!confirm(`Are you sure you want to revoke session '${sessionId}'? The user will be immediately logged out upon their next request.`)) {
+        return;
+      }
+
+      try {
+        this.toast(`Revoking session '${sessionId.slice(0, 8)}...'`, 'info');
+        const res = await window.AdminApi.revokeAdminSession(sessionId, 'MANUAL_ADMIN_REVOCATION');
+        if (res && res.success) {
+          if (res.data?.isSelfSession) {
+            alert('Your active session has been revoked. You will now be redirected to the login page.');
+            window.location.href = '/admin/login.html';
+            return;
+          }
+          this.toast(res.data?.message || 'Session revoked successfully', 'success');
+          this.loadSecuritySessions(this.systemSecurityState.sessionsPage);
+        }
+      } catch (err) {
+        console.error('Failed to revoke session:', err);
+        this.toast(`Revocation failed: ${err.message}`, 'danger');
+      }
+    }
+
+    async revokeAllSessionsPrompt(adminId, email) {
+      if (!confirm(`Are you sure you want to revoke ALL active sessions for administrator '${email}'? This will force-disconnect all logged-in devices for this account.`)) {
+        return;
+      }
+
+      try {
+        this.toast(`Revoking all sessions for '${email}'...`, 'info');
+        const res = await window.AdminApi.revokeAllAdminSessions(adminId, 'BULK_ADMIN_REVOCATION');
+        if (res && res.success) {
+          this.toast(res.data?.message || 'All sessions revoked', 'success');
+          this.loadSecuritySessions(this.systemSecurityState.sessionsPage);
+        }
+      } catch (err) {
+        console.error('Failed to bulk revoke sessions:', err);
+        this.toast(`Bulk revocation failed: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 3: Lockouts & Brute-Force ---------------- */
+    async _renderSecurityLockoutsTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2 class="admin-card-title">Brute-Force &amp; Rate-Limit Lockout Register</h2>
+              <div style="font-size:0.8125rem; color:var(--admin-text-muted);">Atomic distributed IP+Email tracking records with automatic threshold expiration.</div>
+            </div>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadSecurityLockouts()">↻ Refresh Lockouts</button>
+          </div>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Lockout Target (Key)</th>
+                  <th>IP Address</th>
+                  <th>Email Target</th>
+                  <th>Failed Attempts</th>
+                  <th>Lock Status</th>
+                  <th>Remaining Time</th>
+                  <th>Last Attempt</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="secLockoutsTableBody">
+                <tr><td colspan="8" style="text-align:center; padding:2rem;">Loading lockouts...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      this.loadSecurityLockouts();
+    }
+
+    async loadSecurityLockouts() {
+      const tbody = document.getElementById('secLockoutsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">Loading lockouts...</td></tr>`;
+
+      try {
+        const res = await window.AdminApi.listAdminLockouts();
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemSecurityState.lockouts = items;
+
+          if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--admin-text-muted);">No active or recorded lockouts. System security is operating normally.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = items.map(l => {
+            const statusBadge = l.isLocked
+              ? '<span class="admin-badge admin-badge-danger">LOCKED OUT</span>'
+              : '<span class="admin-badge admin-badge-neutral">UNLOCKED (TRACKING)</span>';
+
+            return `
+              <tr>
+                <td><code>${this._escape(l.key)}</code></td>
+                <td><code>${this._escape(l.ipAddress)}</code></td>
+                <td><strong>${this._escape(l.email)}</strong></td>
+                <td><span class="admin-code-pill" style="font-weight:700; ${l.failedAttempts >= 5 ? 'color:var(--admin-danger);' : ''}">${l.failedAttempts} / 5</span></td>
+                <td>${statusBadge}</td>
+                <td>${l.isLocked ? `<span style="font-weight:700; color:var(--admin-danger);">${l.remainingSeconds}s</span>` : '0s'}</td>
+                <td><span style="font-size:0.75rem;">${new Date(l.lastAttemptAt).toLocaleString()}</span></td>
+                <td>
+                  <button class="admin-btn admin-btn-xs admin-btn-primary" onclick="AdminShell.unlockLockoutAction('${this._escape(l.key)}', '${this._escape(l.email)}')">
+                    Clear Lockout
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load lockouts:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load lockouts: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async unlockLockoutAction(key, email) {
+      if (!confirm(`Are you sure you want to clear the brute-force lockout record for '${email || key}'? This will reset the failed attempt counter to zero.`)) {
+        return;
+      }
+
+      try {
+        this.toast(`Clearing lockout for '${email || key}'...`, 'info');
+        const res = await window.AdminApi.unlockAdminLockout({ key, email });
+        if (res && res.success) {
+          this.toast(res.data?.message || 'Lockout cleared successfully', 'success');
+          this.loadSecurityLockouts();
+        }
+      } catch (err) {
+        console.error('Failed to clear lockout:', err);
+        this.toast(`Unlock failed: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 4: Security Events ---------------- */
+    async _renderSecurityEventsTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <h2 class="admin-card-title">Security Event Audit Trail</h2>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select id="secEventActionFilter" class="admin-select" style="font-size:0.8125rem; padding:0.25rem 0.5rem;" onchange="AdminShell.onSecurityEventFilterChange()">
+                <option value="">All Security Actions</option>
+                <option value="ADMIN_LOGIN_SUCCESS">Login Success</option>
+                <option value="ADMIN_LOGIN_FAILURE">Login Failure</option>
+                <option value="ADMIN_LOGOUT">Logout</option>
+                <option value="ADMIN_SESSION_REVOKED">Session Revoked</option>
+                <option value="ADMIN_AUTH_BLOCKED">Auth Blocked</option>
+                <option value="ADMIN_AUTHZ_DENIED">Authz Denied (403)</option>
+                <option value="ADMIN_OTP_SENT">OTP Sent</option>
+                <option value="ADMIN_OTP_VERIFIED">OTP Verified</option>
+                <option value="ADMIN_OTP_FAILED">OTP Failed</option>
+                <option value="ADMIN_STATUS_UPDATED">Admin Status/Lockout Updated</option>
+              </select>
+              <input type="text" id="secEventSearch" class="admin-input" style="font-size:0.8125rem; padding:0.25rem 0.5rem; width:160px;" placeholder="Search IP / Admin..." onkeyup="if(event.key==='Enter') AdminShell.onSecurityEventFilterChange()">
+              <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.onSecurityEventFilterChange()">Filter</button>
+            </div>
+          </div>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Status</th>
+                  <th>Actor / Admin</th>
+                  <th>IP Address</th>
+                  <th>Integrity Hash</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="secEventsTableBody">
+                <tr><td colspan="7" style="text-align:center; padding:2rem;">Loading security events...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="secEventsPagination" style="display:flex; justify-content:space-between; align-items:center; padding:1rem; border-top:1px solid var(--admin-border);">
+          </div>
+        </div>
+      `;
+
+      this.loadSecurityEvents(1);
+    }
+
+    onSecurityEventFilterChange() {
+      const actionEl = document.getElementById('secEventActionFilter');
+      const searchEl = document.getElementById('secEventSearch');
+      if (actionEl) this.systemSecurityState.eventsFilter.action = actionEl.value;
+      if (searchEl) this.systemSecurityState.eventsFilter.search = searchEl.value.trim();
+      this.loadSecurityEvents(1);
+    }
+
+    async loadSecurityEvents(page = 1) {
+      const tbody = document.getElementById('secEventsTableBody');
+      const pagEl = document.getElementById('secEventsPagination');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem;">Loading security events...</td></tr>`;
+
+      try {
+        const query = {
+          page,
+          limit: 20,
+          action: this.systemSecurityState.eventsFilter.action,
+          search: this.systemSecurityState.eventsFilter.search
+        };
+
+        const res = await window.AdminApi.listSecurityEvents(query);
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemSecurityState.events = items;
+          this.systemSecurityState.eventsPage = res.data.page;
+          this.systemSecurityState.eventsTotalPages = res.data.totalPages;
+
+          if (items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--admin-text-muted);">No security events found matching criteria.</td></tr>`;
+            if (pagEl) pagEl.innerHTML = '';
+            return;
+          }
+
+          tbody.innerHTML = items.map(ev => {
+            let statusBadge = '<span class="admin-badge admin-badge-success">SUCCESS</span>';
+            if (ev.status === 'FAILURE' || ev.status === 'ERROR' || ev.status === 'BLOCKED') {
+              statusBadge = `<span class="admin-badge admin-badge-danger">${this._escape(ev.status)}</span>`;
+            } else if (ev.status === 'DENIED') {
+              statusBadge = '<span class="admin-badge admin-badge-warning">DENIED</span>';
+            }
+
+            return `
+              <tr>
+                <td><span style="font-size:0.75rem;">${new Date(ev.createdAt).toLocaleString()}</span></td>
+                <td><code style="font-weight:700;">${this._escape(ev.action)}</code></td>
+                <td>${statusBadge}</td>
+                <td><strong>${this._escape(ev.adminEmail || 'System / Anonymous')}</strong></td>
+                <td><code>${this._escape(ev.ipAddress || 'unknown')}</code></td>
+                <td><code style="font-size:0.6875rem; color:var(--admin-text-muted);">${this._escape(ev.integrityHash ? ev.integrityHash.slice(0, 12) + '...' : 'genesis')}</code></td>
+                <td>
+                  <button class="admin-btn admin-btn-xs admin-btn-secondary" onclick="AdminShell.viewSecurityEventDetailModal('${this._escape(ev.id)}')">
+                    Inspect
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          if (pagEl) {
+            pagEl.innerHTML = `
+              <span style="font-size:0.8125rem; color:var(--admin-text-muted);">
+                Page ${res.data.page} of ${res.data.totalPages} (${res.data.total} total events)
+              </span>
+              <div style="display:flex; gap:0.5rem;">
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" ${res.data.page <= 1 ? 'disabled' : ''} onclick="AdminShell.loadSecurityEvents(${res.data.page - 1})">Previous</button>
+                <button class="admin-btn admin-btn-xs admin-btn-secondary" ${res.data.page >= res.data.totalPages ? 'disabled' : ''} onclick="AdminShell.loadSecurityEvents(${res.data.page + 1})">Next</button>
+              </div>
+            `;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load security events:', err);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load security events: ${this._escape(err.message)}</td></tr>`;
+      }
+    }
+
+    async viewSecurityEventDetailModal(eventId) {
+      try {
+        this.toast(`Loading event details...`, 'info');
+        const res = await window.AdminApi.getSecurityEventDetail(eventId);
+        if (!res || !res.data || !res.data.event) {
+          throw new Error('Event not found');
+        }
+
+        const ev = res.data.event;
+        const modalHtml = `
+          <div class="admin-modal-overlay" id="secEventModal" style="display:flex;">
+            <div class="admin-modal" style="max-width:600px;">
+              <div class="admin-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0;">Security Event: ${this._escape(ev.action)}</h3>
+                <button class="admin-btn admin-btn-secondary admin-btn-xs" onclick="document.getElementById('secEventModal').remove();">✕</button>
+              </div>
+              <div class="admin-modal-body" style="padding:1rem 0; display:flex; flex-direction:column; gap:0.75rem;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; background:var(--admin-bg-secondary); padding:0.75rem 1rem; border-radius:6px; font-size:0.8125rem;">
+                  <div><strong>ID:</strong> <code>${this._escape(ev.id)}</code></div>
+                  <div><strong>Status:</strong> ${this._escape(ev.status)}</div>
+                  <div><strong>Actor Email:</strong> ${this._escape(ev.adminEmail || 'None')}</div>
+                  <div><strong>IP Address:</strong> <code>${this._escape(ev.ipAddress || 'unknown')}</code></div>
+                  <div><strong>Timestamp:</strong> ${new Date(ev.createdAt).toLocaleString()}</div>
+                  <div><strong>Sequence:</strong> #${ev.sequence || 0}</div>
+                </div>
+
+                <div>
+                  <label style="font-weight:600; font-size:0.75rem; text-transform:uppercase; color:var(--admin-text-muted);">Tamper-Evident Hash</label>
+                  <pre style="background:var(--admin-bg-secondary); padding:0.5rem; border-radius:4px; font-size:0.75rem; overflow-x:auto;">${this._escape(ev.integrityHash || 'Genesis Record')}</pre>
+                </div>
+
+                <div>
+                  <label style="font-weight:600; font-size:0.75rem; text-transform:uppercase; color:var(--admin-text-muted);">Event Metadata</label>
+                  <pre style="background:var(--admin-bg-secondary); padding:0.75rem; border-radius:4px; font-size:0.75rem; max-height:200px; overflow-y:auto;">${this._escape(JSON.stringify(ev.metadata || {}, null, 2))}</pre>
+                </div>
+              </div>
+              <div class="admin-modal-footer" style="display:flex; justify-content:flex-end;">
+                <button class="admin-btn admin-btn-secondary" onclick="document.getElementById('secEventModal').remove();">Close</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (err) {
+        console.error('Failed to view event modal:', err);
+        this.toast(`Failed to view event: ${err.message}`, 'danger');
+      }
+    }
+
+    /* ---------------- Tab 5: RBAC Matrix ---------------- */
+    async _renderSecurityRbacTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2 class="admin-card-title">Role-Based Access Control (RBAC) Inventory Matrix</h2>
+              <div style="font-size:0.8125rem; color:var(--admin-text-muted);">Governance mapping of defined roles, permissions, and assigned system privileges.</div>
+            </div>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadSecurityRbac()">↻ Refresh RBAC</button>
+          </div>
+          <div class="admin-card-body" id="secRbacContainer">
+            <div style="text-align:center; padding:2rem;">Loading RBAC governance matrix...</div>
+          </div>
+        </div>
+      `;
+
+      this.loadSecurityRbac();
+    }
+
+    async loadSecurityRbac() {
+      const container = document.getElementById('secRbacContainer');
+      if (!container) return;
+
+      container.innerHTML = `<div style="text-align:center; padding:2rem;">Loading RBAC governance matrix...</div>`;
+
+      try {
+        const res = await window.AdminApi.getRbacInventory();
+        if (res && res.data) {
+          const { roles, permissions, matrix, superAdminPrivilege } = res.data;
+          this.systemSecurityState.rbac = res.data;
+
+          container.innerHTML = `
+            <div style="background:rgba(37,99,235,0.08); border-left:3px solid var(--admin-primary); padding:0.75rem 1rem; border-radius:4px; margin-bottom:1.5rem; font-size:0.8125rem;">
+              <strong>SuperAdmin Privilege Notice:</strong> ${this._escape(superAdminPrivilege.description)}
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+              ${roles.map(r => `
+                <div class="admin-card" style="padding:1.25rem; background:var(--admin-bg-secondary); border-radius:6px; border:1px solid var(--admin-border);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                    <span class="admin-badge admin-badge-primary">${this._escape(r.slug)}</span>
+                    <span style="font-size:0.75rem; color:var(--admin-text-muted);">${r.assignedAdminCount} Admin(s) Assigned</span>
+                  </div>
+                  <h3 style="margin:0 0 0.25rem 0; font-size:1rem;">${this._escape(r.name)}</h3>
+                  <p style="font-size:0.8125rem; color:var(--admin-text-muted); margin:0 0 0.75rem 0;">${this._escape(r.description || 'System defined role')}</p>
+                  <div style="border-top:1px solid var(--admin-border); padding-top:0.5rem;">
+                    <div style="font-size:0.75rem; font-weight:600; margin-bottom:0.25rem;">Granted Permissions (${r.permissionSlugs.length}):</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.25rem;">
+                      ${r.permissionSlugs.map(p => `<code style="font-size:0.6875rem; background:var(--admin-bg-primary); padding:2px 4px; border-radius:3px;">${this._escape(p)}</code>`).join('')}
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+
+            <h3 style="font-size:1rem; margin:1.5rem 0 0.75rem 0;">System Permissions Catalog (${permissions.length})</h3>
+            <div class="admin-table-container">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Permission Slug</th>
+                    <th>Resource</th>
+                    <th>Action</th>
+                    <th>Description</th>
+                    <th>Assigned Roles</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${permissions.map(p => `
+                    <tr>
+                      <td><code>${this._escape(p.slug)}</code></td>
+                      <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(p.resource)}</span></td>
+                      <td><span class="admin-badge admin-badge-neutral" style="font-size:0.6875rem;">${this._escape(p.action)}</span></td>
+                      <td><div style="font-size:0.8125rem; color:var(--admin-text-muted);">${this._escape(p.description || '')}</div></td>
+                      <td>
+                        <div style="display:flex; flex-wrap:wrap; gap:0.25rem;">
+                          ${p.roleSlugs.map(rs => `<span class="admin-badge admin-badge-primary" style="font-size:0.625rem;">${this._escape(rs)}</span>`).join('')}
+                        </div>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error('Failed to load RBAC inventory:', err);
+        container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load RBAC inventory: ${this._escape(err.message)}</div>`;
+      }
+    }
+
+    /* ---------------- Tab 6: Credential Posture ---------------- */
+    async _renderSecurityCredentialsTab() {
+      const container = document.getElementById('sysSecTabContent');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="admin-card">
+          <div class="admin-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2 class="admin-card-title">Administrator Account &amp; Credential Posture</h2>
+              <div style="font-size:0.8125rem; color:var(--admin-text-muted);">Security posture, MFA configuration, and active session distribution across administrator accounts.</div>
+            </div>
+            <button class="admin-btn admin-btn-sm admin-btn-secondary" onclick="AdminShell.loadSecurityCredentials()">↻ Refresh Posture</button>
+          </div>
+          <div class="admin-table-container">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Administrator</th>
+                  <th>Account Status</th>
+                  <th>Privilege Level</th>
+                  <th>Assigned Roles</th>
+                  <th>Password Auth</th>
+                  <th>2FA / MFA</th>
+                  <th>Active Sessions</th>
+                  <th>Last Login</th>
+                </tr>
+              </thead>
+              <tbody id="secCredentialsTableBody">
+                <tr><td colspan="8" style="text-align:center; padding:2rem;">Loading credential posture...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+      this.loadSecurityCredentials();
+    }
+
+    async loadSecurityCredentials() {
+      const tbody = document.getElementById('secCredentialsTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem;">Loading credential posture...</td></tr>`;
+
+      try {
+        const res = await window.AdminApi.getAdminCredentialPosture();
+        if (res && res.data && res.data.items) {
+          const items = res.data.items;
+          this.systemSecurityState.credentials = items;
+
+          tbody.innerHTML = items.map(a => {
+            const statusBadge = a.status === 'ACTIVE'
+              ? '<span class="admin-badge admin-badge-success">ACTIVE</span>'
+              : '<span class="admin-badge admin-badge-danger">DISABLED</span>';
+
+            return `
+              <tr>
+                <td>
+                  <strong>${this._escape(a.name)}</strong>
+                  <div style="font-size:0.75rem; color:var(--admin-text-muted);">${this._escape(a.email)}</div>
+                </td>
+                <td>${statusBadge}</td>
+                <td>${a.isSuperAdmin ? '<span class="admin-badge admin-badge-primary">SUPERADMIN</span>' : '<span class="admin-badge admin-badge-neutral">STAFF</span>'}</td>
+                <td>
+                  <div style="display:flex; flex-wrap:wrap; gap:0.25rem;">
+                    ${a.roles.map(r => `<span class="admin-badge admin-badge-neutral" style="font-size:0.625rem;">${this._escape(r)}</span>`).join('')}
+                  </div>
+                </td>
+                <td><span class="admin-badge admin-badge-success" style="font-size:0.6875rem;">CONFIGURED</span></td>
+                <td><span class="admin-badge admin-badge-success" style="font-size:0.6875rem;">EMAIL OTP (2FA)</span></td>
+                <td><span class="admin-code-pill" style="font-weight:700;">${a.activeSessionsCount} active</span></td>
+                <td><span style="font-size:0.75rem;">${a.lastLoginAt ? new Date(a.lastLoginAt).toLocaleString() : 'Never'}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load credential posture:', err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--admin-danger);">Failed to load credential posture: ${this._escape(err.message)}</td></tr>`;
+      }
     }
 
     _escape(str) {

@@ -8,6 +8,11 @@ import { adminServerOperationsRoutes } from './servers/index.js';
 import { adminGatewayOperationsRoutes } from './gateway/index.js';
 import { adminBillingOperationsRoutes } from './billing/index.js';
 import { adminSupportOperationsRoutes } from './support/index.js';
+import { adminNotificationOperationsRoutes } from './notifications/index.js';
+import { adminSystemLogsOperationsRoutes } from './system/logs/index.js';
+import { adminBackgroundJobsOperationsRoutes } from './system/jobs/index.js';
+import { adminSystemConfigOperationsRoutes } from './system/config/index.js';
+import { adminSystemSecurityOperationsRoutes } from './system/security/index.js';
 
 export * from './types.js';
 export * from './schemas/common.js';
@@ -21,6 +26,11 @@ export * from './servers/index.js';
 export * from './gateway/index.js';
 export * from './billing/index.js';
 export * from './support/index.js';
+export * from './notifications/index.js';
+export * from './system/logs/index.js';
+export * from './system/jobs/index.js';
+export * from './system/config/index.js';
+export * from './system/security/index.js';
 
 export async function adminOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -52,4 +62,9 @@ export async function adminOperationsRoutes(app: FastifyInstance): Promise<void>
   await app.register(adminGatewayOperationsRoutes);
   await app.register(adminBillingOperationsRoutes);
   await app.register(adminSupportOperationsRoutes);
+  await app.register(adminNotificationOperationsRoutes);
+  await app.register(adminSystemLogsOperationsRoutes);
+  await app.register(adminBackgroundJobsOperationsRoutes);
+  await app.register(adminSystemConfigOperationsRoutes);
+  await app.register(adminSystemSecurityOperationsRoutes);
 }

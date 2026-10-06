@@ -215,6 +215,7 @@ export class AdminSupportService {
 
     if (query.unassigned === true) {
       where.assignedAdminId = null;
+      where.status = { notIn: [SupportCaseStatus.RESOLVED, SupportCaseStatus.CLOSED] };
     }
 
     if (query.needsAttention === true) {
@@ -352,13 +353,13 @@ export class AdminSupportService {
         throw new NotFoundError(`Admin user with ID '${input.assignedAdminId}' not found`);
       }
       if (admin.status !== AdminStatus.ACTIVE) {
-        throw new ConflictError(`Target administrator account '${admin.name}' is not ACTIVE`);
+        throw new ValidationError(`Target administrator account '${admin.name}' is not active (must be an active administrator)`);
       }
       const isEligible = admin.isSuperAdmin ||
         admin.userRoles.some(ur => ur.role.slug === 'SUPPORT' || ur.role.name.toUpperCase().includes('SUPPORT')) ||
         admin.userRoles.some(ur => ur.role.permissions.some(p => p.permission.slug.startsWith('support.')));
       if (!isEligible) {
-        throw new ConflictError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
+        throw new ValidationError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
       }
       assignedAdminName = admin.name;
     }
@@ -666,7 +667,7 @@ export class AdminSupportService {
     if (input.status !== undefined && input.status !== existing.status) {
       const allowed = VALID_SUPPORT_TRANSITIONS[existing.status] || [];
       if (!allowed.includes(input.status)) {
-        throw new ConflictError(`Invalid status transition from '${existing.status}' to '${input.status}'`);
+        throw new ValidationError(`Invalid status transition from '${existing.status}' to '${input.status}'`);
       }
 
       dataToUpdate.status = input.status;
@@ -810,7 +811,7 @@ export class AdminSupportService {
       }
 
       if (admin.status !== AdminStatus.ACTIVE) {
-        throw new ConflictError(`Target administrator account '${admin.name}' is not ACTIVE`);
+        throw new ValidationError(`Target administrator account '${admin.name}' is not active (must be an active administrator)`);
       }
 
       const isEligible = admin.isSuperAdmin ||
@@ -818,7 +819,7 @@ export class AdminSupportService {
         admin.userRoles.some(ur => ur.role.permissions.some(p => p.permission.slug.startsWith('support.')));
 
       if (!isEligible) {
-        throw new ConflictError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
+        throw new ValidationError(`Target administrator '${admin.name}' lacks support permissions and is ineligible for case assignment`);
       }
 
       assignedAdminName = admin.name;
@@ -864,6 +865,10 @@ export class AdminSupportService {
           status: updated.status,
           assignedAdminId: updated.assignedAdminId,
           assignedAdminName,
+          assignedAdmin: assignedAdminName ? {
+            id: updated.assignedAdminId!,
+            name: assignedAdminName
+          } : null,
           noteCount: existing._count.notes,
           isUrgent: indicators.isUrgent,
           isUnassigned: indicators.isUnassigned,

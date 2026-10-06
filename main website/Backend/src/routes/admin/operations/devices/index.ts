@@ -17,6 +17,21 @@ export * from './service.js';
 
 export async function adminDeviceOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**
+   * GET /api/v1/admin/operations/devices/metrics
+   * Retrieves summary count metrics across registered devices.
+   */
+  app.get(
+    '/admin/operations/devices/metrics',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('devices.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const metrics = await AdminDeviceService.getDeviceSummaryMetrics();
+      return reply.status(200).send(createSuccessResponse({ metrics }));
+    }
+  );
+
+  /**
    * GET /api/v1/admin/operations/devices
    * Lists registered devices with allowlisted filtering, search, and pagination.
    */

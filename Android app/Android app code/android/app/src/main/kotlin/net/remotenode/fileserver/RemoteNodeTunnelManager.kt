@@ -25,12 +25,15 @@ import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Android Native Gateway Tunnel Manager & Connection Coordinator
- * Phase 11A.3: Authoritative native persistent WebSocket tunnel owner within Android Foreground Service.
+ * Android Native Gateway Tunnel Manager & Connection Supervisor
+ * Phase APP-R1.11 Hardened: Authoritative native persistent WebSocket tunnel owner with auto-healing,
+ * non-interactive token renewal, and infinite bounded exponential backoff.
  */
 object RemoteNodeTunnelManager {
 
@@ -88,7 +91,9 @@ object RemoteNodeTunnelManager {
     private val random = SecureRandom()
 
     private var activeWebSocket: WebSocket? = null
-    private var pingFuture: java.util.concurrent.ScheduledFuture<*>? = null
+    private var pingFuture: ScheduledFuture<*>? = null
+    private var supervisorFuture: ScheduledFuture<*>? = null
+
     private var okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(15, TimeUnit.SECONDS)
         .connectTimeout(30, TimeUnit.SECONDS)
@@ -122,12 +127,16 @@ object RemoteNodeTunnelManager {
     private var appContext: Context? = null
 
     private val sessionRefreshLock = Any()
+    private val connectLock = Any()
 
     @Volatile
     private var isExplicitlyStopped: Boolean = true
 
     @Volatile
     private var isConnectingOrReconnecting: Boolean = false
+
+    @Volatile
+    private var isPermanentAuthFailure: Boolean = false
 
     private var reconnectAttempts: Int = 0
     private var missedPings: Int = 0
@@ -139,6 +148,7 @@ object RemoteNodeTunnelManager {
         NetworkWatcher.addListener { event ->
             handleNetworkEvent(event)
         }
+        startSupervisor()
     }
 
     fun addListener(listener: (Map<String, Any?>) -> Unit) {
@@ -206,6 +216,52 @@ object RemoteNodeTunnelManager {
         )
     }
 
+    private fun startSupervisor() {
+        if (supervisorFuture == null || supervisorFuture?.isCancelled == true) {
+            supervisorFuture = scheduler.scheduleWithFixedDelay({
+                try {
+                    runSupervisorTick()
+                } catch (e: Exception) {
+                    Log.e(TAG, "[SUPERVISOR_TICK_ERROR] ${e.message}")
+                }
+            }, 30, 30, TimeUnit.SECONDS)
+        }
+    }
+
+    private fun runSupervisorTick() {
+        if (isExplicitlyStopped || isPermanentAuthFailure) return
+
+        val ctx = appContext ?: return
+        val serverDesired = RemoteNodeServerService.getDesiredServerEnabled(ctx)
+        val tunnelDesired = RemoteNodeServerService.getDesiredTunnelEnabled(ctx)
+
+        if (!serverDesired || !tunnelDesired) return
+
+        // 1. If currently marked connected, verify real socket health
+        if (currentState == STATE_CONNECTED) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            val elapsedSincePong = if (lastPongElapsedRealtime > 0) now - lastPongElapsedRealtime else 0L
+
+            if (missedPings >= 3 || (lastPongElapsedRealtime > 0 && elapsedSincePong > 45000L)) {
+                Log.w(TAG, "[SUPERVISOR_STALE_SOCKET_DETECTED] missedPings=$missedPings elapsedPongMs=$elapsedSincePong. Triggering recovery reconnect.")
+                triggerReconnect(immediate = true)
+            }
+            return
+        }
+
+        // 2. If disconnected/error/reconnecting without an active connecting thread
+        val networkInfo = NetworkWatcher.getCurrentNetworkInfo(ctx)
+        val hasInternet = networkInfo["hasInternet"] as? Boolean ?: false
+        val isValidated = networkInfo["isValidated"] as? Boolean ?: false
+
+        if (hasInternet && isValidated && !isConnectingOrReconnecting) {
+            if (currentState == STATE_NETWORK_UNAVAILABLE || currentState == STATE_RECONNECTING || currentState == STATE_ERROR || currentState == STATE_STOPPED) {
+                Log.i(TAG, "[SUPERVISOR_AUTO_HEAL_WAKEUP] State=$currentState Network=Validated. Invoking triggerReconnect.")
+                triggerReconnect(immediate = false)
+            }
+        }
+    }
+
     @Synchronized
     fun startTunnel(
         context: Context,
@@ -216,6 +272,8 @@ object RemoteNodeTunnelManager {
         deviceCredential: String? = null
     ) {
         appContext = context.applicationContext
+        isPermanentAuthFailure = false
+
         if (!deviceCredential.isNullOrEmpty()) {
             storedDeviceCredential = deviceCredential
         } else if (storedDeviceCredential == null) {
@@ -252,9 +310,17 @@ object RemoteNodeTunnelManager {
 
         Log.i(TAG, "[START_TUNNEL] gen=$currentGen devId=${safeDeviceIdSuffix(deviceId)} apiHost=${extractHost(apiBaseUrl)} gwHost=${extractHost(gatewayWsUrl)} credPresent=${!storedDeviceCredential.isNullOrEmpty()}")
         emitState(STATE_STARTING)
+        startSupervisor()
         executeConnectSequence(currentGen)
     }
 
+    /**
+     * Non-Interactive Persistent Device Session Renewal
+     * Returns:
+     * - newAccessToken if successfully renewed
+     * - null if renewal failed
+     * Sets isPermanentAuthFailure = true ONLY if backend returned HTTP 401 with explicit revocation/expiration or HTTP 403.
+     */
     fun executeSessionRefresh(devId: String, apiBase: String): String? {
         synchronized(sessionRefreshLock) {
             val cred = storedDeviceCredential
@@ -262,10 +328,11 @@ object RemoteNodeTunnelManager {
 
             if (cred.isNullOrEmpty()) {
                 Log.w(TAG, "[SESSION_REFRESH_ABORTED] No persistent device credential available for device ${safeDeviceIdSuffix(devId)}")
+                isPermanentAuthFailure = true
                 return null
             }
 
-            Log.i(TAG, "[SESSION_REFRESH_START] Attempting persistent session renewal for device ${safeDeviceIdSuffix(devId)}")
+            Log.i(TAG, "[GATEWAY_AUTH_RENEWAL] Attempting non-interactive session renewal for device ${safeDeviceIdSuffix(devId)}")
             try {
                 val refreshUrl = URL("$apiBase/devices/$devId/session/refresh")
                 val conn = refreshUrl.openConnection() as HttpURLConnection
@@ -299,6 +366,7 @@ object RemoteNodeTunnelManager {
                         }
                         if (!newAccessToken.isNullOrEmpty()) {
                             storedSessionToken = newAccessToken
+                            isPermanentAuthFailure = false
                             appContext?.let { ctx ->
                                 RemoteNodeServerService.persistTunnelConfig(
                                     ctx,
@@ -309,15 +377,18 @@ object RemoteNodeTunnelManager {
                                     cred
                                 )
                             }
-                            Log.i(TAG, "[SESSION_REFRESH_SUCCESS] Successfully refreshed session token for device ${safeDeviceIdSuffix(devId)}")
+                            Log.i(TAG, "[GATEWAY_AUTH_RENEWAL_SUCCESS] Successfully renewed token for device ${safeDeviceIdSuffix(devId)}")
                             return newAccessToken
                         }
                     }
+                } else if (respCode == 401 || respCode == 403) {
+                    Log.e(TAG, "[GATEWAY_AUTH_RENEWAL_FAILED] Permanent revocation / expiration: HTTP $respCode: $rawBody")
+                    isPermanentAuthFailure = true
                 } else {
-                    Log.e(TAG, "[SESSION_REFRESH_REJECTED] HTTP $respCode: $rawBody")
+                    Log.w(TAG, "[GATEWAY_AUTH_RENEWAL_TRANSIENT_FAILURE] HTTP $respCode: $rawBody (will retry on next backoff cycle)")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "[SESSION_REFRESH_ERROR] ${e.javaClass.simpleName}: ${e.message}")
+                Log.w(TAG, "[GATEWAY_AUTH_RENEWAL_EXCEPTION] ${e.javaClass.simpleName}: ${e.message} (transient network failure, will retry)")
             }
             return null
         }
@@ -326,6 +397,7 @@ object RemoteNodeTunnelManager {
     @Synchronized
     fun stopTunnel() {
         isExplicitlyStopped = true
+        isPermanentAuthFailure = false
         val currentGen = connectionGeneration.incrementAndGet()
 
         stopPingTimer()
@@ -348,7 +420,7 @@ object RemoteNodeTunnelManager {
         val token = storedSessionToken
         val apiBase = storedApiBaseUrl
 
-        Log.i(TAG, "[STOP_TUNNEL] gen=$currentGen activeConnId=${connId ?: "none"}")
+        Log.i(TAG, "[SERVER_STOP_REQUESTED] [GATEWAY_DISCONNECTED] gen=$currentGen activeConnId=${connId ?: "none"}")
 
         // 2. Dispatch HTTP disconnect to backend control plane
         if (token != null && apiBase != null && (!connId.isNullOrEmpty() || !devId.isNullOrEmpty())) {
@@ -379,12 +451,13 @@ object RemoteNodeTunnelManager {
         activeHostname = null
         activePublicUrl = null
         isConnectingOrReconnecting = false
+        reconnectAttempts = 0
 
         emitState(STATE_STOPPED)
     }
 
     private fun handleNetworkEvent(event: Map<String, Any>) {
-        if (isExplicitlyStopped) return
+        if (isExplicitlyStopped || isPermanentAuthFailure) return
 
         val hasInternet = event["hasInternet"] as? Boolean ?: false
         val isValidated = event["isValidated"] as? Boolean ?: false
@@ -407,20 +480,21 @@ object RemoteNodeTunnelManager {
             val transportChanged = event["transportChanged"] as? Boolean ?: false
             if (transportChanged || type == "AVAILABLE") {
                 // Network interface switched (e.g. Wi-Fi <-> Cellular). Invalidate potentially black-holed socket.
+                Log.i(TAG, "[NETWORK_HANDOFF_DETECTED] transport=$transport. Seamlessly reconnecting socket.")
                 triggerReconnect(immediate = true)
             }
             return
         }
 
-        if (currentState == STATE_NETWORK_UNAVAILABLE || currentState == STATE_RECONNECTING || currentState == STATE_ERROR || currentState == STATE_STARTING) {
+        if (currentState == STATE_NETWORK_UNAVAILABLE || currentState == STATE_RECONNECTING || currentState == STATE_ERROR || currentState == STATE_STARTING || currentState == STATE_STOPPED) {
             triggerReconnect(immediate = true)
         }
     }
 
     fun triggerReconnect(immediate: Boolean = false) {
-        if (isExplicitlyStopped) return
+        if (isExplicitlyStopped || isPermanentAuthFailure) return
 
-        // If not immediate and already attempting connection, let the current attempt proceed
+        // If not immediate and already attempting connection, let current flight proceed
         if (!immediate && isConnectingOrReconnecting) return
 
         val currentGen = connectionGeneration.incrementAndGet()
@@ -429,17 +503,18 @@ object RemoteNodeTunnelManager {
         isConnectingOrReconnecting = false
 
         val delayMs = if (immediate) 50L else calculateBackoffDelayMs()
-        Log.i(TAG, "[RECONNECT_SCHEDULED] gen=$currentGen attempt=$reconnectAttempts delayMs=$delayMs immediate=$immediate")
+        Log.i(TAG, "[GATEWAY_RECONNECT_SCHEDULED] gen=$currentGen attempt=$reconnectAttempts delayMs=$delayMs immediate=$immediate")
         emitState(STATE_RECONNECTING)
 
         scheduler.schedule({
-            if (!isExplicitlyStopped && currentGen == connectionGeneration.get()) {
+            if (!isExplicitlyStopped && !isPermanentAuthFailure && currentGen == connectionGeneration.get()) {
                 executeConnectSequence(currentGen)
             }
         }, delayMs, TimeUnit.MILLISECONDS)
     }
 
     private fun calculateBackoffDelayMs(): Long {
+        // Bounded exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s, capped at 60s
         val attempt = reconnectAttempts.coerceIn(0, 6)
         val baseDelay = (1000L * (1 shl attempt)).coerceIn(1000L, 60000L)
         val jitter = random.nextInt(1000).toLong()
@@ -447,10 +522,14 @@ object RemoteNodeTunnelManager {
     }
 
     private fun executeConnectSequence(generation: Long) {
-        if (isExplicitlyStopped || generation != connectionGeneration.get()) return
+        if (isExplicitlyStopped || isPermanentAuthFailure || generation != connectionGeneration.get()) return
 
-        Log.i(TAG, "[CONNECT_SEQUENCE_START] gen=$generation reconnectAttempts=$reconnectAttempts")
-        isConnectingOrReconnecting = true
+        synchronized(connectLock) {
+            if (isExplicitlyStopped || isPermanentAuthFailure || generation != connectionGeneration.get()) return
+            isConnectingOrReconnecting = true
+        }
+
+        Log.i(TAG, "[GATEWAY_RECONNECT_ATTEMPT] gen=$generation reconnectAttempts=$reconnectAttempts")
         emitState(STATE_CONNECTING)
 
         workerExecutor.execute {
@@ -467,15 +546,22 @@ object RemoteNodeTunnelManager {
                     return@execute
                 }
 
+                // If session token is missing, attempt non-interactive renewal immediately
                 if (sessionTok.isNullOrEmpty()) {
                     Log.i(TAG, "[CONNECT_INITIAL_REFRESH] No session token present, attempting session refresh via persistent credential...")
                     val refreshedToken = executeSessionRefresh(devId, apiBase)
                     if (refreshedToken != null) {
                         sessionTok = refreshedToken
                         storedSessionToken = refreshedToken
-                    } else {
-                        Log.e(TAG, "[CONNECT_CONFIG_ERROR] No session token and persistent refresh failed.")
+                    } else if (isPermanentAuthFailure) {
                         emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
+                        isConnectingOrReconnecting = false
+                        return@execute
+                    } else {
+                        // Transient failure during refresh: schedule backoff retry
+                        reconnectAttempts++
+                        emitState(STATE_RECONNECTING, "Control plane connection pending. Reconnecting...")
+                        triggerReconnect()
                         isConnectingOrReconnecting = false
                         return@execute
                     }
@@ -487,7 +573,7 @@ object RemoteNodeTunnelManager {
                 var registrationAttempts = 0
                 val maxRegAttempts = 5
 
-                while (registrationAttempts < maxRegAttempts && !isExplicitlyStopped && generation == connectionGeneration.get()) {
+                while (registrationAttempts < maxRegAttempts && !isExplicitlyStopped && !isPermanentAuthFailure && generation == connectionGeneration.get()) {
                     registrationAttempts++
                     val regStartTime = android.os.SystemClock.elapsedRealtime()
                     val regHost = extractHost(apiBase)
@@ -527,7 +613,7 @@ object RemoteNodeTunnelManager {
                                 activeHostname = connData.optString("hostname")
                                 activePublicUrl = connData.optString("publicUrl", activeRemoteEndpoint ?: "")
                                 connectionToken = connData.optString("connectionToken")
-                                
+
                                 val returnedGatewayWs = connData.optString("gatewayWsUrl")
                                 if (!returnedGatewayWs.isNullOrEmpty()) {
                                     gatewayWs = returnedGatewayWs
@@ -542,32 +628,38 @@ object RemoteNodeTunnelManager {
                                 Log.w(TAG, "[REGISTRATION_REJECTED] gen=$generation attempt=$registrationAttempts durationMs=$regDurationMs err=$err")
                             }
                         } else if (respCode == 401) {
-                            Log.w(TAG, "[REGISTRATION_AUTH_401] Control plane session expired (HTTP 401). Attempting persistent session renewal...")
+                            Log.w(TAG, "[REGISTRATION_AUTH_401] Control plane session expired (HTTP 401). Attempting non-interactive session renewal...")
                             val refreshedToken = executeSessionRefresh(devId, apiBase)
                             if (!refreshedToken.isNullOrEmpty()) {
                                 sessionTok = refreshedToken
-                                Log.i(TAG, "[REGISTRATION_AUTH_RENEWED] Retrying registration with renewed token...")
+                                Log.i(TAG, "[REGISTRATION_AUTH_RENEWED] Retrying registration with renewed session token...")
                                 continue
                             }
 
-                            Log.e(TAG, "[REGISTRATION_AUTH_FAILURE] Persistent renewal failed or credential revoked (HTTP 401). Signing out.")
-                            AndroidErrorTelemetry.reportError(
-                                apiBase, sessionTok,
-                                AndroidErrorTelemetry.ErrorTelemetryPayload(
-                                    component = "ANDROID_TUNNEL",
-                                    errorCode = "REGISTRATION_AUTH_EXPIRED",
-                                    errorType = "AuthenticationException",
-                                    severity = "ERROR",
-                                    message = "Platform session expired and persistent renewal failed (HTTP 401)",
-                                    deviceId = devId,
-                                    metadata = mapOf("httpStatus" to 401, "attempt" to registrationAttempts, "generation" to generation)
+                            if (isPermanentAuthFailure) {
+                                Log.e(TAG, "[REGISTRATION_AUTH_FAILURE] Persistent credential revoked or expired. Sign-in required.")
+                                AndroidErrorTelemetry.reportError(
+                                    apiBase, sessionTok,
+                                    AndroidErrorTelemetry.ErrorTelemetryPayload(
+                                        component = "ANDROID_TUNNEL",
+                                        errorCode = "REGISTRATION_AUTH_EXPIRED",
+                                        errorType = "AuthenticationException",
+                                        severity = "ERROR",
+                                        message = "Platform session expired and persistent credential revoked (HTTP 401)",
+                                        deviceId = devId,
+                                        metadata = mapOf("httpStatus" to 401, "attempt" to registrationAttempts, "generation" to generation)
+                                    )
                                 )
-                            )
-                            emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
-                            isConnectingOrReconnecting = false
-                            return@execute
+                                emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
+                                isConnectingOrReconnecting = false
+                                return@execute
+                            } else {
+                                // Transient network failure during refresh: break and schedule retry
+                                break
+                            }
                         } else if (respCode == 403) {
                             Log.e(TAG, "[REGISTRATION_AUTH_FAILURE] gen=$generation attempt=$registrationAttempts status=403 durationMs=$regDurationMs")
+                            isPermanentAuthFailure = true
                             AndroidErrorTelemetry.reportError(
                                 apiBase, sessionTok,
                                 AndroidErrorTelemetry.ErrorTelemetryPayload(
@@ -585,6 +677,7 @@ object RemoteNodeTunnelManager {
                             return@execute
                         } else if (respCode == 404) {
                             Log.e(TAG, "[REGISTRATION_HTTP_ERROR] gen=$generation attempt=$registrationAttempts status=404 durationMs=$regDurationMs")
+                            isPermanentAuthFailure = true
                             AndroidErrorTelemetry.reportError(
                                 apiBase, sessionTok,
                                 AndroidErrorTelemetry.ErrorTelemetryPayload(
@@ -619,21 +712,9 @@ object RemoteNodeTunnelManager {
                 }
 
                 if (!registerSuccess || connectionToken.isNullOrEmpty() || generation != connectionGeneration.get() || isExplicitlyStopped) {
-                    Log.w(TAG, "[REGISTRATION_EXHAUSTED] gen=$generation registerSuccess=$registerSuccess tokenPresent=${!connectionToken.isNullOrEmpty()} activeGen=${connectionGeneration.get()} isExplicitlyStopped=$isExplicitlyStopped")
-                    if (!isExplicitlyStopped && generation == connectionGeneration.get()) {
+                    Log.w(TAG, "[REGISTRATION_EXHAUSTED] gen=$generation registerSuccess=$registerSuccess tokenPresent=${!connectionToken.isNullOrEmpty()} activeGen=${connectionGeneration.get()} isExplicitlyStopped=$isExplicitlyStopped isPermanentAuth=$isPermanentAuthFailure")
+                    if (!isExplicitlyStopped && !isPermanentAuthFailure && generation == connectionGeneration.get()) {
                         reconnectAttempts++
-                        AndroidErrorTelemetry.reportError(
-                            apiBase, sessionTok,
-                            AndroidErrorTelemetry.ErrorTelemetryPayload(
-                                component = "ANDROID_TUNNEL",
-                                errorCode = "REGISTRATION_RETRIES_EXHAUSTED",
-                                errorType = "RegistrationTimeoutException",
-                                severity = "WARNING",
-                                message = "Control plane registration retries exhausted ($registrationAttempts attempts)",
-                                deviceId = devId,
-                                metadata = mapOf("maxAttempts" to maxRegAttempts, "generation" to generation, "reconnectAttempts" to reconnectAttempts)
-                            )
-                        )
                         emitState(STATE_RECONNECTING, "Control plane connection pending. Reconnecting...")
                         triggerReconnect()
                     }
@@ -668,7 +749,7 @@ object RemoteNodeTunnelManager {
                 emitState(STATE_AUTHENTICATING)
 
                 val wsStartTimestamp = android.os.SystemClock.elapsedRealtime()
-                Log.i(TAG, "[WEBSOCKET_START] gen=$generation targetGatewayWs=${extractHost(targetGatewayWs)} scheme=${uri.scheme}")
+                Log.i(TAG, "[GATEWAY_AUTHENTICATING] gen=$generation targetGatewayWs=${extractHost(targetGatewayWs)} scheme=${uri.scheme}")
 
                 val wsRequest = Request.Builder()
                     .url(targetGatewayWs)
@@ -719,9 +800,8 @@ object RemoteNodeTunnelManager {
                                     if (msg.has("remoteEndpoint")) {
                                         activeRemoteEndpoint = msg.optString("remoteEndpoint")
                                     }
-                                    Log.i(TAG, "[AUTH_SUCCESS] gen=$generation connId=$activeConnectionId remoteEndpoint=$activeRemoteEndpoint authElapsedMs=$authElapsed")
+                                    Log.i(TAG, "[GATEWAY_CONNECTED] [GATEWAY_RECONNECT_SUCCESS] gen=$generation connId=$activeConnectionId remoteEndpoint=$activeRemoteEndpoint authElapsedMs=$authElapsed")
                                     emitState(STATE_CONNECTED)
-                                    Log.i(TAG, "[STATE_CONNECTED] gen=$generation connId=$activeConnectionId startingPingTimer=true")
                                     startPingTimer(generation)
                                 }
                                 "AUTH_FAILURE" -> {
@@ -748,27 +828,28 @@ object RemoteNodeTunnelManager {
                                             metadata = mapOf("reason" to reason, "isTransient" to isTransientTokenFailure, "generation" to generation)
                                         )
                                     )
-                                    if (isTransientTokenFailure && !isExplicitlyStopped && reconnectAttempts < 5) {
+
+                                    // Attempt persistent token renewal before declaring fatal auth failure
+                                    val renewedToken = storedDeviceId?.let { dId ->
+                                        storedApiBaseUrl?.let { aBase ->
+                                            executeSessionRefresh(dId, aBase)
+                                        }
+                                    }
+
+                                    if (renewedToken != null && !isExplicitlyStopped) {
                                         reconnectAttempts++
-                                        emitState(STATE_RECONNECTING, "Gateway auth transient failure ($reason). Re-registering...")
+                                        emitState(STATE_RECONNECTING, "Session renewed. Reconnecting...")
+                                        webSocket.close(1000, "Token renewed")
+                                        triggerReconnect()
+                                    } else if (isPermanentAuthFailure) {
+                                        emitState(STATE_AUTH_FAILED, reason)
+                                        webSocket.close(1000, "Auth failure")
+                                    } else {
+                                        // Transient token mismatch / gateway cache propagation: retry with backoff
+                                        reconnectAttempts++
+                                        emitState(STATE_RECONNECTING, "Gateway auth transient failure. Re-registering...")
                                         webSocket.close(1000, "Token refresh required")
                                         triggerReconnect()
-                                    } else {
-                                        // Attempt persistent token renewal before declaring fatal auth failure
-                                        val renewedToken = storedDeviceId?.let { devId ->
-                                            storedApiBaseUrl?.let { apiBase ->
-                                                executeSessionRefresh(devId, apiBase)
-                                            }
-                                        }
-                                        if (renewedToken != null && !isExplicitlyStopped) {
-                                            reconnectAttempts++
-                                            emitState(STATE_RECONNECTING, "Session renewed. Reconnecting...")
-                                            webSocket.close(1000, "Token renewed")
-                                            triggerReconnect()
-                                        } else {
-                                            emitState(STATE_AUTH_FAILED, reason)
-                                            webSocket.close(1000, "Auth failure")
-                                        }
                                     }
                                 }
                                 "PONG" -> {
@@ -783,7 +864,7 @@ object RemoteNodeTunnelManager {
                                     handleInboundFileRequest(webSocket, msg)
                                 }
                                 "DISCONNECT" -> {
-                                    Log.w(TAG, "[GATEWAY_DISCONNECT_MSG] gen=$generation activeGatewayNodeId=$activeGatewayNodeId")
+                                    Log.w(TAG, "[GATEWAY_DISCONNECTED] [GATEWAY_DISCONNECT_MSG] gen=$generation activeGatewayNodeId=$activeGatewayNodeId")
                                     if (!isExplicitlyStopped) {
                                         if (reconnectAttempts >= 1 && !activeGatewayNodeId.isNullOrEmpty()) {
                                             lastFailedGatewayNodeId = activeGatewayNodeId
@@ -804,7 +885,7 @@ object RemoteNodeTunnelManager {
 
                     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                         Log.i(TAG, "[WEBSOCKET_CLOSED] gen=$generation code=$code reason=$reason")
-                        if (generation == connectionGeneration.get() && !isExplicitlyStopped) {
+                        if (generation == connectionGeneration.get() && !isExplicitlyStopped && !isPermanentAuthFailure) {
                             if (reconnectAttempts >= 2 && !activeGatewayNodeId.isNullOrEmpty()) {
                                 lastFailedGatewayNodeId = activeGatewayNodeId
                             }
@@ -814,7 +895,7 @@ object RemoteNodeTunnelManager {
 
                     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                         Log.e(TAG, "[WEBSOCKET_FAILURE] gen=$generation responseCode=${response?.code} errorType=${t.javaClass.simpleName} errorMsg=${t.message}", t)
-                        if (generation == connectionGeneration.get() && !isExplicitlyStopped) {
+                        if (generation == connectionGeneration.get() && !isExplicitlyStopped && !isPermanentAuthFailure) {
                             reconnectAttempts++
                             if (reconnectAttempts >= 2 && !activeGatewayNodeId.isNullOrEmpty()) {
                                 lastFailedGatewayNodeId = activeGatewayNodeId
@@ -860,7 +941,7 @@ object RemoteNodeTunnelManager {
                         metadata = mapOf("generation" to generation)
                     )
                 )
-                if (generation == connectionGeneration.get() && !isExplicitlyStopped) {
+                if (generation == connectionGeneration.get() && !isExplicitlyStopped && !isPermanentAuthFailure) {
                     reconnectAttempts++
                     emitState(STATE_RECONNECTING, "Tunnel initialization error: ${e.message}")
                     triggerReconnect()
@@ -886,7 +967,7 @@ object RemoteNodeTunnelManager {
             // Monotonic silent heartbeat check: 3 missed pings or >45s without PONG
             val elapsedSincePong = android.os.SystemClock.elapsedRealtime() - lastPongElapsedRealtime
             if (missedPings >= 3 || (lastPongElapsedRealtime > 0 && elapsedSincePong > 45000L)) {
-                Log.w(TAG, "[HEARTBEAT_FAILURE] gen=$generation missedPings=$missedPings elapsedSincePongMs=$elapsedSincePong. Triggering reconnect.")
+                Log.w(TAG, "[GATEWAY_HEARTBEAT_TIMEOUT] gen=$generation missedPings=$missedPings elapsedSincePongMs=$elapsedSincePong. Triggering reconnect.")
                 AndroidErrorTelemetry.reportError(
                     storedApiBaseUrl, storedSessionToken,
                     AndroidErrorTelemetry.ErrorTelemetryPayload(
@@ -894,7 +975,7 @@ object RemoteNodeTunnelManager {
                         errorCode = "HEARTBEAT_TIMEOUT_FAILURE",
                         errorType = "HeartbeatTimeoutException",
                         severity = "WARNING",
-                        message = "Heartbeat failure: $missedPings missed pings, >35s elapsed without PONG",
+                        message = "Heartbeat failure: $missedPings missed pings, >45s elapsed without PONG",
                         deviceId = storedDeviceId,
                         gatewayNodeId = activeGatewayNodeId,
                         connectionId = activeConnectionId,

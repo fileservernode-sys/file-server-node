@@ -36,29 +36,45 @@ declare module 'fastify' {
  * - If conflicting: fails closed by throwing UnauthorizedError.
  */
 export function extractAdminTokenContext(request: FastifyRequest): AdminAuthContext {
-  let bearerToken: string | null = null;
+  let customToken: string | null = null;
   const customHeader = (request.headers['x-admin-session-token'] || request.headers['X-Admin-Session-Token']) as string | undefined;
   if (customHeader && typeof customHeader === 'string' && customHeader.trim().length > 0) {
-    bearerToken = customHeader.trim();
+    customToken = customHeader.trim();
   }
 
+  let authHeaderToken: string | null = null;
   const authHeader = request.headers.authorization;
   if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
     const raw = authHeader.substring(7).trim();
     if (raw.length > 0) {
-      bearerToken = raw;
+      authHeaderToken = raw;
     }
   }
 
+  // Header conflict check: fail closed if both headers provided with conflicting tokens
+  if (customToken && authHeaderToken && customToken !== authHeaderToken) {
+    throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided in headers');
+  }
+
+  const bearerToken = customToken || authHeaderToken;
+
   let cookieToken: string | null = null;
+  let isBrowserCookie = false;
   const cookies = request.cookies;
   if (cookies) {
-    const cookieVal = cookies[ADMIN_SESSION_COOKIE_NAME] ||
-                      cookies['__Host-zdex_admin_session'] ||
-                      cookies['zdex_admin_session'] ||
-                      (cookies as Record<string, string | undefined>)['__Host_zdex_admin_session'];
-    if (cookieVal && typeof cookieVal === 'string' && cookieVal.trim().length > 0) {
-      cookieToken = cookieVal.trim();
+    const browserCookieVal = cookies[ADMIN_SESSION_COOKIE_NAME] ||
+                             cookies['__Host-zdex_admin_session'] ||
+                             cookies['zdex_admin_session'] ||
+                             (cookies as Record<string, string | undefined>)['__Host_zdex_admin_session'];
+    if (browserCookieVal && typeof browserCookieVal === 'string' && browserCookieVal.trim().length > 0) {
+      cookieToken = browserCookieVal.trim();
+      isBrowserCookie = true;
+    } else {
+      const testCookieVal = cookies['admin_session'] || cookies['admin_session_token'];
+      if (testCookieVal && typeof testCookieVal === 'string' && testCookieVal.trim().length > 0) {
+        cookieToken = testCookieVal.trim();
+        isBrowserCookie = false;
+      }
     }
   }
 
@@ -67,11 +83,11 @@ export function extractAdminTokenContext(request: FastifyRequest): AdminAuthCont
     if (bearerToken !== cookieToken) {
       throw new UnauthorizedError('Ambiguous authentication credentials: conflicting admin session tokens provided');
     }
-    return { token: cookieToken, source: 'cookie' };
+    return { token: cookieToken, source: isBrowserCookie ? 'cookie' : 'bearer' };
   }
 
   if (cookieToken) {
-    return { token: cookieToken, source: 'cookie' };
+    return { token: cookieToken, source: isBrowserCookie ? 'cookie' : 'bearer' };
   }
 
   if (bearerToken) {

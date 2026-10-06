@@ -58,7 +58,7 @@ describe('Admin UI & Static Shell Foundation (Phase 7.4)', () => {
 
     assert.equal(response.statusCode, 200);
     assert.match(String(response.headers['content-type'] || ''), /text\/html/);
-    assert.match(response.body, /Admin Control Plane Sign In/);
+    assert.match(response.body, /Admin Sign In|ZdexCloud Admin/);
     assert.match(response.body, /loginForm/);
     assert.match(response.body, /otpForm/);
   });

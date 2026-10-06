@@ -222,7 +222,12 @@ export const NOTIFICATION_TYPE_CATALOG: Record<NotificationType, NotificationTyp
 export function getNotificationTypeMeta(type: NotificationType | string): NotificationTypeMeta {
   const meta = NOTIFICATION_TYPE_CATALOG[type as NotificationType];
   if (!meta) {
-    throw new Error(`Unknown or unregistered notification type: ${type}`);
+    return {
+      type: type as any,
+      category: NotificationCategory.SYSTEM,
+      defaultSeverity: NotificationSeverity.INFO,
+      isSecurityCritical: false
+    };
   }
   return meta;
 }

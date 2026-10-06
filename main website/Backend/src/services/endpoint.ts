@@ -97,10 +97,10 @@ export class EndpointService {
     const cleanId = serverId.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
     // If it's a long 25-char cuid, extract a clean 6-character short suffix
     const shortSlug =
-      cleanId.length > 10
+      cleanId.startsWith('srv') || cleanId.startsWith('node')
+        ? (cleanId.length > 20 ? `node-${cleanId.slice(-6)}` : cleanId)
+        : cleanId.length > 10
         ? `node-${cleanId.slice(-6)}`
-        : cleanId.startsWith('srv') || cleanId.startsWith('node')
-        ? cleanId
         : `node-${cleanId}`;
     return `${shortSlug}.${domain}`;
   }

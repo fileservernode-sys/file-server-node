@@ -560,4 +560,51 @@ describe('Admin Device Operations Management (Phase 8.4)', () => {
       assert.strictEqual(res.statusCode, 400);
     });
   });
+
+  // =========================================================================
+  // SUITE 8: PHASE 17 BATCH 17.3 CANONICAL ROUTES & METRICS
+  // =========================================================================
+  describe('Suite 8: Phase 17 Batch 17.3 Canonical Routes & Metrics', () => {
+    test('8.1: GET /api/v1/admin/devices/metrics returns aggregated metrics', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/devices/metrics',
+        cookies: { admin_session: superAdminToken }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const json = res.json();
+      assert.strictEqual(json.success, true);
+      assert.ok(json.data.metrics);
+      assert.ok(typeof json.data.metrics.totalDevices === 'number');
+      assert.ok(typeof json.data.metrics.onlineDevices === 'number');
+      assert.ok(typeof json.data.metrics.offlineDevices === 'number');
+      assert.ok(typeof json.data.metrics.connectingDevices === 'number');
+      assert.ok(typeof json.data.metrics.androidDevices === 'number');
+    });
+
+    test('8.2: GET /api/v1/admin/operations/devices/metrics returns aggregated metrics', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/operations/devices/metrics',
+        cookies: { admin_session: superAdminToken }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const json = res.json();
+      assert.strictEqual(json.success, true);
+      assert.ok(json.data.metrics);
+    });
+
+    test('8.3: GET /api/v1/admin/devices lists devices via canonical route', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/devices?page=1&pageSize=10',
+        cookies: { admin_session: superAdminToken }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const json = res.json();
+      assert.strictEqual(json.success, true);
+      assert.ok(Array.isArray(json.data.items));
+    });
+  });
 });
+

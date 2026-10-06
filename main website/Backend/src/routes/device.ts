@@ -363,10 +363,10 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     if (!cred || cred.credentialHash !== credentialHash) {
       await prisma.auditEvent.create({
         data: {
-          userId: cred?.userId || 'unknown',
-          deviceId,
+          userId: cred?.userId,
+          deviceId: cred?.deviceId,
           eventType: 'DEVICE_SESSION_REFRESH_FAILED',
-          metadata: { reason: 'invalid_credential_hash' }
+          metadata: { reason: 'invalid_credential_hash', attemptedDeviceId: deviceId }
         }
       });
       return reply.status(401).send(createErrorResponse('INVALID_CREDENTIAL', 'Invalid or expired device credential'));

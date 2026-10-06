@@ -329,6 +329,9 @@ export class ErrorIngestionService {
           createdFingerprint,
           createdIncident
         };
+      }, {
+        timeout: 30000,
+        maxWait: 15000
       });
 
       return {

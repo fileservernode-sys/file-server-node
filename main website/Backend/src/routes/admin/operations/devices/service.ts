@@ -24,6 +24,14 @@ export interface DeviceSummaryItem {
   connectionCount: number;
 }
 
+export interface DeviceSummaryMetrics {
+  totalDevices: number;
+  onlineDevices: number;
+  offlineDevices: number;
+  connectingDevices: number;
+  androidDevices: number;
+}
+
 export interface DeviceDetailResult {
   id: string;
   userId: string;
@@ -65,6 +73,27 @@ export interface DeviceDetailResult {
 }
 
 export class AdminDeviceService {
+  /**
+   * Retrieves summary metric counts across all registered devices.
+   */
+  static async getDeviceSummaryMetrics(): Promise<DeviceSummaryMetrics> {
+    const [totalDevices, onlineDevices, offlineDevices, connectingDevices, androidDevices] = await Promise.all([
+      prisma.device.count(),
+      prisma.device.count({ where: { status: 'ONLINE' } }),
+      prisma.device.count({ where: { status: 'OFFLINE' } }),
+      prisma.device.count({ where: { status: { in: ['CONNECTING', 'RECONNECTING'] } } }),
+      prisma.device.count({ where: { platform: 'Android' } })
+    ]);
+
+    return {
+      totalDevices,
+      onlineDevices,
+      offlineDevices,
+      connectingDevices,
+      androidDevices
+    };
+  }
+
   /**
    * Lists customer devices with safe allowlisted filters, search, and pagination.
    */

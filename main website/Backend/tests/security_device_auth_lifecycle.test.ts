@@ -198,7 +198,7 @@ describe('ZdexCloud — Persistent Server Authentication Lifecycle & Device Secu
     // 2. Attempt to access billing
     const billingRes = await app.inject({
       method: 'GET',
-      url: '/api/v1/billing/state',
+      url: '/api/v1/billing',
       headers: { authorization: `Bearer ${deviceToken}` }
     });
     assert.strictEqual(billingRes.statusCode, 403, 'Device token cannot access billing APIs');

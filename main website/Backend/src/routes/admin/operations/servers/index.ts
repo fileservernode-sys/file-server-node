@@ -17,6 +17,21 @@ export * from './service.js';
 
 export async function adminServerOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**
+   * GET /api/v1/admin/operations/servers/metrics
+   * Retrieves summary count metrics across customer server instances.
+   */
+  app.get(
+    '/admin/operations/servers/metrics',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('servers.read')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const metrics = await AdminServerService.getServerSummaryMetrics();
+      return reply.status(200).send(createSuccessResponse({ metrics }));
+    }
+  );
+
+  /**
    * GET /api/v1/admin/operations/servers
    * Lists customer server instances with allowlisted filtering, search, and pagination.
    */

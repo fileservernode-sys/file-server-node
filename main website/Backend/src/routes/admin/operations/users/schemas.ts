@@ -38,6 +38,15 @@ export const userRestoreSchema = z.object({
     .optional()
 }).strict();
 
+export const userRevokeSessionsSchema = z.object({
+  reason: z
+    .string()
+    .trim()
+    .max(255, 'Revocation reason cannot exceed 255 characters')
+    .optional()
+}).strict();
+
 export type UserListQuery = z.infer<typeof userListQuerySchema>;
 export type UserSuspendInput = z.infer<typeof userSuspendSchema>;
 export type UserRestoreInput = z.infer<typeof userRestoreSchema>;
+export type UserRevokeSessionsInput = z.infer<typeof userRevokeSessionsSchema>;

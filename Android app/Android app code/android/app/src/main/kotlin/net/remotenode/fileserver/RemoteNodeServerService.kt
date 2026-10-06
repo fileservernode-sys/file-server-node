@@ -16,7 +16,7 @@ import androidx.core.app.ServiceCompat
 
 /**
  * RemoteNode Native Android Persistent Foreground Service
- * Phase APP-R1.11 Hardened: Authoritative server lifecycle owner.
+ * Phase APP-R1.11 Hardened: Authoritative server lifecycle owner and persistent supervisor.
  */
 class RemoteNodeServerService : Service() {
 
@@ -150,14 +150,7 @@ class RemoteNodeServerService : Service() {
 
     private val tunnelListener: (Map<String, Any?>) -> Unit = { event ->
         if (isServiceRunning) {
-            val tunnelState = event["state"] as? String ?: "DISCONNECTED"
-            val text = when (tunnelState) {
-                RemoteNodeTunnelManager.STATE_AUTH_FAILED -> "ZdexCloud — Sign-in Required"
-                else -> "Personal file server on port $activePort | Gateway: $tunnelState"
-            }
-            val runningNotif = buildNotification(text)
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, runningNotif)
+            updateNotification()
         }
     }
 
@@ -183,9 +176,7 @@ class RemoteNodeServerService : Service() {
                 if (!isServiceRunning) {
                     handleStartServer(port)
                 } else {
-                    val notif = buildNotification("Personal file server is running on port $activePort")
-                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(NOTIFICATION_ID, notif)
+                    updateNotification()
                 }
                 return START_STICKY
             } else {
@@ -204,6 +195,7 @@ class RemoteNodeServerService : Service() {
 
         when (action) {
             ACTION_START_SERVER -> {
+                android.util.Log.i("RemoteNodeServerService", "[SERVER_START_REQUESTED] action=ACTION_START_SERVER")
                 val port = intent.getIntExtra(EXTRA_PORT, getPersistedPort(this))
                 val user = intent.getStringExtra(EXTRA_USERNAME)
                 val pass = intent.getStringExtra(EXTRA_PASSWORD)
@@ -213,7 +205,7 @@ class RemoteNodeServerService : Service() {
                 handleStartServer(port)
             }
             ACTION_STOP_SERVER -> {
-                android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_SERVER source=intent")
+                android.util.Log.i("RemoteNodeServerService", "[SERVER_STOP_REQUESTED] action=ACTION_STOP_SERVER source=intent")
                 handleStopServer()
             }
             ACTION_RESTART_SERVER -> {
@@ -235,15 +227,13 @@ class RemoteNodeServerService : Service() {
                     persistTunnelConfig(this, devId, token, apiBase, gatewayWs, deviceCredential)
                     RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs, deviceCredential)
                 }
+                updateNotification()
             }
             ACTION_STOP_TUNNEL -> {
                 android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_TUNNEL source=intent")
                 setDesiredTunnelEnabled(this, false)
                 RemoteNodeTunnelManager.stopTunnel()
-                val text = "Personal file server on port $activePort | Gateway: DISCONNECTED"
-                val runningNotif = buildNotification(text)
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                notificationManager.notify(NOTIFICATION_ID, runningNotif)
+                updateNotification()
             }
         }
 
@@ -255,15 +245,35 @@ class RemoteNodeServerService : Service() {
         val desired = getDesiredServerEnabled(this)
         android.util.Log.i("RemoteNodeServerService", "[ON_TASK_REMOVED] serverDesired=$desired isRunning=$isServiceRunning activePort=$activePort")
         if (desired) {
-            val text = if (RemoteNodeTunnelManager.currentState == RemoteNodeTunnelManager.STATE_CONNECTED) {
-                "Personal file server on port $activePort | Gateway: CONNECTED"
-            } else {
-                "Personal file server is running on port $activePort"
-            }
-            val runningNotif = buildNotification(text)
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.notify(NOTIFICATION_ID, runningNotif)
+            updateNotification()
         }
+    }
+
+    private fun updateNotification() {
+        if (!isServiceRunning) return
+
+        val tunnelState = RemoteNodeTunnelManager.currentState
+        val statusText = when (tunnelState) {
+            RemoteNodeTunnelManager.STATE_CONNECTED -> "Personal file server on port $activePort | Gateway: Connected"
+            RemoteNodeTunnelManager.STATE_CONNECTING -> "Personal file server on port $activePort | Gateway: Connecting..."
+            RemoteNodeTunnelManager.STATE_AUTHENTICATING -> "Personal file server on port $activePort | Gateway: Authenticating..."
+            RemoteNodeTunnelManager.STATE_RECONNECTING -> "Personal file server on port $activePort | Gateway: Reconnecting..."
+            RemoteNodeTunnelManager.STATE_NETWORK_UNAVAILABLE -> "Personal file server on port $activePort | Waiting for network..."
+            RemoteNodeTunnelManager.STATE_AUTH_FAILED -> "ZdexCloud — Device Authorization Required"
+            RemoteNodeTunnelManager.STATE_ERROR -> "Personal file server on port $activePort | Gateway: Reconnecting..."
+            RemoteNodeTunnelManager.STATE_STOPPED -> {
+                if (getDesiredTunnelEnabled(this)) {
+                    "Personal file server on port $activePort | Gateway: Reconnecting..."
+                } else {
+                    "Personal file server is running on port $activePort"
+                }
+            }
+            else -> "Personal file server is running on port $activePort"
+        }
+
+        val notif = buildNotification(statusText)
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+        notificationManager?.notify(NOTIFICATION_ID, notif)
     }
 
     private fun handleStartServer(port: Int) {
@@ -273,10 +283,7 @@ class RemoteNodeServerService : Service() {
 
                 // Idempotent start protection: if already running on the same port, refresh and return
                 if (isServiceRunning && activePort == validatedPort) {
-                    val text = "Personal file server is running on port $validatedPort"
-                    val runningNotif = buildNotification(text)
-                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(NOTIFICATION_ID, runningNotif)
+                    updateNotification()
                     return
                 }
 
@@ -297,11 +304,10 @@ class RemoteNodeServerService : Service() {
                 if (startResult["success"] == true) {
                     isServiceRunning = true
                     currentServerState = "RUNNING"
-                    val runningNotif = buildNotification("Personal file server is running on port $validatedPort")
-                    val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                    notificationManager.notify(NOTIFICATION_ID, runningNotif)
+                    android.util.Log.i("RemoteNodeServerService", "[SERVER_STARTED] port=$validatedPort localEngine=ONLINE")
+                    updateNotification()
 
-                    // Auto-restore remote access tunnel if enabled and configured (e.g. after reboot)
+                    // Auto-restore remote access tunnel if enabled and configured (e.g. after reboot or service start)
                     if (getDesiredTunnelEnabled(this)) {
                         val tunnelConfig = getPersistedTunnelConfig(this)
                         val devId = tunnelConfig["deviceId"]
@@ -399,7 +405,7 @@ class RemoteNodeServerService : Service() {
                 setReferenceCounted(false)
             }
         }
-        wakeLock?.acquire(12 * 60 * 60 * 1000L) // 12 hours max continuous execution safety timeout
+        wakeLock?.acquire(24 * 60 * 60 * 1000L) // 24 hours continuous execution safety renewal
     }
 
     private fun releaseWakeLock() {

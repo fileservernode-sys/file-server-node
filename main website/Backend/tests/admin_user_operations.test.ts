@@ -545,4 +545,108 @@ describe('Admin User Operations Management (Phase 8.3)', () => {
       assert.strictEqual(restoreRes.statusCode, 200);
     });
   });
+
+  // =========================================================================
+  // SUITE 8 — PHASE 17.2 USER & ACCOUNT ADMINISTRATION EXTENSIONS
+  // =========================================================================
+  describe('Suite 8 — Phase 17.2 Metrics, Multi-Device Topology & Session Revocation', () => {
+    test('8.1 GET /api/v1/admin/users/metrics returns accurate aggregate metrics', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/users/metrics',
+        headers: { 'x-admin-session-token': standardAdminToken }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.payload);
+      assert.strictEqual(body.success, true);
+      assert.ok(typeof body.data.metrics.totalAccounts === 'number');
+      assert.ok(typeof body.data.metrics.activeAccounts === 'number');
+      assert.ok(typeof body.data.metrics.suspendedAccounts === 'number');
+      assert.ok(typeof body.data.metrics.pendingAccounts === 'number');
+      assert.ok(typeof body.data.metrics.accountsWithDevices === 'number');
+    });
+
+    test('8.2 Multi-device user detail includes nested server instances and endpoints', async () => {
+      // Create secondary device for activeCustomer with a server instance and endpoint
+      const device2 = await prisma.device.create({
+        data: {
+          userId: activeCustomer.id,
+          deviceName: 'Galaxy Tab S9 Test',
+          platform: 'Android',
+          status: 'ONLINE'
+        }
+      });
+      const server1 = await prisma.serverInstance.create({
+        data: {
+          deviceId: device2.id,
+          serverName: 'Primary Node Daemon',
+          status: 'RUNNING'
+        }
+      });
+      await prisma.serverEndpoint.create({
+        data: {
+          serverInstanceId: server1.id,
+          hostname: `node-${Date.now()}.zdexcloud.internal`,
+          status: 'ACTIVE'
+        }
+      });
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/admin/users/${activeCustomer.id}`,
+        headers: { 'x-admin-session-token': standardAdminToken }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.payload);
+      assert.strictEqual(body.success, true);
+      assert.ok(body.data.user.devices.length >= 2);
+      assert.ok(body.data.user.serverCount >= 1);
+
+      const devWithServer = body.data.user.devices.find((d: any) => d.id === device2.id);
+      assert.ok(devWithServer);
+      assert.ok(devWithServer.servers.length >= 1);
+      assert.strictEqual(devWithServer.servers[0].serverName, 'Primary Node Daemon');
+      assert.ok(devWithServer.servers[0].endpoints.length >= 1);
+    });
+
+    test('8.3 POST /api/v1/admin/users/:userId/revoke-sessions forcefully revokes customer sessions', async () => {
+      // Create active customer session
+      const tempToken = generateSessionToken();
+      await prisma.userSession.create({
+        data: {
+          userId: activeCustomer.id,
+          tokenHash: hashSessionToken(tempToken),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/admin/users/${activeCustomer.id}/revoke-sessions`,
+        headers: { 'x-admin-session-token': standardAdminToken },
+        payload: { reason: 'Security incident response force logout' }
+      });
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.payload);
+      assert.strictEqual(body.success, true);
+      assert.ok(body.data.user.revokedSessionsCount >= 1);
+
+      // Verify sessions are gone
+      const remainingSessions = await prisma.userSession.findMany({
+        where: { userId: activeCustomer.id }
+      });
+      assert.strictEqual(remainingSessions.length, 0);
+
+      // Verify audit event
+      const audit = await prisma.adminAuditLog.findFirst({
+        where: {
+          action: AdminAuditAction.ADMIN_SESSION_REVOKED,
+          adminId: standardAdminUser.id
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      assert.ok(audit);
+    });
+  });
 });
+
