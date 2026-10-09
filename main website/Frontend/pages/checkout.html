@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Complete your secure upgrade to ZdexCloud Pro. Instant activation, 256-bit SSL encrypted checkout, cancel anytime.">
-  <title>Secure Checkout | ZdexCloud — Personal File Server</title>
+  <title>Secure Checkout | ZdexCloud - Personal File Server</title>
 
   <!-- Favicons & App Icons -->
   <link rel="icon" type="image/x-icon" href="../favicon.ico">
@@ -77,6 +77,43 @@
       font-size: var(--font-size-xs, 12px);
       color: var(--color-text-secondary, #64748b);
     }
+    .address-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .address-field-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .address-field-label {
+      color: var(--color-text-secondary, #64748b);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+    .address-field-val {
+      color: var(--color-text-primary, #0f172a);
+      font-weight: 600;
+      text-align: right;
+      word-break: break-word;
+    }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-status--success {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
   </style>
 </head>
 <body class="bg-subtle text-primary">
@@ -117,50 +154,118 @@
     <div class="checkout-grid">
       <!-- LEFT COLUMN: BILLING COUNTRY CONFIRMATION & ENTITLEMENTS -->
       <div>
-        <!-- COUNTRY & REGIONAL DETAILS CARD -->
-        <div class="checkout-card" id="region-card" style="margin-bottom: 24px;">
-          <h2 style="font-size: var(--font-size-lg, 18px); font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-            Billing Region & Currency
-          </h2>
+        <!-- BILLING ADDRESS CONTAINER -->
+        <div id="billing-address-container" style="margin-bottom: 24px;">
           
-          <div id="country-confirmed-view" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--color-bg-subtle, #f8fafc); padding: 12px 16px; border-radius: var(--radius-md, 8px); border: 1px solid var(--color-border, #e2e8f0);">
-              <div>
-                <div style="font-weight: 600; font-size: 14px;" id="confirmed-country-text">India (INR ₹)</div>
-                <div style="font-size: 12px; color: var(--color-text-secondary, #64748b);" id="confirmed-postal-text">Postal Code: 400001</div>
-              </div>
-              <button type="button" onclick="showCountryEditForm()" class="btn btn-ghost btn-sm" style="font-size: 12px; height: 32px; padding: 0 10px;">Change</button>
+          <!-- SKELETON LOADING VIEW -->
+          <div class="checkout-card" id="billing-address-skeleton">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <div style="height: 20px; width: 180px; background: #e2e8f0; border-radius: 4px;"></div>
+              <div style="height: 20px; width: 80px; background: #e2e8f0; border-radius: 9999px;"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="height: 16px; width: 100%; background: #f1f5f9; border-radius: 4px;"></div>
+              <div style="height: 16px; width: 80%; background: #f1f5f9; border-radius: 4px;"></div>
+              <div style="height: 16px; width: 60%; background: #f1f5f9; border-radius: 4px;"></div>
             </div>
           </div>
 
-          <form id="country-form" style="display: block;">
-            <p style="font-size: 13px; color: var(--color-text-secondary, #64748b); margin-bottom: 16px;">
-              Your billing country determines the authoritative currency and applicable taxes for all invoices.
-            </p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <!-- 1. CONFIGURED ADDRESS VIEW (FETCHED & COMPLETE) -->
+          <div class="checkout-card" id="billing-address-card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
               <div>
-                <label for="input-country" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Country</label>
-                <select id="input-country" class="input-field" style="width: 100%; height: 42px; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); padding: 0 10px; font-size: 14px;">
-                  <option value="IN">India (₹ INR)</option>
-                  <option value="US">United States ($ USD)</option>
-                  <option value="GB">United Kingdom ($ USD)</option>
-                  <option value="CA">Canada ($ USD)</option>
-                  <option value="AU">Australia ($ USD)</option>
-                  <option value="DE">Germany ($ USD)</option>
-                  <option value="FR">France ($ USD)</option>
-                  <option value="SG">Singapore ($ USD)</option>
-                  <option value="AE">United Arab Emirates ($ USD)</option>
-                </select>
+                <h2 style="font-size: var(--font-size-lg, 18px); font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  Authoritative Billing Address
+                </h2>
+                <p style="font-size: 13px; color: var(--color-text-secondary, #64748b); margin: 0;">
+                  Authoritative legal entity and address fetched from your profile.
+                </p>
               </div>
-              <div>
-                <label for="input-postal" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px;">Postal / ZIP Code</label>
-                <input type="text" id="input-postal" placeholder="e.g. 400001 or 94103" class="input-field" style="width: 100%; height: 42px; border-radius: 6px; border: 1px solid var(--color-border, #cbd5e1); padding: 0 10px; font-size: 14px;" required />
+              <span class="badge-status badge-status--success" id="address-status-badge">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                Configured
+              </span>
+            </div>
+
+            <div style="background: var(--color-bg-subtle, #f8fafc); border: 1px solid var(--color-border, #e2e8f0); border-radius: 12px; padding: 16px;">
+              <div class="address-detail-grid">
+                <div class="address-field-row">
+                  <span class="address-field-label">Full Legal Name</span>
+                  <span class="address-field-val" id="display-full-name">-</span>
+                </div>
+                <div class="address-field-row">
+                  <span class="address-field-label">Account Billing Email</span>
+                  <span class="address-field-val" id="display-email" style="font-family: var(--font-family-mono, monospace);">-</span>
+                </div>
+                <div class="address-field-row" id="display-company-row" style="display: none;">
+                  <span class="address-field-label">Company / Organization</span>
+                  <span class="address-field-val" id="display-company-name">-</span>
+                </div>
+                <div class="address-field-row" id="display-taxid-row" style="display: none;">
+                  <span class="address-field-label" id="display-taxid-label">Tax ID / GSTIN</span>
+                  <span class="address-field-val" id="display-taxid" style="font-family: var(--font-family-mono, monospace);">-</span>
+                </div>
+                <div style="border-top: 1px dashed var(--color-border, #cbd5e1); padding-top: 10px; margin-top: 2px;">
+                  <div class="address-field-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                    <span class="address-field-label">Street Address &amp; Location</span>
+                    <span class="address-field-val" id="display-address" style="text-align: left; line-height: 1.45;">-</span>
+                  </div>
+                </div>
+                <div class="address-field-row" style="border-top: 1px dashed var(--color-border, #cbd5e1); padding-top: 10px; margin-top: 2px;">
+                  <span class="address-field-label">Billing Currency</span>
+                  <span class="address-field-val" style="color: #2563EB; font-family: var(--font-family-mono, monospace);" id="display-currency">-</span>
+                </div>
               </div>
             </div>
-            <button type="submit" id="btn-save-country" class="btn btn-secondary btn-block" style="height: 40px; font-size: 13px; font-weight: 600;">Confirm Billing Country</button>
-          </form>
-        </div>
+
+            <div style="margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <a href="billing.html#billing-profile-card" class="btn btn-ghost btn-sm" style="font-size: 12px; height: 32px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                <span>Edit Address in Dashboard</span>
+              </a>
+              <button type="button" onclick="loadBillingStateAndBreakdown()" class="btn btn-ghost btn-sm" style="font-size: 12px; height: 32px; padding: 0 10px;">
+                Refresh Details
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. INCOMPLETE / MISSING ADDRESS GUIDANCE CARD WITH CTA -->
+          <div class="checkout-card" id="billing-missing-card" style="display: none; border-left: 4px solid #DC2626;">
+            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;">
+              <div style="width: 36px; height: 36px; border-radius: 8px; background: #FEF2F2; color: #DC2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+              <div>
+                <h2 style="font-size: var(--font-size-lg, 18px); font-weight: 700; margin-bottom: 4px; color: #991B1B;">
+                  Billing Address Required Before Payment
+                </h2>
+                <p style="font-size: 13px; color: var(--color-text-secondary, #64748b); margin: 0; line-height: 1.5;">
+                  Payments cannot be executed until your full legal name and billing address are added to your account profile.
+                </p>
+              </div>
+            </div>
+
+            <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 8px; padding: 14px; margin-bottom: 18px; font-size: 13px; color: #92400E;">
+              <div style="font-weight: 600; margin-bottom: 4px;">Why is this required?</div>
+              <div>Tax compliance regulations require complete legal name, street address, and country information to generate official tax invoices. Razorpay payments are locked until this information is added.</div>
+              <div id="missing-fields-list" style="margin-top: 8px; font-weight: 600; color: #DC2626;"></div>
+            </div>
+
+            <!-- PROMINENT CTA TO DASHBOARD BILLING PAGE -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <a href="billing.html#billing-profile-card" class="btn btn-primary" id="btn-add-billing-address" style="height: 46px; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Add Billing Address in Dashboard</span>
+              </a>
+              
+              <button type="button" onclick="loadBillingStateAndBreakdown()" class="btn btn-secondary btn-sm" style="height: 36px; font-size: 13px; font-weight: 600;">
+                I have saved my address &bull; Recheck Now
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /billing-address-container -->
 
         <!-- PLAN FEATURES & ENTITLEMENTS SUMMARY -->
         <div class="checkout-card">
@@ -225,9 +330,12 @@
           </div>
 
           <div style="margin-top: 24px;">
-            <button type="button" id="btn-pay-now" onclick="initiatePayment()" class="btn btn-primary btn-block btn-lg" style="height: 52px; font-size: 16px; font-weight: 700; width: 100%; border-radius: 8px;">
+            <button type="button" id="btn-pay-now" onclick="initiatePayment()" class="btn btn-primary btn-block btn-lg" style="height: 52px; font-size: 15px; font-weight: 700; width: 100%; border-radius: 8px;">
               Proceed to Secure Payment
             </button>
+            <div id="pay-locked-notice" style="display: none; margin-top: 8px; text-align: center; font-size: 12px; color: #DC2626; font-weight: 600;">
+              Payment locked: Complete your billing address in dashboard to enable payment.
+            </div>
             <div style="margin-top: 12px; text-align: center; font-size: 12px; color: var(--color-text-secondary, #64748b);">
               🔒 Protected by Razorpay 256-bit encryption. Cancel anytime in your dashboard.
             </div>
@@ -325,8 +433,63 @@
 
       let activePlanCode = 'PRO_MONTHLY';
       let currentBreakdown = null;
-      let userBillingState = null;
+      let userBillingProfile = null;
+      let isBillingAddressComplete = false;
       let currentSessionData = null;
+
+      const COUNTRIES_WITHOUT_POSTAL_CODES = new Set([
+        'AE', 'QA', 'BS', 'FJ', 'SC', 'AO', 'AW', 'BF', 'BI', 'BJ', 'BO', 'BW', 'CD', 'CF', 'CG', 'CI',
+        'CK', 'CM', 'DJ', 'DM', 'ER', 'GA', 'GD', 'GH', 'GM', 'GN', 'GQ', 'GY', 'KI', 'KM', 'KP', 'ML',
+        'MR', 'MS', 'NR', 'NU', 'RW', 'SB', 'SL', 'SO', 'SR', 'ST', 'SY', 'TD', 'TG', 'TK', 'TL', 'TO',
+        'TV', 'TZ', 'UG', 'VU', 'WS', 'YE', 'ZW'
+      ]);
+
+      const COUNTRIES_WITHOUT_STATES = new Set([
+        'SG', 'HK', 'AE', 'QA', 'BH', 'KW', 'LU', 'MC', 'GI', 'MO', 'VA', 'MT', 'CY', 'IS', 'EE', 'LV', 'LT'
+      ]);
+
+      function validateBillingAddress(profile) {
+        if (!profile) {
+          return {
+            isComplete: false,
+            missingFields: ['Full Legal Name', 'Billing Address', 'City', 'Country']
+          };
+        }
+
+        const country = (profile.country || '').trim().toUpperCase();
+        const missing = [];
+
+        if (!profile.fullName || profile.fullName.trim().length < 2) {
+          missing.push('Full Legal Name');
+        }
+
+        if (!country) {
+          missing.push('Billing Country');
+        }
+
+        if (!profile.addressLine1 || profile.addressLine1.trim().length < 3) {
+          missing.push('Street Address');
+        }
+
+        if (!profile.city || profile.city.trim().length < 2) {
+          missing.push('City / Locality');
+        }
+
+        const stateRequired = !COUNTRIES_WITHOUT_STATES.has(country);
+        if (stateRequired && (!profile.state || profile.state.trim().length < 2)) {
+          missing.push('State / Province');
+        }
+
+        const postalRequired = !COUNTRIES_WITHOUT_POSTAL_CODES.has(country);
+        if (postalRequired && (!profile.postalCode || profile.postalCode.trim().length < 2)) {
+          missing.push('Postal / ZIP Code');
+        }
+
+        return {
+          isComplete: missing.length === 0,
+          missingFields: missing
+        };
+      }
 
       function showAlert(title, msg) {
         const banner = document.getElementById('checkout-alert');
@@ -345,15 +508,10 @@
         if (banner) banner.style.display = 'none';
       }
 
-      window.showCountryEditForm = function() {
-        document.getElementById('country-confirmed-view').style.display = 'none';
-        document.getElementById('country-form').style.display = 'block';
-      };
-
       window.closeTestModal = function() {
         document.getElementById('razorpay-test-modal').style.display = 'none';
         const payBtn = document.getElementById('btn-pay-now');
-        if (payBtn) {
+        if (payBtn && isBillingAddressComplete) {
           payBtn.disabled = false;
           payBtn.textContent = 'Proceed to Secure Payment';
         }
@@ -385,7 +543,7 @@
       window.simulateTestPaymentDecline = function() {
         document.getElementById('razorpay-test-modal').style.display = 'none';
         const payBtn = document.getElementById('btn-pay-now');
-        if (payBtn) {
+        if (payBtn && isBillingAddressComplete) {
           payBtn.disabled = false;
           payBtn.textContent = 'Proceed to Secure Payment';
         }
@@ -402,24 +560,95 @@
           return;
         }
 
+        const skeletonEl = document.getElementById('billing-address-skeleton');
+        const cardEl = document.getElementById('billing-address-card');
+        const missingCardEl = document.getElementById('billing-missing-card');
+        const payBtn = document.getElementById('btn-pay-now');
+        const lockedNotice = document.getElementById('pay-locked-notice');
+
+        if (skeletonEl) skeletonEl.style.display = 'block';
+        if (cardEl) cardEl.style.display = 'none';
+        if (missingCardEl) missingCardEl.style.display = 'none';
+
         try {
-          // 2. Fetch User Billing State
-          const stateRes = await BillingAPI.getBillingState();
-          if (stateRes.ok && stateRes.data && stateRes.data.success) {
-            userBillingState = stateRes.data.data;
-            if (userBillingState.countryConfirmed && userBillingState.billingCountry) {
-              document.getElementById('country-form').style.display = 'none';
-              document.getElementById('country-confirmed-view').style.display = 'block';
-              document.getElementById('confirmed-country-text').textContent = `${userBillingState.billingCountry} (${userBillingState.currency || 'INR'})`;
-              document.getElementById('confirmed-postal-text').textContent = `Postal Code: ${userBillingState.billingPostalCode || 'Confirmed'}`;
-            } else {
-              document.getElementById('country-confirmed-view').style.display = 'none';
-              document.getElementById('country-form').style.display = 'block';
-            }
+          // 2. Fetch User Billing Profile
+          const profileRes = await BillingAPI.getBillingProfile();
+          if (skeletonEl) skeletonEl.style.display = 'none';
+
+          if (profileRes.ok && profileRes.data && profileRes.data.success) {
+            userBillingProfile = profileRes.data.data;
+          } else {
+            userBillingProfile = null;
           }
 
-          // 3. Fetch Checkout Price Breakdown
-          if (userBillingState && userBillingState.countryConfirmed) {
+          const validation = validateBillingAddress(userBillingProfile);
+          isBillingAddressComplete = validation.isComplete;
+
+          if (isBillingAddressComplete && userBillingProfile) {
+            // Render Configured Address Card
+            if (cardEl) cardEl.style.display = 'block';
+            if (missingCardEl) missingCardEl.style.display = 'none';
+            if (lockedNotice) lockedNotice.style.display = 'none';
+
+            // Populate address fields
+            const nameEl = document.getElementById('display-full-name');
+            const emailEl = document.getElementById('display-email');
+            const compRow = document.getElementById('display-company-row');
+            const compVal = document.getElementById('display-company-name');
+            const taxRow = document.getElementById('display-taxid-row');
+            const taxLabel = document.getElementById('display-taxid-label');
+            const taxVal = document.getElementById('display-taxid');
+            const addrEl = document.getElementById('display-address');
+            const currEl = document.getElementById('display-currency');
+
+            if (nameEl) nameEl.textContent = userBillingProfile.fullName || '-';
+            if (emailEl) emailEl.textContent = userBillingProfile.email || '-';
+
+            if (compRow && compVal) {
+              if (userBillingProfile.companyName) {
+                compVal.textContent = userBillingProfile.companyName;
+                compRow.style.display = 'flex';
+              } else {
+                compRow.style.display = 'none';
+              }
+            }
+
+            if (taxRow && taxVal) {
+              if (userBillingProfile.taxId) {
+                taxVal.textContent = userBillingProfile.taxId;
+                if (taxLabel) {
+                  taxLabel.textContent = userBillingProfile.country === 'IN' ? 'GSTIN (Tax ID)' : 'Tax ID / VAT';
+                }
+                taxRow.style.display = 'flex';
+              } else {
+                taxRow.style.display = 'none';
+              }
+            }
+
+            if (addrEl) {
+              const parts = [
+                userBillingProfile.addressLine1,
+                userBillingProfile.addressLine2,
+                userBillingProfile.city,
+                userBillingProfile.state,
+                userBillingProfile.postalCode,
+                userBillingProfile.country
+              ].filter(Boolean);
+              addrEl.textContent = parts.join(', ');
+            }
+
+            if (currEl) {
+              const c = userBillingProfile.currency || (userBillingProfile.country === 'IN' ? 'INR' : 'USD');
+              currEl.textContent = c === 'INR' ? 'INR (₹ - Indian Rupee)' : `${c} ($ - US Dollar)`;
+            }
+
+            // Enable pay button
+            if (payBtn) {
+              payBtn.disabled = false;
+              payBtn.textContent = 'Proceed to Secure Payment';
+            }
+
+            // 3. Fetch Checkout Price Breakdown
             const breakdownRes = await BillingAPI.getCheckoutPriceBreakdown(activePlanCode);
             if (breakdownRes.ok && breakdownRes.data && breakdownRes.data.success) {
               currentBreakdown = breakdownRes.data.data;
@@ -428,8 +657,25 @@
               const msg = breakdownRes.data?.error?.message || 'Unable to calculate checkout prices.';
               showAlert('Price Calculation', msg);
             }
+          } else {
+            // Incomplete Address: guide user and lock payment
+            if (cardEl) cardEl.style.display = 'none';
+            if (missingCardEl) missingCardEl.style.display = 'block';
+            if (lockedNotice) lockedNotice.style.display = 'block';
+
+            const missingListEl = document.getElementById('missing-fields-list');
+            if (missingListEl) {
+              missingListEl.textContent = 'Required details to add: ' + validation.missingFields.join(', ');
+            }
+
+            // Disable pay button to block payment execution
+            if (payBtn) {
+              payBtn.disabled = true;
+              payBtn.textContent = 'Complete Billing Address to Enable Payment';
+            }
           }
         } catch (err) {
+          if (skeletonEl) skeletonEl.style.display = 'none';
           showAlert('Communication Error', 'Failed to communicate with control plane.');
         }
       }
@@ -453,51 +699,41 @@
         }
       }
 
-      // Handle Country Form Submission
-      document.getElementById('country-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        hideAlert();
-        const country = document.getElementById('input-country').value;
-        const postalCode = document.getElementById('input-postal').value.trim();
-        const btn = document.getElementById('btn-save-country');
-
-        btn.disabled = true;
-        btn.textContent = 'Confirming...';
-
-        try {
-          const res = await BillingAPI.confirmBillingCountry(country, postalCode);
-          if (res.ok && res.data && res.data.success) {
-            await loadBillingStateAndBreakdown();
-          } else {
-            showAlert('Validation Error', res.data?.error?.message || 'Failed to update billing country.');
-          }
-        } catch (err) {
-          showAlert('Network Error', 'Could not save billing details.');
-        } finally {
-          btn.disabled = false;
-          btn.textContent = 'Confirm Billing Country';
-        }
-      });
-
       // Initiate Razorpay Checkout Payment
       window.initiatePayment = async function() {
         hideAlert();
-        if (!userBillingState || !userBillingState.countryConfirmed) {
-          showAlert('Billing Region Required', 'Please confirm your billing country and postal code before proceeding.');
-          window.showCountryEditForm();
-          return;
+
+        // Strict Enforcement: Billing Address and Legal Name must be complete
+        if (!userBillingProfile || !isBillingAddressComplete) {
+          showAlert(
+            'Billing Address Required',
+            'Payment cancelled. A complete billing address and legal name must be configured before Razorpay checkout can be launched. Please add your billing address in the dashboard.'
+          );
+          const missingCard = document.getElementById('billing-missing-card');
+          if (missingCard) {
+            missingCard.scrollIntoView({ behavior: 'smooth' });
+          }
+          return; // Hard cancel: Razorpay is NEVER triggered!
         }
 
         const payBtn = document.getElementById('btn-pay-now');
-        payBtn.disabled = true;
-        payBtn.textContent = 'Preparing Payment...';
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.textContent = 'Preparing Payment...';
+        }
 
         try {
           const sessionRes = await BillingAPI.createCheckoutSession(activePlanCode);
           if (!sessionRes.ok || !sessionRes.data || !sessionRes.data.success) {
-            showAlert('Checkout Error', sessionRes.data?.error?.message || 'Could not initialize payment session.');
-            payBtn.disabled = false;
-            payBtn.textContent = 'Proceed to Secure Payment';
+            const errorMsg = sessionRes.data?.error?.message || 'Could not initialize payment session.';
+            showAlert('Checkout Error', errorMsg);
+            if (payBtn) {
+              payBtn.disabled = false;
+              payBtn.textContent = 'Proceed to Secure Payment';
+            }
+            if (errorMsg.toLowerCase().includes('billing address') || errorMsg.toLowerCase().includes('legal name')) {
+              await loadBillingStateAndBreakdown();
+            }
             return;
           }
 
@@ -513,8 +749,10 @@
           if (isTestSession) {
             document.getElementById('test-modal-amount').textContent = session.formattedAmount || currentBreakdown?.formattedTotal || '₹500';
             document.getElementById('razorpay-test-modal').style.display = 'flex';
-            payBtn.disabled = false;
-            payBtn.textContent = 'Proceed to Secure Payment';
+            if (payBtn) {
+              payBtn.disabled = false;
+              payBtn.textContent = 'Proceed to Secure Payment';
+            }
             return;
           }
 
@@ -527,6 +765,10 @@
               name: 'ZdexCloud',
               description: currentBreakdown?.planName || (activePlanCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly'),
               theme: { color: '#2563EB' },
+              prefill: {
+                name: userBillingProfile.fullName || '',
+                email: userBillingProfile.email || ''
+              },
               modal: {
                 ondismiss: function() {
                   payBtn.disabled = false;

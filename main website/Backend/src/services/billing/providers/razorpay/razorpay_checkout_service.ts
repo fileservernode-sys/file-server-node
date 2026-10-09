@@ -18,6 +18,7 @@ import { RazorpayProviderError } from './razorpay_error.js';
 import { verifyRazorpaySubscriptionPaymentSignature } from './webhook_crypto.js';
 import { BillingStateService, PAID_ENTITLED_STATUSES } from '../../billing_state_service.js';
 import { BillingCountryService } from '../../billing_country_service.js';
+import { BillingProfileService } from '../../billing_profile_service.js';
 import { BillingReceiptService } from '../../billing_receipt_service.js';
 import { PriceFormatter } from '../../pricing_catalog_service.js';
 import { ValidationError, NotFoundError, ConflictError } from '../../../../errors/app-error.js';
@@ -324,12 +325,29 @@ export class RazorpayCheckoutService {
         throw new NotFoundError('User account not found');
       }
 
-      // 2. Authoritative Billing Country & Currency Verification
+      // 2. Authoritative Billing Country, Profile & Currency Verification
       const billingState = await BillingStateService.getBillingState(userId);
 
       if (!billingState.billingCountry) {
         throw new ValidationError(
           'Billing country must be confirmed before initiating checkout. Please update your billing region in account settings.'
+        );
+      }
+
+      const profile = await BillingProfileService.getBillingProfile(userId);
+      const isCountryWithoutState = profile.country ? !BillingCountryService.isStateRequired(profile.country) : false;
+      const isCountryWithoutPostal = profile.country ? !BillingCountryService.isPostalCodeRequired(profile.country) : false;
+
+      const isProfileComplete = profile.countryConfirmed &&
+        Boolean(profile.fullName && profile.fullName.trim().length >= 2) &&
+        Boolean(profile.addressLine1 && profile.addressLine1.trim().length >= 3) &&
+        Boolean(profile.city && profile.city.trim().length >= 2) &&
+        (isCountryWithoutState || Boolean(profile.state && profile.state.trim().length >= 2)) &&
+        (isCountryWithoutPostal || Boolean(profile.postalCode && profile.postalCode.trim().length >= 2));
+
+      if (!isProfileComplete) {
+        throw new ValidationError(
+          'A complete billing address and legal name are required before initiating checkout. Please configure your billing address in the dashboard.'
         );
       }
 
