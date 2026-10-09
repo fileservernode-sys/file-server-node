@@ -151,7 +151,7 @@ export class BillingCountryService {
 
     // 1. Validate & normalize inputs
     const normalizedCountry = this.validateAndNormalizeCountry(params.country);
-    const normalizedPostalCode = this.validateAndNormalizePostalCode(params.postalCode);
+    const normalizedPostalCode = this.validateAndNormalizePostalCode(params.postalCode, normalizedCountry);
     const derivedCurrency = this.deriveBillingCurrency(normalizedCountry);
 
     // 2. Verify user exists

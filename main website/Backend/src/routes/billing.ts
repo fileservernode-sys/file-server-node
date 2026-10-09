@@ -10,6 +10,7 @@ import {
 import { prisma } from '../config/database.js';
 import { UnauthorizedError, ValidationError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
+import { BillingCountryService } from '../services/billing/billing_country_service.js';
 import { BillingProfileService } from '../services/billing/billing_profile_service.js';
 import { BillingRefundService } from '../services/billing/billing_refund_service.js';
 import { BillingReceiptService } from '../services/billing/billing_receipt_service.js';
@@ -171,19 +172,20 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('Request body is required');
     }
 
-    const { country, postalCode } = body;
+    const countryStr = String(body.country || '');
+    const postalCodeStr = body.postalCode !== undefined && body.postalCode !== null ? String(body.postalCode).trim() : '';
 
-    if (!country) {
+    if (!countryStr) {
       throw new ValidationError('Billing country is required');
     }
 
-    if (!postalCode) {
-      throw new ValidationError('Billing postal code is required');
+    if (!postalCodeStr && BillingCountryService.isPostalCodeRequired(countryStr)) {
+      throw new ValidationError('Billing postal code is required for the selected country');
     }
 
     const result = await BillingStateService.confirmBillingCountry(user.id, {
-      country: String(country),
-      postalCode: String(postalCode)
+      country: countryStr,
+      postalCode: postalCodeStr
     });
 
     return createSuccessResponse({

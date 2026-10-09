@@ -320,15 +320,20 @@ export class AdminUserService {
     let taxId: string | null = null;
     if (user.billingState) {
       try {
-        const latestAudit = await prisma.auditEvent.findFirst({
+        const auditEvents = await prisma.auditEvent.findMany({
           where: {
             userId: user.id,
             eventType: AuditEventType.BILLING_STATE_UPDATED
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
+          take: 20
         });
-        if (latestAudit?.metadata && typeof latestAudit.metadata === 'object') {
-          const meta = latestAudit.metadata as Record<string, unknown>;
+        const profileAudit = auditEvents.find((evt) => {
+          const meta = evt.metadata as Record<string, unknown> | null;
+          return meta && meta.action === 'UPDATE_BILLING_PROFILE';
+        });
+        if (profileAudit?.metadata && typeof profileAudit.metadata === 'object') {
+          const meta = profileAudit.metadata as Record<string, unknown>;
           if (typeof meta.companyName === 'string') companyName = meta.companyName;
           if (typeof meta.taxId === 'string') taxId = meta.taxId;
         }

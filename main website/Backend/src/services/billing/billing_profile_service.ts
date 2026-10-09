@@ -42,6 +42,9 @@ export class BillingProfileService {
     if (!trimmed) {
       throw new ValidationError('Full legal name is required');
     }
+    if (trimmed.length < 2) {
+      throw new ValidationError('Full legal name must be at least 2 characters');
+    }
     if (trimmed.length > 150) {
       throw new ValidationError('Full legal name cannot exceed 150 characters');
     }
@@ -108,6 +111,9 @@ export class BillingProfileService {
     if (!trimmed) {
       throw new ValidationError('Address line 1 is required');
     }
+    if (trimmed.length < 3) {
+      throw new ValidationError('Address line 1 must be at least 3 characters');
+    }
     if (trimmed.length > 255) {
       throw new ValidationError('Address line 1 cannot exceed 255 characters');
     }
@@ -145,6 +151,9 @@ export class BillingProfileService {
     if (!trimmed) {
       throw new ValidationError('City is required');
     }
+    if (trimmed.length < 2) {
+      throw new ValidationError('City must be at least 2 characters');
+    }
     if (trimmed.length > 100) {
       throw new ValidationError('City cannot exceed 100 characters');
     }
@@ -164,6 +173,9 @@ export class BillingProfileService {
         return '';
       }
       throw new ValidationError('State/Province/Region is required for the selected country');
+    }
+    if (trimmed.length < 2) {
+      throw new ValidationError('State/Province/Region must be at least 2 characters');
     }
     if (trimmed.length > 100) {
       throw new ValidationError('State/Province/Region cannot exceed 100 characters');
@@ -196,15 +208,20 @@ export class BillingProfileService {
     let taxId: string | null = null;
 
     try {
-      const latestAudit = await prisma.auditEvent.findFirst({
+      const auditEvents = await prisma.auditEvent.findMany({
         where: {
           userId: user.id,
           eventType: AuditEventType.BILLING_STATE_UPDATED
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        take: 20
       });
-      if (latestAudit && latestAudit.metadata && typeof latestAudit.metadata === 'object') {
-        const meta = latestAudit.metadata as Record<string, unknown>;
+      const profileAudit = auditEvents.find((evt) => {
+        const meta = evt.metadata as Record<string, unknown> | null;
+        return meta && meta.action === 'UPDATE_BILLING_PROFILE';
+      });
+      if (profileAudit?.metadata && typeof profileAudit.metadata === 'object') {
+        const meta = profileAudit.metadata as Record<string, unknown>;
         if (typeof meta.companyName === 'string') companyName = meta.companyName;
         if (typeof meta.taxId === 'string') taxId = meta.taxId;
       }
