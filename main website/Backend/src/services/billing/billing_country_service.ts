@@ -25,6 +25,19 @@ export const ISO_3166_1_ALPHA_2_CODES = new Set([
 // Special pseudocountry or Cloudflare-internal codes that MUST NEVER be confirmed as billing countries
 export const DISALLOWED_PSEUDO_CODES = new Set(['XX', 'T1', 'A1', 'A2', 'O1']);
 
+// Countries that do not have mandatory postal code systems
+export const COUNTRIES_WITHOUT_POSTAL_CODES = new Set([
+  'AE', 'QA', 'BS', 'FJ', 'SC', 'AO', 'AW', 'BF', 'BI', 'BJ', 'BO', 'BW', 'CD', 'CF', 'CG', 'CI',
+  'CK', 'CM', 'DJ', 'DM', 'ER', 'GA', 'GD', 'GH', 'GM', 'GN', 'GQ', 'GY', 'KI', 'KM', 'KP', 'ML',
+  'MR', 'MS', 'NR', 'NU', 'RW', 'SB', 'SL', 'SO', 'SR', 'ST', 'SY', 'TD', 'TG', 'TK', 'TL', 'TO',
+  'TV', 'TZ', 'UG', 'VU', 'WS', 'YE', 'ZW'
+]);
+
+// Countries that do not have standard state/province subdivisions
+export const COUNTRIES_WITHOUT_STATES = new Set([
+  'SG', 'HK', 'AE', 'QA', 'BH', 'KW', 'LU', 'MC', 'GI', 'MO', 'VA', 'MT', 'CY', 'IS', 'EE', 'LV', 'LT'
+]);
+
 export interface ConfirmBillingCountryParams {
   country: string;
   postalCode: string;
@@ -38,6 +51,22 @@ export interface ConfirmedBillingRegion {
 }
 
 export class BillingCountryService {
+  /**
+   * Checks whether state / province is applicable for a given country.
+   */
+  static isStateRequired(countryCode: string): boolean {
+    const normalized = countryCode ? countryCode.trim().toUpperCase() : '';
+    return !COUNTRIES_WITHOUT_STATES.has(normalized);
+  }
+
+  /**
+   * Checks whether postal code is required for a given country.
+   */
+  static isPostalCodeRequired(countryCode: string): boolean {
+    const normalized = countryCode ? countryCode.trim().toUpperCase() : '';
+    return !COUNTRIES_WITHOUT_POSTAL_CODES.has(normalized);
+  }
+
   /**
    * Validates and normalizes an ISO 3166-1 alpha-2 country code.
    * Throws ValidationError if invalid, pseudocountry, or malformed.
@@ -65,18 +94,21 @@ export class BillingCountryService {
   }
 
   /**
-   * Validates and sanitizes a customer-provided postal code.
-   * Enforces reasonable length (2 to 20 characters), non-emptiness, and standard international formats.
+   * Validates and sanitizes a customer-provided postal code with country awareness.
+   * Enforces reasonable length (2 to 20 characters) and standard international formats when required.
    */
-  static validateAndNormalizePostalCode(rawPostalCode: unknown): string {
-    if (typeof rawPostalCode !== 'string') {
+  static validateAndNormalizePostalCode(rawPostalCode: unknown, countryCode?: string): string {
+    if (typeof rawPostalCode !== 'string' && rawPostalCode !== null && rawPostalCode !== undefined) {
       throw new ValidationError('Postal code must be a string');
     }
 
-    const trimmed = rawPostalCode.trim();
+    const trimmed = typeof rawPostalCode === 'string' ? rawPostalCode.trim() : '';
 
     if (!trimmed) {
-      throw new ValidationError('Postal code cannot be empty');
+      if (countryCode && COUNTRIES_WITHOUT_POSTAL_CODES.has(countryCode.trim().toUpperCase())) {
+        return '';
+      }
+      throw new ValidationError('Postal code is required for the selected country');
     }
 
     if (trimmed.length < 2 || trimmed.length > 20) {

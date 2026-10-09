@@ -130,15 +130,27 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Request body is required');
       }
 
-      const { fullName, addressLine1, addressLine2, city, state, postalCode, country } = body;
+      const {
+        fullName,
+        companyName,
+        taxId,
+        addressLine1,
+        addressLine2,
+        city,
+        state,
+        postalCode,
+        country
+      } = body;
 
       const result = await BillingProfileService.updateBillingProfile(user.id, {
         fullName: String(fullName || ''),
+        companyName: companyName !== undefined && companyName !== null ? String(companyName).trim() : null,
+        taxId: taxId !== undefined && taxId !== null ? String(taxId).trim() : null,
         addressLine1: String(addressLine1 || ''),
         addressLine2: addressLine2 !== undefined && addressLine2 !== null ? String(addressLine2) : undefined,
         city: String(city || ''),
-        state: String(state || ''),
-        postalCode: String(postalCode || ''),
+        state: state !== undefined && state !== null ? String(state) : '',
+        postalCode: postalCode !== undefined && postalCode !== null ? String(postalCode) : '',
         country: String(country || '')
       });
 

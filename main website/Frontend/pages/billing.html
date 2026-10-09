@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Billing &amp; Receipts | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+  <title>Billing &amp; Subscription | ZdexCloud - Personal File Server</title>
+  <meta name="description" content="Review your active subscription, billing status, current plan details, regional settings, and payment history on ZdexCloud.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/billing.html">
@@ -22,20 +22,20 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/billing.html">
-  <meta property="og:title" content="Billing &amp; Receipts | ZdexCloud — Personal File Server">
-  <meta property="og:description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+  <meta property="og:title" content="Billing &amp; Subscription | ZdexCloud - Personal File Server">
+  <meta property="og:description" content="Review your active subscription, billing status, current plan details, regional settings, and payment history on ZdexCloud.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud - Personal File Server on Android">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Billing &amp; Receipts | ZdexCloud — Personal File Server">
-  <meta name="twitter:description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+  <meta name="twitter:title" content="Billing &amp; Subscription | ZdexCloud - Personal File Server">
+  <meta name="twitter:description" content="Review your active subscription, billing status, current plan details, regional settings, and payment history on ZdexCloud.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud - Personal File Server on Android">
 
   <!-- CSS Dependencies -->
   <link rel="stylesheet" href="../css/variables.css">
@@ -45,6 +45,165 @@
   <link rel="stylesheet" href="../css/sections.css">
   <link rel="stylesheet" href="../css/dashboard-shell.css">
   <link rel="stylesheet" href="../css/notification-center.css">
+
+  <style>
+    /* Scoped Billing Overview Styles (Phase 6.3) */
+    .billing-overview-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-xl);
+    }
+    .billing-overview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-lg);
+      border-bottom: 1px solid var(--color-border-subtle);
+      padding-bottom: var(--space-md);
+    }
+    .billing-overview-title-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+    .billing-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--color-brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .billing-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+    .billing-metric-box {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+    }
+    .billing-metric-label {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .billing-metric-value {
+      font-size: var(--font-size-body);
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-bold);
+    }
+    .billing-metric-mono {
+      font-family: var(--font-family-mono);
+    }
+
+    /* Quick Action Navigation Grid */
+    .billing-quick-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-xl);
+    }
+    .billing-quick-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-decoration: none;
+      color: inherit;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-sm);
+    }
+    .billing-quick-card:hover {
+      border-color: var(--color-brand-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .billing-quick-title {
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .billing-quick-desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+      margin-bottom: var(--space-md);
+    }
+    .billing-quick-link-text {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-brand-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Status Badges */
+    .tx-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+    .tx-status--success {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+    .tx-status--refunded {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+    .tx-status--failed {
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+    .tx-status--pending {
+      background: #FFFBEB;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Skeleton Loading State */
+    .skeleton-box {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: skeletonPulse 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+    @keyframes skeletonPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
 </head>
 <body class="dashboard-page">
 
@@ -120,7 +279,7 @@
       <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
         <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
+          <line x1="6" y1="6" x2="6.01" y2="6"></line>
         </svg>
       </button>
     </div>
@@ -158,9 +317,7 @@
     </div>
   </aside>
 
-  <!-- ======================================================================= -->
-  <!-- DASHBOARD SHELL LAYOUT                                                  -->
-  <!-- ======================================================================= -->
+  <!-- DASHBOARD SHELL LAYOUT -->
   <div class="dashboard-shell-layout">
 
     <!-- DESKTOP DASHBOARD SIDEBAR -->
@@ -270,46 +427,329 @@
         <div class="dashboard-breadcrumbs">
           <a href="servers.html">Dashboard</a>
           <span>/</span>
-          <span>Billing &amp; Receipts</span>
+          <span>Billing &amp; Subscription</span>
         </div>
         <div class="dashboard-title-row">
           <div>
-            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Billing &amp; Receipts</h1>
-            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Manage your authoritative billing profile address and view payment history.</p>
+            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Billing &amp; Subscription</h1>
+            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+              Review your active subscription, billing status, current plan details, and recent payment history.
+            </p>
           </div>
         </div>
       </div>
 
       <!-- ===================================================================== -->
-      <!-- 1. BILLING & REGIONAL SETTINGS CARD (AUTHORITATIVE REGION & CURRENCY) -->
+      <!-- 1. CURRENT PLAN & SUBSCRIPTION OVERVIEW CARD                          -->
       <!-- ===================================================================== -->
-      <section class="card" id="billing-region-card" style="margin-bottom: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+      <section class="billing-overview-card" id="billing-plan-overview-card">
+        
+        <!-- Skeleton Placeholder -->
+        <div id="plan-overview-skeleton">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <div class="skeleton-box" style="width: 36px; height: 36px; border-radius: var(--radius-md);"></div>
+              <div class="skeleton-box" style="width: 220px; height: 24px;"></div>
+            </div>
+            <div class="skeleton-box" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="billing-metrics-grid">
+            <div class="skeleton-box" style="height: 75px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 75px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 75px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 75px; border-radius: var(--radius-lg);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 160px; height: 40px; border-radius: var(--radius-md);"></div>
+        </div>
+
+        <!-- Real Authoritative Subscription Content Container -->
+        <div id="plan-overview-content" style="display: none;">
+          
+          <div class="billing-overview-header">
+            <div>
+              <div class="billing-overview-title-group">
+                <div class="billing-icon-wrap">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div>
+                  <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 2px; color: var(--color-text-primary);" id="plan-title-display">
+                    ZdexCloud Plan
+                  </h2>
+                  <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);" id="plan-subtitle-display">
+                    Commercial Tier &bull; Server Hosting
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="plan-status-badge-container">
+              <!-- Dynamically populated status badge -->
+            </div>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="billing-metrics-grid">
+            
+            <div class="billing-metric-box">
+              <div class="billing-metric-label">Billing Cadence</div>
+              <div class="billing-metric-value" id="metric-cadence">Monthly</div>
+            </div>
+
+            <div class="billing-metric-box">
+              <div class="billing-metric-label" id="metric-date-label">Next Renewal Date</div>
+              <div class="billing-metric-value billing-metric-mono" id="metric-renewal-date">Not Scheduled</div>
+            </div>
+
+            <div class="billing-metric-box">
+              <div class="billing-metric-label">Current Plan Amount</div>
+              <div class="billing-metric-value billing-metric-mono" id="metric-amount">₹0.00</div>
+            </div>
+
+            <div class="billing-metric-box">
+              <div class="billing-metric-label">Server Capacity</div>
+              <div class="billing-metric-value" id="metric-servers">1 Android Server</div>
+            </div>
+
+          </div>
+
+          <!-- Action Button Bar -->
+          <div style="display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap;">
+            <a href="subscription.html" class="btn btn-primary btn-sm" id="btn-primary-plan-action">
+              <span>Manage Subscription</span>
+            </a>
+            <a href="pricing.html" class="btn btn-secondary btn-sm" id="btn-secondary-plan-action">
+              <span>View Pricing Plans</span>
+            </a>
+            <a href="transactions.html" class="btn btn-ghost btn-sm">
+              <span>View Transactions</span>
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Temporary Error Fallback State -->
+        <div id="plan-overview-error" style="display: none; text-align: center; padding: var(--space-xl);">
+          <div style="width: 48px; height: 48px; margin: 0 auto var(--space-sm); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-2xs);">Billing State Unavailable</h3>
+          <p class="text-sm text-secondary" style="margin-bottom: var(--space-md);">Could not retrieve authoritative subscription information from the control plane.</p>
+          <button type="button" onclick="loadBillingOverviewData()" class="btn btn-outline btn-sm">Retry Connection</button>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. QUICK BILLING DESTINATIONS GRID                                    -->
+      <!-- ===================================================================== -->
+      <section class="billing-quick-grid">
+        
+        <a href="subscription.html" class="billing-quick-card">
+          <div>
+            <div class="billing-quick-title">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              <span>Subscription &amp; Upgrades</span>
+            </div>
+            <p class="billing-quick-desc">
+              Change your active billing tier, apply annual proration discounts, or schedule subscription adjustments.
+            </p>
+          </div>
+          <div class="billing-quick-link-text">
+            <span>Manage Plan</span>
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </a>
+
+        <a href="transactions.html" class="billing-quick-card">
+          <div>
+            <div class="billing-quick-title">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+              <span>Transactions</span>
+            </div>
+            <p class="billing-quick-desc">
+              Inspect your full financial charge history, payment reference codes, refund records, and receipts.
+            </p>
+          </div>
+          <div class="billing-quick-link-text">
+            <span>View All Records</span>
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </a>
+
+        <a href="#billing-history-section" class="billing-quick-card">
+          <div>
+            <div class="billing-quick-title">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+              <span>Official Receipts</span>
+            </div>
+            <p class="billing-quick-desc">
+              Preview official customer billing documents in your browser or download HTML copies for accounting.
+            </p>
+          </div>
+          <div class="billing-quick-link-text">
+            <span>Jump to Receipts</span>
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </a>
+
+        <a href="pricing.html" class="billing-quick-card">
+          <div>
+            <div class="billing-quick-title">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="8"></line><line x1="12" y1="16" x2="12" y2="18"></line></svg>
+              <span>Pricing Catalog</span>
+            </div>
+            <p class="billing-quick-desc">
+              Compare commercial tiers, server node capacities, and localized currency pricing options.
+            </p>
+          </div>
+          <div class="billing-quick-link-text">
+            <span>Compare Features</span>
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </a>
+
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 3. RECENT BILLING ACTIVITY (LAST 5 TRANSACTIONS)                      -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-recent-activity-card" style="margin-bottom: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Recent Billing Activity</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0; margin-top: 4px;">
+              Your most recent payment charges and subscription billing events.
+            </p>
+          </div>
+          <a href="transactions.html" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span>View All Transactions</span>
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </a>
+        </div>
+
+        <div id="recent-activity-skeleton">
+          <div class="skeleton-box" style="width: 100%; height: 44px; margin-bottom: 8px;"></div>
+          <div class="skeleton-box" style="width: 100%; height: 44px; margin-bottom: 8px;"></div>
+          <div class="skeleton-box" style="width: 100%; height: 44px;"></div>
+        </div>
+
+        <div id="recent-activity-content" style="display: none;"></div>
+
+        <div id="recent-activity-empty" style="display: none; text-align: center; padding: var(--space-xl); background: var(--color-bg-secondary); border-radius: var(--radius-lg); border: 1px dashed var(--color-border);">
+          <p class="text-sm text-secondary" style="margin-bottom: var(--space-sm);">No billing transactions recorded yet on your account.</p>
+          <a href="pricing.html" class="btn btn-secondary btn-sm">Explore Pro Plans</a>
+        </div>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 4. BILLING ADDRESS & IDENTITY (AUTHORITATIVE TAX INVOICE PROFILE)     -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-profile-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
           <div>
             <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
               <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
               </div>
-              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing &amp; Regional Settings</h2>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Authoritative Billing Address &amp; Legal Name</h2>
             </div>
             <p class="text-sm text-secondary" style="margin-bottom: 0;">
-              Authoritative billing country and currency configuration for your platform account.
+              Your full legal name, optional company entity, tax registration, and street address used for compliant tax receipts and currency determination.
             </p>
           </div>
-          <div id="billing-confirmation-badge">
-            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading status...</span>
+          <div id="billing-profile-badge">
+            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading profile...</span>
           </div>
         </div>
 
-        <form id="form-billing-region" onsubmit="saveBillingRegion(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-lg);">
-            
-            <!-- Country Selector -->
+        <form id="form-billing-profile" onsubmit="saveBillingProfile(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
+          
+          <!-- Identity Fields: Full Legal Name & Account Billing Email -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-fullname-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Full Legal Name <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-fullname-input" name="fullName" required placeholder="e.g. John Doe or Jane Smith" maxlength="150" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-email-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Account Billing Email <span class="text-muted">(Verified Account)</span>
+              </label>
+              <input type="email" id="billing-email-input" name="accountEmail" readonly placeholder="Loading account email..." style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-bg-secondary); color: var(--color-text-secondary); font-family: var(--font-family-sans); font-size: var(--font-size-sm); cursor: not-allowed;" />
+            </div>
+          </div>
+
+          <!-- Business Entity Fields: Company Name & Tax ID / GSTIN -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-company-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Company / Organization <span class="text-muted">(Optional)</span>
+              </label>
+              <input type="text" id="billing-company-input" name="companyName" placeholder="e.g. Acme Technologies Private Limited" maxlength="150" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-taxid-input" id="billing-taxid-label" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Tax ID / GSTIN <span class="text-muted">(Optional)</span>
+              </label>
+              <input type="text" id="billing-taxid-input" name="taxId" placeholder="e.g. 24ABCDE1234F1Z5 or VAT reference" maxlength="50" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);" />
+            </div>
+          </div>
+
+          <!-- Address Line 1 & Line 2 -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-address1-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Address Line 1 <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-address1-input" name="addressLine1" required placeholder="Street address, building, P.O. box" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-address2-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Address Line 2 <span class="text-muted">(Optional)</span>
+              </label>
+              <input type="text" id="billing-address2-input" name="addressLine2" placeholder="Apartment, suite, unit, floor (optional)" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+          </div>
+
+          <!-- City & State -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-city-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                City <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-city-input" name="city" required placeholder="City / Town" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-state-input" id="billing-state-label" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                State / Province <span id="billing-state-required-indicator" style="color: #DC2626; font-weight: bold;">*</span>
+              </label>
+              <input type="text" id="billing-state-input" name="state" required placeholder="State / Province / Region" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+          </div>
+
+          <!-- Postal / ZIP Code & Billing Country -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-postal-input" id="billing-postal-label" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Postal / ZIP Code <span id="billing-postal-required-indicator" style="color: #DC2626; font-weight: bold;">*</span>
+              </label>
+              <input type="text" id="billing-postal-input" name="postalCode" required placeholder="e.g. 392001 or 90210" maxlength="20" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);" />
+            </div>
+
             <div>
               <label for="billing-country-select" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                BILLING COUNTRY <span style="color: #DC2626;">*</span>
+                Billing Country <span style="color: #DC2626;">*</span>
               </label>
-              <select id="billing-country-select" name="country" required onchange="updateCurrencyPreview()" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm); cursor: pointer;">
+              <select id="billing-country-select" name="country" required onchange="handleCountryChange()" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm); cursor: pointer;">
                 <option value="" disabled selected>Select country...</option>
                 <optgroup label="Popular Regions">
                   <option value="IN">India (IN)</option>
@@ -368,104 +808,18 @@
                 </optgroup>
               </select>
             </div>
-
-            <!-- Postal / ZIP Code -->
-            <div>
-              <label for="billing-postal-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                POSTAL / ZIP CODE <span style="color: #DC2626;">*</span>
-              </label>
-              <input type="text" id="billing-postal-input" name="postalCode" required placeholder="e.g. 392001 or 90210" maxlength="20" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);" />
-            </div>
-
           </div>
 
           <!-- Live Currency Indicator & Save Action -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-bg-secondary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-bg-secondary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); margin-top: var(--space-xs);">
             <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">
               <span>Authoritative Billing Currency: </span>
               <strong id="billing-currency-preview" style="color: var(--color-brand-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);">INR (₹)</strong>
               <span class="text-muted" style="margin-left: 6px;">(Derived server-side from billing country)</span>
             </div>
-            <button type="submit" id="btn-save-billing" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 140px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+            <button type="submit" id="btn-save-billing-profile" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 190px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
               <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Save Region</span>
-            </button>
-          </div>
-
-          <div id="billing-status-feedback" style="display: none; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs);"></div>
-        </form>
-      </section>
-
-      <!-- ===================================================================== -->
-      <!-- 2. BILLING ADDRESS & IDENTITY (AUTHORITATIVE TAX INVOICE PROFILE)     -->
-      <!-- ===================================================================== -->
-      <section class="card" id="billing-profile-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
-          <div>
-            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
-              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-              </div>
-              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Authoritative Billing Address</h2>
-            </div>
-            <p class="text-sm text-secondary" style="margin-bottom: 0;">
-              Legal entity name and street address used for compliant tax invoice generation.
-            </p>
-          </div>
-          <div id="billing-profile-badge">
-            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading profile...</span>
-          </div>
-        </div>
-
-        <form id="form-billing-profile" onsubmit="saveBillingProfile(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
-          
-          <!-- Full Name -->
-          <div>
-            <label for="billing-fullname-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-              Full Name / Legal Entity <span style="color: #DC2626;">*</span>
-            </label>
-            <input type="text" id="billing-fullname-input" name="fullName" required placeholder="e.g. John Doe or Acme Corp" maxlength="150" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
-          </div>
-
-          <!-- Address Line 1 & Line 2 -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md);">
-            <div>
-              <label for="billing-address1-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                Address Line 1 <span style="color: #DC2626;">*</span>
-              </label>
-              <input type="text" id="billing-address1-input" name="addressLine1" required placeholder="Street address, P.O. box, company name" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
-            </div>
-
-            <div>
-              <label for="billing-address2-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                Address Line 2 <span class="text-muted">(Optional)</span>
-              </label>
-              <input type="text" id="billing-address2-input" name="addressLine2" placeholder="Apartment, suite, unit, building, floor (optional)" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
-            </div>
-          </div>
-
-          <!-- City & State -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
-            <div>
-              <label for="billing-city-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                City <span style="color: #DC2626;">*</span>
-              </label>
-              <input type="text" id="billing-city-input" name="city" required placeholder="City / Town" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
-            </div>
-
-            <div>
-              <label for="billing-state-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
-                State / Province <span style="color: #DC2626;">*</span>
-              </label>
-              <input type="text" id="billing-state-input" name="state" required placeholder="State / Province / Region" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
-            </div>
-          </div>
-
-          <!-- Save Profile Button Bar -->
-          <div style="display: flex; justify-content: flex-end; align-items: center; gap: var(--space-sm); margin-top: var(--space-xs);">
-            <button type="submit" id="btn-save-billing-profile" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 170px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Save Billing Address</span>
+              <span>Save Billing Profile</span>
             </button>
           </div>
 
@@ -474,7 +828,7 @@
       </section>
 
       <!-- ===================================================================== -->
-      <!-- 2. BILLING HISTORY & RECEIPTS (TAX INVOICES & TRANSACTIONS)           -->
+      <!-- 6. BILLING RECEIPTS & OFFICIAL DOCUMENTS                              -->
       <!-- ===================================================================== -->
       <section class="card" id="billing-history-section" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
         
@@ -484,10 +838,10 @@
               <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
               </div>
-              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing &amp; Receipts</h2>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing Receipts</h2>
             </div>
             <p class="text-sm text-secondary" style="margin-bottom: 0;">
-              Your official ZdexCloud tax invoices, payment receipts, and refund activity.
+              Your official ZdexCloud payment receipts, downloadable documents, and refund activity.
             </p>
           </div>
 
@@ -705,17 +1059,13 @@
         await AuthService.logoutUser();
       });
 
-      // 2. Initialize Billing State, Billing Profile & Receipts in parallel
-      try {
-        await BillingState.initBillingState((state) => {
-          loadBillingRegionUI(state);
-        });
-      } catch (err) {
-        console.error('Error initializing billing state:', err);
-      }
+      // 2. Load Billing Overview Data
+      await loadBillingOverviewData();
 
+      // 3. Load Billing Profile & Receipts in parallel
       await Promise.all([
         loadBillingProfileUI(),
+        loadRecentActivityUI(),
         loadBillingReceipts(1)
       ]);
     });
@@ -731,31 +1081,271 @@
       })[match]);
     }
 
+    function formatAmount(amountMinorUnits, currency) {
+      const symbol = currency === 'INR' ? '₹' : '$';
+      const major = ((amountMinorUnits || 0) / 100).toFixed(2);
+      return `${symbol}${major}`;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Not Available';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Not Available';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
     // =========================================================================
-    // 1. BILLING & REGIONAL SETTINGS (COUNTRY, POSTAL CODE, CURRENCY)
+    // 1. BILLING OVERVIEW (PLAN SUMMARY & STATE)
     // =========================================================================
 
-    function loadBillingRegionUI(billingState) {
-      const countrySelect = document.getElementById('billing-country-select');
-      const postalInput = document.getElementById('billing-postal-input');
-      const badgeContainer = document.getElementById('billing-confirmation-badge');
+    async function loadBillingOverviewData() {
+      const skeleton = document.getElementById('plan-overview-skeleton');
+      const content = document.getElementById('plan-overview-content');
+      const errorBox = document.getElementById('plan-overview-error');
 
-      if (!billingState) return;
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (errorBox) errorBox.style.display = 'none';
 
-      if (billingState.billingCountry && countrySelect) {
-        countrySelect.value = billingState.billingCountry;
+      try {
+        const response = await BillingAPI.getBillingState();
+
+        if (skeleton) skeleton.style.display = 'none';
+
+        if (!response.ok || !response.data || !response.data.success) {
+          if (errorBox) errorBox.style.display = 'block';
+          return;
+        }
+
+        const state = response.data.data;
+        renderBillingOverview(state);
+        syncAddressFromBillingState(state);
+
+        if (content) content.style.display = 'block';
+      } catch (err) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (errorBox) errorBox.style.display = 'block';
       }
-      if (billingState.billingPostalCode && postalInput) {
-        postalInput.value = billingState.billingPostalCode;
-      }
-      if (badgeContainer) {
-        if (billingState.countryConfirmed) {
-          badgeContainer.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Confirmed (${escapeHtml(billingState.currency || '')})</span>`;
+    }
+
+    function renderBillingOverview(state) {
+      const sub = state.subscription;
+      const isPaid = sub && sub.status !== 'EXPIRED' && state.plan !== 'FREE';
+      const currency = (sub && sub.currency) || state.currency || 'INR';
+
+      const titleEl = document.getElementById('plan-title-display');
+      const subtitleEl = document.getElementById('plan-subtitle-display');
+      const badgeContainer = document.getElementById('plan-status-badge-container');
+      const cadenceEl = document.getElementById('metric-cadence');
+      const dateLabelEl = document.getElementById('metric-date-label');
+      const renewalDateEl = document.getElementById('metric-renewal-date');
+      const amountEl = document.getElementById('metric-amount');
+      const serversEl = document.getElementById('metric-servers');
+      const primaryBtn = document.getElementById('btn-primary-plan-action');
+      const secondaryBtn = document.getElementById('btn-secondary-plan-action');
+
+      if (isPaid) {
+        const planName = sub.planName || (sub.planCode === 'PRO_YEARLY' ? 'ZdexCloud Pro Yearly' : 'ZdexCloud Pro Monthly');
+        if (titleEl) titleEl.textContent = planName;
+        if (subtitleEl) subtitleEl.textContent = `Commercial Tier &bull; ${sub.billingInterval === 'YEARLY' ? 'Annual Coverage' : 'Monthly Recurring'}`;
+
+        // Status Badge Logic
+        let statusBadgeHtml = '<span class="tx-status-badge tx-status--success"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Active</span>';
+        if (sub.cancelAtPeriodEnd) {
+          statusBadgeHtml = '<span class="tx-status-badge tx-status--pending">Cancels at Period End</span>';
+        } else if (sub.status === 'PAST_DUE') {
+          statusBadgeHtml = '<span class="tx-status-badge tx-status--failed">Payment Past Due</span>';
+        } else if (sub.status === 'GRACE_PERIOD') {
+          statusBadgeHtml = '<span class="tx-status-badge tx-status--pending">Grace Period</span>';
+        }
+        if (badgeContainer) badgeContainer.innerHTML = statusBadgeHtml;
+
+        // Metrics
+        if (cadenceEl) cadenceEl.textContent = sub.billingInterval === 'YEARLY' ? 'Billed Annually' : 'Billed Monthly';
+
+        if (sub.cancelAtPeriodEnd) {
+          if (dateLabelEl) dateLabelEl.textContent = 'Access Expires On';
+          if (renewalDateEl) renewalDateEl.textContent = formatDate(sub.currentPeriodEnd);
+        } else if (sub.status === 'ACTIVE') {
+          if (dateLabelEl) dateLabelEl.textContent = 'Next Renewal Date';
+          if (renewalDateEl) renewalDateEl.textContent = formatDate(sub.currentPeriodEnd);
         } else {
-          badgeContainer.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Unconfirmed</span>`;
+          if (dateLabelEl) dateLabelEl.textContent = 'Period Concludes';
+          if (renewalDateEl) renewalDateEl.textContent = formatDate(sub.currentPeriodEnd);
+        }
+
+        const formattedPlanPrice = formatAmount(sub.amountMinorUnits, currency);
+        if (amountEl) amountEl.textContent = `${formattedPlanPrice} / ${sub.billingInterval === 'YEARLY' ? 'yr' : 'mo'}`;
+
+        const maxNodes = state.entitlements?.maxServers || 5;
+        if (serversEl) serversEl.textContent = `Up to ${maxNodes} Android Servers`;
+
+        if (primaryBtn) {
+          primaryBtn.href = 'subscription.html';
+          primaryBtn.textContent = 'Manage Subscription';
+        }
+        if (secondaryBtn) {
+          secondaryBtn.href = 'pricing.html';
+          secondaryBtn.textContent = 'Explore All Plans';
+        }
+      } else {
+        // Free / Inactive State
+        if (titleEl) titleEl.textContent = 'ZdexCloud Free Tier';
+        if (subtitleEl) subtitleEl.textContent = 'Community Tier &bull; Single-Device Connectivity';
+
+        if (badgeContainer) {
+          badgeContainer.innerHTML = '<span class="tx-status-badge" style="background: var(--color-bg-secondary); color: var(--color-text-secondary); border: 1px solid var(--color-border);">Free Account</span>';
+        }
+
+        if (cadenceEl) cadenceEl.textContent = 'No Recurring Billing';
+        if (dateLabelEl) dateLabelEl.textContent = 'Renewal Schedule';
+        if (renewalDateEl) renewalDateEl.textContent = 'No Renewal Needed';
+
+        if (amountEl) amountEl.textContent = 'Free Forever (₹0.00)';
+        if (serversEl) serversEl.textContent = '1 Android Server Node';
+
+        if (primaryBtn) {
+          primaryBtn.href = 'pricing.html';
+          primaryBtn.textContent = 'Upgrade to Pro';
+        }
+        if (secondaryBtn) {
+          secondaryBtn.href = 'subscription.html';
+          secondaryBtn.textContent = 'Subscription Options';
         }
       }
-      updateCurrencyPreview();
+    }
+
+    // =========================================================================
+    // 2. RECENT BILLING ACTIVITY (LAST 5 TRANSACTIONS)
+    // =========================================================================
+
+    async function loadRecentActivityUI() {
+      const skeleton = document.getElementById('recent-activity-skeleton');
+      const content = document.getElementById('recent-activity-content');
+      const empty = document.getElementById('recent-activity-empty');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (empty) empty.style.display = 'none';
+
+      try {
+        const response = await BillingAPI.getReceipts(1, 5);
+
+        if (skeleton) skeleton.style.display = 'none';
+
+        if (response.ok && response.data && response.data.data) {
+          const receipts = Array.isArray(response.data.data.receipts)
+            ? response.data.data.receipts
+            : (Array.isArray(response.data.data) ? response.data.data : []);
+
+          if (receipts.length === 0) {
+            if (empty) empty.style.display = 'block';
+            return;
+          }
+
+          const rowsHtml = receipts.slice(0, 5).map(r => {
+            const refId = escapeHtml(r.receiptNumber || r.id);
+            const dateStr = formatDate(r.chargedAt || r.issuedAt);
+            const planLabel = escapeHtml(r.planName || (r.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'));
+            const formattedTotal = formatAmount(r.totalMinorUnits || r.amountPaidMinorUnits || 0, r.currency || 'INR');
+
+            let badge = '<span class="tx-status-badge tx-status--success">Paid</span>';
+            if (r.status === 'REFUNDED') {
+              badge = '<span class="tx-status-badge tx-status--refunded">Refunded</span>';
+            } else if (r.status === 'VOID' || r.status === 'FAILED') {
+              badge = '<span class="tx-status-badge tx-status--failed">Failed</span>';
+            }
+
+            return `
+              <tr>
+                <td>
+                  <a href="transaction-details.html?id=${encodeURIComponent(r.id)}" class="tx-ref-code" title="View Transaction Details" style="font-family: var(--font-family-mono); font-size: 12px; font-weight: 600; color: var(--color-brand-primary); text-decoration: underline;">
+                    ${refId}
+                  </a>
+                  <div class="text-xs text-muted">${dateStr}</div>
+                </td>
+                <td>
+                  <div style="font-weight: 500; font-size: 13px;">${planLabel}</div>
+                  <div class="text-xs text-muted">${escapeHtml(r.billingInterval || 'Monthly')} &bull; Razorpay</div>
+                </td>
+                <td>
+                  <strong style="font-family: var(--font-family-mono); font-size: 13px;">${formattedTotal}</strong>
+                </td>
+                <td>
+                  ${badge}
+                </td>
+                <td style="text-align: right;">
+                  <a href="transaction-details.html?id=${encodeURIComponent(r.id)}" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; text-decoration: none; display: inline-flex; align-items: center;">
+                    Details
+                  </a>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          content.innerHTML = `
+            <div style="width: 100%; overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-surface);">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--font-size-body-sm);">
+                <thead>
+                  <tr style="background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border);">
+                    <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Reference / Date</th>
+                    <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Description</th>
+                    <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Amount</th>
+                    <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Status</th>
+                    <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary); text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          if (content) content.style.display = 'block';
+        } else {
+          if (empty) empty.style.display = 'block';
+        }
+      } catch (e) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (empty) empty.style.display = 'block';
+      }
+    }
+
+    // =========================================================================
+    // 3. UNIFIED BILLING ADDRESS & IDENTITY PROFILE
+    // =========================================================================
+
+    // Countries where state or province is not applicable / required
+    const NO_STATE_COUNTRIES = new Set(['SG', 'HK', 'MC', 'VA', 'SM', 'GI', 'BM']);
+    // Countries where postal codes are not used or not required
+    const NO_POSTAL_COUNTRIES = new Set([
+      'AE', 'QA', 'AO', 'AG', 'AW', 'BS', 'BZ', 'BJ', 'BW', 'BF', 'BI', 'CM', 'CF', 'KM',
+      'CG', 'CD', 'CK', 'CI', 'DJ', 'DM', 'GQ', 'ER', 'FJ', 'TF', 'GM', 'GH', 'GD', 'GN',
+      'GY', 'KI', 'KP', 'ML', 'MR', 'MU', 'NR', 'NU', 'RW', 'KN', 'LC', 'ST', 'SC', 'SL',
+      'SB', 'SO', 'SR', 'SY', 'TL', 'TG', 'TK', 'TO', 'TV', 'UG', 'VU', 'YE', 'ZW'
+    ]);
+
+    function syncAddressFromBillingState(billingState) {
+      if (!billingState) return;
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const fullNameInput = document.getElementById('billing-fullname-input');
+
+      if (billingState.billingCountry && countrySelect && !countrySelect.value) {
+        countrySelect.value = billingState.billingCountry;
+      }
+      if (billingState.billingPostalCode && postalInput && !postalInput.value) {
+        postalInput.value = billingState.billingPostalCode;
+      }
+      if (billingState.billingName && fullNameInput && !fullNameInput.value) {
+        fullNameInput.value = billingState.billingName;
+      }
+      updateCountryContext();
     }
 
     function updateCurrencyPreview() {
@@ -772,72 +1362,67 @@
       }
     }
 
-    async function saveBillingRegion(e) {
-      if (e) e.preventDefault();
+    function updateCountryContext() {
       const countrySelect = document.getElementById('billing-country-select');
-      const postalInput = document.getElementById('billing-postal-input');
-      const feedback = document.getElementById('billing-status-feedback');
-      const btn = document.getElementById('btn-save-billing');
+      const country = countrySelect ? countrySelect.value.toUpperCase() : '';
 
-      if (!countrySelect || !postalInput || !countrySelect.value || !postalInput.value.trim()) {
-        return;
-      }
+      updateCurrencyPreview();
 
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = 'Saving...';
-      }
-      if (feedback) feedback.style.display = 'none';
-
-      try {
-        const res = await BillingAPI.confirmBillingCountry(countrySelect.value, postalInput.value.trim());
-
-        if (res.ok && res.data && res.data.success) {
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#ECFDF5';
-            feedback.style.color = '#065F46';
-            feedback.style.border = '1px solid #A7F3D0';
-            feedback.textContent = `Billing region saved successfully. Authoritative currency: ${res.data.data.currency}.`;
-          }
-          await BillingState.refreshBillingState();
-          await loadBillingProfileUI();
+      const stateInput = document.getElementById('billing-state-input');
+      const stateIndicator = document.getElementById('billing-state-required-indicator');
+      if (stateInput && stateIndicator) {
+        if (country && NO_STATE_COUNTRIES.has(country)) {
+          stateInput.required = false;
+          stateIndicator.textContent = '(Optional)';
+          stateIndicator.style.color = 'var(--color-text-secondary)';
+          stateIndicator.style.fontWeight = 'normal';
         } else {
-          const norm = BillingState.normalizeBillingError(res);
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#FEF2F2';
-            feedback.style.color = '#991B1B';
-            feedback.style.border = '1px solid #FECACA';
-            feedback.textContent = norm.message;
-          }
+          stateInput.required = true;
+          stateIndicator.textContent = '*';
+          stateIndicator.style.color = '#DC2626';
+          stateIndicator.style.fontWeight = 'bold';
         }
-      } catch (err) {
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = '#FEF2F2';
-          feedback.style.color = '#991B1B';
-          feedback.style.border = '1px solid #FECACA';
-          feedback.textContent = 'Network error while updating billing region.';
+      }
+
+      const postalInput = document.getElementById('billing-postal-input');
+      const postalIndicator = document.getElementById('billing-postal-required-indicator');
+      if (postalInput && postalIndicator) {
+        if (country && NO_POSTAL_COUNTRIES.has(country)) {
+          postalInput.required = false;
+          postalIndicator.textContent = '(Optional)';
+          postalIndicator.style.color = 'var(--color-text-secondary)';
+          postalIndicator.style.fontWeight = 'normal';
+        } else {
+          postalInput.required = true;
+          postalIndicator.textContent = '*';
+          postalIndicator.style.color = '#DC2626';
+          postalIndicator.style.fontWeight = 'bold';
         }
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `
-            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Save Region</span>
-          `;
+      }
+
+      const taxLabel = document.getElementById('billing-taxid-label');
+      const taxInput = document.getElementById('billing-taxid-input');
+      if (taxInput) {
+        if (country === 'IN') {
+          if (taxLabel) taxLabel.innerHTML = 'Tax ID / GSTIN <span class="text-muted">(Optional)</span>';
+          taxInput.placeholder = 'e.g. 24ABCDE1234F1Z5 (15-character GSTIN)';
+        } else {
+          if (taxLabel) taxLabel.innerHTML = 'Tax ID / VAT Number <span class="text-muted">(Optional)</span>';
+          taxInput.placeholder = 'e.g. VAT, EIN, or national tax reference';
         }
       }
     }
 
-    // =========================================================================
-    // 2. BILLING PROFILE (IDENTITY & ADDRESS) MANAGEMENT
-    // =========================================================================
+    function handleCountryChange() {
+      updateCountryContext();
+    }
 
     async function loadBillingProfileUI() {
       const badge = document.getElementById('billing-profile-badge');
       const fullNameInput = document.getElementById('billing-fullname-input');
+      const emailInput = document.getElementById('billing-email-input');
+      const companyInput = document.getElementById('billing-company-input');
+      const taxIdInput = document.getElementById('billing-taxid-input');
       const countrySelect = document.getElementById('billing-country-select');
       const address1Input = document.getElementById('billing-address1-input');
       const address2Input = document.getElementById('billing-address2-input');
@@ -850,21 +1435,32 @@
         if (res.ok && res.data && res.data.data) {
           const p = res.data.data;
           if (fullNameInput) fullNameInput.value = p.fullName || '';
-          if (countrySelect && !countrySelect.value) countrySelect.value = p.country || '';
+          if (emailInput) emailInput.value = p.email || '';
+          if (companyInput) companyInput.value = p.companyName || '';
+          if (taxIdInput) taxIdInput.value = p.taxId || '';
+          if (countrySelect && p.country) countrySelect.value = p.country;
           if (address1Input) address1Input.value = p.addressLine1 || '';
           if (address2Input) address2Input.value = p.addressLine2 || '';
           if (cityInput) cityInput.value = p.city || '';
           if (stateInput) stateInput.value = p.state || '';
-          if (postalInput && !postalInput.value) postalInput.value = p.postalCode || '';
+          if (postalInput && p.postalCode) postalInput.value = p.postalCode;
+
+          updateCountryContext();
 
           if (badge) {
-            if (p.countryConfirmed && p.addressLine1 && p.city) {
+            const hasCountry = Boolean(p.country);
+            const hasName = Boolean(p.fullName && p.fullName.trim());
+            const hasAddr1 = Boolean(p.addressLine1 && p.addressLine1.trim());
+            const hasCity = Boolean(p.city && p.city.trim());
+            const stateOk = NO_STATE_COUNTRIES.has(p.country) || Boolean(p.state && p.state.trim());
+            const postalOk = NO_POSTAL_COUNTRIES.has(p.country) || Boolean(p.postalCode && p.postalCode.trim());
+
+            if (p.countryConfirmed && hasName && hasAddr1 && hasCity && stateOk && postalOk) {
               badge.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Profile Complete (${escapeHtml(p.currency || '')})</span>`;
             } else {
-              badge.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Incomplete Address</span>`;
+              badge.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Incomplete Profile</span>`;
             }
           }
-          updateCurrencyPreview();
         }
       } catch (err) {
         if (badge) {
@@ -876,84 +1472,109 @@
     async function saveBillingProfile(e) {
       if (e) e.preventDefault();
       const fullName = document.getElementById('billing-fullname-input')?.value?.trim();
-      const country = document.getElementById('billing-country-select')?.value;
-      const postalCode = document.getElementById('billing-postal-input')?.value?.trim();
+      const companyName = document.getElementById('billing-company-input')?.value?.trim() || null;
+      const taxId = document.getElementById('billing-taxid-input')?.value?.trim() || null;
+      const country = document.getElementById('billing-country-select')?.value?.trim();
+      const postalCode = document.getElementById('billing-postal-input')?.value?.trim() || '';
       const addressLine1 = document.getElementById('billing-address1-input')?.value?.trim();
-      const addressLine2 = document.getElementById('billing-address2-input')?.value?.trim() || null;
+      const address2Input = document.getElementById('billing-address2-input');
+      const addressLine2 = address2Input?.value?.trim() || null;
       const city = document.getElementById('billing-city-input')?.value?.trim();
-      const state = document.getElementById('billing-state-input')?.value?.trim();
+      const state = document.getElementById('billing-state-input')?.value?.trim() || '';
       const feedback = document.getElementById('billing-profile-status-feedback');
       const btn = document.getElementById('btn-save-billing-profile');
 
-      if (!fullName || !country || !addressLine1 || !city || !state || !postalCode) {
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = '#FEF2F2';
-          feedback.style.color = '#991B1B';
-          feedback.style.border = '1px solid #FECACA';
-          feedback.textContent = 'Please configure your Billing Region above and fill all address fields.';
-        }
+      function showFeedback(msg, isError) {
+        if (!feedback) return;
+        feedback.style.display = 'block';
+        feedback.style.background = isError ? '#FEF2F2' : '#ECFDF5';
+        feedback.style.color = isError ? '#991B1B' : '#065F46';
+        feedback.style.border = isError ? '1px solid #FECACA' : '1px solid #A7F3D0';
+        feedback.textContent = msg;
+      }
+
+      if (!fullName || fullName.length < 2) {
+        showFeedback('Please provide your full legal name (at least 2 characters).', true);
         return;
+      }
+
+      if (!country) {
+        showFeedback('Please select a valid billing country.', true);
+        return;
+      }
+
+      if (!addressLine1 || addressLine1.length < 3) {
+        showFeedback('Please provide a street address for line 1 (at least 3 characters).', true);
+        return;
+      }
+
+      if (!city || city.length < 2) {
+        showFeedback('Please provide a city or town name.', true);
+        return;
+      }
+
+      const countryUpper = country.toUpperCase();
+      if (!NO_STATE_COUNTRIES.has(countryUpper) && (!state || state.length < 2)) {
+        showFeedback('State, province, or region is required for the selected country.', true);
+        return;
+      }
+
+      if (!NO_POSTAL_COUNTRIES.has(countryUpper) && (!postalCode || postalCode.length < 2)) {
+        showFeedback('Postal or ZIP code is required for the selected country.', true);
+        return;
+      }
+
+      if (taxId && countryUpper === 'IN') {
+        const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+        if (!gstinRegex.test(taxId.toUpperCase())) {
+          showFeedback('Invalid GSTIN format for India. Expected 15 characters (e.g. 24ABCDE1234F1Z5).', true);
+          return;
+        }
       }
 
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = 'Saving Address...';
+        btn.innerHTML = 'Saving Billing Profile...';
       }
       if (feedback) feedback.style.display = 'none';
 
       try {
         const res = await BillingAPI.updateBillingProfile({
           fullName,
-          country,
+          companyName,
+          taxId: taxId ? taxId.toUpperCase() : null,
           addressLine1,
           addressLine2,
           city,
           state,
-          postalCode
+          postalCode,
+          country
         });
 
         if (res.ok && res.data && res.data.success) {
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#ECFDF5';
-            feedback.style.color = '#065F46';
-            feedback.style.border = '1px solid #A7F3D0';
-            feedback.textContent = `Billing address saved successfully. Authoritative currency: ${res.data.data.currency}.`;
-          }
+          showFeedback(`Authoritative billing profile saved successfully. Currency: ${res.data.data.currency}.`, false);
           await BillingState.refreshBillingState();
           await loadBillingProfileUI();
+          await loadBillingOverviewData();
         } else {
-          const normMsg = res.data?.error?.message || 'Failed to update billing address.';
-          if (feedback) {
-            feedback.style.display = 'block';
-            feedback.style.background = '#FEF2F2';
-            feedback.style.color = '#991B1B';
-            feedback.style.border = '1px solid #FECACA';
-            feedback.textContent = normMsg;
-          }
+          const normMsg = res.data?.error?.message || 'Failed to update billing profile.';
+          showFeedback(normMsg, true);
         }
       } catch (err) {
-        if (feedback) {
-          feedback.style.display = 'block';
-          feedback.style.background = '#FEF2F2';
-          feedback.style.color = '#991B1B';
-          feedback.style.border = '1px solid #FECACA';
-          feedback.textContent = 'Network communication error while saving billing address.';
-        }
+        showFeedback('Network communication error while saving billing profile.', true);
       } finally {
         if (btn) {
           btn.disabled = false;
           btn.innerHTML = `
             <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            <span>Save Billing Address</span>
+            <span>Save Billing Profile</span>
           `;
         }
       }
     }
 
     // =========================================================================
-    // 2. BILLING RECEIPTS & HISTORY MANAGEMENT
+    // 5. BILLING RECEIPTS & HISTORY MANAGEMENT
     // =========================================================================
 
     async function loadBillingReceipts(page = 1) {
@@ -1020,9 +1641,9 @@
         return `
           <tr>
             <td>
-              <div style="font-weight: 600; font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--color-brand-primary);">
+              <a href="transaction-details.html?id=${encodeURIComponent(r.id)}" style="font-weight: 600; font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--color-brand-primary); text-decoration: underline;">
                 ${receiptNum}
-              </div>
+              </a>
               <div class="text-xs text-muted">${dateFormatted}</div>
             </td>
             <td>
@@ -1038,8 +1659,11 @@
             </td>
             <td>
               <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                <button type="button" onclick="viewReceiptHtml('${escapeHtml(r.id)}', '${receiptNum}')" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
-                  View
+                <a href="transaction-details.html?id=${encodeURIComponent(r.id)}" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px; text-decoration: none; display: inline-flex; align-items: center;" title="View Details">
+                  Details
+                </a>
+                <button type="button" onclick="viewReceiptHtml('${escapeHtml(r.id)}', '${receiptNum}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;" title="View Document">
+                  Receipt
                 </button>
                 <button type="button" onclick="downloadReceiptFile('${escapeHtml(r.id)}')" class="btn btn-ghost btn-sm" title="Download HTML Receipt" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -1056,15 +1680,15 @@
       }).join('');
 
       container.innerHTML = `
-        <div class="receipt-table-wrapper">
-          <table class="receipt-table">
+        <div class="receipt-table-wrapper" style="overflow-x: auto;">
+          <table class="receipt-table" style="width: 100%; border-collapse: collapse; font-size: var(--font-size-body-sm);">
             <thead>
-              <tr>
-                <th>Receipt # / Date</th>
-                <th>Plan Details</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Actions</th>
+              <tr style="background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); text-align: left;">
+                <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Receipt # / Date</th>
+                <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Plan Details</th>
+                <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Amount</th>
+                <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Status</th>
+                <th style="padding: 10px 14px; font-size: 11px; text-transform: uppercase; color: var(--color-text-secondary);">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1115,7 +1739,7 @@
       const loader = document.getElementById('receipt-iframe-loader');
       const frame = document.getElementById('receipt-html-frame');
 
-      if (titleEl) titleEl.textContent = `Receipt ${receiptNumber || ''}`;
+      if (titleEl) titleEl.textContent = `Official Receipt ${receiptNumber || ''}`;
       if (loader) loader.style.display = 'flex';
       if (frame) frame.srcdoc = '';
       if (modal) modal.style.display = 'flex';
@@ -1195,6 +1819,7 @@
         if (result.ok) {
           closeRefundRequestModal();
           await loadBillingReceipts(currentPage);
+          await loadRecentActivityUI();
         } else {
           if (errBox) {
             errBox.textContent = result.data?.error?.message || 'Refund request could not be processed.';

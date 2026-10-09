@@ -5,16 +5,21 @@ import { BillingCountryService } from './billing_country_service.js';
 
 export interface UpdateBillingProfileParams {
   fullName: string;
+  country: string;
   addressLine1: string;
   addressLine2?: string | null;
   city: string;
-  state: string;
-  postalCode: string;
-  country: string;
+  state?: string | null;
+  postalCode?: string | null;
+  companyName?: string | null;
+  taxId?: string | null;
 }
 
 export interface BillingProfileData {
   fullName: string;
+  email: string;
+  companyName: string | null;
+  taxId: string | null;
   addressLine1: string;
   addressLine2: string | null;
   city: string;
@@ -27,19 +32,68 @@ export interface BillingProfileData {
 
 export class BillingProfileService {
   /**
-   * Validates and normalizes full name.
+   * Validates and normalizes personal full legal name.
    */
   static validateFullName(raw: unknown): string {
     if (typeof raw !== 'string') {
-      throw new ValidationError('Full name must be a string');
+      throw new ValidationError('Full legal name must be a string');
     }
     const trimmed = raw.trim();
     if (!trimmed) {
-      throw new ValidationError('Full name is required');
+      throw new ValidationError('Full legal name is required');
     }
     if (trimmed.length > 150) {
-      throw new ValidationError('Full name cannot exceed 150 characters');
+      throw new ValidationError('Full legal name cannot exceed 150 characters');
     }
+    return trimmed;
+  }
+
+  /**
+   * Validates and normalizes optional company or business entity name.
+   */
+  static validateCompanyName(raw: unknown): string | null {
+    if (raw === null || raw === undefined || raw === '') {
+      return null;
+    }
+    if (typeof raw !== 'string') {
+      throw new ValidationError('Company name must be a string');
+    }
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (trimmed.length > 150) {
+      throw new ValidationError('Company name cannot exceed 150 characters');
+    }
+    return trimmed;
+  }
+
+  /**
+   * Validates and normalizes optional tax identifier or GSTIN.
+   * Enforces 15-character alphanumeric GSTIN formatting for Indian billing addresses.
+   */
+  static validateTaxId(raw: unknown, countryCode?: string): string | null {
+    if (raw === null || raw === undefined || raw === '') {
+      return null;
+    }
+    if (typeof raw !== 'string') {
+      throw new ValidationError('Tax ID must be a string');
+    }
+    const trimmed = raw.trim().toUpperCase();
+    if (!trimmed) {
+      return null;
+    }
+    if (trimmed.length > 50) {
+      throw new ValidationError('Tax ID cannot exceed 50 characters');
+    }
+
+    if (countryCode && countryCode.trim().toUpperCase() === 'IN') {
+      const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+      if (!gstinRegex.test(trimmed)) {
+        throw new ValidationError('Invalid GSTIN format. Expected 15-character alphanumeric GSTIN (e.g. 24AAAAA0000A1Z5)');
+      }
+    }
+
     return trimmed;
   }
 
@@ -81,7 +135,7 @@ export class BillingProfileService {
   }
 
   /**
-   * Validates and normalizes city name.
+   * Validates and normalizes city or locality name.
    */
   static validateCity(raw: unknown): string {
     if (typeof raw !== 'string') {
@@ -98,15 +152,18 @@ export class BillingProfileService {
   }
 
   /**
-   * Validates and normalizes state / province / region.
+   * Validates and normalizes state / province / region with country awareness.
    */
-  static validateState(raw: unknown): string {
-    if (typeof raw !== 'string') {
+  static validateState(raw: unknown, countryCode?: string): string {
+    if (typeof raw !== 'string' && raw !== null && raw !== undefined) {
       throw new ValidationError('State/Province/Region must be a string');
     }
-    const trimmed = raw.trim();
+    const trimmed = typeof raw === 'string' ? raw.trim() : '';
     if (!trimmed) {
-      throw new ValidationError('State/Province/Region is required');
+      if (countryCode && !BillingCountryService.isStateRequired(countryCode)) {
+        return '';
+      }
+      throw new ValidationError('State/Province/Region is required for the selected country');
     }
     if (trimmed.length > 100) {
       throw new ValidationError('State/Province/Region cannot exceed 100 characters');
@@ -135,8 +192,31 @@ export class BillingProfileService {
 
     const bs = user.billingState;
 
+    let companyName: string | null = null;
+    let taxId: string | null = null;
+
+    try {
+      const latestAudit = await prisma.auditEvent.findFirst({
+        where: {
+          userId: user.id,
+          eventType: AuditEventType.BILLING_STATE_UPDATED
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      if (latestAudit && latestAudit.metadata && typeof latestAudit.metadata === 'object') {
+        const meta = latestAudit.metadata as Record<string, unknown>;
+        if (typeof meta.companyName === 'string') companyName = meta.companyName;
+        if (typeof meta.taxId === 'string') taxId = meta.taxId;
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+
     return {
       fullName: bs?.billingName || user.fullName || '',
+      email: user.email,
+      companyName,
+      taxId,
       addressLine1: bs?.billingAddress1 || '',
       addressLine2: bs?.billingAddress2 || null,
       city: bs?.billingCity || '',
@@ -159,14 +239,16 @@ export class BillingProfileService {
       throw new ValidationError('userId is required');
     }
 
-    // 1. Strict Validation & Normalization
+    // 1. Strict Country-Aware Validation & Normalization
+    const country = BillingCountryService.validateAndNormalizeCountry(params.country);
     const fullName = this.validateFullName(params.fullName);
+    const companyName = this.validateCompanyName(params.companyName);
+    const taxId = this.validateTaxId(params.taxId, country);
     const addressLine1 = this.validateAddressLine1(params.addressLine1);
     const addressLine2 = this.validateAddressLine2(params.addressLine2);
     const city = this.validateCity(params.city);
-    const state = this.validateState(params.state);
-    const postalCode = BillingCountryService.validateAndNormalizePostalCode(params.postalCode);
-    const country = BillingCountryService.validateAndNormalizeCountry(params.country);
+    const state = this.validateState(params.state, country);
+    const postalCode = BillingCountryService.validateAndNormalizePostalCode(params.postalCode, country);
     const derivedCurrency = BillingCountryService.deriveBillingCurrency(country);
 
     // 2. Verify User Exists
@@ -241,6 +323,8 @@ export class BillingProfileService {
             oldCurrency,
             newCurrency: derivedCurrency,
             fullName,
+            companyName,
+            taxId,
             city,
             state,
             postalCode
@@ -250,6 +334,9 @@ export class BillingProfileService {
 
       return {
         fullName: billingState.billingName || fullName,
+        email: user.email,
+        companyName,
+        taxId,
         addressLine1: billingState.billingAddress1 || addressLine1,
         addressLine2: billingState.billingAddress2,
         city: billingState.billingCity || city,

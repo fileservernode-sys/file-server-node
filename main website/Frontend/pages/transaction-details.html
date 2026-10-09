@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Transaction Details | ZdexCloud - Personal File Server</title>
+  <meta name="description" content="View authoritative transaction details, payment metadata, receipt references, and billing history on ZdexCloud.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/transaction-details.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/transaction-details.html">
+  <meta property="og:title" content="Transaction Details | ZdexCloud - Personal File Server">
+  <meta property="og:description" content="View authoritative transaction details, payment metadata, receipt references, and billing history on ZdexCloud.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Transaction Details | ZdexCloud - Personal File Server">
+  <meta name="twitter:description" content="View authoritative transaction details, payment metadata, receipt references, and billing history on ZdexCloud.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/dashboard-shell.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+
+  <style>
+    /* Scoped Transaction Details Page Styles (Phase 6.2) */
+    .tx-banner {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+    }
+    .tx-banner-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-md);
+    }
+    .tx-banner-id {
+      font-family: var(--font-family-mono);
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-brand-primary);
+    }
+    .tx-banner-date {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      margin-top: 4px;
+    }
+    .tx-banner-actions {
+      display: flex;
+      gap: var(--space-xs);
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .tx-banner-amount-row {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-xs);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+    .tx-amount-large {
+      font-family: var(--font-family-mono);
+      font-size: 32px;
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      line-height: 1;
+    }
+    .tx-amount-badge {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      background: var(--color-bg-secondary);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Grid of detail cards */
+    .tx-details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-lg);
+      margin-bottom: var(--space-xl);
+    }
+    @media (max-width: 900px) {
+      .tx-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .tx-card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .tx-card-header {
+      padding: var(--space-md) var(--space-lg);
+      background: var(--color-bg-secondary);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tx-card-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .tx-card-body {
+      padding: var(--space-lg);
+    }
+
+    .tx-kv-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    .tx-kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding-bottom: var(--space-xs);
+      border-bottom: 1px solid var(--color-border-subtle);
+      font-size: var(--font-size-body-sm);
+    }
+    .tx-kv-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .tx-kv-label {
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+      flex: 1;
+    }
+    .tx-kv-val {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+      text-align: right;
+      flex: 1.2;
+      word-break: break-word;
+    }
+    .tx-kv-mono {
+      font-family: var(--font-family-mono);
+      font-size: 13px;
+    }
+
+    /* Status badges */
+    .tx-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+    .tx-status--success {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+    .tx-status--refunded {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+    .tx-status--failed {
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+    .tx-status--pending {
+      background: #FFFBEB;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Skeleton Loading State */
+    .skeleton-box {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: skeletonPulse 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+    @keyframes skeletonPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Policy Callout */
+    .policy-callout {
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      font-size: var(--font-size-body-sm);
+      margin-top: var(--space-md);
+    }
+    .policy-callout--info {
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      color: #1E40AF;
+    }
+    .policy-callout--success {
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+    }
+    .policy-callout--warning {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      color: #92400E;
+    }
+  </style>
+</head>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link">Dashboard</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD SHELL LAYOUT -->
+  <div class="dashboard-shell-layout">
+
+    <!-- DESKTOP DASHBOARD SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+      
+      <!-- Platform Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support & Communication Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="dashboard-main-content page-entrance" id="dashboard-main-content">
+      
+      <!-- DASHBOARD PAGE HEADER -->
+      <div class="dashboard-page-header">
+        <div class="dashboard-breadcrumbs">
+          <a href="servers.html">Dashboard</a>
+          <span>/</span>
+          <a href="transactions.html">Transactions</a>
+          <span>/</span>
+          <span>Transaction Details</span>
+        </div>
+        <div class="dashboard-title-row">
+          <div>
+            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Transaction Details</h1>
+            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+              Authoritative payment record, status, receipt reference, and transaction metadata.
+            </p>
+          </div>
+          <div>
+            <a href="transactions.html" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+              <span>Back to Transactions</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOADING SKELETON STATE -->
+      <div id="tx-details-skeleton" style="display: block;">
+        <div class="tx-banner" style="height: 140px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div style="display: flex; justify-content: space-between;">
+            <div class="skeleton-box" style="width: 200px; height: 24px;"></div>
+            <div class="skeleton-box" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 150px; height: 36px;"></div>
+        </div>
+        <div class="tx-details-grid">
+          <div class="tx-card" style="height: 280px; padding: var(--space-lg);">
+            <div class="skeleton-box" style="width: 140px; height: 20px; margin-bottom: var(--space-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 75%; height: 16px;"></div>
+          </div>
+          <div class="tx-card" style="height: 280px; padding: var(--space-lg);">
+            <div class="skeleton-box" style="width: 140px; height: 20px; margin-bottom: var(--space-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 100%; height: 16px; margin-bottom: 12px;"></div>
+            <div class="skeleton-box" style="width: 75%; height: 16px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR / NOT FOUND STATE -->
+      <div id="tx-details-error" style="display: none;">
+        <div class="card" style="text-align: center; padding: var(--space-2xl) var(--space-xl); max-width: 600px; margin: 0 auto;">
+          <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background: #FEF2F2; color: #DC2626; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-md);">
+            <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h2 id="error-title" style="font-size: var(--font-size-lg); margin-bottom: var(--space-xs); color: var(--color-text-primary);">Transaction Not Found</h2>
+          <p id="error-message" style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: var(--space-lg);">
+            The requested transaction record could not be found or you do not have permission to view it.
+          </p>
+          <div style="display: flex; gap: var(--space-sm); justify-content: center;">
+            <a href="transactions.html" class="btn btn-secondary btn-sm">Return to Transactions</a>
+            <button type="button" onclick="loadTransactionDetails()" class="btn btn-primary btn-sm">Retry</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSACTION CONTENT VIEW -->
+      <div id="tx-details-content" style="display: none;">
+
+        <!-- TOP SUMMARY BANNER -->
+        <div class="tx-banner">
+          <div class="tx-banner-top">
+            <div>
+              <div style="display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap;">
+                <span class="tx-banner-id" id="banner-ref-id">Reference</span>
+                <span id="banner-status-badge"></span>
+              </div>
+              <div class="tx-banner-date" id="banner-date">Date &amp; Time</div>
+            </div>
+            <div class="tx-banner-actions">
+              <button type="button" id="btn-view-receipt" class="btn btn-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                <span>View Receipt</span>
+              </button>
+              <button type="button" id="btn-download-receipt" class="btn btn-ghost btn-sm" style="display: inline-flex; align-items: center; gap: 6px;" title="Download Receipt Attachment">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Download</span>
+              </button>
+              <button type="button" id="btn-refund-action" class="btn btn-ghost btn-sm" style="display: none; color: #DC2626;" title="Request Refund for Eligible Payment">
+                <span>Request Refund</span>
+              </button>
+            </div>
+          </div>
+          <div class="tx-banner-amount-row">
+            <span class="tx-amount-large" id="banner-amount">₹0.00</span>
+            <span class="tx-amount-badge" id="banner-currency-note">Taxes Included</span>
+          </div>
+        </div>
+
+        <!-- DETAILS GRID -->
+        <div class="tx-details-grid">
+
+          <!-- CARD 1: TRANSACTION & PAYMENT METADATA -->
+          <div class="tx-card">
+            <div class="tx-card-header">
+              <h2 class="tx-card-title">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                <span>Payment Information</span>
+              </h2>
+            </div>
+            <div class="tx-card-body">
+              <div class="tx-kv-list">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Transaction Reference</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-ref"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Transaction Type</span>
+                  <span class="tx-kv-val" id="tx-val-type"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Payment Provider</span>
+                  <span class="tx-kv-val" id="tx-val-provider">Razorpay</span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Provider Payment ID</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-provider-pid"></span>
+                </div>
+                <div class="tx-kv-row" id="row-provider-order" style="display: none;">
+                  <span class="tx-kv-label">Provider Order ID</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-provider-oid"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Environment</span>
+                  <span class="tx-kv-val" id="tx-val-environment">Production</span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Charge Date</span>
+                  <span class="tx-kv-val" id="tx-val-charged-at"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 2: SUBSCRIPTION & PLAN -->
+          <div class="tx-card">
+            <div class="tx-card-header">
+              <h2 class="tx-card-title">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span>Subscription Details</span>
+              </h2>
+            </div>
+            <div class="tx-card-body">
+              <div class="tx-kv-list">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Plan Tier</span>
+                  <span class="tx-kv-val" id="tx-val-plan-name"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Plan Code</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-plan-code"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Billing Cadence</span>
+                  <span class="tx-kv-val" id="tx-val-cadence"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Subscription Status</span>
+                  <span class="tx-kv-val" id="tx-val-sub-status">Active</span>
+                </div>
+                <div class="tx-kv-row" id="row-period-start" style="display: none;">
+                  <span class="tx-kv-label">Billing Period Start</span>
+                  <span class="tx-kv-val" id="tx-val-period-start"></span>
+                </div>
+                <div class="tx-kv-row" id="row-period-end" style="display: none;">
+                  <span class="tx-kv-label">Billing Period End</span>
+                  <span class="tx-kv-val" id="tx-val-period-end"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Receipt Identifier</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-receipt-num"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: FINANCIAL BREAKDOWN -->
+          <div class="tx-card">
+            <div class="tx-card-header">
+              <h2 class="tx-card-title">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="8"></line><line x1="12" y1="16" x2="12" y2="18"></line></svg>
+                <span>Financial Breakdown</span>
+              </h2>
+            </div>
+            <div class="tx-card-body">
+              <div class="tx-kv-list">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Subtotal</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-subtotal"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Taxes &amp; Fees (Included)</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-tax"></span>
+                </div>
+                <div class="tx-kv-row" id="row-discount" style="display: none;">
+                  <span class="tx-kv-label">Discount Applied</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-discount"></span>
+                </div>
+                <div class="tx-kv-row" style="padding-top: var(--space-xs); border-top: 1px solid var(--color-border); font-size: var(--font-size-body);">
+                  <strong class="tx-kv-label" style="color: var(--color-text-primary);">Total Paid</strong>
+                  <strong class="tx-kv-val tx-kv-mono" style="color: var(--color-brand-primary);" id="tx-val-total"></strong>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Settlement Currency</span>
+                  <span class="tx-kv-val" id="tx-val-currency"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 4: CUSTOMER & BILLING SNAPSHOT -->
+          <div class="tx-card">
+            <div class="tx-card-header">
+              <h2 class="tx-card-title">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>Billed Customer Snapshot</span>
+              </h2>
+            </div>
+            <div class="tx-card-body">
+              <div class="tx-kv-list">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Customer Name</span>
+                  <span class="tx-kv-val" id="tx-val-cust-name"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Billing Email</span>
+                  <span class="tx-kv-val" id="tx-val-cust-email"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Billing Country</span>
+                  <span class="tx-kv-val" id="tx-val-cust-country"></span>
+                </div>
+                <div class="tx-kv-row" id="row-cust-address" style="display: none;">
+                  <span class="tx-kv-label">Billing Address</span>
+                  <span class="tx-kv-val" id="tx-val-cust-address"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Merchant</span>
+                  <span class="tx-kv-val" id="tx-val-merchant">ZdexCloud</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- REFUND POLICY & STATUS SECTION -->
+        <div class="tx-card" id="tx-refund-section">
+          <div class="tx-card-header">
+            <h2 class="tx-card-title">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+              <span>Refund Status &amp; Policy</span>
+            </h2>
+          </div>
+          <div class="tx-card-body">
+            
+            <!-- REFUND COMPLETED STATE -->
+            <div id="refund-state-completed" style="display: none;">
+              <div class="policy-callout policy-callout--info">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <div>
+                  <strong>Payment Refunded</strong>
+                  <div style="margin-top: 2px;">This transaction has been refunded back to your original payment method.</div>
+                </div>
+              </div>
+              <div class="tx-kv-list" style="margin-top: var(--space-md);">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Refund Status</span>
+                  <span class="tx-kv-val"><span class="tx-status-badge tx-status--refunded">Refunded</span></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Refunded Amount</span>
+                  <span class="tx-kv-val tx-kv-mono" id="refund-val-amount"></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Refund Date</span>
+                  <span class="tx-kv-val" id="refund-val-date"></span>
+                </div>
+                <div class="tx-kv-row" id="row-refund-id" style="display: none;">
+                  <span class="tx-kv-label">Refund Identifier</span>
+                  <span class="tx-kv-val tx-kv-mono" id="refund-val-id"></span>
+                </div>
+                <div class="tx-kv-row" id="row-refund-reason" style="display: none;">
+                  <span class="tx-kv-label">Refund Reason</span>
+                  <span class="tx-kv-val" id="refund-val-reason"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- REFUND PENDING / REQUESTED STATE -->
+            <div id="refund-state-pending" style="display: none;">
+              <div class="policy-callout policy-callout--warning">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div>
+                  <strong>Refund Request Under Review</strong>
+                  <div style="margin-top: 2px;">Your refund request has been received and is currently being processed by the billing engine.</div>
+                </div>
+              </div>
+              <div class="tx-kv-list" style="margin-top: var(--space-md);">
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Request Status</span>
+                  <span class="tx-kv-val"><span class="tx-status-badge tx-status--pending">Processing</span></span>
+                </div>
+                <div class="tx-kv-row">
+                  <span class="tx-kv-label">Requested Date</span>
+                  <span class="tx-kv-val" id="refund-pending-val-date"></span>
+                </div>
+                <div class="tx-kv-row" id="row-pending-reason" style="display: none;">
+                  <span class="tx-kv-label">Reason Stated</span>
+                  <span class="tx-kv-val" id="refund-pending-val-reason"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ELIGIBLE FOR 7-DAY REFUND STATE -->
+            <div id="refund-state-eligible" style="display: none;">
+              <div class="policy-callout policy-callout--success">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                <div style="flex: 1;">
+                  <strong>Eligible for 7-Day Refund</strong>
+                  <div style="margin-top: 2px;">Under the ZdexCloud 7-day money-back policy, you can request a self-service refund for this payment.</div>
+                </div>
+                <button type="button" onclick="openRefundModal()" class="btn btn-secondary btn-sm" style="color: #DC2626; border-color: #FECACA; white-space: nowrap;">
+                  Request Refund
+                </button>
+              </div>
+            </div>
+
+            <!-- NON-REFUNDABLE / POLICY EXPIRED STATE -->
+            <div id="refund-state-expired" style="display: none;">
+              <div class="policy-callout policy-callout--info">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <div>
+                  <strong>Commercial Policy Notice</strong>
+                  <div style="margin-top: 2px;">This transaction is outside the standard 7-day refund window. For billing inquiries, contact ZdexCloud support at support@zdexcloud.com.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- RECEIPT HTML PREVIEW MODAL -->
+  <div id="receipt-viewer-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--color-bg-surface); width: 95%; max-width: 840px; height: 90vh; border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-xl); border: 1px solid var(--color-border);">
+      <div style="padding: 16px 20px; background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <strong id="receipt-viewer-title" style="font-size: var(--font-size-body); color: var(--color-text-primary);">Official Billing Receipt</strong>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" onclick="printActiveReceipt()" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px;">
+            Print
+          </button>
+          <button type="button" onclick="downloadActiveReceipt()" class="btn btn-primary btn-sm" style="font-size: 11px; padding: 4px 8px;">
+            Download
+          </button>
+          <button type="button" onclick="closeReceiptViewerModal()" class="btn btn-ghost btn-sm" aria-label="Close modal" style="padding: 4px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </div>
+      <div style="flex: 1; position: relative; background: #525659; overflow: hidden;">
+        <div id="receipt-iframe-loader" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: var(--color-bg-surface); z-index: 2;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--color-text-secondary);">
+            <div class="skeleton-box" style="width: 40px; height: 40px; border-radius: var(--radius-full);"></div>
+            <span style="font-size: var(--font-size-sm);">Rendering Official Receipt...</span>
+          </div>
+        </div>
+        <iframe id="receipt-html-frame" title="Receipt Preview Document" style="width: 100%; height: 100%; border: none; background: #FFFFFF;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFUND REQUEST MODAL -->
+  <div id="refund-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: var(--color-bg-surface); width: 95%; max-width: 520px; border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-xl); border: 1px solid var(--color-border);">
+      <div style="padding: 16px 20px; background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+        <strong style="font-size: var(--font-size-body); color: var(--color-text-primary);">Request Billing Refund</strong>
+        <button type="button" onclick="closeRefundModal()" class="btn btn-ghost btn-sm" aria-label="Close modal" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div style="padding: 20px;">
+        <div id="refund-error-banner" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: 10px 12px; border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: 16px;"></div>
+        
+        <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: 16px;">
+          Eligible purchases made within the last 7 days may be refunded under our money-back policy. Processing returns funds directly to your original payment method.
+        </p>
+
+        <form id="refund-form" onsubmit="submitRefundRequest(event)">
+          <div style="margin-bottom: 16px;">
+            <label for="refund-reason-select" style="display: block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); margin-bottom: 6px;">
+              Reason for Refund
+            </label>
+            <select id="refund-reason-select" class="form-select" required style="width: 100%; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-surface); font-size: var(--font-size-body-sm); color: var(--color-text-primary);">
+              <option value="ACCIDENTAL_PURCHASE">Accidental or duplicate purchase</option>
+              <option value="TECHNICAL_FAILURE">Technical failure or connection difficulties</option>
+              <option value="CUSTOMER_SATISFACTION">Dissatisfied with features or performance</option>
+              <option value="OTHER">Other reason</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <label for="refund-comments" style="display: block; font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-text-primary); margin-bottom: 6px;">
+              Additional Comments (Optional)
+            </label>
+            <textarea id="refund-comments" rows="3" class="form-textarea" placeholder="Please describe the issue encountered..." style="width: 100%; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-bg-surface); font-size: var(--font-size-body-sm); color: var(--color-text-primary); font-family: inherit;"></textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: flex-end;">
+            <button type="button" onclick="closeRefundModal()" class="btn btn-secondary btn-sm">Cancel</button>
+            <button type="submit" id="btn-submit-refund" class="btn btn-primary btn-sm" style="background: #DC2626; border-color: #DC2626;">Confirm Refund Request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORE SCRIPTS -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    let activeTransaction = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Session Guard
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
+
+      if (!authResult.authenticated) {
+        const currentUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `login.html?redirect=${currentUrl}`;
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+      if (user) {
+        if (user.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = user.email;
+        }
+        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
+      }
+
+      // Logout handler
+      document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        await AuthService.logoutUser();
+      });
+
+      // 2. Load Transaction Details
+      await loadTransactionDetails();
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
+    function formatAmount(amountMinorUnits, currency) {
+      const symbol = currency === 'INR' ? '₹' : '$';
+      const major = ((amountMinorUnits || 0) / 100).toFixed(2);
+      return `${symbol}${major}`;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'Not Available';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Not Available';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+
+    function resolveTransactionTypeLabel(type, planName) {
+      switch (type) {
+        case 'SUBSCRIPTION_PURCHASE':
+          return `Plan Subscription (${planName || 'Commercial Plan'})`;
+        case 'SUBSCRIPTION_RENEWAL':
+          return `Subscription Renewal (${planName || 'Commercial Plan'})`;
+        case 'SUBSCRIPTION_UPGRADE':
+          return `Subscription Upgrade (${planName || 'Pro Yearly'})`;
+        case 'REFUND_CREDIT':
+          return 'Refund Adjustment';
+        default:
+          return planName ? `Subscription (${planName})` : 'Billing Charge';
+      }
+    }
+
+    async function loadTransactionDetails() {
+      const skeleton = document.getElementById('tx-details-skeleton');
+      const content = document.getElementById('tx-details-content');
+      const errorBox = document.getElementById('tx-details-error');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (errorBox) errorBox.style.display = 'none';
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const txId = urlParams.get('id') || urlParams.get('receiptId') || urlParams.get('paymentId');
+
+      if (!txId) {
+        if (skeleton) skeleton.style.display = 'none';
+        const errTitle = document.getElementById('error-title');
+        const errDesc = document.getElementById('error-message');
+        if (errTitle) errTitle.textContent = 'Missing Transaction Identifier';
+        if (errDesc) errDesc.textContent = 'No transaction ID was provided in the URL query string. Please choose a transaction from your Transactions page.';
+        if (errorBox) errorBox.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await BillingAPI.getTransaction(txId);
+
+        if (skeleton) skeleton.style.display = 'none';
+
+        if (!response.ok || !response.data || !response.data.success) {
+          const errMsg = response.data?.error?.message || 'Could not retrieve transaction details from the control plane.';
+          const errTitle = document.getElementById('error-title');
+          const errDesc = document.getElementById('error-message');
+          if (errTitle) errTitle.textContent = response.status === 404 ? 'Transaction Not Found' : 'Unable to Load Details';
+          if (errDesc) errDesc.textContent = errMsg;
+          if (errorBox) errorBox.style.display = 'block';
+          return;
+        }
+
+        const receipt = response.data.data;
+        activeTransaction = receipt;
+        renderTransactionDetails(receipt);
+
+        if (content) content.style.display = 'block';
+      } catch (err) {
+        if (skeleton) skeleton.style.display = 'none';
+        const errTitle = document.getElementById('error-title');
+        const errDesc = document.getElementById('error-message');
+        if (errTitle) errTitle.textContent = 'Communication Failure';
+        if (errDesc) errDesc.textContent = err && err.message ? err.message : 'A network error occurred while retrieving transaction details.';
+        if (errorBox) errorBox.style.display = 'block';
+      }
+    }
+
+    function renderTransactionDetails(tx) {
+      const isRefunded = tx.status === 'REFUNDED';
+      const isPaid = tx.status === 'ISSUED';
+      const currency = tx.currency || 'INR';
+      const totalAmount = tx.totalMinorUnits || tx.amountPaidMinorUnits || 0;
+      const formattedTotal = formatAmount(totalAmount, currency);
+      const chargedDate = tx.chargedAt || tx.issuedAt;
+      const refId = tx.providerPaymentId || tx.receiptNumber || tx.id;
+      const typeLabel = resolveTransactionTypeLabel(tx.type, tx.planName);
+
+      // 1. Top Banner
+      const refEl = document.getElementById('banner-ref-id');
+      if (refEl) refEl.textContent = refId;
+
+      const dateEl = document.getElementById('banner-date');
+      if (dateEl) dateEl.textContent = formatDate(chargedDate);
+
+      const amountEl = document.getElementById('banner-amount');
+      if (amountEl) amountEl.textContent = formattedTotal;
+
+      const badgeEl = document.getElementById('banner-status-badge');
+      if (badgeEl) {
+        if (isRefunded) {
+          badgeEl.innerHTML = `<span class="tx-status-badge tx-status--refunded">Refunded</span>`;
+        } else if (tx.status === 'VOID' || tx.status === 'FAILED') {
+          badgeEl.innerHTML = `<span class="tx-status-badge tx-status--failed">Failed</span>`;
+        } else if (isPaid) {
+          badgeEl.innerHTML = `<span class="tx-status-badge tx-status--success"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Paid</span>`;
+        } else {
+          badgeEl.innerHTML = `<span class="tx-status-badge tx-status--pending">Pending</span>`;
+        }
+      }
+
+      // 2. Receipt Actions
+      const viewReceiptBtn = document.getElementById('btn-view-receipt');
+      if (viewReceiptBtn) {
+        viewReceiptBtn.onclick = () => viewReceiptHtml(tx.id, tx.receiptNumber);
+      }
+
+      const downloadReceiptBtn = document.getElementById('btn-download-receipt');
+      if (downloadReceiptBtn) {
+        downloadReceiptBtn.onclick = () => downloadReceiptFile(tx.id);
+      }
+
+      // 3. Card 1: Payment Metadata
+      document.getElementById('tx-val-ref').textContent = refId;
+      document.getElementById('tx-val-type').textContent = typeLabel;
+      document.getElementById('tx-val-provider').textContent = tx.provider || 'Razorpay';
+      document.getElementById('tx-val-provider-pid').textContent = tx.providerPaymentId || tx.payment?.providerPaymentId || 'Recorded Internally';
+
+      const orderRow = document.getElementById('row-provider-order');
+      const orderVal = tx.providerOrderId || tx.payment?.providerOrderId;
+      if (orderVal && orderRow) {
+        document.getElementById('tx-val-provider-oid').textContent = orderVal;
+        orderRow.style.display = 'flex';
+      }
+
+      document.getElementById('tx-val-environment').textContent = (tx.providerEnvironment || tx.payment?.environment || 'TEST') === 'LIVE' ? 'Production' : 'Test Mode';
+      document.getElementById('tx-val-charged-at').textContent = formatDate(chargedDate);
+
+      // 4. Card 2: Subscription Details
+      document.getElementById('tx-val-plan-name').textContent = tx.planName || 'Commercial Plan';
+      document.getElementById('tx-val-plan-code').textContent = tx.planCode || 'PRO_MONTHLY';
+      document.getElementById('tx-val-cadence').textContent = tx.billingInterval || 'Monthly';
+      document.getElementById('tx-val-sub-status').textContent = tx.subscription?.status || (isPaid ? 'ACTIVE' : 'COMPLETED');
+
+      if (tx.periodStart) {
+        const startRow = document.getElementById('row-period-start');
+        if (startRow) {
+          startRow.style.display = 'flex';
+          document.getElementById('tx-val-period-start').textContent = formatDate(tx.periodStart);
+        }
+      }
+
+      if (tx.periodEnd) {
+        const endRow = document.getElementById('row-period-end');
+        if (endRow) {
+          endRow.style.display = 'flex';
+          document.getElementById('tx-val-period-end').textContent = formatDate(tx.periodEnd);
+        }
+      }
+
+      document.getElementById('tx-val-receipt-num').textContent = tx.receiptNumber || tx.id;
+
+      // 5. Card 3: Financial Breakdown
+      const subtotal = tx.subtotalMinorUnits !== undefined ? tx.subtotalMinorUnits : totalAmount;
+      const taxAmount = tx.taxMinorUnits || 0;
+      const discount = tx.discountMinorUnits || 0;
+
+      document.getElementById('tx-val-subtotal').textContent = formatAmount(subtotal, currency);
+      document.getElementById('tx-val-tax').textContent = formatAmount(taxAmount, currency);
+
+      if (discount > 0) {
+        const discRow = document.getElementById('row-discount');
+        if (discRow) {
+          discRow.style.display = 'flex';
+          document.getElementById('tx-val-discount').textContent = formatAmount(discount, currency);
+        }
+      }
+
+      document.getElementById('tx-val-total').textContent = formattedTotal;
+      document.getElementById('tx-val-currency').textContent = `${currency} (${currency === 'INR' ? '₹' : '$'})`;
+
+      // 6. Card 4: Customer Snapshot
+      document.getElementById('tx-val-cust-name').textContent = tx.customerName || 'Registered Customer';
+      document.getElementById('tx-val-cust-email').textContent = tx.customerEmail || 'Not Recorded';
+      document.getElementById('tx-val-cust-country').textContent = tx.billingCountry || 'IN';
+      document.getElementById('tx-val-merchant').textContent = tx.merchantName || 'ZdexCloud';
+
+      if (tx.billingAddress && typeof tx.billingAddress === 'object') {
+        const addr = tx.billingAddress;
+        const formattedAddr = [addr.addressLine1, addr.addressLine2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', ');
+        if (formattedAddr) {
+          const addrRow = document.getElementById('row-cust-address');
+          if (addrRow) {
+            addrRow.style.display = 'flex';
+            document.getElementById('tx-val-cust-address').textContent = formattedAddr;
+          }
+        }
+      }
+
+      // 7. Refund Status & Policy Resolution
+      const refunds = tx.payment?.refunds || [];
+      const completedRefund = refunds.find(r => r.status === 'PROCESSED' || r.status === 'SUCCEEDED') || (isRefunded ? { amountMinorUnits: totalAmount } : null);
+      const pendingRefund = refunds.find(r => r.status === 'REQUESTED' || r.status === 'PENDING' || r.status === 'PROCESSING');
+
+      const completedState = document.getElementById('refund-state-completed');
+      const pendingState = document.getElementById('refund-state-pending');
+      const eligibleState = document.getElementById('refund-state-eligible');
+      const expiredState = document.getElementById('refund-state-expired');
+      const bannerRefundBtn = document.getElementById('btn-refund-action');
+
+      if (completedRefund) {
+        if (completedState) completedState.style.display = 'block';
+        document.getElementById('refund-val-amount').textContent = formatAmount(completedRefund.amountMinorUnits || totalAmount, currency);
+        document.getElementById('refund-val-date').textContent = formatDate(completedRefund.processedAt || tx.refundedAt || chargedDate);
+        if (completedRefund.id) {
+          document.getElementById('row-refund-id').style.display = 'flex';
+          document.getElementById('refund-val-id').textContent = completedRefund.id;
+        }
+        if (completedRefund.reason) {
+          document.getElementById('row-refund-reason').style.display = 'flex';
+          document.getElementById('refund-val-reason').textContent = completedRefund.reason;
+        }
+      } else if (pendingRefund) {
+        if (pendingState) pendingState.style.display = 'block';
+        document.getElementById('refund-pending-val-date').textContent = formatDate(pendingRefund.requestedAt || chargedDate);
+        if (pendingRefund.reason) {
+          document.getElementById('row-pending-reason').style.display = 'flex';
+          document.getElementById('refund-pending-val-reason').textContent = pendingRefund.reason;
+        }
+      } else if (isPaid) {
+        // Calculate age for 7-day policy window
+        const chargeMs = new Date(chargedDate).getTime();
+        const nowMs = Date.now();
+        const ageDays = (nowMs - chargeMs) / (1000 * 60 * 60 * 24);
+
+        if (ageDays <= 7) {
+          if (eligibleState) eligibleState.style.display = 'block';
+          if (bannerRefundBtn) {
+            bannerRefundBtn.style.display = 'inline-flex';
+            bannerRefundBtn.onclick = () => openRefundModal();
+          }
+        } else {
+          if (expiredState) expiredState.style.display = 'block';
+        }
+      } else {
+        if (expiredState) expiredState.style.display = 'block';
+      }
+    }
+
+    // Modal & Action Helpers
+    async function viewReceiptHtml(receiptId, receiptNumber) {
+      const modal = document.getElementById('receipt-viewer-modal');
+      const titleEl = document.getElementById('receipt-viewer-title');
+      const loader = document.getElementById('receipt-iframe-loader');
+      const frame = document.getElementById('receipt-html-frame');
+
+      if (titleEl) titleEl.textContent = `Official Receipt ${receiptNumber || ''}`;
+      if (loader) loader.style.display = 'flex';
+      if (frame) frame.srcdoc = '';
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        const res = await BillingAPI.getReceiptHtml(receiptId);
+        if (loader) loader.style.display = 'none';
+
+        if (res.ok && res.html) {
+          if (frame) frame.srcdoc = res.html;
+        } else {
+          if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Failed to load receipt document.</div>';
+        }
+      } catch (err) {
+        if (loader) loader.style.display = 'none';
+        if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Network error loading receipt document.</div>';
+      }
+    }
+
+    function closeReceiptViewerModal() {
+      const modal = document.getElementById('receipt-viewer-modal');
+      if (modal) modal.style.display = 'none';
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame) frame.srcdoc = '';
+    }
+
+    function printActiveReceipt() {
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }
+    }
+
+    async function downloadActiveReceipt() {
+      if (!activeTransaction) return;
+      await downloadReceiptFile(activeTransaction.id);
+    }
+
+    async function downloadReceiptFile(receiptId) {
+      try {
+        await BillingAPI.downloadReceipt(receiptId);
+      } catch (err) {
+        alert('Could not download document file. Please view it in browser.');
+      }
+    }
+
+    function openRefundModal() {
+      const modal = document.getElementById('refund-modal');
+      const errBanner = document.getElementById('refund-error-banner');
+      if (errBanner) {
+        errBanner.style.display = 'none';
+        errBanner.textContent = '';
+      }
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeRefundModal() {
+      const modal = document.getElementById('refund-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitRefundRequest(e) {
+      e.preventDefault();
+      if (!activeTransaction) return;
+
+      const submitBtn = document.getElementById('btn-submit-refund');
+      const errBanner = document.getElementById('refund-error-banner');
+      const reasonSelect = document.getElementById('refund-reason-select');
+      const commentsInput = document.getElementById('refund-comments');
+
+      const reason = reasonSelect ? reasonSelect.value : 'CUSTOMER_SATISFACTION';
+      const comments = commentsInput ? commentsInput.value.trim() : '';
+      const paymentId = activeTransaction.paymentId || activeTransaction.payment?.id || activeTransaction.id;
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+      }
+      if (errBanner) errBanner.style.display = 'none';
+
+      try {
+        const payload = {
+          paymentId,
+          reason,
+          reasonDetails: comments || undefined,
+          idempotencyKey: `ref_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          terminateSubscription: true
+        };
+
+        const res = await BillingAPI.requestRefund(payload);
+
+        if (!res.ok || !res.data || !res.data.success) {
+          const msg = res.data?.error?.message || 'Failed to submit refund request.';
+          if (errBanner) {
+            errBanner.textContent = msg;
+            errBanner.style.display = 'block';
+          }
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Confirm Refund Request';
+          }
+          return;
+        }
+
+        closeRefundModal();
+        alert('Refund request submitted successfully. The transaction status will update shortly.');
+        await loadTransactionDetails();
+      } catch (err) {
+        if (errBanner) {
+          errBanner.textContent = err && err.message ? err.message : 'A network error occurred while submitting your refund request.';
+          errBanner.style.display = 'block';
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Confirm Refund Request';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

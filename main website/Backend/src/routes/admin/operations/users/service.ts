@@ -1,4 +1,4 @@
-import { Prisma, AdminAuditAction } from '@prisma/client';
+import { Prisma, AdminAuditAction, AuditEventType } from '@prisma/client';
 import { prisma } from '../../../../config/database.js';
 import { NotFoundError, ConflictError, ValidationError } from '../../../../errors/app-error.js';
 import { AdminOperationContext } from '../types.js';
@@ -70,6 +70,8 @@ export interface UserDetailResult {
     billingCountry: string | null;
     billingPostalCode: string | null;
     billingName: string | null;
+    companyName?: string | null;
+    taxId?: string | null;
     billingAddress1: string | null;
     billingAddress2: string | null;
     billingCity: string | null;
@@ -314,6 +316,27 @@ export class AdminUserService {
       };
     });
 
+    let companyName: string | null = null;
+    let taxId: string | null = null;
+    if (user.billingState) {
+      try {
+        const latestAudit = await prisma.auditEvent.findFirst({
+          where: {
+            userId: user.id,
+            eventType: AuditEventType.BILLING_STATE_UPDATED
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (latestAudit?.metadata && typeof latestAudit.metadata === 'object') {
+          const meta = latestAudit.metadata as Record<string, unknown>;
+          if (typeof meta.companyName === 'string') companyName = meta.companyName;
+          if (typeof meta.taxId === 'string') taxId = meta.taxId;
+        }
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,
@@ -331,6 +354,8 @@ export class AdminUserService {
             billingCountry: user.billingState.billingCountry,
             billingPostalCode: user.billingState.billingPostalCode,
             billingName: user.billingState.billingName || user.fullName,
+            companyName,
+            taxId,
             billingAddress1: user.billingState.billingAddress1,
             billingAddress2: user.billingState.billingAddress2,
             billingCity: user.billingState.billingCity,

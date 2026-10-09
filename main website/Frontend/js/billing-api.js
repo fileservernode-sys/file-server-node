@@ -1,6 +1,6 @@
 /**
  * ZdexCloud Frontend Billing API Client
- * Phase 7.2A — Shared Billing Foundation & API Client
+ * Phase 7.2A - Shared Billing Foundation & API Client
  *
  * ARCHITECTURAL INVARIANTS:
  * 1. Zero Client Financial Authority: Transports requests and responses only. Never computes prices, taxes, discounts, or proration.
@@ -384,6 +384,23 @@
         };
       }
       return executeRequest('/billing/receipts/' + encodeURIComponent(receiptId), 'GET');
+    },
+
+    /**
+     * Retrieve authoritative transaction and receipt details by transaction or receipt ID.
+     * Route: GET /api/v1/billing/receipts/:id
+     * @param {string} transactionId
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async getTransaction(transactionId) {
+      if (!transactionId) {
+        return {
+          ok: false,
+          status: 400,
+          data: { success: false, error: { code: 'VALIDATION_ERROR', message: 'transactionId is required' } }
+        };
+      }
+      return executeRequest('/billing/receipts/' + encodeURIComponent(transactionId), 'GET');
     },
 
     /**

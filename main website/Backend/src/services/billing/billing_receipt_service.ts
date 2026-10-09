@@ -333,7 +333,7 @@ export class BillingReceiptService {
       throw new ValidationError('receiptId is required');
     }
 
-    const receipt = await prisma.billingReceipt.findUnique({
+    let receipt = await prisma.billingReceipt.findUnique({
       where: { id: receiptId },
       include: {
         payment: {
@@ -347,6 +347,29 @@ export class BillingReceiptService {
         planChange: true
       }
     });
+
+    if (!receipt) {
+      receipt = await prisma.billingReceipt.findFirst({
+        where: {
+          OR: [
+            { receiptNumber: receiptId },
+            { paymentId: receiptId },
+            { providerPaymentId: receiptId }
+          ]
+        },
+        include: {
+          payment: {
+            include: {
+              refunds: {
+                orderBy: { requestedAt: 'desc' }
+              }
+            }
+          },
+          subscription: true,
+          planChange: true
+        }
+      });
+    }
 
     if (!receipt) {
       throw new NotFoundError(`Billing receipt ${receiptId} not found`);
