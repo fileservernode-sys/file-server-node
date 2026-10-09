@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Servers &amp; Nodes | ZdexCloud - Personal File Server</title>
+  <meta name="description" content="Manage your registered Android file servers, storage nodes, remote tunnels, and access status from the ZdexCloud Platform Dashboard.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/servers.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/servers.html">
+  <meta property="og:title" content="Servers &amp; Nodes | ZdexCloud - Personal File Server">
+  <meta property="og:description" content="Manage your registered Android file servers, storage nodes, remote tunnels, and access status from the ZdexCloud Platform Dashboard.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Servers &amp; Nodes | ZdexCloud - Personal File Server">
+  <meta name="twitter:description" content="Manage your registered Android file servers, storage nodes, remote tunnels, and access status from the ZdexCloud Platform Dashboard.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/dashboard-shell.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+
+  <!-- Dedicated Server Card Styles (Phase 5.2) -->
+  <style>
+    .server-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--color-bg-surface);
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+      position: relative;
+    }
+    .server-card:hover {
+      border-color: var(--color-border-hover);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+    .server-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .server-card-identity {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      min-width: 0;
+      flex: 1;
+    }
+    .server-card-icon-wrap {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--color-brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(37, 99, 235, 0.15);
+    }
+    .server-card-title {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: 2px;
+      word-break: break-word;
+      line-height: var(--line-height-tight);
+    }
+    .server-card-device-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+    .server-card-device-name {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+    .server-card-os-badge {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-family-mono);
+    }
+    .server-card-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--color-border-subtle);
+      font-size: var(--font-size-xs);
+    }
+    .server-card-id-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-text-muted);
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+    }
+    .server-card-gateway-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+    }
+    .gateway-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-text-muted);
+      display: inline-block;
+    }
+    .gateway-dot--active {
+      background: #10B981;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+    .gateway-dot--connecting {
+      background: #2563EB;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    .gateway-dot--warning {
+      background: #D97706;
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+    }
+    .server-card-status-context {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-bg-secondary);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--color-border-subtle);
+    }
+    .server-card-storage-box {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      margin-bottom: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2xs);
+    }
+    .storage-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+    }
+    .storage-box-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .storage-box-status {
+      font-family: var(--font-family-mono);
+      color: var(--color-brand-primary);
+      font-size: 11px;
+    }
+    .storage-bar-track-sm {
+      height: 6px;
+      background: var(--color-border-subtle);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin: 4px 0;
+    }
+    .storage-bar-fill-sm {
+      height: 100%;
+      background: var(--color-brand-primary);
+      border-radius: var(--radius-full);
+      transition: width 0.3s ease;
+    }
+    .storage-box-detail {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--color-text-muted);
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .server-card-actions {
+      display: flex;
+      gap: var(--space-xs);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+    .server-card-cta {
+      flex: 1;
+      min-height: 44px;
+      font-weight: var(--font-weight-semibold);
+      font-size: var(--font-size-body-sm);
+    }
+    .server-pair-card {
+      padding: var(--space-xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border: 2px dashed var(--color-border-subtle);
+      border-radius: var(--radius-xl);
+      background: var(--color-bg-surface);
+      min-height: 260px;
+    }
+    .server-pair-icon-wrap {
+      width: 48px;
+      height: 48px;
+      margin-bottom: var(--space-sm);
+      border-radius: var(--radius-full);
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--color-brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(37, 99, 235, 0.15);
+    }
+    .server-card-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .server-action-menu-wrap {
+      position: relative;
+    }
+    .btn-icon-sm {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    }
+    .btn-icon-sm:hover,
+    .btn-icon-sm[aria-expanded="true"] {
+      background: var(--color-bg-secondary);
+      border-color: var(--color-border);
+      color: var(--color-text-primary);
+    }
+    .server-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      min-width: 170px;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 4px;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .server-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-primary);
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .server-menu-item:hover {
+      background: var(--color-bg-secondary);
+    }
+    .server-menu-item:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: -2px;
+    }
+    .server-menu-item--danger {
+      color: #DC2626;
+    }
+    .server-menu-item--danger:hover {
+      background: #FEF2F2;
+      color: #B91C1C;
+    }
+    .server-menu-divider {
+      height: 1px;
+      background: var(--color-border-subtle);
+      margin: 2px 0;
+    }
+    .server-action-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(2px);
+      z-index: 10000;
+    }
+    .server-action-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100% - 32px);
+      max-width: 440px;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl);
+      z-index: 10001;
+    }
+    .modal-dialog-content {
+      padding: var(--space-xl);
+    }
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-md);
+    }
+    .modal-header-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .modal-title {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: 2px;
+    }
+    .modal-subtitle {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-xs);
+      margin-top: var(--space-lg);
+    }
+    .action-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      max-width: 360px;
+      padding: 12px 16px;
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      box-shadow: var(--shadow-xl);
+      z-index: 10002;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: fadeInToast 0.2s ease-out;
+    }
+    .action-toast--success {
+      background: #064E3B;
+      color: #ECFDF5;
+      border: 1px solid #059669;
+    }
+    .action-toast--error {
+      background: #7F1D1D;
+      color: #FEF2F2;
+      border: 1px solid #DC2626;
+    }
+    /* Server Empty State (Phase 5.4) */
+    .server-empty-state-card {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: var(--space-2xl) var(--space-xl);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: var(--color-bg-surface);
+      box-shadow: var(--shadow-sm);
+    }
+    .server-empty-icon-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-full);
+      background: rgba(37, 99, 235, 0.08);
+      color: var(--color-brand-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-md);
+      border: 1px solid rgba(37, 99, 235, 0.16);
+    }
+    .server-empty-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-xs);
+      line-height: var(--line-height-tight);
+    }
+    .server-empty-description {
+      font-size: var(--font-size-body-sm);
+      color: var(--color-text-secondary);
+      max-width: 540px;
+      line-height: var(--line-height-relaxed);
+      margin: 0 auto var(--space-xl) auto;
+    }
+    .server-empty-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-md);
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto var(--space-xl) auto;
+      text-align: left;
+    }
+    @media (max-width: 768px) {
+      .server-empty-steps {
+        grid-template-columns: 1fr;
+        gap: var(--space-sm);
+      }
+    }
+    .server-empty-step-card {
+      padding: var(--space-md);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .server-empty-step-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .server-empty-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      background: var(--color-brand-primary);
+      color: #FFFFFF;
+      font-size: 11px;
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .server-empty-step-title {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+    }
+    .server-empty-step-desc {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      line-height: 1.45;
+      margin: 0;
+    }
+    .server-empty-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-lg);
+    }
+    .server-empty-hint {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 540px;
+      line-height: var(--line-height-normal);
+      text-align: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link active" aria-current="page">Dashboard</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD SHELL LAYOUT -->
+  <div class="dashboard-shell-layout">
+    
+    <!-- PERSISTENT DESKTOP SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+      
+      <!-- Platform Navigation Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support & Communication Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="dashboard-main-content page-entrance" id="dashboard-main-content">
+      
+      <!-- DASHBOARD PAGE HEADER -->
+      <div class="dashboard-page-header">
+        <div class="dashboard-breadcrumbs">
+          <a href="servers.html">Dashboard</a>
+          <span>/</span>
+          <span>Servers &amp; Nodes</span>
+        </div>
+        <div class="dashboard-title-row">
+          <div>
+            <div class="dashboard-user-greeting">
+              <h1 id="dashboard-user-name" class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Platform Account</h1>
+              <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; font-size: var(--font-size-xs);">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>Email Verified</span>
+              </span>
+            </div>
+            <p id="dashboard-user-email" class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Loading account credentials...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- OVERVIEW METRIC SUMMARY CARDS -->
+      <div class="dashboard-stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--green">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Online Servers</div>
+            <div class="stat-card-value" id="stat-online-servers">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--blue">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Linked Devices</div>
+            <div class="stat-card-value" id="stat-linked-devices">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--amber">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Server Slots</div>
+            <div class="stat-card-value" id="stat-capacity-slots">0 / 1</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--purple">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Gateway Tunnel</div>
+            <div class="stat-card-value" style="font-size: var(--font-size-md); color: var(--color-brand-primary);">TLS 1.3 Active</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTROL PLANE & PRIVACY CALLOUT BOX -->
+      <div class="callout-box" style="margin-bottom: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-left: 4px solid var(--color-brand-primary); padding: var(--space-lg); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; gap: var(--space-md); align-items: flex-start;">
+          <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </div>
+          <div>
+            <h3 style="font-size: var(--font-size-body); font-weight: var(--font-weight-bold); margin-bottom: var(--space-2xs); color: var(--color-text-primary);">
+              Control Plane &amp; Device Privacy Guarantee
+            </h3>
+            <p class="text-sm text-secondary" style="margin-bottom: 0; line-height: var(--line-height-relaxed);">
+              Your ZdexCloud platform account manages device ownership and server routing. Your personal files <strong>remain 100% on your Android phone host storage</strong> and are accessed directly using your registered platform account email and password.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- REGISTERED SERVERS & NODES SECTION -->
+      <section id="servers-section" aria-label="Registered Servers and Storage Nodes" style="margin-bottom: var(--space-2xl);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); flex-wrap: wrap; gap: var(--space-xs);">
+          <div>
+            <h2 class="section-title" style="font-size: var(--font-size-h4); text-align: left; margin-bottom: var(--space-2xs); display: flex; align-items: center; gap: var(--space-sm);">
+              <span>Your Registered Servers</span>
+              <span id="server-count-badge" class="badge badge-accent" style="font-size: 12px; vertical-align: middle;">0 / 1 Servers</span>
+            </h2>
+            <p class="text-secondary text-sm" style="margin: 0;">Android storage nodes paired to this platform account.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <span id="refresh-indicator" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Auto-refreshes device status</span>
+            <button id="btn-manual-refresh" class="btn btn-ghost btn-sm" style="font-size: var(--font-size-caption);" title="Refresh servers">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- REGISTERED DEVICES GRID -->
+        <div id="user-devices-grid" class="grid-3-col" style="gap: var(--space-lg);">
+          <!-- Skeleton loading placeholder rendered immediately by script -->
+        </div>
+      </section>
+
+    </main>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>ZdexCloud</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure &bull; Self-Hosted Host Storage</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SERVER ACTION MODALS & DIALOGS (Phase 5.3) -->
+  <div id="server-action-modal-backdrop" class="server-action-backdrop" style="display: none;" onclick="closeAllActionModals()" aria-hidden="true"></div>
+
+  <!-- Rename Server Modal -->
+  <div id="rename-server-modal" class="server-action-modal" role="dialog" aria-modal="true" aria-labelledby="rename-modal-title" style="display: none;">
+    <div class="modal-dialog-content">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary);" aria-hidden="true">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </div>
+        <div>
+          <h3 id="rename-modal-title" class="modal-title">Rename Server</h3>
+          <p class="modal-subtitle" id="rename-modal-subtitle">Update display name for this storage node.</p>
+        </div>
+      </div>
+      <form id="rename-server-form" onsubmit="handleRenameSubmit(event)">
+        <input type="hidden" id="rename-target-server-id">
+        <div style="margin-bottom: var(--space-md);">
+          <label for="rename-server-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; margin-bottom: 6px; color: var(--color-text-primary);">Server Name</label>
+          <input type="text" id="rename-server-input" class="form-input" required maxlength="64" placeholder="e.g. Living Room Storage" style="width: 100%; min-height: 42px;">
+          <div style="display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--color-text-muted);">
+            <span id="rename-error-text" style="color: #DC2626;"></span>
+            <span id="rename-char-counter">0/64</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="closeAllActionModals()">Cancel</button>
+          <button type="submit" id="btn-save-rename" class="btn btn-primary btn-sm">
+            <span class="btn-text">Save Changes</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stop Server Modal -->
+  <div id="stop-server-modal" class="server-action-modal" role="dialog" aria-modal="true" aria-labelledby="stop-modal-title" style="display: none;">
+    <div class="modal-dialog-content">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: rgba(217, 119, 6, 0.1); color: #D97706;" aria-hidden="true">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+        </div>
+        <div>
+          <h3 id="stop-modal-title" class="modal-title">Stop Server</h3>
+          <p class="modal-subtitle">Disconnect relay tunnel and stop active sessions.</p>
+        </div>
+      </div>
+      <div style="margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--line-height-relaxed);">
+        <p>Are you sure you want to stop <strong id="stop-target-name" style="color: var(--color-text-primary);"></strong>?</p>
+        <p style="margin-top: 6px;">This will evict active remote gateway connections. You can restart the server anytime by opening the ZdexCloud app on your phone.</p>
+      </div>
+      <input type="hidden" id="stop-target-server-id">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeAllActionModals()">Cancel</button>
+        <button type="button" id="btn-confirm-stop" class="btn btn-sm" style="background: #D97706; color: #FFFFFF; border: 1px solid #D97706;" onclick="handleStopConfirm()">
+          <span class="btn-text">Stop Server</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Server Modal -->
+  <div id="delete-server-modal" class="server-action-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display: none;">
+    <div class="modal-dialog-content">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;" aria-hidden="true">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </div>
+        <div>
+          <h3 id="delete-modal-title" class="modal-title" style="color: #991B1B;">Delete Server Node</h3>
+          <p class="modal-subtitle">Permanently unregister this node from your account.</p>
+        </div>
+      </div>
+      <div style="margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--line-height-relaxed);">
+        <div style="background: #FEF2F2; border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-md); padding: var(--space-sm); margin-bottom: var(--space-sm);">
+          <div style="font-weight: 600; color: #991B1B; margin-bottom: 2px;" id="delete-target-name">Server Name</div>
+          <div style="font-size: 11px; color: #B91C1C; font-family: var(--font-family-mono);" id="delete-target-id">ID: ...</div>
+        </div>
+        <p>You are about to remove this server registration and release its allocated subdomain endpoint. This will disconnect active relay tunnels. Your personal files remain physically safe on your Android phone.</p>
+      </div>
+      <input type="hidden" id="delete-target-id-input">
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeAllActionModals()">Cancel</button>
+        <button type="button" id="btn-confirm-delete" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; border: 1px solid #DC2626;" onclick="handleDeleteConfirm()">
+          <span class="btn-text">Delete Server</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start on Phone Guidance Modal -->
+  <div id="start-guide-modal" class="server-action-modal" role="dialog" aria-modal="true" aria-labelledby="start-modal-title" style="display: none;">
+    <div class="modal-dialog-content">
+      <div class="modal-header">
+        <div class="modal-header-icon" style="background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary);" aria-hidden="true">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        </div>
+        <div>
+          <h3 id="start-modal-title" class="modal-title">Start Server on Phone</h3>
+          <p class="modal-subtitle">Self-hosted Android storage node</p>
+        </div>
+      </div>
+      <div style="margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--line-height-relaxed);">
+        <p>Your files are hosted directly on your Android device. To start your server:</p>
+        <ol style="margin-top: 8px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px;">
+          <li>Open the <strong>ZdexCloud</strong> app on your Android phone.</li>
+          <li>Ensure you are signed in with this account.</li>
+          <li>Toggle <strong>Server Mode</strong> to <strong>ON</strong>.</li>
+        </ol>
+        <p style="margin-top: 10px; font-size: 11px; color: var(--color-text-muted);">The control plane will automatically detect your phone and establish an encrypted TLS 1.3 relay tunnel.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="closeAllActionModals()">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Feedback Area -->
+  <div id="action-toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- CORE SCRIPTS -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+  <script src="../js/server-discovery.js"></script>
+  <script>
+    let isFetchingServers = false;
+    let currentServerCount = 0;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
+
+      if (!authResult.authenticated) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+      function updateUserUI(userData) {
+        if (!userData) return;
+        if (userData.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = userData.email;
+          const emailSub = document.getElementById('dashboard-user-email');
+          if (emailSub) emailSub.textContent = userData.email;
+        }
+        if (userData.fullName) {
+          const nameEl = document.getElementById('dashboard-user-name');
+          if (nameEl) nameEl.textContent = userData.fullName;
+        }
+        const initialLetter = (userData.fullName || userData.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
+      }
+
+      if (user) {
+        updateUserUI(user);
+      }
+
+      document.getElementById('btn-logout')?.addEventListener('click', () => {
+        AuthService.logoutUser();
+      });
+
+      document.getElementById('btn-manual-refresh')?.addEventListener('click', () => {
+        loadUserServers(false);
+      });
+
+      // Initialize Subscription State for slot capacity
+      BillingState.subscribe(state => {
+        updateServerEntitlementsUI(state);
+      });
+      BillingState.refreshBillingState().catch(() => {});
+
+      // Initial Render & Fetch for Servers
+      renderSkeletonLoaders();
+      loadUserServers(false);
+
+      // Auto-refresh servers every 10 seconds
+      setInterval(() => {
+        loadUserServers(true);
+      }, 10000);
+    });
+
+    function updateServerEntitlementsUI(state) {
+      if (!state || !state.entitlements) return;
+      const maxServers = state.entitlements.maxServers || 1;
+      const countBadge = document.getElementById('server-count-badge');
+      if (countBadge) {
+        countBadge.textContent = `${currentServerCount} / ${maxServers} Servers`;
+      }
+      const capacitySlots = document.getElementById('stat-capacity-slots');
+      if (capacitySlots) {
+        capacitySlots.textContent = `${currentServerCount} / ${maxServers}`;
+      }
+    }
+
+    function renderSkeletonLoaders() {
+      const grid = document.getElementById('user-devices-grid');
+      if (!grid) return;
+      grid.innerHTML = `
+        <div class="card server-card" style="min-height: 280px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); gap: var(--space-sm);">
+              <div style="display: flex; gap: var(--space-sm); align-items: flex-start; flex: 1;">
+                <div class="skeleton" style="width: 42px; height: 42px; border-radius: var(--radius-md);"></div>
+                <div style="flex: 1;">
+                  <div class="skeleton" style="width: 140px; height: 18px; margin-bottom: 6px;"></div>
+                  <div class="skeleton" style="width: 90px; height: 14px;"></div>
+                </div>
+              </div>
+              <div class="skeleton" style="width: 75px; height: 22px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton" style="width: 100%; height: 20px; margin-bottom: var(--space-md);"></div>
+            <div class="skeleton" style="width: 100%; height: 75px; border-radius: var(--radius-lg); margin-bottom: var(--space-lg);"></div>
+          </div>
+          <div class="skeleton" style="width: 100%; height: 44px; border-radius: var(--radius-md);"></div>
+        </div>
+        <div class="card server-card" style="min-height: 280px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); gap: var(--space-sm);">
+              <div style="display: flex; gap: var(--space-sm); align-items: flex-start; flex: 1;">
+                <div class="skeleton" style="width: 42px; height: 42px; border-radius: var(--radius-md);"></div>
+                <div style="flex: 1;">
+                  <div class="skeleton" style="width: 140px; height: 18px; margin-bottom: 6px;"></div>
+                  <div class="skeleton" style="width: 90px; height: 14px;"></div>
+                </div>
+              </div>
+              <div class="skeleton" style="width: 75px; height: 22px; border-radius: var(--radius-full);"></div>
+            </div>
+            <div class="skeleton" style="width: 100%; height: 20px; margin-bottom: var(--space-md);"></div>
+            <div class="skeleton" style="width: 100%; height: 75px; border-radius: var(--radius-lg); margin-bottom: var(--space-lg);"></div>
+          </div>
+          <div class="skeleton" style="width: 100%; height: 44px; border-radius: var(--radius-md);"></div>
+        </div>
+      `;
+    }
+
+    function resolveStatusContext(reason) {
+      if (!reason) return null;
+      const map = {
+        authenticated_live_session: 'Active Live Session',
+        connecting: 'Connecting to Host Node',
+        automatic_recovery: 'Automatic Gateway Recovery',
+        stale_connection: 'Re-establishing Relay Session',
+        heartbeat_expired: 'Heartbeat Inactive',
+        server_stopped: 'Server Stopped',
+        explicitly_stopped: 'Server Mode Inactive on Phone',
+        account_suspended: 'Account Inactive',
+        authentication_failed: 'Authentication Error',
+        no_active_connection: 'No Active Relay Tunnel'
+      };
+      return map[reason] || null;
+    }
+
+    function formatRelativeTime(dateString) {
+      if (!dateString) return 'Not available yet';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Not available yet';
+      const now = new Date();
+      const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+      if (diffSec < 15) return 'Active just now';
+      if (diffSec < 60) return `Active ${diffSec}s ago`;
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `Active ${diffMin}m ago`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return `Last active ${diffHours}h ago`;
+      const diffDays = Math.floor(diffHours / 24);
+      return `Last active ${diffDays}d ago`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
+    async function loadUserServers(isBackground = false) {
+      if (isFetchingServers) return;
+      isFetchingServers = true;
+
+      const grid = document.getElementById('user-devices-grid');
+      const indicator = document.getElementById('refresh-indicator');
+
+      try {
+        const res = await apiRequest('/devices', 'GET');
+
+        if (!res.ok || !res.data || res.data.success === false) {
+          if (!isBackground && grid) {
+            grid.innerHTML = `
+              <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
+                <div style="width: 48px; height: 48px; margin: 0 auto var(--space-xs); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                </div>
+                <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
+                <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">
+                  ${escapeHtml(res.data?.error?.message || 'Could not connect to backend control plane.')}
+                </p>
+                <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry Connection</button>
+              </div>
+            `;
+          }
+          isFetchingServers = false;
+          return;
+        }
+
+        const devices = res.data.data?.devices || [];
+        currentServerCount = devices.length;
+
+        const onlineCount = devices.filter(d => (d.remoteStatus === 'ONLINE' || d.server?.remoteStatus === 'ONLINE')).length;
+        const onlineEl = document.getElementById('stat-online-servers');
+        const linkedEl = document.getElementById('stat-linked-devices');
+        if (onlineEl) onlineEl.textContent = onlineCount;
+        if (linkedEl) linkedEl.textContent = devices.length;
+
+        updateServerEntitlementsUI(BillingState.getState());
+
+        const state = BillingState.getState();
+        const maxServers = state?.entitlements?.maxServers || 1;
+
+        if (devices.length === 0) {
+          if (grid) {
+            grid.innerHTML = `
+              <div class="card server-empty-state-card">
+                <div class="server-empty-icon-wrap" aria-hidden="true">
+                  <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                  </svg>
+                </div>
+                <h3 class="server-empty-title">
+                  No Servers Connected Yet
+                </h3>
+                <p class="server-empty-description">
+                  Turn an Android phone into your personal, self-hosted file server. Your files stay physically on your phone storage, and ZdexCloud provides secure encrypted remote access from any web browser.
+                </p>
+                <div class="server-empty-steps">
+                  <div class="server-empty-step-card">
+                    <div class="server-empty-step-header">
+                      <span class="server-empty-step-num">1</span>
+                      <span class="server-empty-step-title">Install App</span>
+                    </div>
+                    <p class="server-empty-step-desc">Install the ZdexCloud app on your spare or everyday Android phone.</p>
+                  </div>
+                  <div class="server-empty-step-card">
+                    <div class="server-empty-step-header">
+                      <span class="server-empty-step-num">2</span>
+                      <span class="server-empty-step-title">Sign In</span>
+                    </div>
+                    <p class="server-empty-step-desc">Log into the app using your registered account email and password.</p>
+                  </div>
+                  <div class="server-empty-step-card">
+                    <div class="server-empty-step-header">
+                      <span class="server-empty-step-num">3</span>
+                      <span class="server-empty-step-title">Enable Server</span>
+                    </div>
+                    <p class="server-empty-step-desc">Toggle Server Mode ON to register storage and activate remote access.</p>
+                  </div>
+                </div>
+                <div class="server-empty-actions">
+                  <a href="get-started.html" class="btn btn-primary btn-md" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+                    <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
+                    <span>Set Up Your Android Phone</span>
+                  </a>
+                  <a href="documentation.html" class="btn btn-secondary btn-md" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+                    <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <span>Documentation</span>
+                  </a>
+                </div>
+                <div class="server-empty-hint">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary); flex-shrink: 0;" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span>Already installed? Open the ZdexCloud app on your phone, switch Server Mode ON, and your node will appear here automatically.</span>
+                </div>
+              </div>
+            `;
+          }
+        } else {
+          const cardsHtml = devices.map(device => {
+            const server = device.server;
+            const effectiveRemoteStatus = device.remoteStatus || server?.remoteStatus || (device.status === 'ONLINE' && server?.status === 'RUNNING' ? 'ONLINE' : 'OFFLINE');
+            const isRemoteAvailable = typeof device.isRemoteAvailable === 'boolean'
+              ? device.isRemoteAvailable
+              : (typeof server?.isRemoteAvailable === 'boolean' ? server.isRemoteAvailable : (effectiveRemoteStatus === 'ONLINE'));
+            const isOnline = effectiveRemoteStatus === 'ONLINE' || isRemoteAvailable;
+            const isConnecting = effectiveRemoteStatus === 'CONNECTING';
+            const isReconnecting = effectiveRemoteStatus === 'RECONNECTING';
+            const isError = effectiveRemoteStatus === 'ERROR';
+
+            let statusBadge = '';
+            if (isOnline) {
+              statusBadge = `<span class="status-indicator status-online" aria-label="Server status: Online"><span class="status-dot"></span> Online</span>`;
+            } else if (isConnecting) {
+              statusBadge = `<span class="status-indicator status-connecting" aria-label="Server status: Connecting"><span class="status-dot"></span> Connecting</span>`;
+            } else if (isReconnecting) {
+              statusBadge = `<span class="status-indicator status-reconnecting" aria-label="Server status: Reconnecting"><span class="status-dot"></span> Reconnecting</span>`;
+            } else if (isError) {
+              statusBadge = `<span class="status-indicator" style="background: #FEF2F2; color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.2);" aria-label="Server status: Error"><span class="status-dot" style="background: #DC2626;"></span> Error</span>`;
+            } else {
+              statusBadge = `<span class="status-indicator status-offline" aria-label="Server status: Offline"><span class="status-dot"></span> Offline</span>`;
+            }
+
+            const serverDisplayName = server?.serverName || device.deviceName || 'Personal File Server';
+            const platform = (device.platform || 'Android').trim();
+            let osVer = (device.osVersion || '').trim();
+            if (osVer.toLowerCase().startsWith(platform.toLowerCase())) {
+              osVer = osVer.substring(platform.length).trim();
+            }
+            const platformDisplay = `${platform}${osVer ? ' ' + osVer : ''}`;
+
+            const serverId = server?.id || device.id;
+            const fileManagerUrl = `file-manager.html?server=${encodeURIComponent(serverId)}`;
+
+            // Gateway Status label
+            let gatewayText = 'Gateway: Disconnected';
+            let gatewayDotClass = '';
+            if (isOnline) {
+              gatewayText = 'Gateway: Connected (TLS 1.3)';
+              gatewayDotClass = 'gateway-dot--active';
+            } else if (isConnecting) {
+              gatewayText = 'Gateway: Connecting...';
+              gatewayDotClass = 'gateway-dot--connecting';
+            } else if (isReconnecting) {
+              gatewayText = 'Gateway: Reconnecting...';
+              gatewayDotClass = 'gateway-dot--warning';
+            } else if (isError) {
+              gatewayText = 'Gateway: Connection Error';
+            }
+
+            // Status reason context
+            const reasonLabel = resolveStatusContext(device.statusReason || server?.statusReason);
+            const statusContextHtml = reasonLabel ? `
+              <div class="server-card-status-context">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>${escapeHtml(reasonLabel)}</span>
+              </div>
+            ` : '';
+
+            // Storage representation
+            const storageStatusText = isOnline ? 'Host Storage Active' : 'Offline';
+            const storageDetailText = isOnline ? 'Physically hosted on Android phone' : 'Connect phone to view storage';
+            const lastActiveTimestamp = formatRelativeTime(device.effectiveLastSeenAt || device.lastSeenAt || server?.effectiveLastSeenAt || server?.updatedAt);
+
+            // Action Button
+            let actionButtonHtml = '';
+            if (isOnline) {
+              actionButtonHtml = `
+                <a href="${fileManagerUrl}" class="btn btn-primary btn-sm server-card-cta" aria-label="Open File Manager for ${escapeHtml(serverDisplayName)}">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                  <span>Open File Manager</span>
+                </a>
+              `;
+            } else if (isConnecting || isReconnecting) {
+              actionButtonHtml = `
+                <button type="button" class="btn btn-secondary btn-sm server-card-cta" disabled>
+                  <span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
+                  <span>Connecting to Server...</span>
+                </button>
+              `;
+            } else {
+              actionButtonHtml = `
+                <button type="button" class="btn btn-secondary btn-sm server-card-cta" disabled style="opacity: 0.7;" title="Start Server Mode in the ZdexCloud app on your phone to open files">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                  <span>Server Offline</span>
+                </button>
+              `;
+            }
+
+            return `
+              <div class="card server-card" data-server-id="${escapeHtml(serverId)}" data-device-id="${escapeHtml(device.id)}">
+                <div>
+                  <!-- 1. Header: Host Icon, Server Name & Action Menu -->
+                  <div class="server-card-header">
+                    <div class="server-card-identity">
+                      <div class="server-card-icon-wrap" aria-hidden="true">
+                        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                          <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                      </div>
+                      <div style="min-width: 0;">
+                        <h3 class="server-card-title">
+                          ${escapeHtml(serverDisplayName)}
+                        </h3>
+                        <div class="server-card-device-meta">
+                          <span class="server-card-device-name">${escapeHtml(device.deviceName)}</span>
+                          <span class="badge badge-subtle server-card-os-badge">${escapeHtml(platformDisplay)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="server-card-header-actions">
+                      <div>${statusBadge}</div>
+                      <div class="server-action-menu-wrap">
+                        <button type="button" class="btn-icon-sm" aria-label="Server options for ${escapeHtml(serverDisplayName)}" aria-haspopup="true" aria-expanded="false" onclick="toggleServerMenu(this, event)">
+                          <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                          </svg>
+                        </button>
+                        <div class="server-menu-dropdown" style="display: none;" role="menu">
+                          <button type="button" class="server-menu-item" role="menuitem" onclick="openRenameModal('${escapeHtml(serverId)}', '${escapeHtml(serverDisplayName)}')">
+                            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <span>Rename Server</span>
+                          </button>
+                          ${isOnline || isConnecting || isReconnecting ? `
+                          <button type="button" class="server-menu-item" role="menuitem" onclick="openStopModal('${escapeHtml(serverId)}', '${escapeHtml(serverDisplayName)}')">
+                            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                            <span>Stop Server</span>
+                          </button>
+                          ` : `
+                          <button type="button" class="server-menu-item" role="menuitem" onclick="openStartGuideModal()">
+                            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            <span>Start on Phone</span>
+                          </button>
+                          `}
+                          <div class="server-menu-divider"></div>
+                          <button type="button" class="server-menu-item server-menu-item--danger" role="menuitem" onclick="openDeleteModal('${escapeHtml(device.id)}', '${escapeHtml(serverDisplayName)}', '${escapeHtml(serverId)}')">
+                            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <span>Delete Server</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 2. Technical Node Identifier & Gateway State -->
+                  <div class="server-card-meta-row">
+                    <div class="server-card-id-badge" title="Authoritative Server Instance ID">
+                      <span class="meta-label">ID:</span>
+                      <code style="font-size: 11px; color: var(--color-text-primary); font-family: var(--font-family-mono);">${escapeHtml(serverId)}</code>
+                    </div>
+                    <div class="server-card-gateway-state">
+                      <span class="gateway-dot ${gatewayDotClass}"></span>
+                      <span>${escapeHtml(gatewayText)}</span>
+                    </div>
+                  </div>
+
+                  <!-- 3. Status Context / Diagnostics Reason (if available) -->
+                  ${statusContextHtml}
+
+                  <!-- 4. Host Storage Presentation Box -->
+                  <div class="server-card-storage-box">
+                    <div class="storage-box-header">
+                      <div class="storage-box-title">
+                        <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);">
+                          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                          <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                        </svg>
+                        <span>Host Storage</span>
+                      </div>
+                      <span class="storage-box-status">${escapeHtml(storageStatusText)}</span>
+                    </div>
+
+                    <div class="storage-box-detail">
+                      <span>${escapeHtml(storageDetailText)}</span>
+                      <span title="Last recorded activity">${escapeHtml(lastActiveTimestamp)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 5. Primary Action Button -->
+                <div class="server-card-actions">
+                  ${actionButtonHtml}
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          let addServerPrompt = '';
+          if (devices.length < maxServers) {
+            const availableSlots = maxServers - devices.length;
+            addServerPrompt = `
+              <div class="card server-pair-card">
+                <div class="server-pair-icon-wrap" aria-hidden="true">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </div>
+                <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);">Pair Another Phone</h3>
+                <p class="text-xs text-secondary" style="max-width: 240px; margin-bottom: var(--space-md); line-height: var(--line-height-relaxed);">
+                  You have ${availableSlots} available slot${availableSlots > 1 ? 's' : ''} on your current plan.
+                </p>
+                <a href="get-started.html" class="btn btn-secondary btn-sm" style="min-height: 38px;">Pair New Node</a>
+              </div>
+            `;
+          }
+
+          if (grid) {
+            grid.innerHTML = cardsHtml + addServerPrompt;
+          }
+        }
+      } catch (err) {
+        if (!isBackground && grid) {
+          grid.innerHTML = `
+            <div class="card" style="grid-column: 1 / -1; padding: var(--space-xl); text-align: center; border-color: rgba(220, 38, 38, 0.3); background: #FEF2F2;">
+              <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-xs);">Unable to load your servers</h3>
+              <p class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">Network connectivity issue.</p>
+              <button onclick="loadUserServers(false)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+            </div>
+          `;
+        }
+      } finally {
+        isFetchingServers = false;
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // SERVER ACTION DROPDOWN & MODAL MANAGEMENT (Phase 5.3)
+    // ---------------------------------------------------------------------------
+    let activeDropdownMenu = null;
+    let isActionSubmitting = false;
+
+    function toggleServerMenu(button, event) {
+      if (event) event.stopPropagation();
+      const dropdown = button.nextElementSibling;
+      if (!dropdown) return;
+
+      const isCurrentlyOpen = dropdown.style.display === 'flex';
+
+      // Close all open dropdowns
+      closeAllDropdowns();
+
+      if (!isCurrentlyOpen) {
+        dropdown.style.display = 'flex';
+        button.setAttribute('aria-expanded', 'true');
+        activeDropdownMenu = dropdown;
+      }
+    }
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.server-menu-dropdown').forEach(d => {
+        d.style.display = 'none';
+      });
+      document.querySelectorAll('.btn-icon-sm[aria-expanded="true"]').forEach(b => {
+        b.setAttribute('aria-expanded', 'false');
+      });
+      activeDropdownMenu = null;
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener('click', (e) => {
+      if (activeDropdownMenu && !activeDropdownMenu.contains(e.target)) {
+        closeAllDropdowns();
+      }
+    });
+
+    // Close dropdown & modals on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllDropdowns();
+        closeAllActionModals();
+      }
+    });
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('action-toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = `action-toast action-toast--${type}`;
+      toast.setAttribute('role', 'alert');
+      
+      const icon = type === 'success'
+        ? '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>'
+        : '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+
+      toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function closeAllActionModals() {
+      document.getElementById('server-action-modal-backdrop').style.display = 'none';
+      document.getElementById('rename-server-modal').style.display = 'none';
+      document.getElementById('stop-server-modal').style.display = 'none';
+      document.getElementById('delete-server-modal').style.display = 'none';
+      document.getElementById('start-guide-modal').style.display = 'none';
+      
+      const errEl = document.getElementById('rename-error-text');
+      if (errEl) errEl.textContent = '';
+      isActionSubmitting = false;
+    }
+
+    // 1. Rename Actions
+    function openRenameModal(serverId, currentName) {
+      closeAllDropdowns();
+      const modal = document.getElementById('rename-server-modal');
+      const backdrop = document.getElementById('server-action-modal-backdrop');
+      const input = document.getElementById('rename-server-input');
+      const targetIdInput = document.getElementById('rename-target-server-id');
+      const counter = document.getElementById('rename-char-counter');
+      const errEl = document.getElementById('rename-error-text');
+
+      if (targetIdInput) targetIdInput.value = serverId;
+      if (input) {
+        input.value = currentName;
+        if (counter) counter.textContent = `${currentName.length}/64`;
+      }
+      if (errEl) errEl.textContent = '';
+
+      backdrop.style.display = 'block';
+      modal.style.display = 'block';
+      setTimeout(() => input?.focus(), 50);
+    }
+
+    document.getElementById('rename-server-input')?.addEventListener('input', (e) => {
+      const len = e.target.value.length;
+      const counter = document.getElementById('rename-char-counter');
+      if (counter) counter.textContent = `${len}/64`;
+    });
+
+    async function handleRenameSubmit(event) {
+      event.preventDefault();
+      if (isActionSubmitting) return;
+
+      const serverId = document.getElementById('rename-target-server-id')?.value;
+      const input = document.getElementById('rename-server-input');
+      const errEl = document.getElementById('rename-error-text');
+      const btn = document.getElementById('btn-save-rename');
+
+      const newName = (input?.value || '').trim();
+      if (!newName) {
+        if (errEl) errEl.textContent = 'Server name cannot be empty.';
+        return;
+      }
+      if (newName.length > 64) {
+        if (errEl) errEl.textContent = 'Server name must be 64 characters or fewer.';
+        return;
+      }
+
+      isActionSubmitting = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span><span>Saving...</span>';
+      }
+
+      try {
+        const res = await apiRequest(`/servers/${encodeURIComponent(serverId)}`, 'PATCH', { serverName: newName });
+        if (res.ok && res.data && res.data.success) {
+          closeAllActionModals();
+          showToast(`Server renamed to "${newName}"`);
+          loadUserServers(false);
+        } else {
+          const msg = res.data?.error?.message || 'Failed to rename server.';
+          if (errEl) errEl.textContent = msg;
+        }
+      } catch (err) {
+        if (errEl) errEl.textContent = 'Network error while renaming server.';
+      } finally {
+        isActionSubmitting = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="btn-text">Save Changes</span>';
+        }
+      }
+    }
+
+    // 2. Stop Actions
+    function openStopModal(serverId, serverName) {
+      closeAllDropdowns();
+      const modal = document.getElementById('stop-server-modal');
+      const backdrop = document.getElementById('server-action-modal-backdrop');
+      const targetIdInput = document.getElementById('stop-target-server-id');
+      const targetNameEl = document.getElementById('stop-target-name');
+
+      if (targetIdInput) targetIdInput.value = serverId;
+      if (targetNameEl) targetNameEl.textContent = serverName;
+
+      backdrop.style.display = 'block';
+      modal.style.display = 'block';
+    }
+
+    async function handleStopConfirm() {
+      if (isActionSubmitting) return;
+      const serverId = document.getElementById('stop-target-server-id')?.value;
+      const btn = document.getElementById('btn-confirm-stop');
+
+      if (!serverId) return;
+
+      isActionSubmitting = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span><span>Stopping...</span>';
+      }
+
+      try {
+        const res = await apiRequest(`/servers/${encodeURIComponent(serverId)}/stop`, 'POST');
+        if (res.ok && res.data && res.data.success) {
+          closeAllActionModals();
+          showToast('Server stopped successfully');
+          loadUserServers(false);
+        } else {
+          const msg = res.data?.error?.message || 'Could not stop server.';
+          showToast(msg, 'error');
+        }
+      } catch (err) {
+        showToast('Network error while stopping server.', 'error');
+      } finally {
+        isActionSubmitting = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="btn-text">Stop Server</span>';
+        }
+      }
+    }
+
+    // 3. Delete Actions
+    function openDeleteModal(deviceId, serverName, serverId) {
+      closeAllDropdowns();
+      const modal = document.getElementById('delete-server-modal');
+      const backdrop = document.getElementById('server-action-modal-backdrop');
+      const targetIdInput = document.getElementById('delete-target-id-input');
+      const targetNameEl = document.getElementById('delete-target-name');
+      const targetIdEl = document.getElementById('delete-target-id');
+
+      if (targetIdInput) targetIdInput.value = deviceId;
+      if (targetNameEl) targetNameEl.textContent = serverName;
+      if (targetIdEl) targetIdEl.textContent = `ID: ${serverId}`;
+
+      backdrop.style.display = 'block';
+      modal.style.display = 'block';
+    }
+
+    async function handleDeleteConfirm() {
+      if (isActionSubmitting) return;
+      const deviceId = document.getElementById('delete-target-id-input')?.value;
+      const btn = document.getElementById('btn-confirm-delete');
+
+      if (!deviceId) return;
+
+      isActionSubmitting = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span><span>Deleting...</span>';
+      }
+
+      try {
+        const res = await apiRequest(`/devices/${encodeURIComponent(deviceId)}`, 'DELETE');
+        if (res.ok && res.data && res.data.success) {
+          closeAllActionModals();
+          showToast('Server deleted successfully');
+          loadUserServers(false);
+          BillingState.refreshBillingState().catch(() => {});
+        } else {
+          const msg = res.data?.error?.message || 'Failed to delete server.';
+          showToast(msg, 'error');
+        }
+      } catch (err) {
+        showToast('Network error while deleting server.', 'error');
+      } finally {
+        isActionSubmitting = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="btn-text">Delete Server</span>';
+        }
+      }
+    }
+
+    // 4. Start on Phone Guidance
+    function openStartGuideModal() {
+      closeAllDropdowns();
+      const modal = document.getElementById('start-guide-modal');
+      const backdrop = document.getElementById('server-action-modal-backdrop');
+      backdrop.style.display = 'block';
+      modal.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

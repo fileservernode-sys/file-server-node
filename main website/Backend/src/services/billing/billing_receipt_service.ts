@@ -130,9 +130,19 @@ export class BillingReceiptService {
 
     // 7. Snapshot Customer & Merchant information
     const customer = payment.user;
-    const customerName = customer?.fullName || null;
+    const customerName = customer?.billingState?.billingName || customer?.fullName || null;
     const customerEmail = customer?.email || 'customer@example.com';
     const billingCountry = customer?.billingState?.billingCountry || 'IN';
+    const billingAddress = (customer?.billingState?.billingAddress1)
+      ? {
+          addressLine1: customer.billingState.billingAddress1,
+          addressLine2: customer.billingState.billingAddress2 || null,
+          city: customer.billingState.billingCity || null,
+          state: customer.billingState.billingState || null,
+          postalCode: customer.billingState.billingPostalCode || null,
+          country: customer.billingState.billingCountry || null
+        }
+      : null;
 
     // 8. Tax Snapshot & Amounts in minor integer units
     let paymentTax = (payment as any).tax;
@@ -217,7 +227,7 @@ export class BillingReceiptService {
             customerName,
             customerEmail,
             billingCountry,
-            billingAddress: Prisma.DbNull,
+            billingAddress: billingAddress ? (billingAddress as Prisma.InputJsonValue) : Prisma.DbNull,
             merchantName: 'ZdexCloud',
             merchantAddress: 'ZdexCloud Inc.',
             merchantSupportEmail: 'support@zdexcloud.com',

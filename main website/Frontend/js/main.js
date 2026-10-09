@@ -197,41 +197,51 @@ function initMobileDrawer() {
 }
 
 /**
- * 3. Automatic Active Navigation Page Detection
+ * 3. Automatic Active Navigation Page Detection (Includes Dashboard Shell Navigation)
  */
 function initActiveNavigation() {
-  const pathname = window.location.pathname.toLowerCase();
-  const navLinks = document.querySelectorAll('.nav-link, .drawer-nav-link');
+  const updateNavActiveState = () => {
+    const pathname = window.location.pathname.toLowerCase();
+    const navLinks = document.querySelectorAll('.nav-link, .drawer-nav-link, .dashboard-nav-link');
 
-  const currentSlug = pathname
-    .split('/')
-    .pop()
-    .replace('.html', '')
-    .trim() || 'index';
-
-  navLinks.forEach(link => {
-    const href = link.getAttribute('href');
-    if (!href) return;
-
-    const normalizedHref = href.toLowerCase();
-    const targetSlug = normalizedHref
-      .replace('../', '')
-      .replace('pages/', '')
+    let currentSlug = pathname
+      .split('/')
+      .pop()
       .replace('.html', '')
-      .replace('/', '')
-      .trim();
+      .trim() || 'index';
 
-    const isHomePage = (currentSlug === 'index' || currentSlug === '') && (targetSlug === 'index' || targetSlug === '');
-    const isMatchingPage = !isHomePage && targetSlug !== '#' && targetSlug !== '' && currentSlug === targetSlug;
-
-    if (isHomePage || isMatchingPage) {
-      link.classList.add('is-active');
-      link.setAttribute('aria-current', 'page');
-    } else {
-      link.classList.remove('is-active');
-      link.removeAttribute('aria-current');
+    // Treat dashboard.html as servers if dashboard.html is loaded
+    if (currentSlug === 'dashboard') {
+      currentSlug = 'servers';
     }
-  });
+
+    navLinks.forEach(link => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      const normalizedHref = href.toLowerCase();
+      const targetSlug = normalizedHref
+        .replace('../', '')
+        .replace('pages/', '')
+        .replace('.html', '')
+        .replace('/', '')
+        .split('#')[0]
+        .trim();
+
+      const isHomePage = (currentSlug === 'index' || currentSlug === '') && (targetSlug === 'index' || targetSlug === '');
+      const isMatchingPage = !isHomePage && targetSlug !== '' && currentSlug === targetSlug;
+
+      if (isHomePage || isMatchingPage) {
+        link.classList.add('is-active', 'active');
+        link.setAttribute('aria-current', 'page');
+      } else {
+        link.classList.remove('is-active', 'active');
+        link.removeAttribute('aria-current');
+      }
+    });
+  };
+
+  updateNavActiveState();
 }
 
 /**

@@ -1,7 +1,42 @@
-import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remote_node_app/core/storage/secure_storage_service.dart';
 import 'package:remote_node_app/features/auth/domain/entities/auth_session.dart';
+import 'package:remote_node_app/features/auth/domain/entities/platform_user.dart';
+
+class MockSecureStorageService implements SecureStorageService {
+  AuthSession? _session;
+  final Map<String, String> _storage = {};
+
+  @override
+  Future<void> saveSession(AuthSession session) async {
+    _session = session;
+  }
+
+  @override
+  Future<AuthSession?> getSession() async {
+    return _session;
+  }
+
+  @override
+  Future<void> clearSession() async {
+    _session = null;
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    _storage[key] = value;
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _storage[key];
+  }
+
+  @override
+  Future<void> delete({required String key}) async {
+    _storage.remove(key);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +51,14 @@ void main() {
     test('1. Persistent DeviceAuthCredential is preserved independently from 24h interactive UserSession', () async {
       final userSession = AuthSession(
         accessToken: 'user_interactive_session_token_123',
-        userId: 'user_abc_456',
-        email: 'user@zdexcloud.io',
+        refreshToken: 'refresh-token-123',
+        user: PlatformUser(
+          id: 'user_abc_456',
+          email: 'user@zdexcloud.io',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now(),
+        ),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       );
 
@@ -58,7 +99,6 @@ void main() {
     });
 
     test('3. Monotonic silent heartbeat requires at least 45s or 3 missed pings before reconnect', () {
-      const pingIntervalSec = 15;
       const missedPingsThreshold = 3;
       const timeoutThresholdMs = 45000;
 

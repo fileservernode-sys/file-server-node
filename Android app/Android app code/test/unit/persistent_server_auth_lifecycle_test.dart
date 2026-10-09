@@ -3,8 +3,44 @@ import 'package:remote_node_app/core/storage/secure_storage_service.dart';
 import 'package:remote_node_app/features/auth/data/models/auth_models.dart';
 import 'package:remote_node_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:remote_node_app/features/auth/domain/entities/auth_session.dart';
+import 'package:remote_node_app/features/auth/domain/entities/platform_user.dart';
 import 'package:remote_node_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:remote_node_app/features/auth/data/datasources/auth_remote_datasource.dart';
+
+class MockSecureStorageService implements SecureStorageService {
+  AuthSession? _session;
+  final Map<String, String> _storage = {};
+
+  @override
+  Future<void> saveSession(AuthSession session) async {
+    _session = session;
+  }
+
+  @override
+  Future<AuthSession?> getSession() async {
+    return _session;
+  }
+
+  @override
+  Future<void> clearSession() async {
+    _session = null;
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    _storage[key] = value;
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _storage[key];
+  }
+
+  @override
+  Future<void> delete({required String key}) async {
+    _storage.remove(key);
+  }
+}
 
 class MockAuthRemoteDataSource implements AuthRemoteDataSource {
   @override
@@ -18,8 +54,14 @@ class MockAuthRemoteDataSource implements AuthRemoteDataSource {
       success: true,
       session: AuthSession(
         accessToken: 'mock-interactive-session-token',
-        userId: 'usr-test-123',
-        email: request.email,
+        refreshToken: 'mock-refresh-token',
+        user: PlatformUser(
+          id: 'usr-test-123',
+          email: request.email,
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now(),
+        ),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       ),
     );
@@ -51,8 +93,14 @@ void main() {
       // 1. Save interactive user session
       final session = AuthSession(
         accessToken: 'interactive-user-token-24h',
-        userId: 'usr-test-123',
-        email: 'user@zdexcloud.io',
+        refreshToken: 'refresh-token-24h',
+        user: PlatformUser(
+          id: 'usr-test-123',
+          email: 'user@zdexcloud.io',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now(),
+        ),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       );
       await secureStorage.saveSession(session);
@@ -73,8 +121,14 @@ void main() {
       // Seed storage
       await secureStorage.saveSession(AuthSession(
         accessToken: 'interactive-token',
-        userId: 'usr-test',
-        email: 'user@zdexcloud.io',
+        refreshToken: 'refresh-token',
+        user: PlatformUser(
+          id: 'usr-test',
+          email: 'user@zdexcloud.io',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now(),
+        ),
         expiresAt: DateTime.now().add(const Duration(hours: 24)),
       ));
       await secureStorage.write(key: 'device_credential', value: 'device-credential-persists-across-logout');
@@ -95,8 +149,14 @@ void main() {
     test('3. Expired Interactive Session (isExpired == true) is detected by auth layer without wiping device credential', () async {
       final expiredSession = AuthSession(
         accessToken: 'expired-token',
-        userId: 'usr-test',
-        email: 'user@zdexcloud.io',
+        refreshToken: 'refresh-token',
+        user: PlatformUser(
+          id: 'usr-test',
+          email: 'user@zdexcloud.io',
+          emailVerified: true,
+          status: 'ACTIVE',
+          createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        ),
         expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
       );
       await secureStorage.saveSession(expiredSession);

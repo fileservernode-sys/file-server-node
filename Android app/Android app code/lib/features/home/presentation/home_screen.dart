@@ -204,7 +204,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   child: Text(
                                     isConfigured
                                         ? (setup.isServerRunning
-                                            ? 'Local Interface: ${setup.localServerUrl}'
+                                            ? 'Server node active • Connected to ZdexCloud Control Plane.'
                                             : (setup.isLocalOnline
                                                 ? (setup.endpointStatus == 'RECONNECTING'
                                                     ? 'Reconnecting to remote gateway relay...'

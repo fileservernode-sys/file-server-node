@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Billing &amp; Receipts | ZdexCloud — Personal File Server</title>
+  <meta name="description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/billing.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/billing.html">
+  <meta property="og:title" content="Billing &amp; Receipts | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Billing &amp; Receipts | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Manage your authoritative billing profile address and view official ZdexCloud tax invoices, payment receipts, and refund activity.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/dashboard-shell.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+</head>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link">Dashboard</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- ======================================================================= -->
+  <!-- DASHBOARD SHELL LAYOUT                                                  -->
+  <!-- ======================================================================= -->
+  <div class="dashboard-shell-layout">
+
+    <!-- DESKTOP DASHBOARD SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+      
+      <!-- Platform Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support & Communication Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="dashboard-main-content page-entrance" id="dashboard-main-content">
+      
+      <!-- DASHBOARD PAGE HEADER -->
+      <div class="dashboard-page-header">
+        <div class="dashboard-breadcrumbs">
+          <a href="servers.html">Dashboard</a>
+          <span>/</span>
+          <span>Billing &amp; Receipts</span>
+        </div>
+        <div class="dashboard-title-row">
+          <div>
+            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Billing &amp; Receipts</h1>
+            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Manage your authoritative billing profile address and view payment history.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- 1. BILLING & REGIONAL SETTINGS CARD (AUTHORITATIVE REGION & CURRENCY) -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-region-card" style="margin-bottom: var(--space-xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing &amp; Regional Settings</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Authoritative billing country and currency configuration for your platform account.
+            </p>
+          </div>
+          <div id="billing-confirmation-badge">
+            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading status...</span>
+          </div>
+        </div>
+
+        <form id="form-billing-region" onsubmit="saveBillingRegion(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-lg);">
+            
+            <!-- Country Selector -->
+            <div>
+              <label for="billing-country-select" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                BILLING COUNTRY <span style="color: #DC2626;">*</span>
+              </label>
+              <select id="billing-country-select" name="country" required onchange="updateCurrencyPreview()" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm); cursor: pointer;">
+                <option value="" disabled selected>Select country...</option>
+                <optgroup label="Popular Regions">
+                  <option value="IN">India (IN)</option>
+                  <option value="US">United States (US)</option>
+                  <option value="GB">United Kingdom (GB)</option>
+                  <option value="DE">Germany (DE)</option>
+                  <option value="CA">Canada (CA)</option>
+                  <option value="AU">Australia (AU)</option>
+                  <option value="AE">United Arab Emirates (AE)</option>
+                  <option value="SG">Singapore (SG)</option>
+                  <option value="JP">Japan (JP)</option>
+                  <option value="FR">France (FR)</option>
+                </optgroup>
+                <optgroup label="All Countries (ISO 3166-1)">
+                  <option value="AF">Afghanistan (AF)</option>
+                  <option value="AL">Albania (AL)</option>
+                  <option value="DZ">Algeria (DZ)</option>
+                  <option value="AR">Argentina (AR)</option>
+                  <option value="AT">Austria (AT)</option>
+                  <option value="BD">Bangladesh (BD)</option>
+                  <option value="BE">Belgium (BE)</option>
+                  <option value="BR">Brazil (BR)</option>
+                  <option value="CL">Chile (CL)</option>
+                  <option value="CN">China (CN)</option>
+                  <option value="CO">Colombia (CO)</option>
+                  <option value="CZ">Czech Republic (CZ)</option>
+                  <option value="DK">Denmark (DK)</option>
+                  <option value="EG">Egypt (EG)</option>
+                  <option value="ES">Spain (ES)</option>
+                  <option value="FI">Finland (FI)</option>
+                  <option value="GR">Greece (GR)</option>
+                  <option value="HK">Hong Kong (HK)</option>
+                  <option value="ID">Indonesia (ID)</option>
+                  <option value="IE">Ireland (IE)</option>
+                  <option value="IL">Israel (IL)</option>
+                  <option value="IT">Italy (IT)</option>
+                  <option value="KR">South Korea (KR)</option>
+                  <option value="MX">Mexico (MX)</option>
+                  <option value="MY">Malaysia (MY)</option>
+                  <option value="NL">Netherlands (NL)</option>
+                  <option value="NO">Norway (NO)</option>
+                  <option value="NZ">New Zealand (NZ)</option>
+                  <option value="PH">Philippines (PH)</option>
+                  <option value="PK">Pakistan (PK)</option>
+                  <option value="PL">Poland (PL)</option>
+                  <option value="PT">Portugal (PT)</option>
+                  <option value="QA">Qatar (QA)</option>
+                  <option value="SA">Saudi Arabia (SA)</option>
+                  <option value="SE">Sweden (SE)</option>
+                  <option value="CH">Switzerland (CH)</option>
+                  <option value="TH">Thailand (TH)</option>
+                  <option value="TR">Turkey (TR)</option>
+                  <option value="TW">Taiwan (TW)</option>
+                  <option value="VN">Vietnam (VN)</option>
+                  <option value="ZA">South Africa (ZA)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- Postal / ZIP Code -->
+            <div>
+              <label for="billing-postal-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                POSTAL / ZIP CODE <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-postal-input" name="postalCode" required placeholder="e.g. 392001 or 90210" maxlength="20" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);" />
+            </div>
+
+          </div>
+
+          <!-- Live Currency Indicator & Save Action -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-sm); background: var(--color-bg-secondary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle);">
+            <div style="font-size: var(--font-size-xs); color: var(--color-text-secondary);">
+              <span>Authoritative Billing Currency: </span>
+              <strong id="billing-currency-preview" style="color: var(--color-brand-primary); font-family: var(--font-family-mono); font-size: var(--font-size-sm);">INR (₹)</strong>
+              <span class="text-muted" style="margin-left: 6px;">(Derived server-side from billing country)</span>
+            </div>
+            <button type="submit" id="btn-save-billing" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 140px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Save Region</span>
+            </button>
+          </div>
+
+          <div id="billing-status-feedback" style="display: none; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs);"></div>
+        </form>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. BILLING ADDRESS & IDENTITY (AUTHORITATIVE TAX INVOICE PROFILE)     -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-profile-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Authoritative Billing Address</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Legal entity name and street address used for compliant tax invoice generation.
+            </p>
+          </div>
+          <div id="billing-profile-badge">
+            <span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted); border: 1px solid var(--color-border);">Loading profile...</span>
+          </div>
+        </div>
+
+        <form id="form-billing-profile" onsubmit="saveBillingProfile(event)" style="display: flex; flex-direction: column; gap: var(--space-md);">
+          
+          <!-- Full Name -->
+          <div>
+            <label for="billing-fullname-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+              Full Name / Legal Entity <span style="color: #DC2626;">*</span>
+            </label>
+            <input type="text" id="billing-fullname-input" name="fullName" required placeholder="e.g. John Doe or Acme Corp" maxlength="150" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+          </div>
+
+          <!-- Address Line 1 & Line 2 -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-address1-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Address Line 1 <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-address1-input" name="addressLine1" required placeholder="Street address, P.O. box, company name" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-address2-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                Address Line 2 <span class="text-muted">(Optional)</span>
+              </label>
+              <input type="text" id="billing-address2-input" name="addressLine2" placeholder="Apartment, suite, unit, building, floor (optional)" maxlength="255" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+          </div>
+
+          <!-- City & State -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md);">
+            <div>
+              <label for="billing-city-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                City <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-city-input" name="city" required placeholder="City / Town" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+
+            <div>
+              <label for="billing-state-input" style="display: block; font-size: var(--font-size-xs); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-secondary); margin-bottom: var(--space-xs);">
+                State / Province <span style="color: #DC2626;">*</span>
+              </label>
+              <input type="text" id="billing-state-input" name="state" required placeholder="State / Province / Region" maxlength="100" style="width: 100%; height: 44px; padding: 0 var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); font-family: var(--font-family-sans); font-size: var(--font-size-sm);" />
+            </div>
+          </div>
+
+          <!-- Save Profile Button Bar -->
+          <div style="display: flex; justify-content: flex-end; align-items: center; gap: var(--space-sm); margin-top: var(--space-xs);">
+            <button type="submit" id="btn-save-billing-profile" class="btn btn-primary btn-sm" style="min-height: 40px; min-width: 170px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span>Save Billing Address</span>
+            </button>
+          </div>
+
+          <div id="billing-profile-status-feedback" style="display: none; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs);"></div>
+        </form>
+      </section>
+
+      <!-- ===================================================================== -->
+      <!-- 2. BILLING HISTORY & RECEIPTS (TAX INVOICES & TRANSACTIONS)           -->
+      <!-- ===================================================================== -->
+      <section class="card" id="billing-history-section" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-2xs);">
+              <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              </div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: 0; color: var(--color-text-primary);">Billing &amp; Receipts</h2>
+            </div>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Your official ZdexCloud tax invoices, payment receipts, and refund activity.
+            </p>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-xs);">
+            <select id="receipt-filter-status" onchange="filterReceiptsUI()" style="height: 36px; padding: 0 10px; font-size: var(--font-size-xs); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); cursor: pointer;">
+              <option value="ALL" selected>All Statuses</option>
+              <option value="ISSUED">Paid / Active</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+            <button type="button" id="btn-refresh-receipts" onclick="loadBillingReceipts(currentPage)" class="btn btn-ghost btn-sm" title="Refresh receipts" style="height: 36px; padding: 0 10px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Receipts Container -->
+        <div id="receipts-container">
+          <!-- Skeleton Rows -->
+          <div id="receipts-skeleton">
+            <div class="skeleton-box" style="width: 100%; height: 48px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 48px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 48px; border-radius: var(--radius-md);"></div>
+          </div>
+
+          <!-- Dynamic Table Content -->
+          <div id="receipts-content" style="display: none;"></div>
+
+          <!-- Empty State (No billing history) -->
+          <div id="receipts-empty" style="display: none; text-align: center; padding: var(--space-2xl) var(--space-md); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-secondary);">
+            <div style="width: 48px; height: 48px; margin: 0 auto var(--space-sm); background: rgba(100, 116, 139, 0.1); color: var(--color-text-muted); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-2xs);">No Billing History Yet</h3>
+            <p class="text-sm text-secondary" style="max-width: 420px; margin: 0 auto var(--space-md);">Your official receipts and payment records will appear here once you subscribe to a commercial plan.</p>
+            <a href="pricing.html" class="btn btn-primary btn-sm">View Pricing Plans</a>
+          </div>
+
+          <!-- Error State -->
+          <div id="receipts-error" style="display: none; text-align: center; padding: var(--space-lg); background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg);">
+            <p class="text-xs" style="color: #991B1B; margin-bottom: var(--space-xs);">Could not load billing receipt records.</p>
+            <button type="button" onclick="loadBillingReceipts(1)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry</button>
+          </div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="receipts-pagination" class="pagination-bar" style="display: none; justify-content: space-between; align-items: center; margin-top: var(--space-md);">
+          <span id="pagination-info" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Showing 1 to 10</span>
+          <div style="display: flex; gap: var(--space-xs);">
+            <button type="button" id="btn-prev-page" onclick="goToPrevReceiptPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Previous</button>
+            <button type="button" id="btn-next-page" onclick="goToNextReceiptPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Next</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>ZdexCloud</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure &bull; Self-Hosted Host Storage</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================================================= -->
+  <!-- MODALS                                                                  -->
+  <!-- ======================================================================= -->
+
+  <!-- 1. RECEIPT HTML VIEWER MODAL -->
+  <div id="receipt-viewer-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="receipt-viewer-title" style="display: none;">
+    <div class="modal-card-box modal-card-box--wide">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-md); margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
+        <h3 id="receipt-viewer-title" style="font-size: var(--font-size-md); font-weight: 700; margin: 0; color: var(--color-text-primary);">Official Receipt</h3>
+        <div style="display: flex; gap: var(--space-xs);">
+          <button type="button" onclick="printActiveReceipt()" class="btn btn-ghost btn-sm">Print</button>
+          <button type="button" onclick="downloadActiveReceipt()" class="btn btn-secondary btn-sm">Download</button>
+          <button type="button" onclick="closeReceiptViewerModal()" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <div id="receipt-iframe-loader" style="display: flex; align-items: center; justify-content: center; height: 200px;">
+        <div class="skeleton-box" style="width: 200px; height: 32px;"></div>
+      </div>
+      <iframe id="receipt-html-frame" style="width: 100%; height: 500px; border: none; background: #FFF; border-radius: var(--radius-md);"></iframe>
+    </div>
+  </div>
+
+  <!-- 2. REFUND REQUEST MODAL -->
+  <div id="request-refund-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" style="display: none;">
+    <div class="modal-card-box">
+      <h3 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-sm); color: var(--color-text-primary);">Submit Refund Request</h3>
+      <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
+        Refund requests are evaluated against our 7-day satisfaction policy. If approved, Pro tier access is reverted immediately.
+      </p>
+      <form onsubmit="submitRefundRequest(event)">
+        <input type="hidden" id="refund-payment-id" />
+        <div style="margin-bottom: var(--space-md);">
+          <label style="display: block; font-size: var(--font-size-xs); font-weight: 600; margin-bottom: var(--space-xs);">Reason for Refund</label>
+          <select id="refund-reason-select" style="width: 100%; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 var(--space-sm);">
+            <option value="ACCIDENTAL_PURCHASE">Accidental Purchase / Wrong Tier</option>
+            <option value="TECHNICAL_FAILURE">Technical Service Issue</option>
+            <option value="CUSTOMER_SATISFACTION">Not Satisfied with Product</option>
+            <option value="OTHER">Other Reason</option>
+          </select>
+        </div>
+        <div style="margin-bottom: var(--space-md);">
+          <label style="display: block; font-size: var(--font-size-xs); font-weight: 600; margin-bottom: var(--space-xs);">Additional Comments</label>
+          <textarea id="refund-details-textarea" rows="3" style="width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm); font-size: var(--font-size-xs);" placeholder="Please describe why you are requesting a refund..."></textarea>
+        </div>
+        <div id="refund-form-error" style="display: none; padding: var(--space-xs) var(--space-sm); background: #FEF2F2; color: #991B1B; border-radius: var(--radius-sm); font-size: 11px; margin-bottom: var(--space-sm);"></div>
+        <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+          <button type="button" onclick="closeRefundRequestModal()" class="btn btn-secondary btn-sm">Cancel</button>
+          <button type="submit" id="btn-submit-refund" class="btn btn-primary btn-sm" style="background: #DC2626; border-color: #DC2626;">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CORE SCRIPTS -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let receiptsCache = [];
+    let activeReceiptForViewer = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Session Guard
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
+
+      if (!authResult.authenticated) {
+        window.location.href = 'login.html?redirect=billing.html';
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+      if (user) {
+        if (user.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = user.email;
+        }
+        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
+      }
+
+      // Logout handler
+      document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        await AuthService.logoutUser();
+      });
+
+      // 2. Initialize Billing State, Billing Profile & Receipts in parallel
+      try {
+        await BillingState.initBillingState((state) => {
+          loadBillingRegionUI(state);
+        });
+      } catch (err) {
+        console.error('Error initializing billing state:', err);
+      }
+
+      await Promise.all([
+        loadBillingProfileUI(),
+        loadBillingReceipts(1)
+      ]);
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
+    // =========================================================================
+    // 1. BILLING & REGIONAL SETTINGS (COUNTRY, POSTAL CODE, CURRENCY)
+    // =========================================================================
+
+    function loadBillingRegionUI(billingState) {
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const badgeContainer = document.getElementById('billing-confirmation-badge');
+
+      if (!billingState) return;
+
+      if (billingState.billingCountry && countrySelect) {
+        countrySelect.value = billingState.billingCountry;
+      }
+      if (billingState.billingPostalCode && postalInput) {
+        postalInput.value = billingState.billingPostalCode;
+      }
+      if (badgeContainer) {
+        if (billingState.countryConfirmed) {
+          badgeContainer.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Confirmed (${escapeHtml(billingState.currency || '')})</span>`;
+        } else {
+          badgeContainer.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Unconfirmed</span>`;
+        }
+      }
+      updateCurrencyPreview();
+    }
+
+    function updateCurrencyPreview() {
+      const countrySelect = document.getElementById('billing-country-select');
+      const previewEl = document.getElementById('billing-currency-preview');
+      if (!countrySelect || !previewEl) return;
+      const val = countrySelect.value ? countrySelect.value.toUpperCase() : '';
+      if (val === 'IN') {
+        previewEl.textContent = 'INR (₹)';
+      } else if (val) {
+        previewEl.textContent = 'USD ($)';
+      } else {
+        previewEl.textContent = 'Select country...';
+      }
+    }
+
+    async function saveBillingRegion(e) {
+      if (e) e.preventDefault();
+      const countrySelect = document.getElementById('billing-country-select');
+      const postalInput = document.getElementById('billing-postal-input');
+      const feedback = document.getElementById('billing-status-feedback');
+      const btn = document.getElementById('btn-save-billing');
+
+      if (!countrySelect || !postalInput || !countrySelect.value || !postalInput.value.trim()) {
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Saving...';
+      }
+      if (feedback) feedback.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.confirmBillingCountry(countrySelect.value, postalInput.value.trim());
+
+        if (res.ok && res.data && res.data.success) {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#ECFDF5';
+            feedback.style.color = '#065F46';
+            feedback.style.border = '1px solid #A7F3D0';
+            feedback.textContent = `Billing region saved successfully. Authoritative currency: ${res.data.data.currency}.`;
+          }
+          await BillingState.refreshBillingState();
+          await loadBillingProfileUI();
+        } else {
+          const norm = BillingState.normalizeBillingError(res);
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#FEF2F2';
+            feedback.style.color = '#991B1B';
+            feedback.style.border = '1px solid #FECACA';
+            feedback.textContent = norm.message;
+          }
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#FEF2F2';
+          feedback.style.color = '#991B1B';
+          feedback.style.border = '1px solid #FECACA';
+          feedback.textContent = 'Network error while updating billing region.';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Save Region</span>
+          `;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 2. BILLING PROFILE (IDENTITY & ADDRESS) MANAGEMENT
+    // =========================================================================
+
+    async function loadBillingProfileUI() {
+      const badge = document.getElementById('billing-profile-badge');
+      const fullNameInput = document.getElementById('billing-fullname-input');
+      const countrySelect = document.getElementById('billing-country-select');
+      const address1Input = document.getElementById('billing-address1-input');
+      const address2Input = document.getElementById('billing-address2-input');
+      const cityInput = document.getElementById('billing-city-input');
+      const stateInput = document.getElementById('billing-state-input');
+      const postalInput = document.getElementById('billing-postal-input');
+
+      try {
+        const res = await BillingAPI.getBillingProfile();
+        if (res.ok && res.data && res.data.data) {
+          const p = res.data.data;
+          if (fullNameInput) fullNameInput.value = p.fullName || '';
+          if (countrySelect && !countrySelect.value) countrySelect.value = p.country || '';
+          if (address1Input) address1Input.value = p.addressLine1 || '';
+          if (address2Input) address2Input.value = p.addressLine2 || '';
+          if (cityInput) cityInput.value = p.city || '';
+          if (stateInput) stateInput.value = p.state || '';
+          if (postalInput && !postalInput.value) postalInput.value = p.postalCode || '';
+
+          if (badge) {
+            if (p.countryConfirmed && p.addressLine1 && p.city) {
+              badge.innerHTML = `<span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span> Profile Complete (${escapeHtml(p.currency || '')})</span>`;
+            } else {
+              badge.innerHTML = `<span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; display: inline-block;"></span> Incomplete Address</span>`;
+            }
+          }
+          updateCurrencyPreview();
+        }
+      } catch (err) {
+        if (badge) {
+          badge.innerHTML = `<span class="badge" style="background: var(--color-surface-secondary); color: var(--color-text-muted);">Could not load profile</span>`;
+        }
+      }
+    }
+
+    async function saveBillingProfile(e) {
+      if (e) e.preventDefault();
+      const fullName = document.getElementById('billing-fullname-input')?.value?.trim();
+      const country = document.getElementById('billing-country-select')?.value;
+      const postalCode = document.getElementById('billing-postal-input')?.value?.trim();
+      const addressLine1 = document.getElementById('billing-address1-input')?.value?.trim();
+      const addressLine2 = document.getElementById('billing-address2-input')?.value?.trim() || null;
+      const city = document.getElementById('billing-city-input')?.value?.trim();
+      const state = document.getElementById('billing-state-input')?.value?.trim();
+      const feedback = document.getElementById('billing-profile-status-feedback');
+      const btn = document.getElementById('btn-save-billing-profile');
+
+      if (!fullName || !country || !addressLine1 || !city || !state || !postalCode) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#FEF2F2';
+          feedback.style.color = '#991B1B';
+          feedback.style.border = '1px solid #FECACA';
+          feedback.textContent = 'Please configure your Billing Region above and fill all address fields.';
+        }
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Saving Address...';
+      }
+      if (feedback) feedback.style.display = 'none';
+
+      try {
+        const res = await BillingAPI.updateBillingProfile({
+          fullName,
+          country,
+          addressLine1,
+          addressLine2,
+          city,
+          state,
+          postalCode
+        });
+
+        if (res.ok && res.data && res.data.success) {
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#ECFDF5';
+            feedback.style.color = '#065F46';
+            feedback.style.border = '1px solid #A7F3D0';
+            feedback.textContent = `Billing address saved successfully. Authoritative currency: ${res.data.data.currency}.`;
+          }
+          await BillingState.refreshBillingState();
+          await loadBillingProfileUI();
+        } else {
+          const normMsg = res.data?.error?.message || 'Failed to update billing address.';
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.style.background = '#FEF2F2';
+            feedback.style.color = '#991B1B';
+            feedback.style.border = '1px solid #FECACA';
+            feedback.textContent = normMsg;
+          }
+        }
+      } catch (err) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#FEF2F2';
+          feedback.style.color = '#991B1B';
+          feedback.style.border = '1px solid #FECACA';
+          feedback.textContent = 'Network communication error while saving billing address.';
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Save Billing Address</span>
+          `;
+        }
+      }
+    }
+
+    // =========================================================================
+    // 2. BILLING RECEIPTS & HISTORY MANAGEMENT
+    // =========================================================================
+
+    async function loadBillingReceipts(page = 1) {
+      currentPage = page;
+      const skeleton = document.getElementById('receipts-skeleton');
+      const content = document.getElementById('receipts-content');
+      const empty = document.getElementById('receipts-empty');
+      const errBox = document.getElementById('receipts-error');
+      const pagination = document.getElementById('receipts-pagination');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (empty) empty.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+      if (pagination) pagination.style.display = 'none';
+
+      try {
+        const result = await BillingAPI.getReceipts(page, 10);
+        if (result.ok && result.data && result.data.data) {
+          const receipts = Array.isArray(result.data.data.receipts) ? result.data.data.receipts : (Array.isArray(result.data.data) ? result.data.data : []);
+          const paginationData = result.data.data.pagination || { page: 1, totalPages: 1, totalCount: receipts.length };
+          totalPages = paginationData.totalPages || 1;
+          receiptsCache = receipts;
+
+          if (skeleton) skeleton.style.display = 'none';
+
+          if (receipts.length === 0) {
+            if (empty) empty.style.display = 'block';
+          } else {
+            renderReceiptsTable(receipts);
+            if (content) content.style.display = 'block';
+            updatePaginationUI(paginationData);
+            if (pagination && totalPages > 1) pagination.style.display = 'flex';
+          }
+        } else {
+          if (skeleton) skeleton.style.display = 'none';
+          if (errBox) errBox.style.display = 'block';
+        }
+      } catch (e) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (errBox) errBox.style.display = 'block';
+      }
+    }
+
+    function renderReceiptsTable(receipts) {
+      const container = document.getElementById('receipts-content');
+      if (!container) return;
+
+      const rowsHtml = receipts.map(r => {
+        const receiptNum = escapeHtml(r.receiptNumber || r.id.substring(0, 10));
+        const dateFormatted = new Date(r.issuedAt || r.chargedAt || r.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        const planName = escapeHtml(r.planName || (r.planCode === 'PRO_YEARLY' ? 'Pro Yearly' : 'Pro Monthly'));
+        const interval = escapeHtml(r.billingInterval === 'YEARLY' ? 'Annual' : 'Monthly');
+        
+        const minorUnits = r.totalMinorUnits || r.amountPaidMinorUnits || (r.amount ? r.amount : 0);
+        const curr = r.currency || 'USD';
+        const formattedAmount = curr === 'INR' ? `₹${(minorUnits / 100).toFixed(2)}` : `$${(minorUnits / 100).toFixed(2)}`;
+
+        const isRefunded = r.status === 'REFUNDED';
+        const statusBadge = isRefunded
+          ? '<span class="badge badge-secondary" style="font-size: 11px;">Refunded</span>'
+          : '<span class="badge badge-success" style="font-size: 11px;">Paid</span>';
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 600; font-family: var(--font-family-mono); font-size: var(--font-size-xs); color: var(--color-brand-primary);">
+                ${receiptNum}
+              </div>
+              <div class="text-xs text-muted">${dateFormatted}</div>
+            </td>
+            <td>
+              <div style="font-weight: 500;">${planName}</div>
+              <div class="text-xs text-muted">${interval} Billing</div>
+            </td>
+            <td>
+              <strong style="font-family: var(--font-family-mono); font-size: var(--font-size-sm);">${formattedAmount}</strong>
+              <div class="text-xs text-muted" style="font-size: 10px;">Tax Included</div>
+            </td>
+            <td>
+              ${statusBadge}
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                <button type="button" onclick="viewReceiptHtml('${escapeHtml(r.id)}', '${receiptNum}')" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  View
+                </button>
+                <button type="button" onclick="downloadReceiptFile('${escapeHtml(r.id)}')" class="btn btn-ghost btn-sm" title="Download HTML Receipt" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                ${!isRefunded ? `
+                  <button type="button" onclick="openRefundModal('${escapeHtml(r.paymentId || r.id)}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #DC2626;" title="Request Refund">
+                    Refund
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="receipt-table-wrapper">
+          <table class="receipt-table">
+            <thead>
+              <tr>
+                <th>Receipt # / Date</th>
+                <th>Plan Details</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function updatePaginationUI(p) {
+      const info = document.getElementById('pagination-info');
+      const prevBtn = document.getElementById('btn-prev-page');
+      const nextBtn = document.getElementById('btn-next-page');
+
+      if (info) info.textContent = `Page ${p.page} of ${p.totalPages || 1} (${p.totalCount || receiptsCache.length} total records)`;
+      if (prevBtn) prevBtn.disabled = (p.page <= 1);
+      if (nextBtn) nextBtn.disabled = (p.page >= (p.totalPages || 1));
+    }
+
+    function goToPrevReceiptPage() {
+      if (currentPage > 1) {
+        loadBillingReceipts(currentPage - 1);
+      }
+    }
+
+    function goToNextReceiptPage() {
+      if (currentPage < totalPages) {
+        loadBillingReceipts(currentPage + 1);
+      }
+    }
+
+    function filterReceiptsUI() {
+      const select = document.getElementById('receipt-filter-status');
+      const filterVal = select ? select.value : 'ALL';
+      if (filterVal === 'ALL') {
+        renderReceiptsTable(receiptsCache);
+      } else {
+        const filtered = receiptsCache.filter(r => r.status === filterVal);
+        renderReceiptsTable(filtered);
+      }
+    }
+
+    async function viewReceiptHtml(receiptId, receiptNumber) {
+      activeReceiptForViewer = receiptId;
+      const modal = document.getElementById('receipt-viewer-modal');
+      const titleEl = document.getElementById('receipt-viewer-title');
+      const loader = document.getElementById('receipt-iframe-loader');
+      const frame = document.getElementById('receipt-html-frame');
+
+      if (titleEl) titleEl.textContent = `Receipt ${receiptNumber || ''}`;
+      if (loader) loader.style.display = 'flex';
+      if (frame) frame.srcdoc = '';
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        const res = await BillingAPI.getReceiptHtml(receiptId);
+        if (loader) loader.style.display = 'none';
+
+        if (res.ok && res.html) {
+          if (frame) frame.srcdoc = res.html;
+        } else {
+          if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Failed to load receipt document.</div>';
+        }
+      } catch (err) {
+        if (loader) loader.style.display = 'none';
+        if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Network error loading receipt.</div>';
+      }
+    }
+
+    function closeReceiptViewerModal() {
+      const modal = document.getElementById('receipt-viewer-modal');
+      if (modal) modal.style.display = 'none';
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame) frame.srcdoc = '';
+    }
+
+    function printActiveReceipt() {
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }
+    }
+
+    async function downloadActiveReceipt() {
+      if (!activeReceiptForViewer) return;
+      await downloadReceiptFile(activeReceiptForViewer);
+    }
+
+    async function downloadReceiptFile(receiptId) {
+      try {
+        await BillingAPI.downloadReceipt(receiptId);
+      } catch (err) {
+        alert('Could not download receipt file. Please view it in browser.');
+      }
+    }
+
+    function openRefundModal(paymentId) {
+      const input = document.getElementById('refund-payment-id');
+      if (input) input.value = paymentId;
+      const modal = document.getElementById('request-refund-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeRefundRequestModal() {
+      const modal = document.getElementById('request-refund-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitRefundRequest(event) {
+      event.preventDefault();
+      const btn = document.getElementById('btn-submit-refund');
+      const errBox = document.getElementById('refund-form-error');
+      const paymentId = document.getElementById('refund-payment-id')?.value;
+      const reason = document.getElementById('refund-reason-select')?.value;
+      const details = document.getElementById('refund-details-textarea')?.value;
+
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingAPI.requestRefund({
+          paymentId,
+          reason,
+          reasonDetails: details
+        });
+        if (result.ok) {
+          closeRefundRequestModal();
+          await loadBillingReceipts(currentPage);
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Refund request could not be processed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process refund request.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

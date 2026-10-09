@@ -906,8 +906,13 @@ model AccountBillingState {
   userId               String        @unique
   status               BillingStatus @default(FREE)
   activeSubscriptionId String?       @unique
-  billingCountry       String?
+  billingName          String?
+  billingAddress1      String?
+  billingAddress2      String?
+  billingCity          String?
+  billingState         String?
   billingPostalCode    String?
+  billingCountry       String?
   currency             CurrencyCode?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt

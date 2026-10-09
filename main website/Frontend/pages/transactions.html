@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Transactions | ZdexCloud - Personal File Server</title>
+  <meta name="description" content="View your recorded payment and billing transactions, official receipts, and subscription charges on the ZdexCloud Platform.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/transactions.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/transactions.html">
+  <meta property="og:title" content="Transactions | ZdexCloud - Personal File Server">
+  <meta property="og:description" content="View your recorded payment and billing transactions, official receipts, and subscription charges on the ZdexCloud Platform.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Transactions | ZdexCloud - Personal File Server">
+  <meta name="twitter:description" content="View your recorded payment and billing transactions, official receipts, and subscription charges on the ZdexCloud Platform.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud - Personal File Server on Android">
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/dashboard-shell.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+
+  <style>
+    /* Scoped Transactions Page Styles (Phase 6.1) */
+    .transactions-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-surface);
+      margin-bottom: var(--space-md);
+    }
+    .transactions-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: var(--font-size-body-sm);
+    }
+    .transactions-table th {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+      font-size: 11px;
+      font-weight: var(--font-weight-bold);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+    }
+    .transactions-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--color-border-subtle);
+      color: var(--color-text-primary);
+      vertical-align: middle;
+    }
+    .transactions-table tr:last-child td {
+      border-bottom: none;
+    }
+    .transactions-table tr:hover td {
+      background: var(--color-bg-subtle, #F8FAFC);
+    }
+    .tx-ref-code {
+      font-family: var(--font-family-mono);
+      font-size: 12px;
+      color: var(--color-brand-primary);
+      font-weight: var(--font-weight-medium);
+      display: inline-block;
+    }
+    .tx-date-sub {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+    .tx-desc-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin-bottom: 2px;
+    }
+    .tx-desc-sub {
+      font-size: 11px;
+      color: var(--color-text-muted);
+    }
+    .tx-amount {
+      font-family: var(--font-family-mono);
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+    }
+    .tx-amount-note {
+      font-size: 10px;
+      color: var(--color-text-muted);
+    }
+    .tx-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+    .tx-status--success {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+    .tx-status--refunded {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+    .tx-status--failed {
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+    .tx-status--pending {
+      background: #FFFBEB;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Stacked card view for small mobile displays */
+    .transactions-mobile-cards {
+      display: none;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+    @media (max-width: 768px) {
+      .transactions-table-wrap {
+        display: none;
+      }
+      .transactions-mobile-cards {
+        display: flex;
+      }
+    }
+    .tx-mobile-card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .tx-mobile-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-xs);
+    }
+    .tx-mobile-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: var(--font-size-xs);
+      padding-top: var(--space-2xs);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+    .tx-mobile-card-actions {
+      display: flex;
+      gap: var(--space-xs);
+      padding-top: var(--space-xs);
+      border-top: 1px solid var(--color-border-subtle);
+    }
+
+    .skeleton-box {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: skeletonPulse 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+    @keyframes skeletonPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link">Dashboard</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD SHELL LAYOUT -->
+  <div class="dashboard-shell-layout">
+
+    <!-- DESKTOP DASHBOARD SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+      
+      <!-- Platform Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support & Communication Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="dashboard-main-content page-entrance" id="dashboard-main-content">
+      
+      <!-- DASHBOARD PAGE HEADER -->
+      <div class="dashboard-page-header">
+        <div class="dashboard-breadcrumbs">
+          <a href="servers.html">Dashboard</a>
+          <span>/</span>
+          <span>Transactions</span>
+        </div>
+        <div class="dashboard-title-row">
+          <div>
+            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Transactions</h1>
+            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">
+              Review your recorded billing and payment transaction history, status, and associated receipts.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY METRIC CARDS -->
+      <div class="dashboard-stat-grid" style="margin-bottom: var(--space-xl);">
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--blue">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Total Records</div>
+            <div class="stat-card-value" id="stat-total-tx">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--green">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Paid / Settled</div>
+            <div class="stat-card-value" id="stat-paid-tx">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--purple">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Refund Activity</div>
+            <div class="stat-card-value" id="stat-refund-tx">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon stat-card-icon--amber">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          </div>
+          <div>
+            <div class="stat-card-title">Account Currency</div>
+            <div class="stat-card-value" id="stat-currency-val" style="font-size: var(--font-size-md);">INR (₹)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRANSACTION HISTORY SECTION -->
+      <section class="card" id="transactions-section" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm); margin-bottom: var(--space-2xl);">
+        
+        <!-- Header & Action Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+          <div>
+            <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-2xs); color: var(--color-text-primary);">
+              Transaction History
+            </h2>
+            <p class="text-sm text-secondary" style="margin-bottom: 0;">
+              Authoritative payment settlements, renewal charges, and adjustments recorded for your account.
+            </p>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: var(--space-xs);">
+            <label for="tx-filter-status" class="sr-only">Filter by Status</label>
+            <select id="tx-filter-status" onchange="filterTransactionsUI()" style="height: 38px; padding: 0 12px; font-size: var(--font-size-xs); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text-primary); cursor: pointer;">
+              <option value="ALL" selected>All Statuses</option>
+              <option value="ISSUED">Paid / Settled</option>
+              <option value="REFUNDED">Refunded</option>
+            </select>
+            <button type="button" id="btn-refresh-transactions" onclick="loadCustomerTransactions(currentPage)" class="btn btn-ghost btn-sm" title="Refresh transactions" style="height: 38px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Transactions Container -->
+        <div id="transactions-container">
+          
+          <!-- 1. Skeleton Loading State -->
+          <div id="transactions-skeleton">
+            <div class="skeleton-box" style="width: 100%; height: 52px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 52px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 52px; margin-bottom: 8px; border-radius: var(--radius-md);"></div>
+            <div class="skeleton-box" style="width: 100%; height: 52px; border-radius: var(--radius-md);"></div>
+          </div>
+
+          <!-- 2. Dynamic Content: Desktop Table & Mobile Cards -->
+          <div id="transactions-content" style="display: none;"></div>
+
+          <!-- 3. Confirmed Empty State -->
+          <div id="transactions-empty" style="display: none; text-align: center; padding: var(--space-2xl) var(--space-md); border: 1px dashed var(--color-border); border-radius: var(--radius-lg); background: var(--color-bg-secondary);">
+            <div style="width: 56px; height: 56px; margin: 0 auto var(--space-sm); background: rgba(37, 99, 235, 0.08); color: var(--color-brand-primary); border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(37, 99, 235, 0.15);">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-md); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-2xs);">No Transactions Recorded Yet</h3>
+            <p class="text-sm text-secondary" style="max-width: 440px; margin: 0 auto var(--space-lg) auto; line-height: var(--line-height-relaxed);">
+              Your payment and billing transactions will appear here automatically once you subscribe to a commercial plan.
+            </p>
+            <div style="display: flex; justify-content: center; gap: var(--space-sm); flex-wrap: wrap;">
+              <a href="subscription.html" class="btn btn-primary btn-sm">View Subscription Plans</a>
+              <a href="pricing.html" class="btn btn-secondary btn-sm">Explore Pricing</a>
+            </div>
+          </div>
+
+          <!-- 4. Recoverable API Failure State -->
+          <div id="transactions-error" style="display: none; text-align: center; padding: var(--space-xl); background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-lg);">
+            <div style="width: 40px; height: 40px; margin: 0 auto var(--space-xs); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </div>
+            <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-2xs);">Unable to Load Transactions</h3>
+            <p id="tx-error-message" class="text-xs" style="color: #B91C1C; margin-bottom: var(--space-md);">Could not retrieve transaction records from the control plane.</p>
+            <button type="button" onclick="loadCustomerTransactions(1)" class="btn btn-outline btn-sm" style="border-color: #DC2626; color: #DC2626;">Retry Request</button>
+          </div>
+
+        </div>
+
+        <!-- 5. Pagination Bar -->
+        <div id="transactions-pagination" class="pagination-bar" style="display: none; justify-content: space-between; align-items: center; margin-top: var(--space-md); flex-wrap: wrap; gap: var(--space-xs);">
+          <span id="tx-pagination-info" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Showing 1 to 10</span>
+          <div style="display: flex; gap: var(--space-xs);">
+            <button type="button" id="btn-tx-prev" onclick="goToPrevPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Previous</button>
+            <button type="button" id="btn-tx-next" onclick="goToNextPage()" class="btn btn-secondary btn-sm" style="font-size: 12px; height: 32px;" disabled>Next</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>ZdexCloud</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure &bull; Self-Hosted Host Storage</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- RECEIPT HTML VIEWER MODAL -->
+  <div id="receipt-viewer-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="receipt-viewer-title" style="display: none;">
+    <div class="modal-card-box modal-card-box--wide">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--space-md); margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle);">
+        <h3 id="receipt-viewer-title" style="font-size: var(--font-size-md); font-weight: 700; margin: 0; color: var(--color-text-primary);">Official Receipt</h3>
+        <div style="display: flex; gap: var(--space-xs);">
+          <button type="button" onclick="printActiveReceipt()" class="btn btn-ghost btn-sm">Print</button>
+          <button type="button" onclick="downloadActiveReceipt()" class="btn btn-secondary btn-sm">Download</button>
+          <button type="button" onclick="closeReceiptViewerModal()" class="btn btn-ghost btn-sm" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <div id="receipt-iframe-loader" style="display: flex; align-items: center; justify-content: center; height: 200px;">
+        <div class="skeleton-box" style="width: 200px; height: 32px;"></div>
+      </div>
+      <iframe id="receipt-html-frame" title="Receipt Document Preview" style="width: 100%; height: 500px; border: none; background: #FFF; border-radius: var(--radius-md);"></iframe>
+    </div>
+  </div>
+
+  <!-- REFUND REQUEST MODAL -->
+  <div id="request-refund-modal" class="modal-overlay-backdrop" role="dialog" aria-modal="true" aria-labelledby="refund-modal-title" style="display: none;">
+    <div class="modal-card-box">
+      <h3 id="refund-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-sm); color: var(--color-text-primary);">Submit Refund Request</h3>
+      <p class="text-xs text-secondary" style="margin-bottom: var(--space-md);">
+        Refund requests are evaluated against our 7-day satisfaction policy. If approved, Pro tier access is reverted immediately.
+      </p>
+      <form onsubmit="submitRefundRequest(event)">
+        <input type="hidden" id="refund-payment-id" />
+        <div style="margin-bottom: var(--space-md);">
+          <label for="refund-reason-select" style="display: block; font-size: var(--font-size-xs); font-weight: 600; margin-bottom: var(--space-xs);">Reason for Refund</label>
+          <select id="refund-reason-select" style="width: 100%; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 0 var(--space-sm);">
+            <option value="ACCIDENTAL_PURCHASE">Accidental Purchase / Wrong Tier</option>
+            <option value="TECHNICAL_FAILURE">Technical Service Issue</option>
+            <option value="CUSTOMER_SATISFACTION">Not Satisfied with Product</option>
+            <option value="OTHER">Other Reason</option>
+          </select>
+        </div>
+        <div style="margin-bottom: var(--space-md);">
+          <label for="refund-details-textarea" style="display: block; font-size: var(--font-size-xs); font-weight: 600; margin-bottom: var(--space-xs);">Additional Comments</label>
+          <textarea id="refund-details-textarea" rows="3" style="width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: var(--space-sm); font-size: var(--font-size-xs);" placeholder="Please describe why you are requesting a refund..."></textarea>
+        </div>
+        <div id="refund-form-error" style="display: none; padding: var(--space-xs) var(--space-sm); background: #FEF2F2; color: #991B1B; border-radius: var(--radius-sm); font-size: 11px; margin-bottom: var(--space-sm);"></div>
+        <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+          <button type="button" onclick="closeRefundRequestModal()" class="btn btn-secondary btn-sm">Cancel</button>
+          <button type="submit" id="btn-submit-refund" class="btn btn-primary btn-sm" style="background: #DC2626; border-color: #DC2626;">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- CORE SCRIPTS -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let transactionsCache = [];
+    let activeReceiptForViewer = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Session Guard
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
+
+      if (!authResult.authenticated) {
+        window.location.href = 'login.html?redirect=transactions.html';
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+      if (user) {
+        if (user.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = user.email;
+        }
+        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
+      }
+
+      // Logout handler
+      document.getElementById('btn-logout')?.addEventListener('click', async () => {
+        await AuthService.logoutUser();
+      });
+
+      // 2. Subscribe to Billing State for Currency derivation
+      BillingState.subscribe(state => {
+        if (state && state.currency) {
+          const currSymbol = state.currency === 'INR' ? '₹' : '$';
+          const currEl = document.getElementById('stat-currency-val');
+          if (currEl) currEl.textContent = `${state.currency} (${currSymbol})`;
+        }
+      });
+      BillingState.refreshBillingState().catch(() => {});
+
+      // 3. Load Transactions
+      loadCustomerTransactions(1);
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
+    function formatAmount(amountMinorUnits, currency) {
+      const symbol = currency === 'INR' ? '₹' : '$';
+      const major = ((amountMinorUnits || 0) / 100).toFixed(2);
+      return `${symbol}${major}`;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'N/A';
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function resolveTransactionTypeLabel(type, planName) {
+      switch (type) {
+        case 'SUBSCRIPTION_PURCHASE':
+          return `Plan Subscription (${planName || 'Pro Tier'})`;
+        case 'SUBSCRIPTION_RENEWAL':
+          return `Subscription Renewal (${planName || 'Pro Tier'})`;
+        case 'SUBSCRIPTION_UPGRADE':
+          return `Subscription Upgrade (${planName || 'Pro Yearly'})`;
+        case 'REFUND_CREDIT':
+          return 'Refund Adjustment';
+        default:
+          return planName ? `Subscription (${planName})` : 'Billing Charge';
+      }
+    }
+
+    async function loadCustomerTransactions(page = 1) {
+      const skeleton = document.getElementById('transactions-skeleton');
+      const content = document.getElementById('transactions-content');
+      const empty = document.getElementById('transactions-empty');
+      const errorBox = document.getElementById('transactions-error');
+      const pagination = document.getElementById('transactions-pagination');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (empty) empty.style.display = 'none';
+      if (errorBox) errorBox.style.display = 'none';
+      if (pagination) pagination.style.display = 'none';
+
+      try {
+        const response = await BillingAPI.getReceipts(page, 10);
+        if (skeleton) skeleton.style.display = 'none';
+
+        if (!response.ok || !response.data || !response.data.success) {
+          const errMsg = response.data?.error?.message || 'Could not retrieve transaction records from the control plane.';
+          const msgEl = document.getElementById('tx-error-message');
+          if (msgEl) msgEl.textContent = errMsg;
+          if (errorBox) errorBox.style.display = 'block';
+          return;
+        }
+
+        const data = response.data.data || {};
+        const transactions = data.receipts || [];
+        const total = typeof data.total === 'number' ? data.total : transactions.length;
+        const limit = data.limit || 10;
+        currentPage = data.page || page;
+        totalPages = Math.max(1, Math.ceil(total / limit));
+        transactionsCache = transactions;
+
+        // Update Summary Metric Cards
+        const totalEl = document.getElementById('stat-total-tx');
+        if (totalEl) totalEl.textContent = String(total);
+
+        const paidCount = transactions.filter(t => t.status === 'ISSUED').length;
+        const paidEl = document.getElementById('stat-paid-tx');
+        if (paidEl) paidEl.textContent = String(paidCount);
+
+        const refundCount = transactions.filter(t => t.status === 'REFUNDED').length;
+        const refundEl = document.getElementById('stat-refund-tx');
+        if (refundEl) refundEl.textContent = String(refundCount);
+
+        if (transactions.length > 0 && transactions[0].currency) {
+          const sym = transactions[0].currency === 'INR' ? '₹' : '$';
+          const currEl = document.getElementById('stat-currency-val');
+          if (currEl) currEl.textContent = `${transactions[0].currency} (${sym})`;
+        }
+
+        if (transactions.length === 0) {
+          if (empty) empty.style.display = 'block';
+          return;
+        }
+
+        renderTransactionsList(transactions);
+        if (content) content.style.display = 'block';
+
+        if (total > limit) {
+          if (pagination) pagination.style.display = 'flex';
+          updatePaginationUI({ page: currentPage, totalPages, totalCount: total });
+        }
+      } catch (err) {
+        if (skeleton) skeleton.style.display = 'none';
+        const msgEl = document.getElementById('tx-error-message');
+        if (msgEl) msgEl.textContent = err && err.message ? err.message : 'Network error loading transactions.';
+        if (errorBox) errorBox.style.display = 'block';
+      }
+    }
+
+    function renderTransactionsList(transactions) {
+      const container = document.getElementById('transactions-content');
+      if (!container) return;
+
+      if (!transactions || transactions.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: var(--space-xl); color: var(--color-text-muted);">
+            No matching transactions found.
+          </div>
+        `;
+        return;
+      }
+
+      // Desktop Table Rows
+      const tableRowsHtml = transactions.map(tx => {
+        const isRefunded = tx.status === 'REFUNDED';
+        const isSuccess = tx.status === 'ISSUED';
+        const formattedAmount = formatAmount(tx.totalMinorUnits || tx.amountPaidMinorUnits || 0, tx.currency || 'INR');
+        const chargedDateStr = formatDate(tx.chargedAt || tx.issuedAt);
+        const refId = tx.providerPaymentId || tx.receiptNumber || tx.id;
+        const typeLabel = resolveTransactionTypeLabel(tx.type, tx.planName);
+
+        let statusBadge = `<span class="tx-status-badge tx-status--success"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg> Paid</span>`;
+        if (isRefunded) {
+          statusBadge = `<span class="tx-status-badge tx-status--refunded">Refunded</span>`;
+        } else if (tx.status === 'VOID' || tx.status === 'FAILED') {
+          statusBadge = `<span class="tx-status-badge tx-status--failed">Failed</span>`;
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="tx-ref-code" title="Reference ID">${escapeHtml(refId)}</div>
+              <div class="tx-date-sub">${escapeHtml(chargedDateStr)}</div>
+            </td>
+            <td>
+              <div class="tx-desc-title">${escapeHtml(typeLabel)}</div>
+              <div class="tx-desc-sub">${escapeHtml(tx.planName || 'Commercial Plan')} &bull; ${escapeHtml(tx.billingInterval || 'Monthly')}</div>
+            </td>
+            <td>
+              <span class="text-xs text-secondary">Razorpay</span>
+            </td>
+            <td>
+              <div class="tx-amount">${formattedAmount}</div>
+              <div class="tx-amount-note">Taxes Included</div>
+            </td>
+            <td>
+              ${statusBadge}
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
+                <button type="button" onclick="viewReceiptHtml('${escapeHtml(tx.id)}', '${escapeHtml(tx.receiptNumber || '')}')" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  View
+                </button>
+                <button type="button" onclick="downloadReceiptFile('${escapeHtml(tx.id)}')" class="btn btn-ghost btn-sm" title="Download Document" style="font-size: 11px; padding: 4px 8px; height: 28px; min-height: 28px;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                ${!isRefunded ? `
+                  <button type="button" onclick="openRefundModal('${escapeHtml(tx.paymentId || tx.id)}')" class="btn btn-ghost btn-sm" style="font-size: 11px; padding: 4px 8px; color: #DC2626;" title="Request Refund">
+                    Refund
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Mobile Stacked Cards
+      const mobileCardsHtml = transactions.map(tx => {
+        const isRefunded = tx.status === 'REFUNDED';
+        const formattedAmount = formatAmount(tx.totalMinorUnits || tx.amountPaidMinorUnits || 0, tx.currency || 'INR');
+        const chargedDateStr = formatDate(tx.chargedAt || tx.issuedAt);
+        const refId = tx.providerPaymentId || tx.receiptNumber || tx.id;
+        const typeLabel = resolveTransactionTypeLabel(tx.type, tx.planName);
+
+        let statusBadge = `<span class="tx-status-badge tx-status--success">Paid</span>`;
+        if (isRefunded) {
+          statusBadge = `<span class="tx-status-badge tx-status--refunded">Refunded</span>`;
+        }
+
+        return `
+          <div class="tx-mobile-card">
+            <div class="tx-mobile-card-header">
+              <div>
+                <div class="tx-ref-code">${escapeHtml(refId)}</div>
+                <div class="tx-date-sub">${escapeHtml(chargedDateStr)}</div>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+            <div>
+              <div class="tx-desc-title">${escapeHtml(typeLabel)}</div>
+              <div class="tx-desc-sub">${escapeHtml(tx.planName || 'Commercial Plan')} &bull; ${escapeHtml(tx.billingInterval || 'Monthly')}</div>
+            </div>
+            <div class="tx-mobile-card-row">
+              <span class="text-muted">Amount</span>
+              <strong class="tx-amount">${formattedAmount}</strong>
+            </div>
+            <div class="tx-mobile-card-actions">
+              <button type="button" onclick="viewReceiptHtml('${escapeHtml(tx.id)}', '${escapeHtml(tx.receiptNumber || '')}')" class="btn btn-secondary btn-sm" style="flex: 1; min-height: 36px; font-size: 12px;">
+                View Receipt
+              </button>
+              <button type="button" onclick="downloadReceiptFile('${escapeHtml(tx.id)}')" class="btn btn-ghost btn-sm" style="min-height: 36px; padding: 0 10px;" title="Download Document">
+                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </button>
+              ${!isRefunded ? `
+                <button type="button" onclick="openRefundModal('${escapeHtml(tx.paymentId || tx.id)}')" class="btn btn-ghost btn-sm" style="color: #DC2626; font-size: 12px;">
+                  Refund
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="transactions-table-wrap">
+          <table class="transactions-table">
+            <thead>
+              <tr>
+                <th>Reference / Date</th>
+                <th>Description</th>
+                <th>Provider</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+        </div>
+        <div class="transactions-mobile-cards">
+          ${mobileCardsHtml}
+        </div>
+      `;
+    }
+
+    function updatePaginationUI(p) {
+      const info = document.getElementById('tx-pagination-info');
+      const prevBtn = document.getElementById('btn-tx-prev');
+      const nextBtn = document.getElementById('btn-tx-next');
+
+      if (info) info.textContent = `Page ${p.page} of ${p.totalPages || 1} (${p.totalCount || transactionsCache.length} total records)`;
+      if (prevBtn) prevBtn.disabled = (p.page <= 1);
+      if (nextBtn) nextBtn.disabled = (p.page >= (p.totalPages || 1));
+    }
+
+    function goToPrevPage() {
+      if (currentPage > 1) {
+        loadCustomerTransactions(currentPage - 1);
+      }
+    }
+
+    function goToNextPage() {
+      if (currentPage < totalPages) {
+        loadCustomerTransactions(currentPage + 1);
+      }
+    }
+
+    function filterTransactionsUI() {
+      const select = document.getElementById('tx-filter-status');
+      const filterVal = select ? select.value : 'ALL';
+      if (filterVal === 'ALL') {
+        renderTransactionsList(transactionsCache);
+      } else {
+        const filtered = transactionsCache.filter(t => t.status === filterVal);
+        renderTransactionsList(filtered);
+      }
+    }
+
+    async function viewReceiptHtml(receiptId, receiptNumber) {
+      activeReceiptForViewer = receiptId;
+      const modal = document.getElementById('receipt-viewer-modal');
+      const titleEl = document.getElementById('receipt-viewer-title');
+      const loader = document.getElementById('receipt-iframe-loader');
+      const frame = document.getElementById('receipt-html-frame');
+
+      if (titleEl) titleEl.textContent = `Receipt ${receiptNumber || ''}`;
+      if (loader) loader.style.display = 'flex';
+      if (frame) frame.srcdoc = '';
+      if (modal) modal.style.display = 'flex';
+
+      try {
+        const res = await BillingAPI.getReceiptHtml(receiptId);
+        if (loader) loader.style.display = 'none';
+
+        if (res.ok && res.html) {
+          if (frame) frame.srcdoc = res.html;
+        } else {
+          if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Failed to load receipt document.</div>';
+        }
+      } catch (err) {
+        if (loader) loader.style.display = 'none';
+        if (frame) frame.srcdoc = '<div style="font-family: sans-serif; text-align: center; padding: 40px; color: #DC2626;">Network error loading receipt.</div>';
+      }
+    }
+
+    function closeReceiptViewerModal() {
+      const modal = document.getElementById('receipt-viewer-modal');
+      if (modal) modal.style.display = 'none';
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame) frame.srcdoc = '';
+    }
+
+    function printActiveReceipt() {
+      const frame = document.getElementById('receipt-html-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      }
+    }
+
+    async function downloadActiveReceipt() {
+      if (!activeReceiptForViewer) return;
+      await downloadReceiptFile(activeReceiptForViewer);
+    }
+
+    async function downloadReceiptFile(receiptId) {
+      try {
+        await BillingAPI.downloadReceipt(receiptId);
+      } catch (err) {
+        alert('Could not download document file. Please view it in browser.');
+      }
+    }
+
+    function openRefundModal(paymentId) {
+      const input = document.getElementById('refund-payment-id');
+      if (input) input.value = paymentId;
+      const modal = document.getElementById('request-refund-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    function closeRefundRequestModal() {
+      const modal = document.getElementById('request-refund-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function submitRefundRequest(event) {
+      event.preventDefault();
+      const btn = document.getElementById('btn-submit-refund');
+      const errBox = document.getElementById('refund-form-error');
+      const paymentId = document.getElementById('refund-payment-id')?.value;
+      const reason = document.getElementById('refund-reason-select')?.value;
+      const details = document.getElementById('refund-details-textarea')?.value;
+
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingAPI.requestRefund({
+          paymentId,
+          reason,
+          reasonDetails: details
+        });
+        if (result.ok) {
+          closeRefundRequestModal();
+          await loadCustomerTransactions(currentPage);
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Refund request could not be processed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process refund request.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

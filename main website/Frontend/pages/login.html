@@ -429,7 +429,7 @@
       if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined') {
         AuthService.initSession().then(authRes => {
           if (authRes && authRes.authenticated) {
-            const redirectTarget = urlParams.get('redirect') || 'dashboard.html';
+            const redirectTarget = urlParams.get('redirect') || 'servers.html';
             if (!redirectTarget.startsWith('http') && !redirectTarget.startsWith('//')) {
               window.location.href = redirectTarget;
             }

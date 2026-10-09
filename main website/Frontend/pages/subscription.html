@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Subscription &amp; Plan | ZdexCloud — Personal File Server</title>
+  <meta name="description" content="Manage your ZdexCloud subscription, billing tier, annual discounts, renewal schedules, and storage capacity limits.">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://zdexcloud.com/pages/subscription.html">
+
+  <!-- Favicons & App Icons -->
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/brand/favicons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/brand/favicons/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../assets/brand/favicons/apple-touch-icon.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <meta name="theme-color" content="#2563EB">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ZdexCloud">
+  <meta property="og:url" content="https://zdexcloud.com/pages/subscription.html">
+  <meta property="og:title" content="Subscription &amp; Plan | ZdexCloud — Personal File Server">
+  <meta property="og:description" content="Manage your ZdexCloud subscription, billing tier, annual discounts, renewal schedules, and storage capacity limits.">
+  <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@zdexcloud">
+  <meta name="twitter:title" content="Subscription &amp; Plan | ZdexCloud — Personal File Server">
+  <meta name="twitter:description" content="Manage your ZdexCloud subscription, billing tier, annual discounts, renewal schedules, and storage capacity limits.">
+  <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
+  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/sections.css">
+  <link rel="stylesheet" href="../css/dashboard-shell.css">
+  <link rel="stylesheet" href="../css/notification-center.css">
+</head>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+      
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link">Dashboard</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="pricing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <span>Pricing</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD SHELL LAYOUT -->
+  <div class="dashboard-shell-layout">
+    
+    <!-- PERSISTENT DESKTOP SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+      
+      <!-- Platform Navigation Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Support & Communication Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN DASHBOARD CONTENT AREA -->
+    <main class="dashboard-main-content page-entrance" id="dashboard-main-content">
+      
+      <!-- DASHBOARD PAGE HEADER -->
+      <div class="dashboard-page-header">
+        <div class="dashboard-breadcrumbs">
+          <a href="servers.html">Dashboard</a>
+          <span>/</span>
+          <span>Subscription &amp; Plan</span>
+        </div>
+        <div class="dashboard-title-row">
+          <div>
+            <h1 class="page-title" style="margin-bottom: 0; font-size: var(--font-size-2xl);">Subscription &amp; Plan Management</h1>
+            <p class="page-subtitle" style="margin-bottom: 0; font-size: var(--font-size-sm); color: var(--color-text-secondary);">Manage your ZdexCloud active tier, renewal dates, discounts, and storage capacity.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBSCRIPTION & LIFECYCLE ACTION CENTER -->
+      <section class="card" id="subscription-overview-card" style="margin-bottom: var(--space-2xl); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-xl); padding: var(--space-xl); box-shadow: var(--shadow-sm);">
+        
+        <!-- Loading Skeleton Placeholder -->
+        <div id="subscription-card-skeleton">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md);">
+            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+              <div class="skeleton-box" style="width: 32px; height: 32px; border-radius: var(--radius-md);"></div>
+              <div class="skeleton-box" style="width: 220px; height: 24px;"></div>
+            </div>
+            <div class="skeleton-box" style="width: 90px; height: 24px; border-radius: var(--radius-full);"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg);">
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+            <div class="skeleton-box" style="height: 70px; border-radius: var(--radius-lg);"></div>
+          </div>
+          <div class="skeleton-box" style="width: 140px; height: 40px; border-radius: var(--radius-md);"></div>
+        </div>
+
+        <!-- Real Authoritative Subscription Content Container -->
+        <div id="subscription-card-content" style="display: none;"></div>
+
+        <!-- Temporary Error Fallback State -->
+        <div id="subscription-card-error" style="display: none; text-align: center; padding: var(--space-xl);">
+          <div style="width: 48px; height: 48px; margin: 0 auto var(--space-sm); background: rgba(220, 38, 38, 0.1); color: #DC2626; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 style="font-size: var(--font-size-md); font-weight: 700; color: #991B1B; margin-bottom: var(--space-2xs);">Billing Information Temporarily Unavailable</h3>
+          <p class="text-sm text-secondary" style="margin-bottom: var(--space-md);">Could not retrieve authoritative subscription state from the control plane.</p>
+          <button type="button" onclick="initDashboardBilling()" class="btn btn-outline btn-sm">Retry Connection</button>
+        </div>
+
+      </section>
+
+    </main>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- UPGRADE CONFIRMATION MODAL -->
+  <div id="upgrade-subscription-modal" class="modal-overlay-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="upgrade-modal-title">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
+          <h3 id="upgrade-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Upgrade to Pro Yearly</h3>
+        </div>
+        <button type="button" onclick="closeUpgradeModal()" class="btn btn-ghost btn-sm" aria-label="Close upgrade dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <p id="upgrade-modal-desc" class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-md);">
+        Upgrade your active monthly subscription to annual billing to lock in discounted yearly pricing and continuous coverage.
+      </p>
+
+      <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Current Plan:</span>
+          <strong class="text-sm" style="color: var(--color-text-primary);">ZdexCloud Pro Monthly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Target Plan:</span>
+          <strong class="text-sm" style="color: var(--color-brand-primary);">ZdexCloud Pro Yearly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-xs text-muted">Proration Credit:</span>
+          <span class="badge badge-success" style="font-size: 11px;">Automatic Unused Days Credit</span>
+        </div>
+      </div>
+
+      <div class="callout-box" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #1E40AF; line-height: 1.5;">
+        Any unused days remaining on your active monthly billing period are calculated authoritatively by the billing engine and credited directly against the annual invoice.
+      </div>
+
+      <div id="upgrade-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeUpgradeModal()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button type="button" id="btn-confirm-upgrade" onclick="executeSubscriptionUpgrade()" class="btn btn-primary btn-sm" style="min-width: 140px;">
+          <span>Upgrade to Annual</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOWNGRADE CONFIRMATION MODAL -->
+  <div id="downgrade-subscription-modal" class="modal-overlay-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="downgrade-modal-title">
+    <div class="modal-card-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.1); color: #D97706; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+          </div>
+          <h3 id="downgrade-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Switch to Monthly Billing</h3>
+        </div>
+        <button type="button" onclick="closeDowngradeModal()" class="btn btn-ghost btn-sm" aria-label="Close downgrade dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <p id="downgrade-modal-desc" class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-md);">
+        Schedule your subscription to switch to Pro Monthly billing at the conclusion of your current annual period.
+      </p>
+
+      <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Current Plan:</span>
+          <strong class="text-sm" style="color: var(--color-text-primary);">ZdexCloud Pro Yearly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span class="text-xs text-muted">Target Plan:</span>
+          <strong class="text-sm" style="color: var(--color-brand-primary);">ZdexCloud Pro Monthly</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="text-xs text-muted">Effective Date:</span>
+          <strong id="downgrade-effective-date" class="text-sm text-primary" style="font-family: var(--font-family-mono);">End of paid annual period</strong>
+        </div>
+      </div>
+
+      <div class="callout-box" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-md); padding: var(--space-sm) var(--space-md); margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: #92400E; line-height: 1.5;">
+        You will retain full Pro Yearly access and 5 server slots until the effective date. No mid-term refund is issued for the current period. Future renewals will bill at the monthly rate.
+      </div>
+
+      <div id="downgrade-modal-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeDowngradeModal()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button type="button" id="btn-confirm-downgrade" onclick="executeSubscriptionDowngrade()" class="btn btn-primary btn-sm" style="min-width: 140px;">
+          <span>Switch to Monthly</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANCEL PENDING DOWNGRADE MODAL -->
+  <div id="cancel-downgrade-modal" class="modal-overlay-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="cancel-downgrade-title">
+    <div class="modal-card-box">
+      <h3 id="cancel-downgrade-title" style="font-size: var(--font-size-lg); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-text-primary);">Keep Annual Plan</h3>
+      <p class="text-sm text-secondary" style="line-height: 1.6; margin-bottom: var(--space-lg);">
+        This will cancel your scheduled switch to monthly billing and restore automatic annual renewal for your ZdexCloud Pro Yearly subscription.
+      </p>
+      <div id="cancel-downgrade-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeCancelDowngradeModal()" class="btn btn-secondary btn-sm">Dismiss</button>
+        <button type="button" id="btn-confirm-cancel-downgrade" onclick="executeCancelDowngrade()" class="btn btn-primary btn-sm">
+          <span>Keep Annual Plan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANCEL SUBSCRIPTION MODAL -->
+  <div id="cancel-subscription-modal" class="modal-overlay-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+    <div class="modal-card-box modal-card-box--wide">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-sm);">
+        <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="width: 36px; height: 36px; border-radius: var(--radius-md); background: rgba(220, 38, 38, 0.1); color: #DC2626; display: flex; align-items: center; justify-content: center;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </div>
+          <h3 id="cancel-modal-title" style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">Cancel Pro Subscription</h3>
+        </div>
+        <button type="button" onclick="closeCancelSubscriptionModal()" class="btn btn-ghost btn-sm" aria-label="Close cancellation dialog" style="padding: 4px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-lg); margin-bottom: var(--space-lg);">
+        <div>
+          <h4 style="font-size: var(--font-size-sm); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);">Why are you cancelling?</h4>
+          <p class="text-xs text-secondary" style="margin-bottom: var(--space-sm);">Your feedback directly improves our personal file server platform.</p>
+          <div style="display: flex; flex-direction: column; gap: var(--space-xs);">
+            <label class="cancellation-reason-radio">
+              <input type="radio" name="cancelReason" value="TOO_EXPENSIVE" checked />
+              <div>
+                <strong style="font-size: var(--font-size-xs); color: var(--color-text-primary); display: block;">Price / Value</strong>
+                <span class="text-xs text-muted">Looking for a lower price point.</span>
+              </div>
+            </label>
+            <label class="cancellation-reason-radio">
+              <input type="radio" name="cancelReason" value="NOT_USING_ENOUGH" />
+              <div>
+                <strong style="font-size: var(--font-size-xs); color: var(--color-text-primary); display: block;">Not using enough</strong>
+                <span class="text-xs text-muted">Do not need multiple continuous servers right now.</span>
+              </div>
+            </label>
+            <label class="cancellation-reason-radio">
+              <input type="radio" name="cancelReason" value="TECHNICAL_ISSUES" />
+              <div>
+                <strong style="font-size: var(--font-size-xs); color: var(--color-text-primary); display: block;">Technical / Connectivity</strong>
+                <span class="text-xs text-muted">Experienced difficulties connecting Android node.</span>
+              </div>
+            </label>
+            <label class="cancellation-reason-radio">
+              <input type="radio" name="cancelReason" value="OTHER" />
+              <div>
+                <strong style="font-size: var(--font-size-xs); color: var(--color-text-primary); display: block;">Other reason</strong>
+                <span class="text-xs text-muted">Temporary cancellation or alternate preference.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: var(--font-size-sm); font-weight: 700; color: var(--color-text-primary); margin-bottom: var(--space-xs);">Impact of Cancellation</h4>
+          <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-md); margin-bottom: var(--space-md); font-size: var(--font-size-xs);">
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--color-text-secondary);">
+              <li>Your Pro features remain active until the end of your current paid billing period.</li>
+              <li>After expiration, your account reverts to the Free Tier (1 active server slot).</li>
+              <li>Your Android phone files and host storage are never deleted.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div id="cancel-subscription-error" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: var(--space-md);"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: var(--space-sm);">
+        <button type="button" onclick="closeCancelSubscriptionModal()" class="btn btn-secondary btn-sm">Keep Subscription</button>
+        <button type="button" id="btn-confirm-cancel-subscription" onclick="executeSubscriptionCancellation()" class="btn btn-danger btn-sm">
+          <span>Confirm Cancellation</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>ZdexCloud</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure &bull; Self-Hosted Host Storage</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CORE SCRIPTS -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/billing-api.js"></script>
+  <script src="../js/billing-state.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      let authResult = { authenticated: false, user: null };
+      if (typeof AuthService !== 'undefined') {
+        authResult = await AuthService.initSession();
+      }
+
+      if (!authResult.authenticated) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      const user = authResult.user || (typeof AuthService !== 'undefined' ? AuthService.getSavedUser() : null);
+
+      if (user) {
+        if (user.email) {
+          const emailHeader = document.getElementById('user-email-header');
+          if (emailHeader) emailHeader.textContent = user.email;
+        }
+        const initialLetter = (user.fullName || user.email || 'U').charAt(0).toUpperCase();
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (avatarEl) avatarEl.textContent = initialLetter;
+      }
+
+      document.getElementById('btn-logout')?.addEventListener('click', () => {
+        AuthService.logoutUser();
+      });
+
+      BillingState.subscribe(state => {
+        renderSubscriptionCard(state);
+      });
+
+      initDashboardBilling();
+    });
+
+    async function initDashboardBilling() {
+      const skeleton = document.getElementById('subscription-card-skeleton');
+      const content = document.getElementById('subscription-card-content');
+      const errBox = document.getElementById('subscription-card-error');
+
+      if (skeleton) skeleton.style.display = 'block';
+      if (content) content.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingState.refreshBillingState();
+        if (result.ok && result.state) {
+          renderSubscriptionCard(result.state);
+        } else {
+          if (skeleton) skeleton.style.display = 'none';
+          if (errBox) errBox.style.display = 'block';
+        }
+      } catch (e) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (errBox) errBox.style.display = 'block';
+      }
+    }
+
+    function renderSubscriptionCard(state) {
+      const skeleton = document.getElementById('subscription-card-skeleton');
+      const content = document.getElementById('subscription-card-content');
+      const errBox = document.getElementById('subscription-card-error');
+
+      if (!content || !state) return;
+
+      if (skeleton) skeleton.style.display = 'none';
+      if (errBox) errBox.style.display = 'none';
+      content.style.display = 'block';
+
+      const planName = state.planDisplayName || (state.tier === 'PRO' ? 'ZdexCloud Pro' : 'ZdexCloud Free');
+      const intervalLabel = state.billingInterval === 'YEARLY' ? 'Annual Billing' : (state.tier === 'PRO' ? 'Monthly Billing' : 'Standard Tier');
+      const statusBadge = state.status === 'ACTIVE' 
+        ? '<span class="badge badge-success">ACTIVE</span>'
+        : (state.status === 'CANCELLED' || state.cancelAtPeriodEnd ? '<span class="badge badge-warning">CANCELLING</span>' : '<span class="badge">FREE TIER</span>');
+
+      const maxServers = state.entitlements?.maxServers || 1;
+      const renewalDateStr = state.currentPeriodEnd ? new Date(state.currentPeriodEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Never Expires';
+
+      let actionButtons = '';
+      if (state.tier === 'FREE') {
+        actionButtons = `
+          <a href="pricing.html" class="btn btn-primary btn-sm">Upgrade to Pro</a>
+        `;
+      } else if (state.tier === 'PRO' && state.billingInterval === 'MONTHLY') {
+        actionButtons = `
+          <button type="button" onclick="openUpgradeModal()" class="btn btn-primary btn-sm">Upgrade to Yearly (Save 20%)</button>
+          <button type="button" onclick="openCancelSubscriptionModal()" class="btn btn-secondary btn-sm" style="color: #DC2626;">Cancel Subscription</button>
+        `;
+      } else if (state.tier === 'PRO' && state.billingInterval === 'YEARLY') {
+        if (state.pendingDowngrade) {
+          actionButtons = `
+            <button type="button" onclick="openCancelDowngradeModal()" class="btn btn-secondary btn-sm">Keep Annual Plan</button>
+          `;
+        } else {
+          actionButtons = `
+            <button type="button" onclick="openDowngradeModal()" class="btn btn-secondary btn-sm">Switch to Monthly</button>
+            <button type="button" onclick="openCancelSubscriptionModal()" class="btn btn-secondary btn-sm" style="color: #DC2626;">Cancel Subscription</button>
+          `;
+        }
+      }
+
+      content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-subtle); padding-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-xs);">
+          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+            <div style="width: 32px; height: 32px; border-radius: var(--radius-md); background: rgba(37, 99, 235, 0.1); color: var(--color-brand-primary); display: flex; align-items: center; justify-content: center;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            </div>
+            <div>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">${planName}</h2>
+              <span class="text-xs text-muted">${intervalLabel}</span>
+            </div>
+          </div>
+          <div>${statusBadge}</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg);">
+          <div class="billing-metric-card">
+            <div class="billing-metric-label">Server Capacity</div>
+            <div class="billing-metric-value">${maxServers} Storage Nodes</div>
+          </div>
+          <div class="billing-metric-card">
+            <div class="billing-metric-label">Renewal / Cycle Date</div>
+            <div class="billing-metric-value" style="font-size: var(--font-size-sm);">${renewalDateStr}</div>
+          </div>
+          <div class="billing-metric-card">
+            <div class="billing-metric-label">Gateway Protocol</div>
+            <div class="billing-metric-value" style="color: var(--color-brand-primary); font-size: var(--font-size-sm);">Encrypted TLS 1.3</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; padding-top: var(--space-md); border-top: 1px solid var(--color-border-subtle);">
+          ${actionButtons}
+        </div>
+      `;
+    }
+
+    function openUpgradeModal() {
+      const modal = document.getElementById('upgrade-subscription-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeUpgradeModal() {
+      const modal = document.getElementById('upgrade-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openDowngradeModal() {
+      const modal = document.getElementById('downgrade-subscription-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeDowngradeModal() {
+      const modal = document.getElementById('downgrade-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openCancelDowngradeModal() {
+      const modal = document.getElementById('cancel-downgrade-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeCancelDowngradeModal() {
+      const modal = document.getElementById('cancel-downgrade-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function openCancelSubscriptionModal() {
+      const modal = document.getElementById('cancel-subscription-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeCancelSubscriptionModal() {
+      const modal = document.getElementById('cancel-subscription-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function executeSubscriptionUpgrade() {
+      const btn = document.getElementById('btn-confirm-upgrade');
+      const errBox = document.getElementById('upgrade-modal-error');
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingApi.upgradeToYearly();
+        if (result.ok) {
+          closeUpgradeModal();
+          initDashboardBilling();
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Upgrade request failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process upgrade.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function executeSubscriptionDowngrade() {
+      const btn = document.getElementById('btn-confirm-downgrade');
+      const errBox = document.getElementById('downgrade-modal-error');
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingApi.scheduleDowngradeToMonthly();
+        if (result.ok) {
+          closeDowngradeModal();
+          initDashboardBilling();
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Downgrade request failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process downgrade.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function executeCancelDowngrade() {
+      const btn = document.getElementById('btn-confirm-cancel-downgrade');
+      const errBox = document.getElementById('cancel-downgrade-error');
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingApi.cancelPendingDowngrade();
+        if (result.ok) {
+          closeCancelDowngradeModal();
+          initDashboardBilling();
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Request failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process request.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function executeSubscriptionCancellation() {
+      const btn = document.getElementById('btn-confirm-cancel-subscription');
+      const errBox = document.getElementById('cancel-subscription-error');
+      const reasonRadio = document.querySelector('input[name="cancelReason"]:checked');
+      const reason = reasonRadio ? reasonRadio.value : 'OTHER';
+
+      if (btn) btn.disabled = true;
+      if (errBox) errBox.style.display = 'none';
+
+      try {
+        const result = await BillingApi.cancelSubscription(reason);
+        if (result.ok) {
+          closeCancelSubscriptionModal();
+          initDashboardBilling();
+        } else {
+          if (errBox) {
+            errBox.textContent = result.data?.error?.message || 'Cancellation request failed.';
+            errBox.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        if (errBox) {
+          errBox.textContent = 'Could not process cancellation.';
+          errBox.style.display = 'block';
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

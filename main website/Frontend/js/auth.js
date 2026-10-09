@@ -95,6 +95,10 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         try { localStorage.removeItem(USER_STORAGE_KEY); } catch (_) {}
         const currentPath = window.location.pathname;
         const isProtectedPage = currentPath.includes('dashboard') ||
+                                currentPath.includes('servers') ||
+                                currentPath.includes('subscription') ||
+                                currentPath.includes('billing') ||
+                                currentPath.includes('settings') ||
                                 currentPath.includes('server-access') ||
                                 currentPath.includes('notifications') ||
                                 currentPath.includes('file-manager');
@@ -233,6 +237,10 @@ function handleSessionExpired(reason = 'Your session has expired. Please sign in
 
   const currentPath = window.location.pathname;
   const isProtectedPage = currentPath.includes('dashboard') ||
+                          currentPath.includes('servers') ||
+                          currentPath.includes('subscription') ||
+                          currentPath.includes('billing') ||
+                          currentPath.includes('settings') ||
                           currentPath.includes('server-access') ||
                           currentPath.includes('notifications') ||
                           currentPath.includes('file-manager');
@@ -516,7 +524,7 @@ async function verifyOtp(email, code) {
     } else if (planParam) {
       window.location.href = `pricing.html?plan=${encodeURIComponent(planParam)}`;
     } else {
-      window.location.href = 'dashboard.html';
+      window.location.href = 'servers.html';
     }
     return { success: true };
   }

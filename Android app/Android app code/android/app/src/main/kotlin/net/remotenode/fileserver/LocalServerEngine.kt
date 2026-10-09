@@ -411,8 +411,8 @@ class LocalServerEngine {
             newServer.createContext("/api/download", DownloadHandler(this, sandboxDir))
             newServer.createContext("/api/upload", UploadHandler(this, sandboxDir))
 
-            // Static bundled In-Built File Manager Website Assets
-            newServer.createContext("/", StaticAssetsHandler(context, sandboxDir))
+            // Root status endpoint (Static bundled In-Built File Manager Web UI decommissioned in Phase 2.1)
+            newServer.createContext("/", RootStatusHandler())
 
             newServer.start()
 
@@ -598,6 +598,19 @@ class LocalServerEngine {
             exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
             exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
             exchange.responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Connection-ID")
+            exchange.sendResponseHeaders(statusCode, bytes.size.toLong())
+            val os: OutputStream = exchange.responseBody
+            os.write(bytes)
+            os.close()
+        }
+
+        fun sendHtmlResponse(exchange: HttpExchange, statusCode: Int, html: String) {
+            val bytes = html.toByteArray(StandardCharsets.UTF_8)
+            exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
+            exchange.responseHeaders.set("X-Content-Type-Options", "nosniff")
+            exchange.responseHeaders.set("X-Frame-Options", "DENY")
+            exchange.responseHeaders.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline';")
+            exchange.responseHeaders.set("Cache-Control", "no-store, max-age=0")
             exchange.sendResponseHeaders(statusCode, bytes.size.toLong())
             val os: OutputStream = exchange.responseBody
             os.write(bytes)
@@ -1148,100 +1161,270 @@ class LocalServerEngine {
     }
 
     /**
-     * Serves the full In-Built Web File Manager application from Android assets or embedded fallback
+     * Root HTTP Handler for ZdexCloud Node Engine (Phase 3 Branded Minimal Localhost Gateway Experience).
+     * Serves minimal, safe, branded status response for root / index.html and 410 for legacy web paths.
+     * Zero filesystem exposure, zero file manager controls, zero credentials.
      */
-    private class StaticAssetsHandler(private val androidContext: Any?, private val rootDir: File) : HttpHandler {
+    private class RootStatusHandler : HttpHandler {
+        private val nodeStatusHtml = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZdexCloud Server Node</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      background-color: #10b981;
+      border-radius: 50%;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+    .subhead {
+      font-size: 15px;
+      font-weight: 600;
+      color: #60a5fa;
+      margin-bottom: 16px;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      background-color: #2563eb;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.2s ease;
+    }
+    .btn:hover {
+      background-color: #1d4ed8;
+    }
+    .btn:focus-visible {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">
+      <span class="dot"></span>
+      <span>SERVER NODE ACTIVE</span>
+    </div>
+    <h1>ZdexCloud</h1>
+    <div class="subhead">Personal File Server Node</div>
+    <p>
+      This device is securely running as a ZdexCloud server node.
+      File management and remote access are available through your authenticated ZdexCloud account.
+    </p>
+    <a href="https://zdexcloud.com" class="btn">Open ZdexCloud</a>
+    <div class="footer">
+      Secure Server Node &bull; Powered by ZdexCloud
+    </div>
+  </div>
+</body>
+</html>"""
+
+        private val decommissionedHtml = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interface Decommissioned | ZdexCloud</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 40px 32px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #94a3b8;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      background-color: #2563eb;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background-color 0.2s ease;
+    }
+    .btn:hover {
+      background-color: #1d4ed8;
+    }
+    .btn:focus-visible {
+      outline: 2px solid #60a5fa;
+      outline-offset: 2px;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">
+      <span>Legacy Interface Decommissioned</span>
+    </div>
+    <h1>ZdexCloud File Access</h1>
+    <p>
+      The local embedded File Manager interface on this device has been decommissioned.
+      Please manage your files securely via the canonical ZdexCloud Web Dashboard.
+    </p>
+    <a href="https://zdexcloud.com" class="btn">Go to ZdexCloud</a>
+    <div class="footer">
+      Secure Server Node &bull; Powered by ZdexCloud
+    </div>
+  </div>
+</body>
+</html>"""
+
         override fun handle(exchange: HttpExchange) {
             val path = exchange.requestURI.path
+            val accept = exchange.requestHeaders.getFirst("accept")?.lowercase(Locale.ROOT) ?: ""
+            val prefersJson = accept.contains("application/json") && !accept.contains("text/html")
+
             if (path.startsWith("/api/")) {
                 sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"NOT_FOUND","message":"API route not found."}}""")
                 return
             }
 
-            val cleanPath = if (path == "/" || path == "/index.html" || path.isEmpty()) "index.html" else path.removePrefix("/")
-            val assetPath = "web/$cleanPath"
-
-            // 1. Try loading from Android assets
-            if (androidContext != null) {
-                try {
-                    val getAssetsMethod = androidContext.javaClass.getMethod("getAssets")
-                    val assetManager = getAssetsMethod.invoke(androidContext)
-                    val openMethod = assetManager.javaClass.getMethod("open", String::class.java)
-                    val inputStream = openMethod.invoke(assetManager, assetPath) as InputStream
-
-                    val mimeType = getMimeType(cleanPath)
-                    exchange.responseHeaders.set("Content-Type", mimeType)
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-
-                    val bytes = inputStream.readBytes()
-                    inputStream.close()
-                    exchange.sendResponseHeaders(200, bytes.size.toLong())
-                    val os = exchange.responseBody
-                    os.write(bytes)
-                    os.close()
-                    return
-                } catch (_: Exception) {}
-            }
-
-            // 2. Try loading from filesystem if in development
-            val possibleLocations = listOf(
-                File("In-build file managing website/$cleanPath"),
-                File("android/app/src/main/assets/web/$cleanPath"),
-                File("../In-build file managing website/$cleanPath")
-            )
-
-            for (file in possibleLocations) {
-                if (file.exists() && file.isFile) {
-                    val mimeType = getMimeType(cleanPath)
-                    exchange.responseHeaders.set("Content-Type", mimeType)
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-                    val bytes = file.readBytes()
-                    exchange.sendResponseHeaders(200, bytes.size.toLong())
-                    val os = exchange.responseBody
-                    os.write(bytes)
-                    os.close()
-                    return
+            if (path == "/" || path == "/index.html" || path.isEmpty()) {
+                if (prefersJson) {
+                    sendJsonResponse(
+                        exchange,
+                        200,
+                        """{"success":true,"service":"ZdexCloud Server Node","status":"ONLINE","message":"This device is running as a ZdexCloud server node. File management is available securely through your ZdexCloud account at https://zdexcloud.com."}"""
+                    )
+                } else {
+                    sendHtmlResponse(exchange, 200, nodeStatusHtml)
                 }
+                return
             }
 
-            // 3. Fallback: SPA index.html
-            if (androidContext != null) {
-                try {
-                    val getAssetsMethod = androidContext.javaClass.getMethod("getAssets")
-                    val assetManager = getAssetsMethod.invoke(androidContext)
-                    val openMethod = assetManager.javaClass.getMethod("open", String::class.java)
-                    val inputStream = openMethod.invoke(assetManager, "web/index.html") as InputStream
-
-                    exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-                    val bytes = inputStream.readBytes()
-                    inputStream.close()
-                    exchange.sendResponseHeaders(200, bytes.size.toLong())
-                    val os = exchange.responseBody
-                    os.write(bytes)
-                    os.close()
-                    return
-                } catch (_: Exception) {}
-            }
-
-            val fallbackLocations = listOf(
-                File("In-build file managing website/index.html"),
-                File("android/app/src/main/assets/web/index.html")
-            )
-            for (file in fallbackLocations) {
-                if (file.exists() && file.isFile) {
-                    exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
-                    exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
-                    val bytes = file.readBytes()
-                    exchange.sendResponseHeaders(200, bytes.size.toLong())
-                    val os = exchange.responseBody
-                    os.write(bytes)
-                    os.close()
-                    return
+            if (path == "/standalone-embed" || path == "/file-manager" || path == "/file-manager.html" ||
+                path.startsWith("/file-manager") || path.startsWith("/web/") || path.startsWith("/assets/")
+            ) {
+                if (prefersJson) {
+                    sendJsonResponse(
+                        exchange,
+                        410,
+                        """{"success":false,"error":{"code":"INTERFACE_DECOMMISSIONED","message":"The local File Manager interface has been decommissioned. File management is available through your ZdexCloud account at https://zdexcloud.com."}}"""
+                    )
+                } else {
+                    sendHtmlResponse(exchange, 410, decommissionedHtml)
                 }
+                return
             }
 
-            sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"ASSET_NOT_FOUND","message":"Asset not found: $cleanPath"}}""")
+            if (prefersJson) {
+                sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"NOT_FOUND","message":"Resource not found."}}""")
+            } else {
+                sendJsonResponse(exchange, 404, """{"success":false,"error":{"code":"NOT_FOUND","message":"Resource not found."}}""")
+            }
         }
     }
 }

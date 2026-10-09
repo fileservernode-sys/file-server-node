@@ -17,6 +17,10 @@ const serverIdParamSchema = z.object({
   serverId: z.string().min(1)
 });
 
+const renameServerSchema = z.object({
+  serverName: z.string().trim().min(1, 'Server name cannot be empty').max(64, 'Server name must be 64 characters or fewer')
+});
+
 export async function serverRoutes(app: FastifyInstance): Promise<void> {
 
   /**
@@ -177,6 +181,71 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         serverId: serverInstance.id,
         status: 'STOPPED',
         stoppedAt: now.toISOString()
+      }));
+    }
+  );
+
+  /**
+   * PATCH /api/v1/servers/:serverId
+   * Renames a server instance owned by the authenticated customer.
+   */
+  app.patch(
+    '/servers/:serverId',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const params = serverIdParamSchema.safeParse(request.params);
+      if (!params.success) throw new ValidationError('Invalid server ID');
+
+      const body = renameServerSchema.safeParse(request.body);
+      if (!body.success) {
+        throw new ValidationError(body.error.errors[0]?.message || 'Invalid server name');
+      }
+
+      const { serverId } = params.data;
+      const { serverName } = body.data;
+
+      const serverInstance = await prisma.serverInstance.findUnique({
+        where: { id: serverId },
+        include: { device: true }
+      });
+
+      if (!serverInstance) {
+        throw new NotFoundError('Server not found');
+      }
+
+      if (serverInstance.device.userId !== user.id) {
+        throw new ForbiddenError('You do not have permission to rename this server');
+      }
+
+      const previousName = serverInstance.serverName;
+      const updated = await prisma.serverInstance.update({
+        where: { id: serverInstance.id },
+        data: { serverName }
+      });
+
+      await prisma.auditEvent.create({
+        data: {
+          userId: user.id,
+          deviceId: serverInstance.deviceId,
+          eventType: 'SERVER_CREATED',
+          metadata: { action: 'SERVER_RENAMED', serverId, previousName, newName: serverName }
+        }
+      });
+
+      return reply.status(200).send(createSuccessResponse({
+        server: {
+          id: updated.id,
+          deviceId: updated.deviceId,
+          serverName: updated.serverName,
+          status: updated.status,
+          updatedAt: updated.updatedAt.toISOString()
+        },
+        message: 'Server renamed successfully'
       }));
     }
   );

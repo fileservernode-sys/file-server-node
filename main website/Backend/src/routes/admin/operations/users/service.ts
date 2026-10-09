@@ -68,6 +68,12 @@ export interface UserDetailResult {
     status: string | null;
     currency: string | null;
     billingCountry: string | null;
+    billingPostalCode: string | null;
+    billingName: string | null;
+    billingAddress1: string | null;
+    billingAddress2: string | null;
+    billingCity: string | null;
+    billingState: string | null;
   } | null;
   totalAuditEvents: number;
   activeSessionCount: number;
@@ -257,7 +263,13 @@ export class AdminUserService {
           select: {
             status: true,
             currency: true,
-            billingCountry: true
+            billingCountry: true,
+            billingPostalCode: true,
+            billingName: true,
+            billingAddress1: true,
+            billingAddress2: true,
+            billingCity: true,
+            billingState: true
           }
         },
         _count: {
@@ -316,7 +328,13 @@ export class AdminUserService {
         ? {
             status: user.billingState.status,
             currency: user.billingState.currency,
-            billingCountry: user.billingState.billingCountry
+            billingCountry: user.billingState.billingCountry,
+            billingPostalCode: user.billingState.billingPostalCode,
+            billingName: user.billingState.billingName || user.fullName,
+            billingAddress1: user.billingState.billingAddress1,
+            billingAddress2: user.billingState.billingAddress2,
+            billingCity: user.billingState.billingCity,
+            billingState: user.billingState.billingState
           }
         : null,
       totalAuditEvents: user._count.auditEvents,

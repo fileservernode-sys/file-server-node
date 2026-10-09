@@ -1,8 +1,42 @@
-import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:remote_node_app/core/storage/secure_storage_service.dart';
 import 'package:remote_node_app/features/auth/domain/entities/auth_session.dart';
-import 'package:remote_node_app/features/remote/domain/services/remote_connection_service.dart';
+import 'package:remote_node_app/features/auth/domain/entities/platform_user.dart';
+
+class MockSecureStorageService implements SecureStorageService {
+  AuthSession? _session;
+  final Map<String, String> _storage = {};
+
+  @override
+  Future<void> saveSession(AuthSession session) async {
+    _session = session;
+  }
+
+  @override
+  Future<AuthSession?> getSession() async {
+    return _session;
+  }
+
+  @override
+  Future<void> clearSession() async {
+    _session = null;
+  }
+
+  @override
+  Future<void> write({required String key, required String value}) async {
+    _storage[key] = value;
+  }
+
+  @override
+  Future<String?> read({required String key}) async {
+    return _storage[key];
+  }
+
+  @override
+  Future<void> delete({required String key}) async {
+    _storage.remove(key);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +55,14 @@ void main() {
       test('1.1. Interactive 24h session expiry does NOT wipe persistent device credential', () async {
         final expiredSession = AuthSession(
           accessToken: 'expired-24h-user-token',
-          userId: 'usr-12345',
-          email: 'admin@zdexcloud.io',
+          refreshToken: 'refresh-token',
+          user: PlatformUser(
+            id: 'usr-12345',
+            email: 'admin@zdexcloud.io',
+            emailVerified: true,
+            status: 'ACTIVE',
+            createdAt: DateTime.now().subtract(const Duration(days: 2)),
+          ),
           expiresAt: DateTime.now().subtract(const Duration(minutes: 10)),
         );
 

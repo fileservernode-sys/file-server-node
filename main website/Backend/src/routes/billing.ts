@@ -10,6 +10,7 @@ import {
 import { prisma } from '../config/database.js';
 import { UnauthorizedError, ValidationError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
+import { BillingProfileService } from '../services/billing/billing_profile_service.js';
 import { BillingRefundService } from '../services/billing/billing_refund_service.js';
 import { BillingReceiptService } from '../services/billing/billing_receipt_service.js';
 import { BillingReconciliationService, billingReconciliationService } from '../services/billing/billing_reconciliation_service.js';
@@ -31,7 +32,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   /**
    * GET /api/v1/billing
    * Authenticated, IDOR-safe endpoint returning the current user's authoritative billing state,
-   * active subscription summary, and resolved technical entitlements.
+   * active subscription summary, resolved technical entitlements, and billing profile.
    */
   app.get(
     '/billing',
@@ -49,7 +50,10 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     // 2. Authoritatively resolve technical capabilities for the effective plan
     const entitlements = await EntitlementService.resolvePlanEntitlements(effective.planCode);
 
-    // 3. Format safe subscription summary (without internal provider secrets)
+    // 3. Resolve customer's authoritative billing profile
+    const profile = await BillingProfileService.getBillingProfile(user.id);
+
+    // 4. Format safe subscription summary (without internal provider secrets)
     const subscriptionSummary = effective.subscription
       ? {
           id: effective.subscription.id,
@@ -78,6 +82,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       billingCountry: effective.billingCountry,
       billingPostalCode: effective.billingPostalCode,
       countryConfirmed: Boolean(effective.billingCountry),
+      billingProfile: profile,
       subscription: subscriptionSummary,
       entitlements: {
         maxServers: entitlements.maxServers,
@@ -86,6 +91,60 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       }
     });
   });
+
+  /**
+   * GET /api/v1/billing/profile
+   * Authenticated, IDOR-safe endpoint returning the current customer's authoritative billing profile & full address.
+   */
+  app.get(
+    '/billing/profile',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const profile = await BillingProfileService.getBillingProfile(user.id);
+      return createSuccessResponse(profile);
+    }
+  );
+
+  /**
+   * PUT /api/v1/billing/profile
+   * Authenticated endpoint to update customer's authoritative billing name, full address, and region.
+   * Enforces CSRF protection, comprehensive validation, IDOR safety, and authoritative server-side currency derivation.
+   */
+  app.put(
+    '/billing/profile',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const body = request.body as Record<string, unknown> | undefined;
+
+      if (!body || typeof body !== 'object') {
+        throw new ValidationError('Request body is required');
+      }
+
+      const { fullName, addressLine1, addressLine2, city, state, postalCode, country } = body;
+
+      const result = await BillingProfileService.updateBillingProfile(user.id, {
+        fullName: String(fullName || ''),
+        addressLine1: String(addressLine1 || ''),
+        addressLine2: addressLine2 !== undefined && addressLine2 !== null ? String(addressLine2) : undefined,
+        city: String(city || ''),
+        state: String(state || ''),
+        postalCode: String(postalCode || ''),
+        country: String(country || '')
+      });
+
+      return createSuccessResponse(result);
+    }
+  );
 
   /**
    * Handler for confirming billing country and postal code.

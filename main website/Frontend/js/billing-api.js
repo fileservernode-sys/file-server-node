@@ -146,6 +146,32 @@
     },
 
     /**
+     * Fetch authoritative customer billing profile (Full Name, Address, City, State, Postal, Country, Currency).
+     * Route: GET /api/v1/billing/profile
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async getBillingProfile() {
+      return executeRequest('/billing/profile', 'GET');
+    },
+
+    /**
+     * Update customer authoritative billing profile and full street address.
+     * Route: PUT /api/v1/billing/profile
+     * @param {object} profileData - { fullName, addressLine1, addressLine2, city, state, postalCode, country }
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async updateBillingProfile(profileData) {
+      if (!profileData || typeof profileData !== 'object') {
+        return {
+          ok: false,
+          status: 400,
+          data: { success: false, error: { code: 'VALIDATION_ERROR', message: 'profileData object is required' } }
+        };
+      }
+      return executeRequest('/billing/profile', 'PUT', profileData, true);
+    },
+
+    /**
      * Confirm or update customer billing country and postal code.
      * Derives authoritative currency server-side.
      * Route: PUT /api/v1/billing/country
