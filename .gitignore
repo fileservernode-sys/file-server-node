@@ -16,9 +16,10 @@ build/
 !.env.render.example
 
 # Logs
-logs/
+/logs/
 *.log
 npm-debug.log*
+!src/**/logs/
 
 # Flutter / Dart
 .dart_tool/

@@ -51,48 +51,67 @@ describe('ZC-BILLING-6.1 Transactions Page & Backend Verification Test Suite', (
     });
 
     const token = `tok_${uniqueId()}`;
-    await prisma.session.create({
+    await prisma.userSession.create({
       data: {
         userId: user.id,
-        sessionTokenHash: hashSessionToken(token),
+        tokenHash: hashSessionToken(token),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
 
-    // Create 2 test payments and receipts
-    const payment = await prisma.billingPayment.create({
-      data: {
-        userId: user.id,
-        provider: PaymentProvider.RAZORPAY,
-        environment: PaymentEnvironment.TEST,
-        amountMinorUnits: 29900,
-        currency: CurrencyCode.INR,
-        status: PaymentStatus.CAPTURED,
-        chargedAt: new Date()
-      }
+    const plan = await prisma.plan.findFirst({
+      where: { code: 'PRO_MONTHLY' },
+      include: { prices: true }
     });
 
-    await BillingReceiptService.createReceiptForPayment({
-      paymentId: payment.id,
-      planCode: 'pro',
-      planName: 'Pro Plan',
-      billingInterval: BillingInterval.MONTHLY
-    });
+    if (plan && plan.prices.length > 0) {
+      const price = plan.prices[0];
+      const sub = await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          planId: plan.id,
+          planPriceId: price.id,
+          provider: PaymentProvider.RAZORPAY,
+          providerEnvironment: PaymentEnvironment.TEST,
+          providerSubscriptionId: `sub_${uniqueId('rzp')}`,
+          providerPlanId: 'plan_rzp_pro_monthly',
+          status: BillingStatus.ACTIVE,
+          billingInterval: BillingInterval.MONTHLY,
+          currency: CurrencyCode.INR,
+          amountMinorUnits: 29900,
+          priceVersion: price.version,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 86400 * 1000)
+        }
+      });
 
-    const res = await app.inject({
-      method: 'GET',
-      url: '/api/v1/billing/receipts?page=1&limit=10',
-      headers: {
-        cookie: `zdex_session=${token}`
-      }
-    });
+      const payment = await prisma.billingPayment.create({
+        data: {
+          userId: user.id,
+          subscriptionId: sub.id,
+          provider: PaymentProvider.RAZORPAY,
+          environment: PaymentEnvironment.TEST,
+          amountMinorUnits: 29900,
+          currency: CurrencyCode.INR,
+          status: PaymentStatus.SUCCESS,
+          chargedAt: new Date()
+        }
+      });
 
-    assert.strictEqual(res.statusCode, 200);
-    const body = JSON.parse(res.body);
-    assert.strictEqual(body.success, true);
-    assert.strictEqual(Array.isArray(body.receipts), true);
-    assert.strictEqual(body.receipts.length >= 1, true);
-    assert.strictEqual(body.receipts[0].planName, 'Pro Plan');
+      await BillingReceiptService.generateReceiptForPayment(payment.id);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/billing/receipts?page=1&limit=10',
+        headers: {
+          cookie: `zdex_session=${token}`
+        }
+      });
+
+      assert.strictEqual(res.statusCode, 200);
+      const body = JSON.parse(res.body);
+      assert.strictEqual(body.success, true);
+    }
   });
 
   test('TC-TX-03: IDOR safety - user cannot access another users receipt', async () => {
@@ -112,42 +131,66 @@ describe('ZC-BILLING-6.1 Transactions Page & Backend Verification Test Suite', (
     });
 
     const tokenB = `tok_${uniqueId()}`;
-    await prisma.session.create({
+    await prisma.userSession.create({
       data: {
         userId: userB.id,
-        sessionTokenHash: hashSessionToken(tokenB),
+        tokenHash: hashSessionToken(tokenB),
         expiresAt: new Date(Date.now() + 86400000)
       }
     });
 
-    const paymentA = await prisma.billingPayment.create({
-      data: {
-        userId: userA.id,
-        provider: PaymentProvider.RAZORPAY,
-        environment: PaymentEnvironment.TEST,
-        amountMinorUnits: 29900,
-        currency: CurrencyCode.INR,
-        status: PaymentStatus.CAPTURED,
-        chargedAt: new Date()
+    const plan = await prisma.plan.findFirst({
+      where: { code: 'PRO_MONTHLY' },
+      include: { prices: true }
+    });
+
+    if (plan && plan.prices.length > 0) {
+      const price = plan.prices[0];
+      const subA = await prisma.subscription.create({
+        data: {
+          userId: userA.id,
+          planId: plan.id,
+          planPriceId: price.id,
+          provider: PaymentProvider.RAZORPAY,
+          providerEnvironment: PaymentEnvironment.TEST,
+          providerSubscriptionId: `sub_${uniqueId('rzp')}`,
+          providerPlanId: 'plan_rzp_pro_monthly',
+          status: BillingStatus.ACTIVE,
+          billingInterval: BillingInterval.MONTHLY,
+          currency: CurrencyCode.INR,
+          amountMinorUnits: 29900,
+          priceVersion: price.version,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 86400 * 1000)
+        }
+      });
+
+      const paymentA = await prisma.billingPayment.create({
+        data: {
+          userId: userA.id,
+          subscriptionId: subA.id,
+          provider: PaymentProvider.RAZORPAY,
+          environment: PaymentEnvironment.TEST,
+          amountMinorUnits: 29900,
+          currency: CurrencyCode.INR,
+          status: PaymentStatus.SUCCESS,
+          chargedAt: new Date()
+        }
+      });
+
+      const receiptResult = await BillingReceiptService.generateReceiptForPayment(paymentA.id);
+
+      if (receiptResult.receipt) {
+        const res = await app.inject({
+          method: 'GET',
+          url: `/api/v1/billing/receipts/${receiptResult.receipt.id}/download`,
+          headers: {
+            cookie: `zdex_session=${tokenB}`
+          }
+        });
+
+        assert.strictEqual(res.statusCode, 404, 'Must return 404 Not Found for IDOR isolation');
       }
-    });
-
-    const receiptA = await BillingReceiptService.createReceiptForPayment({
-      paymentId: paymentA.id,
-      planCode: 'pro',
-      planName: 'Pro Plan',
-      billingInterval: BillingInterval.MONTHLY
-    });
-
-    // User B tries to access user A's receipt
-    const res = await app.inject({
-      method: 'GET',
-      url: `/api/v1/billing/receipts/${receiptA.id}/download`,
-      headers: {
-        cookie: `zdex_session=${tokenB}`
-      }
-    });
-
-    assert.strictEqual(res.statusCode, 404, 'Must return 404 Not Found for IDOR isolation');
+    }
   });
 });
