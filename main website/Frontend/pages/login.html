@@ -425,8 +425,10 @@
       const urlParams = new URLSearchParams(window.location.search);
       const isExplicitExpired = urlParams.get('expired') === 'true';
       const isExplicitLogout = urlParams.get('logout') === 'true';
+      const isPasswordChanged = urlParams.get('passwordChanged') === 'true';
+      const isPasswordReset = urlParams.get('reset') === 'true';
 
-      if (!isExplicitExpired && !isExplicitLogout && typeof AuthService !== 'undefined') {
+      if (!isExplicitExpired && !isExplicitLogout && !isPasswordChanged && !isPasswordReset && typeof AuthService !== 'undefined') {
         AuthService.initSession().then(authRes => {
           if (authRes && authRes.authenticated) {
             const redirectTarget = urlParams.get('redirect') || 'servers.html';
@@ -437,8 +439,16 @@
         }).catch(() => {});
       }
 
-      // Check for expired session notice in URL params
-      if (isExplicitExpired) {
+      // Check for expired session, password-changed, or password-reset notice in URL params
+      if (isPasswordReset) {
+        errorAlert.className = 'alert alert-info';
+        errorMessage.textContent = 'Your password has been reset and active sessions were signed out. Please sign in with your new password.';
+        errorAlert.classList.remove('hidden');
+      } else if (isPasswordChanged) {
+        errorAlert.className = 'alert alert-info';
+        errorMessage.textContent = 'Your password has been updated and active sessions were signed out. Please sign in with your new password.';
+        errorAlert.classList.remove('hidden');
+      } else if (isExplicitExpired) {
         errorMessage.textContent = 'Your session has expired. Please sign in again to continue.';
         errorAlert.classList.remove('hidden');
       }

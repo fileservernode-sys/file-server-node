@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/notifications/notification_router.dart';
+import '../../../core/routing/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/utils/url_launcher_service.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/empty_state.dart';
@@ -66,6 +69,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
                 children: [
                   _buildFilterChip('ALL', 'All', state.activeCategoryFilter, notifier),
                   _buildFilterChip('ACCOUNT_SECURITY', 'Security', state.activeCategoryFilter, notifier),
+                  _buildFilterChip('BILLING', 'Billing', state.activeCategoryFilter, notifier),
                   _buildFilterChip('DEVICE_SERVER', 'Devices', state.activeCategoryFilter, notifier),
                   _buildFilterChip('FILE_OPERATIONS', 'Files', state.activeCategoryFilter, notifier),
                   _buildFilterChip('STORAGE', 'Storage', state.activeCategoryFilter, notifier),
@@ -114,11 +118,41 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
   }
 
   Widget _buildBody(NotificationListState state, NotificationListNotifier notifier) {
-    if (state.isLoading) {
+    if (state.isLoading && state.items.isEmpty) {
       return const Center(child: LoadingIndicator(message: 'Loading notifications...'));
     }
 
-    if (state.errorMessage != null) {
+    if (state.isSessionExpired && state.items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_clock_outlined, size: 56, color: AppColors.error),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Session Expired',
+                style: AppTypography.cardTitle.copyWith(color: AppColors.error),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Your session has expired. Please sign in again to view your notifications.',
+                style: AppTypography.caption,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, AppRouter.loginRoute),
+                child: const Text('Sign In Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (state.errorMessage != null && state.items.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: ErrorMessageBanner(
@@ -136,21 +170,85 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => notifier.loadNotifications(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: state.items.length,
-        itemBuilder: (context, index) {
-          final item = state.items[index];
-          return _buildNotificationCard(item, notifier);
-        },
-      ),
+    return Column(
+      children: [
+        if (state.isLoading) const LinearProgressIndicator(minHeight: 2),
+        if (state.isSessionExpired)
+          Container(
+            margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFCA5A5)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.lock_clock_outlined, color: AppColors.error, size: 18),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Session expired. Please sign in again.',
+                    style: TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, AppRouter.loginRoute),
+                  child: const Text('Sign In', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.error)),
+                ),
+              ],
+            ),
+          )
+        else if (state.errorMessage != null)
+          Container(
+            margin: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 0),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFBEB),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFDE68A)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    state.errorMessage!,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => notifier.loadNotifications(),
+                  child: const Text('Retry', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () => notifier.loadNotifications(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              itemCount: state.items.length,
+              itemBuilder: (context, index) {
+                final item = state.items[index];
+                return _buildNotificationCard(item, state, notifier);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem item, NotificationListNotifier notifier) {
+  Widget _buildNotificationCard(
+    NotificationItem item,
+    NotificationListState state,
+    NotificationListNotifier notifier,
+  ) {
     final isUnread = item.state == NotificationStateEnum.unread;
+    final isRetrying = state.inFlightRetryIds.contains(item.id);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -191,10 +289,40 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
               item.body,
               style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
+            _buildDeliveryBadges(item.deliveryStatus),
+            const SizedBox(height: AppSpacing.xs),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (item.deliveryStatus.retryable)
+                  TextButton.icon(
+                    onPressed: isRetrying
+                        ? null
+                        : () async {
+                            final res = await notifier.retryDelivery(item.id);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(res['message'] as String? ?? 'Redelivery requested'),
+                                  backgroundColor: res['success'] == true ? AppColors.success : AppColors.error,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            }
+                          },
+                    icon: isRetrying
+                        ? const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh, size: 14),
+                    label: Text(
+                      isRetrying ? 'Retrying...' : 'Retry Delivery',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  ),
                 if (item.deepLinkUri != null && item.deepLinkUri!.isNotEmpty)
                   TextButton(
                     onPressed: () {
@@ -221,6 +349,50 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDeliveryBadges(NotificationDeliveryStatus ds) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: [
+        _buildStatusBadge('IN-APP', ds.inApp),
+        if (ds.push != null) _buildStatusBadge('PUSH', ds.push!),
+        if (ds.email != null) _buildStatusBadge('EMAIL', ds.email!),
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge(String channel, String status) {
+    Color bg;
+    Color fg;
+    final st = status.toUpperCase();
+
+    if (st == 'DELIVERED') {
+      bg = const Color(0xFFD1FAE5);
+      fg = const Color(0xFF065F46);
+    } else if (st == 'FAILED') {
+      bg = const Color(0xFFFEE2E2);
+      fg = const Color(0xFF991B1B);
+    } else if (st == 'PENDING' || st == 'QUEUED') {
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFF92400E);
+    } else {
+      bg = const Color(0xFFF3F4F6);
+      fg = const Color(0xFF4B5563);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        '$channel: $st',
+        style: TextStyle(color: fg, fontSize: 9.5, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -267,8 +439,26 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
   }
 
   void _handleTargetNavigation(NotificationTarget target) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Navigating to target: ${target.type.name}')),
-    );
+    switch (target.type) {
+      case NotificationTargetType.serverDetail:
+        Navigator.pushNamed(context, AppRouter.serverStatusRoute);
+        break;
+      case NotificationTargetType.securitySettings:
+      case NotificationTargetType.deviceDetail:
+        Navigator.pushNamed(context, AppRouter.settingsRoute);
+        break;
+      case NotificationTargetType.billing:
+        UrlLauncherService.openUrl(context, '${AppConfig.current.portalBaseUrl}/pages/billing.html');
+        break;
+      case NotificationTargetType.fileManager:
+        UrlLauncherService.openUrl(context, '${AppConfig.current.portalBaseUrl}/pages/file-manager.html');
+        break;
+      case NotificationTargetType.dashboard:
+        Navigator.pushNamedAndRemoveUntil(context, AppRouter.homeRoute, (route) => false);
+        break;
+      case NotificationTargetType.unknown:
+        Navigator.pushNamed(context, AppRouter.homeRoute);
+        break;
+    }
   }
 }

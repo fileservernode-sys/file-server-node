@@ -3,7 +3,7 @@
  * Track 4 — Batch NT-1.1 Architecture
  */
 
-export type DeepLinkTargetType = 'account' | 'device' | 'server' | 'file_manager' | 'security' | 'system';
+export type DeepLinkTargetType = 'account' | 'device' | 'server' | 'file_manager' | 'security' | 'system' | 'billing';
 
 export interface NotificationDeepLink {
   targetType: DeepLinkTargetType;

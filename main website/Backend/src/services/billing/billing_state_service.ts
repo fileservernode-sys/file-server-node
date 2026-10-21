@@ -21,6 +21,7 @@ import { RazorpayProviderError } from './providers/razorpay/razorpay_error.js';
 import { RazorpayPlanCatalogService } from './providers/razorpay/razorpay_plan_catalog_service.js';
 import { UpgradeReconciliationService } from './upgrade_reconciliation_service.js';
 import { ValidationError, NotFoundError, ConflictError } from '../../errors/app-error.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 
 export interface CreateSubscriptionParams {
   userId: string;
@@ -411,7 +412,7 @@ export class BillingStateService {
    * Transitions subscription to PAST_DUE on payment failure.
    */
   static async markPastDue(subscriptionId: string): Promise<Subscription> {
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       const sub = await tx.subscription.findUnique({ where: { id: subscriptionId } });
       if (!sub) throw new NotFoundError('Subscription not found');
 
@@ -419,7 +420,7 @@ export class BillingStateService {
         throw new ConflictError(`Cannot mark subscription in status '${sub.status}' as PAST_DUE`);
       }
 
-      const updated = await tx.subscription.update({
+      const subUpdated = await tx.subscription.update({
         where: { id: sub.id },
         data: { status: BillingStatus.PAST_DUE }
       });
@@ -437,15 +438,27 @@ export class BillingStateService {
         }
       });
 
-      return updated;
+      return subUpdated;
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: updated.userId,
+      eventType: 'BILLING.SUBSCRIPTION_PAYMENT_PAST_DUE',
+      subscriptionId: updated.id,
+      metadata: {
+        currency: updated.currency,
+        amountMinorUnits: updated.amountMinorUnits
+      }
+    });
+
+    return updated;
   }
 
   /**
    * Starts grace period for subscription. Entitlements remain active.
    */
   static async startGracePeriod(subscriptionId: string, graceDays = 5): Promise<Subscription> {
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       const sub = await tx.subscription.findUnique({ where: { id: subscriptionId } });
       if (!sub) throw new NotFoundError('Subscription not found');
 
@@ -456,7 +469,7 @@ export class BillingStateService {
       const now = new Date();
       const gracePeriodEndsAt = new Date(now.getTime() + graceDays * 24 * 60 * 60 * 1000);
 
-      const updated = await tx.subscription.update({
+      const subUpdated = await tx.subscription.update({
         where: { id: sub.id },
         data: {
           status: BillingStatus.GRACE_PERIOD,
@@ -478,15 +491,26 @@ export class BillingStateService {
         }
       });
 
-      return updated;
+      return subUpdated;
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: updated.userId,
+      eventType: 'BILLING.SUBSCRIPTION_GRACE_PERIOD_STARTED',
+      subscriptionId: updated.id,
+      metadata: {
+        gracePeriodEndsAt: updated.gracePeriodEndsAt?.toISOString()
+      }
+    });
+
+    return updated;
   }
 
   /**
    * Recovers subscription from grace period back to ACTIVE upon successful charge.
    */
   static async recoverGracePeriod(subscriptionId: string): Promise<Subscription> {
-    return await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx) => {
       const sub = await tx.subscription.findUnique({ where: { id: subscriptionId } });
       if (!sub) throw new NotFoundError('Subscription not found');
 
@@ -494,7 +518,7 @@ export class BillingStateService {
         throw new ConflictError(`Cannot recover grace period for subscription in status '${sub.status}'`);
       }
 
-      const updated = await tx.subscription.update({
+      const subUpdated = await tx.subscription.update({
         where: { id: sub.id },
         data: {
           status: BillingStatus.ACTIVE,
@@ -518,8 +542,21 @@ export class BillingStateService {
         }
       });
 
-      return updated;
+      return subUpdated;
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: updated.userId,
+      eventType: 'BILLING.SUBSCRIPTION_GRACE_PERIOD_RECOVERED',
+      subscriptionId: updated.id,
+      metadata: {
+        currency: updated.currency,
+        amountMinorUnits: updated.amountMinorUnits,
+        currentPeriodEnd: updated.currentPeriodEnd.toISOString()
+      }
+    });
+
+    return updated;
   }
 
   /**
@@ -640,6 +677,19 @@ export class BillingStateService {
 
       return subUpdated;
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId,
+      eventType: 'BILLING.SUBSCRIPTION_CANCELLATION_REQUESTED',
+      subscriptionId: updated.id,
+      idempotencyKey: `sub_cancel_req_${updated.id}_${updated.currentPeriodEnd.toISOString().slice(0, 10)}`,
+      occurredAt: now,
+      metadata: {
+        planCode: updated.plan.code,
+        planName: updated.plan.name,
+        currentPeriodEnd: updated.currentPeriodEnd.toISOString()
+      }
+    });
 
     // In-app notification (non-blocking)
     try {
@@ -765,12 +815,12 @@ export class BillingStateService {
    * Entitlements fall back to FREE. Existing servers are preserved without deletion.
    */
   static async expireSubscription(subscriptionId: string): Promise<Subscription> {
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const sub = await tx.subscription.findUnique({ where: { id: subscriptionId } });
       if (!sub) throw new NotFoundError('Subscription not found');
 
       if (sub.status === BillingStatus.EXPIRED) {
-        return sub;
+        return { updated: sub, wasAlreadyExpired: true };
       }
 
       const updated = await tx.subscription.update({
@@ -797,8 +847,22 @@ export class BillingStateService {
         }
       });
 
-      return updated;
+      return { updated, wasAlreadyExpired: false };
     }, { maxWait: 15000, timeout: 30000 });
+
+    if (!result.wasAlreadyExpired) {
+      await CustomerActivityService.recordEventSafe({
+        userId: result.updated.userId,
+        eventType: 'BILLING.SUBSCRIPTION_EXPIRED',
+        subscriptionId: result.updated.id,
+        idempotencyKey: `sub_expired_${result.updated.id}`,
+        metadata: {
+          expiredAt: result.updated.expiredAt?.toISOString()
+        }
+      });
+    }
+
+    return result.updated;
   }
 
   /**
@@ -1279,6 +1343,23 @@ export class BillingStateService {
         // Non-blocking notification
       }
 
+      await CustomerActivityService.recordEventSafe({
+        userId,
+        eventType: 'BILLING.SUBSCRIPTION_UPGRADED',
+        subscriptionId: activeSub.id,
+        idempotencyKey: `sub_upgraded_${planChange.id}`,
+        occurredAt: now,
+        metadata: {
+          fromPlanCode: activeSub.plan.code,
+          fromPlanName: activeSub.plan.name,
+          toPlanCode: targetPlan.code,
+          toPlanName: targetPlan.name,
+          currency: activeSub.currency,
+          creditMinorUnits: proration.creditMinorUnits,
+          netAmountMinorUnits: proration.netAmountMinorUnits
+        }
+      });
+
       return {
         success: true,
         sourcePlan: activeSub.plan.code,
@@ -1600,6 +1681,21 @@ export class BillingStateService {
         // Non-blocking notification
       }
 
+      await CustomerActivityService.recordEventSafe({
+        userId,
+        eventType: 'BILLING.SUBSCRIPTION_DOWNGRADE_SCHEDULED',
+        subscriptionId: activeSub.id,
+        idempotencyKey: `sub_downgrade_sched_${planChange.id}`,
+        occurredAt: now,
+        metadata: {
+          fromPlanCode: activeSub.plan.code,
+          fromPlanName: activeSub.plan.name,
+          toPlanCode: targetPlan.code,
+          toPlanName: targetPlan.name,
+          scheduledFor: activeSub.currentPeriodEnd.toISOString()
+        }
+      });
+
       return {
         success: true,
         sourcePlan: activeSub.plan.code,
@@ -1748,6 +1844,18 @@ export class BillingStateService {
       } catch {
         // Non-blocking notification
       }
+
+      await CustomerActivityService.recordEventSafe({
+        userId,
+        eventType: 'BILLING.SUBSCRIPTION_DOWNGRADE_CANCELLED',
+        subscriptionId: activeSub.id,
+        idempotencyKey: `sub_downgrade_cancel_${pendingChange.id}`,
+        occurredAt: now,
+        metadata: {
+          planCode: activeSub.plan.code,
+          planName: activeSub.plan.name
+        }
+      });
 
       return {
         success: true,

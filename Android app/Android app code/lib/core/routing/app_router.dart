@@ -12,12 +12,16 @@ import '../../features/setup/presentation/setup_device_screen.dart';
 import '../../features/setup/presentation/setup_failure_screen.dart';
 import '../../features/setup/presentation/setup_review_screen.dart';
 import '../../features/setup/presentation/setup_success_screen.dart';
+import '../../features/notifications/screens/notification_center_screen.dart';
+import '../../features/notifications/screens/notification_preferences_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/showcase/presentation/design_system_showcase_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
 /// Centralized Router Architecture — Manages Unauthenticated & Authenticated Journeys
 class AppRouter {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   static const String initialRoute = '/';
 
   // Splash & Starting Route
@@ -48,6 +52,8 @@ class AppRouter {
   static const String helpTopicRoute = '/help/topic';
   static const String aboutRoute = '/about';
   static const String showcaseRoute = '/showcase';
+  static const String notificationsRoute = '/notifications';
+  static const String notificationPreferencesRoute = '/notifications/preferences';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -144,6 +150,16 @@ class AppRouter {
       case showcaseRoute:
         return MaterialPageRoute(
           builder: (_) => const DesignSystemShowcaseScreen(),
+          settings: settings,
+        );
+      case notificationsRoute:
+        return MaterialPageRoute(
+          builder: (_) => const NotificationCenterScreen(),
+          settings: settings,
+        );
+      case notificationPreferencesRoute:
+        return MaterialPageRoute(
+          builder: (_) => const NotificationPreferencesScreen(),
           settings: settings,
         );
       default:

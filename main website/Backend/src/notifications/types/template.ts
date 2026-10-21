@@ -56,8 +56,17 @@ export function buildTemplateContext(
   metadata: SafeNotificationMetadata = {},
   occurredAt: Date = new Date()
 ): TemplateContext {
+  // Format minor units into clean major amount if formattedAmount is not explicitly supplied
+  let derivedFormattedAmount = metadata.formattedAmount ? String(metadata.formattedAmount) : undefined;
+  if (!derivedFormattedAmount && typeof metadata.amountMinorUnits === 'number') {
+    derivedFormattedAmount = (metadata.amountMinorUnits / 100).toFixed(2);
+  }
+
+  const derivedCurrency = metadata.currency ? String(metadata.currency).toUpperCase() : 'USD';
+
   return {
-    userName: metadata.userName ? String(metadata.userName) : 'RemoteNode User',
+    ...metadata,
+    userName: metadata.userName ? String(metadata.userName) : 'ZdexCloud Customer',
     userEmail: metadata.userEmail ? String(metadata.userEmail) : '',
     deviceName: metadata.deviceName ? String(metadata.deviceName) : 'Android Phone',
     serverName: metadata.serverName ? String(metadata.serverName) : 'File Server',
@@ -72,6 +81,10 @@ export function buildTemplateContext(
     storageUsedPercent: metadata.storageUsedPercent !== undefined ? Number(metadata.storageUsedPercent) : 0,
     reason: metadata.reason ? String(metadata.reason) : '',
     customSummary: metadata.customSummary ? String(metadata.customSummary) : '',
+    formattedAmount: derivedFormattedAmount,
+    currency: derivedCurrency,
+    invoiceNumber: metadata.invoiceNumber ? String(metadata.invoiceNumber) : undefined,
+    planName: metadata.planName ? String(metadata.planName) : undefined,
     timestamp: occurredAt.toISOString()
   };
 }

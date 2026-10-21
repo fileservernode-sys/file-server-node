@@ -76,6 +76,19 @@ async function startServer() {
       app.log.info('✉️ Background Email Tracking Retention Worker initialized.');
     }
 
+    // Start background Invoice Notification Outbox Worker (Phase 8.4 Batch E.4)
+    const { invoiceNotificationOutboxWorker } = await import('./services/billing/invoice_notification_outbox_worker.js');
+    if (config.INVOICE_OUTBOX_WORKER_ENABLED && config.INVOICE_NOTIFICATION_DISPATCH_MODE === 'OUTBOX_WORKER') {
+      invoiceNotificationOutboxWorker.start();
+      app.log.info('🧾 Background Invoice Notification Outbox Worker initialized.');
+    }
+
+    const { emailWebhookReconciliationWorker } = await import('./services/billing/email_webhook_reconciliation_worker.js');
+    if (config.EMAIL_WEBHOOK_RECONCILIATION_WORKER_ENABLED) {
+      emailWebhookReconciliationWorker.start();
+      app.log.info('🔄 Background Email Webhook Reconciliation Worker initialized.');
+    }
+
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probes available at ${address}/health and ${address}/api/v1/health`);
 
@@ -85,7 +98,7 @@ async function startServer() {
 
       // Bounded shutdown timer: force exit if cleanup exceeds 15 seconds
       const forceExitTimer = setTimeout(() => {
-        app.log.error('Graceful shutdown timeout exceeded (15s). Forcing process exit.');
+        app.log.error('Graceful shutdown timeout exceeded (15s). Force-exiting process.');
         process.exit(1);
       }, 15000);
       forceExitTimer.unref();
@@ -105,6 +118,17 @@ async function startServer() {
         if (config.EMAIL_TRACKING_RETENTION_ENABLED) {
           await defaultEmailRetentionWorker.stop();
           app.log.info('Email tracking retention worker stopped.');
+        }
+
+        if (config.INVOICE_OUTBOX_WORKER_ENABLED && config.INVOICE_NOTIFICATION_DISPATCH_MODE === 'OUTBOX_WORKER') {
+          await invoiceNotificationOutboxWorker.stop();
+          app.log.info('Invoice notification outbox worker stopped.');
+        }
+
+        if (config.EMAIL_WEBHOOK_RECONCILIATION_WORKER_ENABLED) {
+          const { emailWebhookReconciliationWorker } = await import('./services/billing/email_webhook_reconciliation_worker.js');
+          await emailWebhookReconciliationWorker.stop();
+          app.log.info('Email webhook reconciliation worker stopped.');
         }
 
         // 1. Close Gateway WebSocket Relay Server

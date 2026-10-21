@@ -268,6 +268,8 @@ export class AdminUserService {
             billingCountry: true,
             billingPostalCode: true,
             billingName: true,
+            companyName: true,
+            taxId: true,
             billingAddress1: true,
             billingAddress2: true,
             billingCity: true,
@@ -316,9 +318,9 @@ export class AdminUserService {
       };
     });
 
-    let companyName: string | null = null;
-    let taxId: string | null = null;
-    if (user.billingState) {
+    let companyName: string | null = (user.billingState as any)?.companyName || null;
+    let taxId: string | null = (user.billingState as any)?.taxId || null;
+    if (user.billingState && (!companyName || !taxId)) {
       try {
         const auditEvents = await prisma.auditEvent.findMany({
           where: {
@@ -334,13 +336,21 @@ export class AdminUserService {
         });
         if (profileAudit?.metadata && typeof profileAudit.metadata === 'object') {
           const meta = profileAudit.metadata as Record<string, unknown>;
-          if (typeof meta.companyName === 'string') companyName = meta.companyName;
-          if (typeof meta.taxId === 'string') taxId = meta.taxId;
+          if (!companyName && typeof meta.companyName === 'string') companyName = meta.companyName;
+          if (!taxId && typeof meta.taxId === 'string') taxId = meta.taxId;
         }
       } catch {
         // Non-blocking fallback
       }
     }
+
+    const companyNameFallback = Boolean(
+      user.billingState && !(user.billingState as any).companyName && companyName
+    );
+    const taxIdFallback = Boolean(
+      user.billingState && !(user.billingState as any).taxId && taxId
+    );
+    const isLegacyAuditFallback = companyNameFallback || taxIdFallback;
 
     return {
       id: user.id,
@@ -361,6 +371,9 @@ export class AdminUserService {
             billingName: user.billingState.billingName || user.fullName,
             companyName,
             taxId,
+            isLegacyAuditFallback,
+            companyNameFallback,
+            taxIdFallback,
             billingAddress1: user.billingState.billingAddress1,
             billingAddress2: user.billingState.billingAddress2,
             billingCity: user.billingState.billingCity,

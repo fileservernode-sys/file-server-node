@@ -251,11 +251,90 @@ export class EmailWebhookService {
     const results: WebhookProcessResult[] = [];
 
     for (const event of events) {
+      // Durable Staging Inbox Ingestion (Phase 8.4 Batch E.4)
+      await this.stageEventInInbox(event).catch((stageErr) => {
+        console.warn('[EmailWebhookService] Failed to stage webhook event in EmailWebhookInbox (non-blocking fallback):', stageErr?.message || stageErr);
+      });
+
       const result = await this.processSingleEvent(event, requestId);
       results.push(result);
     }
 
     return results;
+  }
+
+  /**
+   * Durably stages incoming webhook event in EmailWebhookInbox with deduplication
+   */
+  private static async stageEventInInbox(event: BrevoWebhookEvent): Promise<void> {
+    const rawMsgId = event['message-id'] || event.message_id || (event.id ? String(event.id) : undefined);
+    const cleanMsgId = rawMsgId ? rawMsgId.trim().replace(/^<|>$/g, '') : null;
+    const eventType = event.event.trim().toLowerCase();
+    const recipientEmail = event.email ? event.email.trim().toLowerCase() : null;
+
+    // Evaluate normalized provider event timestamp (nullable: null if missing/malformed)
+    let eventTimestamp: Date | null = null;
+    if (event.ts_event || event.ts_epoch || event.ts || event.date) {
+      const parsed = this.normalizeEventTimestamp(event);
+      if (!isNaN(parsed.getTime())) {
+        eventTimestamp = parsed;
+      }
+    }
+
+    // Deduplication & Event Identification Strategy (Phase 8.4 Batch E.4.1):
+    // 1. If cleanMsgId and eventTimestamp are both available, derive deterministic fingerprint to
+    //    deduplicate actual provider transport retries of the identical delivery event.
+    // 2. If cleanMsgId is absent or eventTimestamp is absent/malformed, reliable provider identity
+    //    cannot be established. We MUST NOT conflate distinct events or silently drop payloads.
+    //    A unique staging event ID is assigned to preserve the payload durably for operator triage.
+    let eventId: string;
+    if (cleanMsgId && eventTimestamp) {
+      const tsPart = String(Math.floor(eventTimestamp.getTime() / 1000));
+      eventId = crypto
+        .createHash('sha256')
+        .update(`${cleanMsgId}:${eventType}:${tsPart}`)
+        .digest('hex');
+    } else {
+      const recipientPart = (recipientEmail || 'unknown').replace(/[^a-z0-9]/gi, '_');
+      const randomEntropy = crypto.randomBytes(8).toString('hex');
+      eventId = `unidentified_${eventType}_${recipientPart}_${Date.now()}_${randomEntropy}`.slice(0, 190);
+    }
+
+    // Data-minimized payload (strips sensitive credentials, retains reconciliation diagnostics)
+    const sanitizedPayload = sanitizeJsonPayload({
+      event: event.event,
+      email: event.email,
+      'message-id': rawMsgId,
+      date: event.date,
+      ts: event.ts,
+      ts_event: event.ts_event,
+      ts_epoch: event.ts_epoch,
+      subject: event.subject ? sanitizeSubject(event.subject) : undefined,
+      tag: event.tag,
+      reason: event.reason ? sanitizeFailureReason(event.reason) : undefined
+    });
+
+    const inboxStatus = cleanMsgId ? 'RECEIVED' : 'UNMATCHED_NO_IDENTIFIER';
+
+    // Insert into EmailWebhookInbox using raw SQL to remain independent of client generation
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO \`EmailWebhookInbox\` (
+        \`id\`, \`provider\`, \`eventId\`, \`eventType\`, \`providerMessageId\`,
+        \`recipientEmail\`, \`eventTimestamp\`, \`receivedAt\`, \`status\`,
+        \`rawPayload\`, \`createdAt\`, \`updatedAt\`
+      ) VALUES (
+        UUID(), 'BREVO', ?, ?, ?,
+        ?, ?, NOW(3), ?,
+        ?, NOW(3), NOW(3)
+      ) ON DUPLICATE KEY UPDATE \`updatedAt\` = NOW(3)`,
+      eventId,
+      eventType,
+      cleanMsgId,
+      recipientEmail,
+      eventTimestamp,
+      inboxStatus,
+      JSON.stringify(sanitizedPayload)
+    );
   }
 
   /**

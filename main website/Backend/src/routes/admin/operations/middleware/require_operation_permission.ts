@@ -49,6 +49,7 @@ export async function resolveOperationContext(
   };
 
   request.operationContext = context;
+  (request as any).adminOperationContext = context;
   return context;
 }
 

@@ -56,6 +56,23 @@ export interface RecordNotificationEmailParams {
   attemptNumber?: number;
 }
 
+export interface RecordTransactionalEmailParams {
+  userId?: string | null;
+  recipientEmail: string;
+  recipientName?: string | null;
+  emailType: string;
+  templateId: string;
+  subject: string;
+  senderEmail?: string;
+  senderName?: string;
+  dispatchResult: EmailDispatchResult;
+  requestId?: string | null;
+  correlationId?: string | null;
+  deviceId?: string | null;
+  serverId?: string | null;
+  metadata?: Record<string, any>;
+}
+
 export class EmailTrackingService {
   /**
    * Records a direct transactional/OTP email dispatch.
@@ -300,6 +317,103 @@ export class EmailTrackingService {
       return emailRecord.id;
     } catch (err: any) {
       console.warn(`[EmailTrackingService] Failed to record notification email for ${sanitizeLogString(normalizedEmail)}:`, sanitizeLogString(err?.message || err));
+      return null;
+    }
+  }
+
+  /**
+   * Records a transactional business email dispatch (e.g., invoice availability notification).
+   * Completely fail-safe: any database persistence exception is logged without interrupting the business flow.
+   */
+  public async recordTransactionalEmail(params: RecordTransactionalEmailParams): Promise<string | null> {
+    const normalizedEmail = params.recipientEmail.trim().toLowerCase();
+    const resolvedRequestId = sanitizeTrackingId(params.requestId || RequestContextStore.get()?.requestId || null);
+    const resolvedCorrelationId = sanitizeTrackingId(params.correlationId);
+    const resolvedDeviceId = sanitizeTrackingId(params.deviceId);
+    const resolvedServerId = sanitizeTrackingId(params.serverId);
+    const resolvedProviderMessageId = sanitizeTrackingId(params.dispatchResult.providerMessageId, 255);
+    const sanitizedSubject = sanitizeSubject(params.subject);
+    const sanitizedFailureReason = params.dispatchResult.errorMessage ? sanitizeFailureReason(params.dispatchResult.errorMessage) : null;
+    const sanitizedProviderResponse = params.dispatchResult.providerResponse ? sanitizeJsonPayload(params.dispatchResult.providerResponse) : null;
+    const sanitizedMetadata = params.metadata ? sanitizeJsonPayload(params.metadata) : null;
+    const now = new Date();
+
+    const status: EmailMessageStatus = params.dispatchResult.success
+      ? EmailMessageStatus.SENT
+      : EmailMessageStatus.FAILED;
+
+    try {
+      const emailRecord = await prisma.emailMessage.create({
+        data: {
+          userId: params.userId || null,
+          emailType: params.emailType,
+          templateId: params.templateId,
+          recipientEmail: normalizedEmail,
+          recipientName: params.recipientName || null,
+          senderEmail: params.senderEmail || 'noreply@zdexcloud.com',
+          senderName: params.senderName || 'ZdexCloud',
+          subject: sanitizedSubject,
+          sourcePipeline: EmailSourcePipeline.TRANSACTIONAL,
+          status,
+          provider: params.dispatchResult.provider || 'BREVO',
+          transport: (params.dispatchResult.transport as EmailTransport) || EmailTransport.BREVO_API,
+          providerMessageId: resolvedProviderMessageId,
+          providerResponseCode: params.dispatchResult.providerResponseCode || null,
+          providerResponse: sanitizedProviderResponse,
+          failureCode: params.dispatchResult.failureCode || null,
+          failureReason: sanitizedFailureReason,
+          attemptCount: 1,
+          maxAttempts: 1,
+          sentAt: params.dispatchResult.success ? now : null,
+          failedAt: !params.dispatchResult.success ? now : null,
+          lastAttemptAt: now,
+          requestId: resolvedRequestId,
+          correlationId: resolvedCorrelationId,
+          deviceId: resolvedDeviceId,
+          serverId: resolvedServerId,
+          metadata: sanitizedMetadata,
+          attempts: {
+            create: {
+              attemptNumber: 1,
+              transport: (params.dispatchResult.transport as EmailTransport) || EmailTransport.BREVO_API,
+              status,
+              providerMessageId: resolvedProviderMessageId,
+              providerResponseCode: params.dispatchResult.providerResponseCode || null,
+              providerResponse: sanitizedProviderResponse,
+              failureReason: sanitizedFailureReason,
+              durationMs: params.dispatchResult.durationMs || null,
+              attemptedAt: now
+            }
+          }
+        }
+      });
+
+      if (!params.dispatchResult.success) {
+        await errorIngestionService.ingest({
+          component: 'EMAIL',
+          severity: 'ERROR',
+          errorCode: params.dispatchResult.failureCode || 'EMAIL_TRANSACTIONAL_FAILED',
+          errorType: 'EmailDispatchError',
+          message: `Transactional email dispatch failed for template ${params.templateId}: ${sanitizedFailureReason || 'Unknown error'}`,
+          requestId: resolvedRequestId || undefined,
+          userId: params.userId || undefined,
+          deviceId: resolvedDeviceId || undefined,
+          metadata: {
+            emailMessageId: emailRecord.id,
+            emailType: params.emailType,
+            templateId: params.templateId,
+            transport: params.dispatchResult.transport || EmailTransport.BREVO_API,
+            provider: params.dispatchResult.provider || 'BREVO',
+            providerResponseCode: params.dispatchResult.providerResponseCode || null,
+            failureCode: params.dispatchResult.failureCode || null,
+            correlationId: resolvedCorrelationId || null
+          }
+        }).catch(() => {});
+      }
+
+      return emailRecord.id;
+    } catch (err: any) {
+      console.warn(`[EmailTrackingService] Failed to record transactional email for ${sanitizeLogString(normalizedEmail)}:`, sanitizeLogString(err?.message || err));
       return null;
     }
   }

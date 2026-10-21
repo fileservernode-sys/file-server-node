@@ -5,15 +5,18 @@ import {
   ReconciliationEntityType,
   ReconciliationDiscrepancyType,
   WebhookEventStatus,
-  AuditEventType
+  AuditEventType,
+  BillingInvoiceStatus
 } from '@prisma/client';
 import { prisma } from '../config/database.js';
-import { UnauthorizedError, ValidationError } from '../errors/app-error.js';
+import { UnauthorizedError, ValidationError, ForbiddenError, NotFoundError, AppError } from '../errors/app-error.js';
 import { BillingStateService } from '../services/billing/billing_state_service.js';
 import { BillingCountryService } from '../services/billing/billing_country_service.js';
 import { BillingProfileService } from '../services/billing/billing_profile_service.js';
 import { BillingRefundService } from '../services/billing/billing_refund_service.js';
 import { BillingReceiptService } from '../services/billing/billing_receipt_service.js';
+import { BillingInvoiceService } from '../services/billing/billing_invoice_service.js';
+import { BillingInvoiceDocumentService } from '../services/billing/billing_invoice_document_service.js';
 import { BillingReconciliationService, billingReconciliationService } from '../services/billing/billing_reconciliation_service.js';
 import { EntitlementService } from '../services/billing/entitlement_service.js';
 import { RazorpayCheckoutService, RazorpayWebhookService } from '../services/billing/providers/razorpay/index.js';
@@ -21,6 +24,7 @@ import { createSuccessResponse } from '../schemas/response.js';
 import { adminAuthenticate } from '../middleware/admin-auth.js';
 import { requirePermission } from '../middleware/admin-rbac.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
+import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
 import {
   customerStandardRateLimitConfig,
   expensiveCustomerRateLimitConfig,
@@ -427,32 +431,14 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * POST /api/v1/billing/refunds
-   * Authenticated, IDOR-safe endpoint to request a refund for a payment.
+   * Customer refund requests are disabled under final-payment policy.
+   * All customer payments are final.
    */
   const requestRefundHandler = async (request: FastifyRequest, reply: FastifyReply) => {
-    const user = await getAuthUser(request);
-    const body = request.body as Record<string, unknown> | undefined;
-
-    if (!body || !body.paymentId || typeof body.paymentId !== 'string') {
-      throw new ValidationError('paymentId is required');
-    }
-
-    const amountMinorUnits = typeof body.amountMinorUnits === 'number' ? Math.floor(body.amountMinorUnits) : undefined;
-    const reason = body.reason as any;
-    const reasonDetails = typeof body.reasonDetails === 'string' ? body.reasonDetails : undefined;
-    const idempotencyKey = typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined;
-    const terminateSubscription = Boolean(body.terminateSubscription);
-
-    const result = await BillingRefundService.requestRefund(user.id, {
-      paymentId: body.paymentId,
-      amountMinorUnits,
-      reason,
-      reasonDetails,
-      idempotencyKey,
-      terminateSubscription
-    });
-
-    return createSuccessResponse(result);
+    await getAuthUser(request);
+    throw new ForbiddenError(
+      'Customer refund requests are not supported. All customer payments are final.'
+    );
   };
 
   app.post('/billing/refunds', requestRefundHandler);
@@ -561,6 +547,17 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       // Non-blocking
     }
 
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'BILLING.RECEIPT_DOWNLOADED',
+      receiptId: receipt.id,
+      paymentId: receipt.paymentId || null,
+      subscriptionId: receipt.subscriptionId || null,
+      metadata: {
+        receiptNumber: receipt.receiptNumber
+      }
+    });
+
     reply.header('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.html"`);
     reply.type('text/html; charset=utf-8');
     return reply.send(html);
@@ -581,6 +578,232 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
   };
 
   app.get('/billing/payments/:id/receipt', getPaymentReceiptHandler);
+
+  /**
+   * GET /api/v1/billing/invoices
+   * Lists customer's statutory tax invoices with sanitized customer-facing attributes.
+   */
+  const listInvoicesHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const query = (request.query || {}) as { page?: string; limit?: string };
+    const page = query.page ? parseInt(query.page, 10) : 1;
+    const limit = query.limit ? parseInt(query.limit, 10) : 20;
+
+    const result = await BillingInvoiceService.listInvoicesForUser(user.id, { page, limit });
+    return createSuccessResponse({
+      ...result,
+      invoices: result.invoices.map((inv) => BillingInvoiceService.sanitizeCustomerInvoiceView(inv))
+    });
+  };
+
+  app.get(
+    '/billing/invoices',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    listInvoicesHandler
+  );
+
+  /**
+   * GET /api/v1/billing/invoices/:id
+   * Retrieves single statutory tax invoice with IDOR protection and sanitized customer view.
+   */
+  const getInvoiceHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const { id } = request.params as { id: string };
+
+    const invoice = await BillingInvoiceService.getInvoiceById(id, user.id, false);
+    return createSuccessResponse(BillingInvoiceService.sanitizeCustomerInvoiceView(invoice));
+  };
+
+  app.get(
+    '/billing/invoices/:id',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    getInvoiceHandler
+  );
+
+  /**
+   * GET /api/v1/billing/invoices/:id/download
+   * Authenticated, ownership-protected endpoint to download an invoice as a PDF document.
+   * Renders strictly from persisted invoice snapshot; never mutates invoice state or allocates numbers.
+   */
+  const downloadInvoiceHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    // 1. Authenticate customer
+    const user = await getAuthUser(request);
+    const { id } = request.params as { id: string };
+
+    // 2. Authoritative retrieval with IDOR protection (returns 404 for missing or non-owned invoice)
+    const invoice = await BillingInvoiceService.getInvoiceById(id, user.id, false);
+
+    // 3. Lifecycle check: Never allow downloading unissued DRAFT invoices to customers
+    if (invoice.status === BillingInvoiceStatus.DRAFT) {
+      throw new NotFoundError(`BillingInvoice ${id} not found`);
+    }
+
+    // 4. Generate PDF buffer strictly from persisted snapshot
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
+    } catch (err: any) {
+      request.log.error({ err, invoiceId: invoice.id, userId: user.id }, 'Failed to generate invoice PDF');
+      throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+    }
+
+    // 5. Audit event logging (non-blocking) following receipt download pattern
+    try {
+      await prisma.auditEvent.create({
+        data: {
+          userId: user.id,
+          eventType: 'BILLING_INVOICE_DOWNLOAD_REQUESTED' as any,
+          metadata: {
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber
+          }
+        }
+      });
+    } catch {
+      // Non-blocking
+    }
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'BILLING.INVOICE_DOWNLOADED',
+      invoiceId: invoice.id,
+      paymentId: invoice.paymentId || null,
+      subscriptionId: invoice.subscriptionId || null,
+      metadata: {
+        invoiceNumber: invoice.invoiceNumber
+      }
+    });
+
+    // 6. Safe HTTP Headers & Response
+    const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
+    // Prevent CR/LF header injection
+    const safeFilename = rawFilename.replace(/[\r\n]/g, '');
+
+    reply.header('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    reply.header('Content-Type', 'application/pdf');
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('Cache-Control', 'private, no-store, must-revalidate');
+    reply.header('Pragma', 'no-cache');
+    reply.header('Expires', '0');
+
+    return reply.send(pdfBuffer);
+  };
+
+  app.get(
+    '/billing/invoices/:id/download',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    downloadInvoiceHandler
+  );
+
+  /**
+   * GET /api/v1/billing/payments/:id/invoice
+   * Retrieves statutory tax invoice by payment ID with IDOR protection and sanitized customer view.
+   */
+  const getPaymentInvoiceHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    const user = await getAuthUser(request);
+    const { id } = request.params as { id: string };
+
+    const invoice = await BillingInvoiceService.getInvoiceByPaymentId(id, user.id, false);
+    return createSuccessResponse(invoice ? BillingInvoiceService.sanitizeCustomerInvoiceView(invoice) : null);
+  };
+
+  app.get(
+    '/billing/payments/:id/invoice',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    getPaymentInvoiceHandler
+  );
+
+  /**
+   * GET /api/v1/billing/payments/:id/invoice/download
+   * Authenticated, ownership-protected endpoint to download an invoice PDF directly by payment ID.
+   */
+  const downloadPaymentInvoiceHandler = async (request: FastifyRequest, reply: FastifyReply) => {
+    // 1. Authenticate customer
+    const user = await getAuthUser(request);
+    const { id } = request.params as { id: string };
+
+    // 2. Authoritative retrieval with IDOR protection
+    const invoice = await BillingInvoiceService.getInvoiceByPaymentId(id, user.id, false);
+    if (!invoice || invoice.status === BillingInvoiceStatus.DRAFT) {
+      throw new NotFoundError(`Invoice for payment ${id} not found`);
+    }
+
+    // 3. Generate PDF buffer strictly from persisted snapshot
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
+    } catch (err: any) {
+      request.log.error({ err, invoiceId: invoice.id, paymentId: id, userId: user.id }, 'Failed to generate invoice PDF for payment');
+      throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+    }
+
+    // 4. Audit event logging (non-blocking)
+    try {
+      await prisma.auditEvent.create({
+        data: {
+          userId: user.id,
+          eventType: 'BILLING_INVOICE_DOWNLOAD_REQUESTED' as any,
+          metadata: {
+            invoiceId: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            paymentId: id
+          }
+        }
+      });
+    } catch {
+      // Non-blocking
+    }
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'BILLING.INVOICE_DOWNLOADED',
+      invoiceId: invoice.id,
+      paymentId: invoice.paymentId || id,
+      subscriptionId: invoice.subscriptionId || null,
+      metadata: {
+        invoiceNumber: invoice.invoiceNumber
+      }
+    });
+
+    // 5. Safe HTTP Headers & Response
+    const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
+    const safeFilename = rawFilename.replace(/[\r\n]/g, '');
+
+    reply.header('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    reply.header('Content-Type', 'application/pdf');
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('Cache-Control', 'private, no-store, must-revalidate');
+    reply.header('Pragma', 'no-cache');
+    reply.header('Expires', '0');
+
+    return reply.send(pdfBuffer);
+  };
+
+  app.get(
+    '/billing/payments/:id/invoice/download',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    downloadPaymentInvoiceHandler
+  );
 
   app.post(
     '/billing/webhooks/razorpay',

@@ -88,6 +88,12 @@ export async function buildApp(): Promise<FastifyInstance> {
         'req.headers["x-webhook-secret"]',
         'body.password',
         'body.passwordHash',
+        'body.currentPassword',
+        'body.newPassword',
+        'body.confirmPassword',
+        'body.otp',
+        'body.code',
+        'body.otpCode',
         'body.keySecret',
         'body.webhookSecret',
         'body.deviceCredential'

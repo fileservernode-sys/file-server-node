@@ -1,0 +1,81 @@
+-- Migration: 20261010160000_add_invoice_notification_outbox_and_webhook_inbox
+-- Scope: ZDEXCLOUD Phase 8.4 Batch E.3 - Invoice Notification Transactional Outbox & Webhook Staging Inbox
+-- STATUS: AUTHORED ONLY (UNAPPLIED per Phase 8.4 Batch E.3 non-executing authoring rules)
+
+-- CreateTable InvoiceNotificationOutbox
+CREATE TABLE IF NOT EXISTS `InvoiceNotificationOutbox` (
+  `id` VARCHAR(191) NOT NULL,
+  `invoiceId` VARCHAR(191) NOT NULL,
+  `userId` VARCHAR(191) NULL,
+  `notificationType` VARCHAR(191) NOT NULL DEFAULT 'INVOICE_ISSUED',
+  `recipientEmail` VARCHAR(191) NOT NULL,
+  `recipientName` VARCHAR(191) NULL,
+  `documentTitle` VARCHAR(191) NOT NULL DEFAULT 'Tax Invoice',
+  `invoiceNumber` VARCHAR(191) NOT NULL,
+  `currency` ENUM('INR', 'USD') NOT NULL,
+  `totalMinorUnits` INT NOT NULL,
+  `status` ENUM('PENDING', 'SHADOW_PENDING', 'CLAIMED', 'DISPATCHED', 'DELIVERED', 'RETRYABLE_FAILURE', 'AMBIGUOUS_OUTCOME', 'PERMANENT_FAILURE', 'EXHAUSTED', 'HISTORICAL_UNTRACKED') NOT NULL DEFAULT 'PENDING',
+  `attemptCount` INT NOT NULL DEFAULT 0,
+  `maxAttempts` INT NOT NULL DEFAULT 3,
+  `lastAttemptAt` DATETIME(3) NULL,
+  `nextAttemptAt` DATETIME(3) NULL,
+  `claimedBy` VARCHAR(191) NULL,
+  `claimedAt` DATETIME(3) NULL,
+  `claimExpiresAt` DATETIME(3) NULL,
+  `claimVersion` BIGINT NOT NULL DEFAULT 0,
+  `transportStartedAt` DATETIME(3) NULL,
+  `provider` VARCHAR(191) NOT NULL DEFAULT 'BREVO',
+  `providerMessageId` VARCHAR(191) NULL,
+  `emailMessageId` VARCHAR(191) NULL,
+  `dispatchedAt` DATETIME(3) NULL,
+  `deliveredAt` DATETIME(3) NULL,
+  `failedAt` DATETIME(3) NULL,
+  `failureCode` VARCHAR(191) NULL,
+  `failureReason` TEXT NULL,
+  `ambiguousAt` DATETIME(3) NULL,
+  `ambiguousReason` TEXT NULL,
+  `resendAuthorized` BOOLEAN NOT NULL DEFAULT false,
+  `resendAuthorizedBy` VARCHAR(191) NULL,
+  `resendAuthorizedAt` DATETIME(3) NULL,
+  `resendAuthorizationCount` INT NOT NULL DEFAULT 0,
+  `resendReason` TEXT NULL,
+  `metadata` JSON NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+
+  UNIQUE INDEX `invoice_notification_outbox_inv_type_uniq`(`invoiceId`, `notificationType`),
+  INDEX `invoice_notification_outbox_poll_idx`(`status`, `nextAttemptAt`, `createdAt`),
+  INDEX `invoice_notification_outbox_lease_idx`(`status`, `claimExpiresAt`),
+  INDEX `invoice_notification_outbox_provider_msg_idx`(`providerMessageId`),
+  INDEX `invoice_notification_outbox_user_idx`(`userId`, `createdAt`),
+  INDEX `invoice_notification_outbox_num_idx`(`invoiceNumber`),
+  PRIMARY KEY (`id`),
+  CONSTRAINT `InvoiceNotificationOutbox_invoiceId_fkey` FOREIGN KEY (`invoiceId`) REFERENCES `BillingInvoice`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `InvoiceNotificationOutbox_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable EmailWebhookInbox
+CREATE TABLE IF NOT EXISTS `EmailWebhookInbox` (
+  `id` VARCHAR(191) NOT NULL,
+  `provider` VARCHAR(191) NOT NULL DEFAULT 'BREVO',
+  `eventId` VARCHAR(191) NOT NULL,
+  `eventType` VARCHAR(191) NOT NULL,
+  `providerMessageId` VARCHAR(191) NULL,
+  `recipientEmail` VARCHAR(191) NULL,
+  `eventTimestamp` DATETIME(3) NULL,
+  `receivedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `status` ENUM('RECEIVED', 'PROCESSING', 'PROCESSED', 'DUPLICATE', 'UNMATCHED', 'UNMATCHED_NO_IDENTIFIER', 'FAILED') NOT NULL DEFAULT 'RECEIVED',
+  `matchedEmailMessageId` VARCHAR(191) NULL,
+  `matchedOutboxId` VARCHAR(191) NULL,
+  `reconciledAt` DATETIME(3) NULL,
+  `processingAttempts` INT NOT NULL DEFAULT 0,
+  `lastError` TEXT NULL,
+  `rawPayload` JSON NOT NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+
+  UNIQUE INDEX `email_webhook_inbox_provider_event_uniq`(`provider`, `eventId`),
+  INDEX `email_webhook_inbox_prov_msg_idx`(`providerMessageId`, `eventType`),
+  INDEX `email_webhook_inbox_status_poll_idx`(`status`, `createdAt`),
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

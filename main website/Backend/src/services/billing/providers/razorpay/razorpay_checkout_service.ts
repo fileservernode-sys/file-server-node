@@ -20,8 +20,12 @@ import { BillingStateService, PAID_ENTITLED_STATUSES } from '../../billing_state
 import { BillingCountryService } from '../../billing_country_service.js';
 import { BillingProfileService } from '../../billing_profile_service.js';
 import { BillingReceiptService } from '../../billing_receipt_service.js';
+import { BillingInvoiceService } from '../../billing_invoice_service.js';
 import { PriceFormatter } from '../../pricing_catalog_service.js';
-import { ValidationError, NotFoundError, ConflictError } from '../../../../errors/app-error.js';
+import { CustomerActivityService } from '../../../activity/customer_activity_service.js';
+import { billingEventProducer } from '../../../../notifications/producers/billing_producer.js';
+import { ValidationError, NotFoundError, ConflictError, StatutoryConfigurationMissingError } from '../../../../errors/app-error.js';
+import { appLogger } from '../../../../observability/logger.js';
 
 export interface CreateCheckoutSessionParams {
   planCode: string;
@@ -539,6 +543,22 @@ export class RazorpayCheckoutService {
         }
       });
 
+      const formattedCheckoutAmount = PriceFormatter.format(planPrice.amountMinorUnits, planPrice.currency);
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'BILLING.SUBSCRIPTION_CHECKOUT_STARTED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `checkout_started_${subscription.id}`,
+        metadata: {
+          planCode: plan.code,
+          planName: plan.name,
+          billingInterval: plan.interval,
+          currency: planPrice.currency,
+          amountMinorUnits: planPrice.amountMinorUnits,
+          formattedAmount: formattedCheckoutAmount
+        }
+      });
+
       // 11. Return Safe Checkout Initialization Result (Public Key ID Only)
       return {
         keyId: rzpConfig.keyId,
@@ -689,6 +709,23 @@ export class RazorpayCheckoutService {
       // Non-blocking
     }
 
+    // 7b. Idempotently attempt statutory invoice issuance (Phase 8.3)
+    let invoice: any = null;
+    try {
+      const invoiceRes = await BillingInvoiceService.generateInvoiceForPayment(payment.id);
+      invoice = invoiceRes.invoice;
+    } catch (invErr: any) {
+      if (invErr instanceof StatutoryConfigurationMissingError || invErr.errorCode === 'STATUTORY_CONFIGURATION_MISSING') {
+        appLogger.info('[Checkout] Statutory invoice deferred: seller configuration is incomplete or pending approval', {
+          metadata: { paymentId: payment.id, reason: invErr.message }
+        });
+      } else {
+        appLogger.warn('[Checkout] Non-blocking statutory invoice issuance error', {
+          metadata: { paymentId: payment.id, error: invErr.message }
+        });
+      }
+    }
+
     // 8. Log Audit Event
     await prisma.auditEvent.create({
       data: {
@@ -700,10 +737,61 @@ export class RazorpayCheckoutService {
           providerSubscriptionId: subscription.providerSubscriptionId,
           paymentId: payment.id,
           providerPaymentId: paymentId,
-          planCode: subscription.plan.code
+          planCode: subscription.plan.code,
+          invoiceId: invoice?.id || null,
+          invoiceNumber: invoice?.invoiceNumber || null
         }
       }
     });
+
+    const formattedVerifiedAmount = PriceFormatter.format(subscription.amountMinorUnits, subscription.currency);
+    await CustomerActivityService.recordEventSafe({
+      userId,
+      eventType: 'BILLING.PAYMENT_SUCCEEDED',
+      paymentId: payment.id,
+      subscriptionId: subscription.id,
+      idempotencyKey: `payment_succeeded_${payment.id}`,
+      metadata: {
+        planCode: subscription.plan.code,
+        planName: subscription.plan.name,
+        currency: subscription.currency,
+        amountMinorUnits: subscription.amountMinorUnits,
+        formattedAmount: formattedVerifiedAmount
+      }
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId,
+      eventType: 'BILLING.SUBSCRIPTION_ACTIVATED',
+      subscriptionId: subscription.id,
+      idempotencyKey: `sub_activated_${subscription.id}`,
+      metadata: {
+        planCode: subscription.plan.code,
+        planName: subscription.plan.name,
+        billingInterval: subscription.billingInterval,
+        currency: subscription.currency,
+        amountMinorUnits: subscription.amountMinorUnits,
+        formattedAmount: formattedVerifiedAmount
+      }
+    });
+
+    billingEventProducer.emitPaymentSucceeded({
+      id: payment.id,
+      userId,
+      amountMinorUnits: subscription.amountMinorUnits,
+      currency: subscription.currency,
+      planName: subscription.plan.name,
+      chargedAt: payment.chargedAt || new Date()
+    }).catch(() => {});
+
+    billingEventProducer.emitSubscriptionActivated({
+      id: subscription.id,
+      userId,
+      planName: subscription.plan.name,
+      planCode: subscription.plan.code,
+      currency: subscription.currency,
+      amountMinorUnits: subscription.amountMinorUnits
+    }).catch(() => {});
 
     return {
       verified: true,
@@ -713,7 +801,9 @@ export class RazorpayCheckoutService {
       subscriptionId: updatedSub.providerSubscriptionId || updatedSub.id,
       paymentId,
       receiptNumber: receipt?.receiptNumber,
-      receiptId: receipt?.id
+      receiptId: receipt?.id,
+      invoiceNumber: invoice?.invoiceNumber || null,
+      invoiceId: invoice?.id || null
     };
   }
 }

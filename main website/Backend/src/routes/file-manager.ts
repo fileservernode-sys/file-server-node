@@ -11,6 +11,8 @@ import {
   fileManagerDownloadRateLimitConfig,
   authStrictRateLimitConfig
 } from '../middleware/rate_limit_presets.js';
+import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
+import { resolveClientIp } from '../utils/ip.js';
 
 const serverIdParamSchema = z.object({
   serverId: z.string().min(1)
@@ -251,7 +253,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const body = request.body as Record<string, any> || {};
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -266,6 +268,24 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const result = await proxyToGateway(device.id, 'DELETE', { path: body.path });
+    if (result && result.success !== false) {
+      const normalizedPath = body.path.replace(/\/+$/, '');
+      const segments = normalizedPath.split('/').filter(Boolean);
+      const itemName = segments.pop() || body.path;
+      const parentDirectory = segments.length > 0 ? `/${segments.join('/')}` : '/';
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'FILE.DELETED',
+        deviceId: device.id,
+        serverId: serverInstance.id,
+        metadata: {
+          itemName,
+          parentDirectory,
+          serverName: serverInstance.serverName || device.deviceName,
+          deviceName: device.deviceName
+        }
+      });
+    }
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 
@@ -288,7 +308,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const body = request.body as Record<string, any> || {};
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -308,6 +328,20 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       path: parentPath,
       name: folderName
     });
+    if (result && result.success !== false) {
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'FILE.FOLDER_CREATED',
+        deviceId: device.id,
+        serverId: serverInstance.id,
+        metadata: {
+          folderName,
+          parentDirectory: parentPath,
+          serverName: serverInstance.serverName || device.deviceName,
+          deviceName: device.deviceName
+        }
+      });
+    }
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 
@@ -330,7 +364,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const body = request.body as Record<string, any> || {};
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -353,6 +387,25 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       oldPath: body.oldPath,
       newName
     });
+    if (result && result.success !== false) {
+      const normalizedOldPath = body.oldPath.replace(/\/+$/, '');
+      const segments = normalizedOldPath.split('/').filter(Boolean);
+      const oldName = segments.pop() || body.oldPath;
+      const parentDirectory = segments.length > 0 ? `/${segments.join('/')}` : '/';
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'FILE.RENAMED',
+        deviceId: device.id,
+        serverId: serverInstance.id,
+        metadata: {
+          oldName,
+          newName,
+          parentDirectory,
+          serverName: serverInstance.serverName || device.deviceName,
+          deviceName: device.deviceName
+        }
+      });
+    }
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 
@@ -375,7 +428,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const body = request.body as Record<string, any> || {};
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -400,6 +453,25 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
       name: rawName,
       dataBase64: body.dataBase64
     });
+    if (result && result.success !== false) {
+      const approxSizeBytes =
+        typeof body.dataBase64 === 'string'
+          ? Math.floor((body.dataBase64.length * 3) / 4)
+          : undefined;
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'FILE.UPLOADED',
+        deviceId: device.id,
+        serverId: serverInstance.id,
+        metadata: {
+          fileName: rawName,
+          targetDirectory: rawPath,
+          sizeBytes: approxSizeBytes,
+          serverName: serverInstance.serverName || device.deviceName,
+          deviceName: device.deviceName
+        }
+      });
+    }
     return reply.status(result?.success === false ? 400 : 200).send(result);
   });
 
@@ -422,7 +494,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const query = request.query as Record<string, string>;
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -492,6 +564,22 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
           .send(chunk);
       }
 
+      // Only record customer activity on explicit attachment download (never on HTTP 206 range requests or inline previews)
+      if (isDownloadAttachment) {
+        await CustomerActivityService.recordEventSafe({
+          userId: user.id,
+          eventType: 'FILE.DOWNLOADED',
+          deviceId: device.id,
+          serverId: serverInstance.id,
+          metadata: {
+            fileName: filename,
+            sizeBytes: buffer.length,
+            serverName: serverInstance.serverName || device.deviceName,
+            deviceName: device.deviceName
+          }
+        });
+      }
+
       return reply
         .header('Content-Length', buffer.length)
         .send(buffer);
@@ -522,7 +610,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
 
     const { serverId } = params.data;
     const body = request.body as Record<string, any> || {};
-    const { device, offline } = await resolveAuthorisedServer(serverId, user.id);
+    const { serverInstance, device, offline } = await resolveAuthorisedServer(serverId, user.id);
 
     if (offline) {
       return reply.status(503).send(createErrorResponse('SERVER_OFFLINE', 'Android device is currently offline or disconnected'));
@@ -545,6 +633,18 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
         userId: user.id,
         deviceId: device.id,
         eventType: result?.success ? 'FILE_MANAGER_LOGIN_SUCCESS' : 'FILE_MANAGER_LOGIN_FAILED'
+      }
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: result?.success ? 'FILE.SERVER_LOGIN_SUCCEEDED' : 'FILE.SERVER_LOGIN_FAILED',
+      deviceId: device.id,
+      serverId: serverInstance.id,
+      ipAddress: resolveClientIp(request),
+      metadata: {
+        serverName: serverInstance.serverName || device.deviceName,
+        deviceName: device.deviceName
       }
     });
 

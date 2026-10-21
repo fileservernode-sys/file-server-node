@@ -1,5 +1,7 @@
 package net.remotenode.fileserver
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -19,6 +21,12 @@ import java.util.Locale
 import java.util.UUID
 
 class MainActivity : FlutterActivity() {
+    companion object {
+        const val CHANNEL_GENERAL_ID = "remotenode_general"
+        const val CHANNEL_CRITICAL_ID = "remotenode_critical"
+        const val CHANNEL_SECURITY_ID = "remotenode_security"
+    }
+
     private val CHANNEL = "net.remotenode.fileserver/server_engine"
     private val SECURE_STORAGE_CHANNEL = "net.remotenode.fileserver/secure_storage"
     private val NETWORK_EVENT_CHANNEL = "net.remotenode.fileserver/network_events"
@@ -45,6 +53,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        registerNotificationChannels(context)
 
         NetworkWatcher.start(context)
         NetworkWatcher.addListener { event ->
@@ -228,14 +238,30 @@ class MainActivity : FlutterActivity() {
                 "getFcmToken" -> {
                     try {
                         val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)
-                        var fcmToken = prefs.getString("fcm_token", null)
-                        if (fcmToken.isNullOrEmpty()) {
-                            fcmToken = "fcm_token_" + UUID.randomUUID().toString().replace("-", "")
-                            prefs.edit().putString("fcm_token", fcmToken).apply()
+                        val fcmToken = prefs.getString("fcm_token", null)
+                        // Purge legacy synthetic UUID tokens that were mistakenly generated in earlier phases
+                        if (fcmToken != null && fcmToken.startsWith("fcm_token_")) {
+                            prefs.edit().remove("fcm_token").apply()
+                            result.success(null)
+                        } else {
+                            result.success(fcmToken)
                         }
-                        result.success(fcmToken)
                     } catch (e: Exception) {
                         result.error("FCM_ERROR", e.message, null)
+                    }
+                }
+                "updateFcmToken" -> {
+                    try {
+                        val token = call.argument<String>("token")
+                        if (!token.isNullOrBlank()) {
+                            val prefs = context.getSharedPreferences("net.remotenode.device_identity", Context.MODE_PRIVATE)
+                            prefs.edit().putString("fcm_token", token.trim()).apply()
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGS", "Token cannot be empty", null)
+                        }
+                    } catch (e: Exception) {
+                        result.error("FCM_UPDATE_ERROR", e.message, null)
                     }
                 }
                 "deleteFcmToken" -> {
@@ -439,6 +465,24 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                 }
+                "checkNotificationPermissionRationale" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val shouldShow = ActivityCompat.shouldShowRequestPermissionRationale(
+                            this@MainActivity,
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        )
+                        result.success(shouldShow)
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "getInitialNotification" -> {
+                    val payload = extractNotificationPayload(intent)
+                    intent?.removeExtra("deepLink")
+                    intent?.removeExtra("deepLinkUri")
+                    intent?.removeExtra("notificationId")
+                    result.success(payload)
+                }
                 "openNotificationSettings" -> {
                     try {
                         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -489,6 +533,89 @@ class MainActivity : FlutterActivity() {
                     result.notImplemented()
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val payload = extractNotificationPayload(intent)
+        if (payload != null) {
+            flutterEngine?.dartExecutor?.binaryMessenger?.let { messenger ->
+                MethodChannel(messenger, CHANNEL).invokeMethod("onNotificationTap", payload)
+            }
+        }
+    }
+
+    private fun extractNotificationPayload(intent: Intent?): Map<String, Any?>? {
+        if (intent == null) return null
+        val extras = intent.extras ?: return null
+
+        val deepLink = extras.getString("deepLink") ?: extras.getString("deepLinkUri")
+        val notificationId = extras.getString("notificationId")
+        val category = extras.getString("category")
+        val severity = extras.getString("severity")
+        val serverId = extras.getString("serverId")
+        val deviceId = extras.getString("deviceId")
+        val title = extras.getString("title")
+        val body = extras.getString("body")
+
+        if (deepLink == null && notificationId == null && serverId == null) {
+            return null
+        }
+
+        val map = HashMap<String, Any?>()
+        deepLink?.let { map["deepLink"] = it }
+        notificationId?.let { map["notificationId"] = it }
+        category?.let { map["category"] = it }
+        severity?.let { map["severity"] = it }
+        serverId?.let { map["serverId"] = it }
+        deviceId?.let { map["deviceId"] = it }
+        title?.let { map["title"] = it }
+        body?.let { map["body"] = it }
+        return map
+    }
+
+    private fun registerNotificationChannels(ctx: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                ?: return
+
+            // 1. General notifications (Server status, storage alerts, updates)
+            val generalChannel = NotificationChannel(
+                CHANNEL_GENERAL_ID,
+                "General RemoteNode Notifications",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Server status, storage alerts, and operational updates"
+                enableLights(true)
+            }
+
+            // 2. Critical alerts (Offline, outage, storage critical)
+            val criticalChannel = NotificationChannel(
+                CHANNEL_CRITICAL_ID,
+                "Critical System Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "High-priority server offline, outage, and storage critical alerts"
+                enableLights(true)
+                enableVibration(true)
+            }
+
+            // 3. Security alerts (Login, device linking, security events)
+            val securityChannel = NotificationChannel(
+                CHANNEL_SECURITY_ID,
+                "Account & Security Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Login alerts, device linking, and mandatory security notifications"
+                enableLights(true)
+                enableVibration(true)
+            }
+
+            notificationManager.createNotificationChannel(generalChannel)
+            notificationManager.createNotificationChannel(criticalChannel)
+            notificationManager.createNotificationChannel(securityChannel)
         }
     }
 

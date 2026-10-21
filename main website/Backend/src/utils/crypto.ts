@@ -10,20 +10,43 @@ export function hashPassword(password: string): string {
 }
 
 /**
- * Verifies a plaintext password against a stored salt:hash string
+ * Verifies a plaintext password against a stored salt:hash string.
+ * Supports standard scrypt `${salt}:${hash}` representation and provides safe backwards
+ * compatibility for any legacy 64-character SHA-256 hex hashes.
  */
 export function verifyPassword(password: string, storedHash: string | null | undefined): boolean {
-  if (!storedHash || !storedHash.includes(':')) return false;
+  if (!storedHash || typeof storedHash !== 'string') return false;
 
-  const [salt, originalHash] = storedHash.split(':');
-  if (!salt || !originalHash) return false;
+  // Standard scrypt format: salt:hash
+  if (storedHash.includes(':')) {
+    const [salt, originalHash] = storedHash.split(':');
+    if (!salt || !originalHash) return false;
 
-  try {
-    const candidateHash = crypto.scryptSync(password, salt, 64).toString('hex');
-    return crypto.timingSafeEqual(Buffer.from(candidateHash, 'hex'), Buffer.from(originalHash, 'hex'));
-  } catch {
-    return false;
+    try {
+      const candidateHash = crypto.scryptSync(password, salt, 64).toString('hex');
+      const a = Buffer.from(candidateHash, 'hex');
+      const b = Buffer.from(originalHash, 'hex');
+      if (a.length !== b.length) return false;
+      return crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
   }
+
+  // Legacy SHA-256 fallback compatibility (e.g. 64-character hex string)
+  if (storedHash.length === 64 && /^[0-9a-fA-F]{64}$/.test(storedHash)) {
+    try {
+      const shaHash = crypto.createHash('sha256').update(password).digest('hex');
+      const a = Buffer.from(shaHash, 'hex');
+      const b = Buffer.from(storedHash, 'hex');
+      if (a.length !== b.length) return false;
+      return crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -39,7 +62,7 @@ export function hashOtp(otp: string): string {
  * Timing-safely verifies a candidate 6-digit OTP against stored OTP representation
  */
 export function verifyOtpCode(candidateOtp: string, storedRepresentation: string): boolean {
-  if (!storedRepresentation) return false;
+  if (!storedRepresentation || storedRepresentation.startsWith('pwdchg:')) return false;
 
   const cleanCandidate = candidateOtp.trim();
 
@@ -47,8 +70,12 @@ export function verifyOtpCode(candidateOtp: string, storedRepresentation: string
   if (storedRepresentation.includes(':')) {
     const [salt, originalHash] = storedRepresentation.split(':');
     if (!salt || !originalHash) return false;
-    const candidateHash = crypto.createHmac('sha256', salt).update(cleanCandidate).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(candidateHash, 'hex'), Buffer.from(originalHash, 'hex'));
+    try {
+      const candidateHash = crypto.createHmac('sha256', salt).update(cleanCandidate).digest('hex');
+      return crypto.timingSafeEqual(Buffer.from(candidateHash, 'hex'), Buffer.from(originalHash, 'hex'));
+    } catch {
+      return false;
+    }
   }
 
   // Plaintext fallback comparison using timingSafeEqual
@@ -56,6 +83,56 @@ export function verifyOtpCode(candidateOtp: string, storedRepresentation: string
   const b = Buffer.from(storedRepresentation.trim());
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * Hashes a 6-digit OTP code bound strictly to the authenticated password-change operation and userId.
+ * Stored representation format: pwdchg:<userId>:<salt>:<hmac>
+ */
+export function hashPasswordChangeOtp(userId: string, otp: string): string {
+  const cleanUserId = userId.trim();
+  const cleanOtp = otp.trim();
+  const salt = crypto.randomBytes(8).toString('hex');
+  const hash = crypto
+    .createHmac('sha256', salt)
+    .update(`PASSWORD_CHANGE:${cleanUserId}:${cleanOtp}`)
+    .digest('hex');
+  return `pwdchg:${cleanUserId}:${salt}:${hash}`;
+}
+
+/**
+ * Timing-safely verifies a candidate 6-digit OTP against an operation-bound password-change OTP representation.
+ */
+export function verifyPasswordChangeOtpCode(
+  userId: string,
+  candidateOtp: string,
+  storedRepresentation: string
+): boolean {
+  if (!userId || !candidateOtp || !storedRepresentation) return false;
+  if (!storedRepresentation.startsWith('pwdchg:')) return false;
+
+  const parts = storedRepresentation.split(':');
+  if (parts.length !== 4) return false;
+
+  const [prefix, storedUserId, salt, originalHash] = parts;
+  const cleanUserId = userId.trim();
+  if (prefix !== 'pwdchg' || !storedUserId || storedUserId !== cleanUserId || !salt || !originalHash) {
+    return false;
+  }
+
+  try {
+    const cleanCandidate = candidateOtp.trim();
+    const candidateHash = crypto
+      .createHmac('sha256', salt)
+      .update(`PASSWORD_CHANGE:${cleanUserId}:${cleanCandidate}`)
+      .digest('hex');
+    const a = Buffer.from(candidateHash, 'hex');
+    const b = Buffer.from(originalHash, 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
 }
 
 /**

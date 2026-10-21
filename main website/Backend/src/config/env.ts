@@ -126,8 +126,53 @@ const envSchema = z.object({
   RAZORPAY_BASE_URL: z.string().default('https://api.razorpay.com/v1'),
   RAZORPAY_REQUEST_TIMEOUT_MS: z.coerce.number().default(10000),
 
-  // Merchant Tax / Legal Entity Configuration (Phase 6.5-Corrective)
+  // Merchant Tax / Legal Entity Configuration (Phase 6.5 & Phase 8.3)
   MERCHANT_GSTIN: z.string().nullable().optional().default(null),
+  SELLER_LEGAL_NAME: z.string().nullable().optional().default(null),
+  SELLER_TRADE_NAME: z.string().nullable().optional().default(null),
+  SELLER_ADDRESS_LINE1: z.string().nullable().optional().default(null),
+  SELLER_ADDRESS_LINE2: z.string().nullable().optional().default(null),
+  SELLER_CITY: z.string().nullable().optional().default(null),
+  SELLER_STATE: z.string().nullable().optional().default(null),
+  SELLER_STATE_CODE: z.string().nullable().optional().default(null),
+  SELLER_POSTAL_CODE: z.string().nullable().optional().default(null),
+  SELLER_COUNTRY: z.string().default('IN'),
+  SELLER_SUPPORT_EMAIL: z.string().default('support@zdexcloud.com'),
+  SELLER_GSTIN: z.string().nullable().optional().default(null),
+  APPROVED_SAC_CODE: z.string().nullable().optional().default(null),
+  INVOICE_SERIES_PREFIX: z.string().default('ZCI'),
+  STATUTORY_INVOICING_ENABLED: z.preprocess(
+    (val) => (val === 'true' || val === true),
+    z.boolean()
+  ).default(false),
+  EXPORT_INVOICING_APPROVED: z.preprocess(
+    (val) => (val === 'true' || val === true),
+    z.boolean()
+  ).default(false),
+  EXPORT_LUT_ARN: z.string().nullable().optional().default(null),
+
+  // Invoice Availability Notification Dispatch Mode & Outbox Worker Configuration (Phase 8.4 Batch E.4)
+  INVOICE_NOTIFICATION_DISPATCH_MODE: z.enum([
+    'LEGACY_DIRECT',
+    'DUAL_WRITE_LEGACY_DISPATCH',
+    'OUTBOX_WORKER'
+  ]).default('LEGACY_DIRECT'),
+  INVOICE_OUTBOX_WORKER_ENABLED: z.preprocess(
+    (val) => (val === 'true' || val === true),
+    z.boolean()
+  ).default(false),
+  INVOICE_OUTBOX_WORKER_POLL_INTERVAL_MS: z.coerce.number().min(1000).max(60000).default(5000),
+  INVOICE_OUTBOX_WORKER_BATCH_SIZE: z.coerce.number().min(1).max(100).default(10),
+  INVOICE_OUTBOX_WORKER_LEASE_MS: z.coerce.number().min(30000).max(900000).default(300000),
+
+  // Email Webhook Staging Inbox Reconciliation Worker Configuration (Phase 8.4 Batch E.5)
+  EMAIL_WEBHOOK_RECONCILIATION_WORKER_ENABLED: z.preprocess(
+    (val) => (val === 'true' || val === true),
+    z.boolean()
+  ).default(false),
+  EMAIL_WEBHOOK_RECONCILIATION_POLL_INTERVAL_MS: z.coerce.number().min(1000).max(60000).default(10000),
+  EMAIL_WEBHOOK_RECONCILIATION_BATCH_SIZE: z.coerce.number().min(1).max(100).default(25),
+  EMAIL_WEBHOOK_RECONCILIATION_LEASE_MS: z.coerce.number().min(30000).max(900000).default(300000),
 
   // Observability & Error Center Retention Configuration (Phase 12.8)
   ERROR_CLEANUP_ENABLED: z.preprocess(

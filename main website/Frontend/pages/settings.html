@@ -1,16 +1,2439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting to Billing &amp; Receipts | ZdexCloud</title>
-  <meta http-equiv="refresh" content="0; url=billing.html">
-  <link rel="canonical" href="https://zdexcloud.com/pages/billing.html">
-  <script>
-    window.location.replace('billing.html');
-  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ZdexCloud Account Settings — Manage your account profile, password and authentication security, active browser session, recent activity, and billing profile." />
+  <title>Account Settings — ZdexCloud</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- ZdexCloud Core Stylesheets -->
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sections.css" />
+  <link rel="stylesheet" href="../css/dashboard-shell.css" />
+  <link rel="stylesheet" href="../css/notification-center.css" />
+
+  <style>
+    /* ==========================================================================
+       PHASE 10.1: ACCOUNT SETTINGS PAGE STYLES
+       ========================================================================== */
+
+    /* Section Jump Sub-Navigation */
+    .settings-subnav {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      padding: 6px;
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--space-xl);
+      box-shadow: var(--shadow-xs);
+    }
+
+    .settings-subnav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+      border: 1px solid transparent;
+    }
+
+    .settings-subnav-link:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-secondary);
+    }
+
+    .settings-subnav-link:focus-visible {
+      outline: 2px solid var(--color-brand-primary);
+      outline-offset: 2px;
+    }
+
+    .settings-subnav-link.active {
+      background: #EFF6FF;
+      color: var(--color-brand-primary);
+      border-color: #BFDBFE;
+    }
+
+    /* Settings Stack & Section Cards */
+    .settings-sections-stack {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+    }
+
+    .settings-section-card {
+      background: var(--color-bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xs);
+      overflow: hidden;
+      scroll-margin-top: 96px;
+    }
+
+    .settings-section-header {
+      padding: var(--space-lg) var(--space-xl);
+      border-bottom: 1px solid var(--color-border-subtle);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      background: var(--color-bg-surface);
+    }
+
+    .settings-section-header-main {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+    }
+
+    .settings-section-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      color: var(--color-brand-primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .settings-section-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin: 0 0 4px 0;
+      line-height: 1.3;
+    }
+
+    .settings-section-desc {
+      font-size: var(--font-size-body-sm);
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .settings-section-body {
+      padding: var(--space-xl);
+    }
+
+    .settings-section-footer {
+      padding: var(--space-md) var(--space-xl);
+      background: var(--color-bg-subtle, #F8FAFC);
+      border-top: 1px solid var(--color-border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    .settings-footer-note {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Key-Value Data Grid */
+    .settings-kv-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-md);
+    }
+
+    @media (max-width: 768px) {
+      .settings-kv-grid {
+        grid-template-columns: 1fr;
+      }
+      .settings-section-header,
+      .settings-section-body,
+      .settings-section-footer {
+        padding: var(--space-md);
+      }
+    }
+
+    .settings-kv-item {
+      padding: var(--space-md);
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-subtle, #F8FAFC);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .settings-kv-label {
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-text-muted);
+    }
+
+    .settings-kv-value {
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      word-break: break-word;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .settings-kv-mono {
+      font-family: var(--font-family-mono);
+      font-size: var(--font-size-body-sm);
+    }
+
+    .settings-kv-sub {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Status & Verification Pills */
+    .settings-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+
+    .settings-pill--success {
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .settings-pill--info {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+
+    .settings-pill--warning {
+      background: #FFFBEB;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    .settings-pill--neutral {
+      background: var(--color-bg-secondary);
+      color: var(--color-text-secondary);
+      border: 1px solid var(--color-border);
+    }
+
+    .settings-pill--danger {
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+
+    /* Security Controls List */
+    .security-control-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .security-control-row {
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-surface);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+    }
+
+    .security-control-info {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .security-control-title {
+      font-size: var(--font-size-body);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .security-control-desc {
+      font-size: var(--font-size-body-sm);
+      color: var(--color-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .security-control-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    /* Password Change Extensible Panel (Prepared for Phase 10.2) */
+    .password-change-panel {
+      margin-top: var(--space-md);
+      padding: var(--space-lg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      background: var(--color-bg-subtle, #F8FAFC);
+    }
+
+    .password-change-panel[hidden] {
+      display: none !important;
+    }
+
+    .password-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+      max-width: 540px;
+    }
+
+    .password-policy-list {
+      list-style: none;
+      padding: 0;
+      margin: var(--space-xs) 0 0 0;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 12px;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+    }
+
+    @media (max-width: 540px) {
+      .password-policy-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .password-policy-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .password-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-input-wrapper .form-input {
+      padding-right: 42px;
+      width: 100%;
+    }
+
+    .password-visibility-btn {
+      position: absolute;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .password-visibility-btn:hover {
+      color: var(--color-text-primary);
+      background: var(--color-bg-secondary);
+    }
+
+    .password-step-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: var(--font-weight-semibold);
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      background: #EFF6FF;
+      color: #1E40AF;
+      border: 1px solid #BFDBFE;
+    }
+
+    .otp-verification-box {
+      padding: var(--space-md);
+      background: var(--color-bg-surface, #FFFFFF);
+      border: 1px solid #BFDBFE;
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+
+    .otp-verification-box[hidden],
+    .password-success-card[hidden] {
+      display: none !important;
+    }
+
+    .otp-code-input {
+      font-family: var(--font-family-mono);
+      font-size: 20px;
+      font-weight: var(--font-weight-bold);
+      letter-spacing: 0.35em;
+      text-align: center;
+      max-width: 240px;
+    }
+
+    .password-success-card {
+      padding: var(--space-lg);
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      border-radius: var(--radius-md);
+      color: #065F46;
+    }
+
+    /* Session Card & Recent Activity Preview */
+    .session-active-box {
+      padding: var(--space-lg);
+      border: 1px solid #BFDBFE;
+      background: linear-gradient(to right, #EFF6FF, #F8FAFC);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-lg);
+    }
+
+    .session-active-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-sm) var(--space-lg);
+      margin-top: var(--space-xs);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+    }
+
+    .session-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .recent-activity-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+
+    .recent-activity-title {
+      font-size: var(--font-size-body-sm);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+
+    .recent-activity-list {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--color-border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: var(--color-bg-surface);
+    }
+
+    .recent-activity-item {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--color-border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-md);
+      flex-wrap: wrap;
+      font-size: var(--font-size-body-sm);
+    }
+
+    .recent-activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .recent-activity-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .recent-activity-item-title {
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-body-sm);
+    }
+
+    .recent-activity-item-desc {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .recent-activity-item-time {
+      font-family: var(--font-family-mono);
+      font-size: 11px;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* Skeleton Loading State */
+    .skeleton-box {
+      background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+      background-size: 200% 100%;
+      animation: skeletonPulse 1.5s infinite;
+      border-radius: var(--radius-sm);
+      display: inline-block;
+    }
+
+    @keyframes skeletonPulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
 </head>
-<body>
-  <p>Redirecting to <a href="billing.html">Billing &amp; Receipts</a>...</p>
+<body class="dashboard-page">
+
+  <!-- AUTHENTICATED SITE HEADER -->
+  <header class="site-header site-header--authenticated" id="header">
+    <div class="container header-container">
+
+      <!-- Brand Logo -->
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="desktop-nav" aria-label="Authenticated Navigation">
+        <a href="servers.html" class="nav-link">Dashboard</a>
+        <a href="activity.html" class="nav-link">Activity</a>
+        <a href="notifications.html" class="nav-link">Notifications</a>
+        <a href="settings.html" class="nav-link active" aria-current="page">Settings</a>
+        <a href="documentation.html" class="nav-link">Documentation</a>
+        <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
+      </nav>
+
+      <!-- User Account Controls -->
+      <div class="header-actions">
+        <div class="user-account-badge" style="display: flex; align-items: center; gap: var(--space-xs); padding: 4px 12px; background: var(--color-surface-secondary); border: 1px solid var(--color-border); border-radius: var(--radius-full);">
+          <span class="user-avatar" id="user-avatar-initial" style="width: 28px; height: 28px; background: var(--color-brand-primary); color: #FFFFFF; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-weight: var(--font-weight-bold); font-size: var(--font-size-xs);">U</span>
+          <span id="user-email-header" class="user-email-text" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); color: var(--color-text-primary);">User</span>
+        </div>
+
+        <button type="button" id="btn-logout" class="btn btn-secondary btn-sm" aria-label="Sign Out of ZdexCloud Account">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle -->
+      <button class="mobile-menu-toggle" aria-label="Open navigation menu" aria-expanded="false" aria-controls="mobile-nav-drawer">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="drawer-backdrop" aria-hidden="true"></div>
+  <aside class="mobile-nav-drawer" id="mobile-nav-drawer" aria-label="Mobile Navigation Menu" aria-hidden="true">
+    <div class="drawer-header">
+      <a href="../index.html" class="brand-mark">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
+      </a>
+      <button class="btn btn-ghost drawer-close-btn" aria-label="Close navigation menu">
+        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="drawer-nav-list">
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 8px;">Platform</div>
+      <a href="servers.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        <span>Servers &amp; Nodes</span>
+      </a>
+      <a href="subscription.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        <span>Subscription &amp; Plan</span>
+      </a>
+      <a href="transactions.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+        <span>Transactions</span>
+      </a>
+      <a href="invoices.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Invoices</span>
+      </a>
+      <a href="billing.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span>Billing &amp; Receipts</span>
+      </a>
+      <div class="dashboard-sidebar-label" style="padding-left: 12px; margin-top: 16px;">Support &amp; Account</div>
+      <a href="activity.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        <span>Activity</span>
+      </a>
+      <a href="notifications.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span>Notifications</span>
+      </a>
+      <a href="settings.html" class="drawer-nav-link active" aria-current="page">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Settings</span>
+      </a>
+      <a href="documentation.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+        <span>Documentation</span>
+      </a>
+      <a href="faq.html" class="drawer-nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <span>Help &amp; FAQ</span>
+      </a>
+    </div>
+    <div class="drawer-actions">
+      <button type="button" onclick="document.getElementById('btn-logout').click()" class="btn btn-secondary btn-block">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- DASHBOARD SHELL LAYOUT -->
+  <div class="dashboard-shell-layout">
+
+    <!-- DESKTOP DASHBOARD SIDEBAR -->
+    <aside class="dashboard-sidebar" aria-label="Dashboard Sidebar Navigation">
+
+      <!-- Platform Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Platform</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="servers.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+              <span>Servers &amp; Nodes</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="subscription.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span>Subscription &amp; Plan</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="transactions.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span>Transactions</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="invoices.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Invoices</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="billing.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Receipts</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Account & Support Section -->
+      <div class="dashboard-sidebar-section">
+        <div class="dashboard-sidebar-label">Communications &amp; Docs</div>
+        <ul class="dashboard-nav-list">
+          <li class="dashboard-nav-item">
+            <a href="activity.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span>Activity</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="notifications.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span>Notifications</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="settings.html" class="dashboard-nav-link active" aria-current="page">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+              <span>Settings</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="documentation.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+              <span>Documentation</span>
+            </a>
+          </li>
+          <li class="dashboard-nav-item">
+            <a href="faq.html" class="dashboard-nav-link">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              <span>Help &amp; FAQ</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Node Summary Card in Sidebar Footer -->
+      <div class="dashboard-sidebar-footer">
+        <div class="dashboard-node-summary-card">
+          <div class="dashboard-node-summary-title">
+            <span class="dashboard-node-summary-status"></span>
+            <span>Control Plane Connected</span>
+          </div>
+          <p class="dashboard-node-summary-desc">
+            Encrypted TLS 1.3 gateway relay is active for paired Android hosts.
+          </p>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT WORKSPACE -->
+    <main class="dashboard-main-workspace" id="main-content">
+      <div class="dashboard-content-container">
+
+        <!-- Page Header -->
+        <div class="dashboard-page-header">
+          <div>
+            <nav aria-label="Breadcrumb" style="margin-bottom: 8px;">
+              <ol style="display: flex; align-items: center; gap: 6px; list-style: none; padding: 0; margin: 0; font-size: var(--font-size-xs); color: var(--color-text-muted);">
+                <li><a href="servers.html" style="color: var(--color-text-secondary); text-decoration: none;">Dashboard</a></li>
+                <li aria-hidden="true">/</li>
+                <li aria-current="page" style="color: var(--color-text-primary); font-weight: var(--font-weight-semibold);">Account Settings</li>
+              </ol>
+            </nav>
+            <h1 class="dashboard-page-title">Account Settings</h1>
+            <p class="dashboard-page-subtitle">
+              Review your verified account profile, manage password and authentication security, inspect your active session and activity log, and access your billing profile.
+            </p>
+          </div>
+          <div class="dashboard-header-actions">
+            <a href="activity.html" class="btn btn-secondary btn-sm">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span>Activity Log</span>
+            </a>
+            <a href="billing.html" class="btn btn-secondary btn-sm">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Billing &amp; Profile</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Global Error Banner (if profile fetch fails) -->
+        <div id="settings-error-banner" class="alert alert-error" role="alert" style="display: none; margin-bottom: var(--space-lg); align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span id="settings-error-text">Unable to load some account details. Please try refreshing.</span>
+          </div>
+          <button type="button" id="btn-retry-settings" class="btn btn-secondary btn-sm">Retry</button>
+        </div>
+
+        <!-- Section Jump Sub-Navigation -->
+        <nav class="settings-subnav" aria-label="Account Settings Sections">
+          <a href="#section-account" class="settings-subnav-link active" data-section-link="section-account">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>Account</span>
+          </a>
+          <a href="#section-security" class="settings-subnav-link" data-section-link="section-security">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span>Security</span>
+          </a>
+          <a href="#section-sessions-activity" class="settings-subnav-link" data-section-link="section-sessions-activity">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Sessions &amp; Activity</span>
+          </a>
+          <a href="#section-billing-profile" class="settings-subnav-link" data-section-link="section-billing-profile">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Billing Profile</span>
+          </a>
+        </nav>
+
+        <div class="settings-sections-stack">
+
+          <!-- =================================================================
+               SECTION 1: ACCOUNT INFORMATION
+               ================================================================= -->
+          <section class="settings-section-card" id="section-account" aria-labelledby="heading-account">
+            <div class="settings-section-header">
+              <div class="settings-section-header-main">
+                <div class="settings-section-icon" aria-hidden="true">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="settings-section-title" id="heading-account">Account Overview</h2>
+                  <p class="settings-section-desc">
+                    Identity, email verification status, registration date, and active subscription tier associated with your ZdexCloud account.
+                  </p>
+                </div>
+              </div>
+              <span id="account-status-pill" class="settings-pill settings-pill--success">Active Account</span>
+            </div>
+
+            <div class="settings-section-body">
+              <div class="settings-kv-grid">
+                <!-- Full Name -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Account Holder Name</span>
+                  <div class="settings-kv-value" id="account-full-name">
+                    <span class="skeleton-box" style="width: 160px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub">Registered primary account holder name</span>
+                </div>
+
+                <!-- Email Address -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Primary Email Address</span>
+                  <div class="settings-kv-value">
+                    <span id="account-email"><span class="skeleton-box" style="width: 200px; height: 18px;"></span></span>
+                    <span id="account-email-verified-badge" class="settings-pill settings-pill--success" style="display: none;">Verified</span>
+                  </div>
+                  <span class="settings-kv-sub">Used for sign-in OTP verification, receipts, and security alerts</span>
+                </div>
+
+                <!-- Member Since -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Member Since</span>
+                  <div class="settings-kv-value" id="account-created-at">
+                    <span class="skeleton-box" style="width: 140px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub">Account creation timestamp</span>
+                </div>
+
+                <!-- Effective Plan Tier -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Current Subscription Tier</span>
+                  <div class="settings-kv-value">
+                    <span id="account-plan-name"><span class="skeleton-box" style="width: 110px; height: 18px;"></span></span>
+                    <a href="subscription.html" class="btn btn-ghost btn-sm" style="padding: 2px 8px; font-size: 11px;">Manage Plan &rarr;</a>
+                  </div>
+                  <span class="settings-kv-sub" id="account-plan-sub">Determines paired Android server quota and bandwidth limits</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-footer">
+              <div class="settings-footer-note">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <span>Account Reference: <strong id="account-ref-id" class="settings-kv-mono">—</strong></span>
+              </div>
+              <a href="servers.html" class="btn btn-secondary btn-sm">View Paired Servers</a>
+            </div>
+          </section>
+
+          <!-- =================================================================
+               SECTION 2: SECURITY (PASSWORD & AUTHENTICATION)
+               ================================================================= -->
+          <section class="settings-section-card" id="section-security" aria-labelledby="heading-security">
+            <div class="settings-section-header">
+              <div class="settings-section-header-main">
+                <div class="settings-section-icon" aria-hidden="true">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="settings-section-title" id="heading-security">Security &amp; Authentication</h2>
+                  <p class="settings-section-desc">
+                    Manage your account password, two-step email verification, and security notification preferences.
+                  </p>
+                </div>
+              </div>
+              <span class="settings-pill settings-pill--info">2FA Email OTP Enforced</span>
+            </div>
+
+            <div class="settings-section-body">
+              <div class="security-control-list">
+
+                <!-- Control 1: Account Password & Change Structure -->
+                <div id="security-password-section">
+                  <div class="security-control-row">
+                    <div class="security-control-info">
+                      <div class="security-control-title">
+                        <span>Account Password</span>
+                        <span class="settings-pill settings-pill--neutral">Scrypt + Salt Protected</span>
+                      </div>
+                      <p class="security-control-desc">
+                        Updating or resetting your password requires your current password and a 6-digit email verification code, and immediately revokes all active browser sessions and linked device tokens.
+                      </p>
+                    </div>
+                    <div class="security-control-actions">
+                      <button
+                        type="button"
+                        id="btn-toggle-password-panel"
+                        class="btn btn-primary btn-sm"
+                        aria-expanded="false"
+                        aria-controls="password-change-panel"
+                      >
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                        </svg>
+                        <span>Change Password</span>
+                      </button>
+                      <a href="forgot-password.html" class="btn btn-secondary btn-sm">
+                        Forgot Password?
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Authenticated Password Change Panel (Phase 10.2 Two-Step OTP Workflow) -->
+                  <div id="password-change-panel" class="password-change-panel" hidden>
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap; margin-bottom: var(--space-md);">
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                          <h3 style="font-size: var(--font-size-body); font-weight: var(--font-weight-bold); color: var(--color-text-primary); margin: 0;">
+                            Update Account Password
+                          </h3>
+                          <span id="password-step-badge" class="password-step-badge">Step 1 of 2: Verify Credentials</span>
+                        </div>
+                        <p id="password-panel-subtitle" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: 0;">
+                          Enter your current password, choose a strong new password, and confirm with a 6-digit code sent to your account email.
+                        </p>
+                      </div>
+                      <button type="button" id="btn-close-password-panel" class="btn btn-ghost btn-sm" aria-label="Close password change panel">
+                        Cancel
+                      </button>
+                    </div>
+
+                    <div id="password-change-status" class="alert alert-info" role="status" aria-live="polite" style="display: none; margin-bottom: var(--space-md); font-size: var(--font-size-xs);"></div>
+
+                    <form id="form-change-password" class="password-form-grid" novalidate>
+                      <!-- Step 1: Current & New Password Inputs -->
+                      <div id="password-step-credentials" class="password-form-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label for="current-password" class="form-label">Current Password</label>
+                          <div class="password-input-wrapper">
+                            <input
+                              type="password"
+                              id="current-password"
+                              name="currentPassword"
+                              class="form-input"
+                              autocomplete="current-password"
+                              placeholder="Enter your current password"
+                              maxlength="128"
+                              required
+                            />
+                            <button type="button" class="password-visibility-btn" data-toggle-password="current-password" aria-label="Toggle current password visibility">
+                              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label for="new-password" class="form-label">New Password</label>
+                          <div class="password-input-wrapper">
+                            <input
+                              type="password"
+                              id="new-password"
+                              name="newPassword"
+                              class="form-input"
+                              autocomplete="new-password"
+                              placeholder="Minimum 8 characters"
+                              minlength="8"
+                              maxlength="128"
+                              required
+                            />
+                            <button type="button" class="password-visibility-btn" data-toggle-password="new-password" aria-label="Toggle new password visibility">
+                              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                            </button>
+                          </div>
+                          <ul class="password-policy-list" aria-label="Password requirements">
+                            <li class="password-policy-item" id="policy-length">
+                              <span aria-hidden="true">&bull;</span> 8 to 128 characters
+                            </li>
+                            <li class="password-policy-item" id="policy-upper">
+                              <span aria-hidden="true">&bull;</span> At least 1 uppercase letter (A–Z)
+                            </li>
+                            <li class="password-policy-item" id="policy-lower">
+                              <span aria-hidden="true">&bull;</span> At least 1 lowercase letter (a–z)
+                            </li>
+                            <li class="password-policy-item" id="policy-number">
+                              <span aria-hidden="true">&bull;</span> At least 1 number (0–9)
+                            </li>
+                            <li class="password-policy-item" id="policy-different">
+                              <span aria-hidden="true">&bull;</span> Different from current password
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label for="confirm-password" class="form-label">Confirm New Password</label>
+                          <div class="password-input-wrapper">
+                            <input
+                              type="password"
+                              id="confirm-password"
+                              name="confirmPassword"
+                              class="form-input"
+                              autocomplete="new-password"
+                              placeholder="Re-enter your new password"
+                              minlength="8"
+                              maxlength="128"
+                              required
+                            />
+                            <button type="button" class="password-visibility-btn" data-toggle-password="confirm-password" aria-label="Toggle confirm password visibility">
+                              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div id="password-step-1-actions" style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; padding-top: var(--space-xs);">
+                          <button type="submit" id="btn-submit-password-change" class="btn btn-primary btn-sm">
+                            Send Verification Code
+                          </button>
+                          <a href="forgot-password.html" class="btn btn-secondary btn-sm">
+                            Forgot Current Password?
+                          </a>
+                        </div>
+                      </div>
+
+                      <!-- Step 2: 6-Digit Email OTP Verification -->
+                      <div id="password-step-otp" class="otp-verification-box" hidden>
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap;">
+                          <div>
+                            <div style="font-size: var(--font-size-body-sm); font-weight: var(--font-weight-bold); color: var(--color-text-primary); margin-bottom: 2px;">
+                              Enter 6-Digit Email Verification Code
+                            </div>
+                            <p style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin: 0;">
+                              We sent a 6-digit security code to <strong id="otp-recipient-email">your account email</strong>. Code expires in <span id="otp-expiry-minutes">10</span> minutes.
+                            </p>
+                          </div>
+                          <button type="button" id="btn-edit-password-inputs" class="btn btn-ghost btn-sm" style="font-size: 11px;">
+                            Edit Passwords
+                          </button>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                          <label for="password-change-otp" class="form-label">6-Digit Verification Code</label>
+                          <input
+                            type="text"
+                            id="password-change-otp"
+                            name="otp"
+                            class="form-input otp-code-input"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            maxlength="6"
+                            autocomplete="one-time-code"
+                            placeholder="000000"
+                          />
+                        </div>
+
+                        <div style="font-size: 11px; color: var(--color-text-secondary); line-height: 1.5; background: #FFFBEB; border: 1px solid #FDE68A; color: #92400E; padding: 8px 12px; border-radius: var(--radius-sm);">
+                          <strong>Session &amp; Device Revocation Policy:</strong> Confirming this code will update your password and immediately sign out all active web sessions and linked Android device credentials.
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+                          <button type="submit" id="btn-confirm-password-change" class="btn btn-primary btn-sm">
+                            Confirm &amp; Update Password
+                          </button>
+                          <button type="button" id="btn-resend-password-otp" class="btn btn-secondary btn-sm">
+                            Resend Code
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+
+                    <!-- Post-Change Re-Authentication Card -->
+                    <div id="password-change-success-card" class="password-success-card" hidden>
+                      <div style="display: flex; align-items: center; gap: 8px; font-weight: var(--font-weight-bold); font-size: var(--font-size-body); margin-bottom: 6px;">
+                        <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        <span>Password Updated Successfully</span>
+                      </div>
+                      <p id="password-change-success-message" style="font-size: var(--font-size-body-sm); margin: 0 0 12px 0; line-height: 1.5;">
+                        Your account password has been changed. For your security, all active browser sessions and linked device credentials have been revoked. Please sign in again with your new password.
+                      </p>
+                      <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+                        <a href="login.html?passwordChanged=true" id="btn-signin-new-password" class="btn btn-primary btn-sm">
+                          Sign In With New Password &rarr;
+                        </a>
+                        <span id="password-redirect-countdown" style="font-size: var(--font-size-xs); color: #047857;">
+                          Redirecting to Sign In in 4 seconds...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Control 2: Two-Step Sign-In Verification -->
+                <div class="security-control-row">
+                  <div class="security-control-info">
+                    <div class="security-control-title">
+                      <span>Two-Step Sign-In Verification (Email OTP)</span>
+                      <span class="settings-pill settings-pill--success">Always Active</span>
+                    </div>
+                    <p class="security-control-desc">
+                      Every sign-in requires both your account password and a 6-digit one-time verification code sent to your verified email address.
+                    </p>
+                  </div>
+                  <div class="security-control-actions">
+                    <span class="settings-pill settings-pill--info">Mandatory Protection</span>
+                  </div>
+                </div>
+
+                <!-- Control 3: Security & Operational Notifications -->
+                <div class="security-control-row">
+                  <div class="security-control-info">
+                    <div class="security-control-title">
+                      <span>Security &amp; Account Alert Preferences</span>
+                    </div>
+                    <p class="security-control-desc">
+                      Mandatory security alerts notify you of password changes, new sign-ins, and device pairing changes. Manage optional billing and node health notifications in Notification Settings.
+                    </p>
+                  </div>
+                  <div class="security-control-actions">
+                    <a href="notifications.html" class="btn btn-secondary btn-sm">
+                      Notification Preferences &rarr;
+                    </a>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+
+          <!-- =================================================================
+               SECTION 3: SESSIONS AND ACTIVITY
+               ================================================================= -->
+          <section class="settings-section-card" id="section-sessions-activity" aria-labelledby="heading-sessions">
+            <div class="settings-section-header">
+              <div class="settings-section-header-main">
+                <div class="settings-section-icon" aria-hidden="true">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="settings-section-title" id="heading-sessions">Sessions &amp; Activity</h2>
+                  <p class="settings-section-desc">
+                    Inspect your current authenticated browser session and review the most recent security and service events recorded on your account.
+                  </p>
+                </div>
+              </div>
+              <a href="activity.html" class="btn btn-secondary btn-sm">View Full Activity Log &rarr;</a>
+            </div>
+
+            <div class="settings-section-body">
+              <!-- Active Browser Session Card -->
+              <div class="session-active-box">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
+                    <strong style="font-size: var(--font-size-body); color: var(--color-text-primary);">Current Browser Session</strong>
+                    <span class="settings-pill settings-pill--success">Authenticated</span>
+                  </div>
+                  <div class="session-active-meta">
+                    <span class="session-meta-item">
+                      <strong>Signed In:</strong>
+                      <span id="session-issued-at" class="settings-kv-mono">Current session</span>
+                    </span>
+                    <span class="session-meta-item">
+                      <strong>Session Expires:</strong>
+                      <span id="session-expires-at" class="settings-kv-mono">24h rolling window</span>
+                    </span>
+                    <span class="session-meta-item">
+                      <strong>Protection:</strong>
+                      <span>HttpOnly Cookie + CSRF Token</span>
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <button type="button" id="btn-session-signout" class="btn btn-secondary btn-sm">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      <polyline points="16 17 21 12 16 7"></polyline>
+                      <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    <span>Sign Out Session</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Recent Security Activity Preview -->
+              <div>
+                <div class="recent-activity-header">
+                  <h3 class="recent-activity-title">Recent Security Activity</h3>
+                  <a href="activity.html?category=ACCOUNT_SECURITY" style="font-size: var(--font-size-xs); font-weight: var(--font-weight-semibold); color: var(--color-brand-primary); text-decoration: none;">
+                    Open Security Activity Feed &rarr;
+                  </a>
+                </div>
+
+                <div id="recent-activity-container" class="recent-activity-list" aria-live="polite">
+                  <div class="recent-activity-item">
+                    <div class="recent-activity-item-main">
+                      <span class="skeleton-box" style="width: 180px; height: 14px; margin-bottom: 4px;"></span>
+                      <span class="skeleton-box" style="width: 280px; height: 12px;"></span>
+                    </div>
+                    <span class="skeleton-box" style="width: 90px; height: 12px;"></span>
+                  </div>
+                  <div class="recent-activity-item">
+                    <div class="recent-activity-item-main">
+                      <span class="skeleton-box" style="width: 150px; height: 14px; margin-bottom: 4px;"></span>
+                      <span class="skeleton-box" style="width: 240px; height: 12px;"></span>
+                    </div>
+                    <span class="skeleton-box" style="width: 90px; height: 12px;"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-footer">
+              <div class="settings-footer-note">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Need to revoke paired Android server credentials? Manage nodes directly in <a href="servers.html" style="color: var(--color-brand-primary); font-weight: var(--font-weight-semibold);">Servers &amp; Nodes</a>.</span>
+              </div>
+              <a href="activity.html?category=ACCOUNT_SECURITY" class="btn btn-primary btn-sm">Explore All Security Activity</a>
+            </div>
+          </section>
+
+          <!-- =================================================================
+               SECTION 4: BILLING PROFILE & TAX DETAILS
+               ================================================================= -->
+          <section class="settings-section-card" id="section-billing-profile" aria-labelledby="heading-billing-profile">
+            <div class="settings-section-header">
+              <div class="settings-section-header-main">
+                <div class="settings-section-icon" aria-hidden="true">
+                  <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="settings-section-title" id="heading-billing-profile">Billing Profile &amp; Invoices</h2>
+                  <p class="settings-section-desc">
+                    Legal billing name, jurisdiction, tax identification, and currency used when issuing tax-compliant PDF invoices.
+                  </p>
+                </div>
+              </div>
+              <span id="billing-profile-status-pill" class="settings-pill settings-pill--neutral">Checking Profile...</span>
+            </div>
+
+            <div class="settings-section-body">
+              <div class="settings-kv-grid">
+                <!-- Legal / Company Name -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Billing Name / Organization</span>
+                  <div class="settings-kv-value" id="billing-legal-name">
+                    <span class="skeleton-box" style="width: 160px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub" id="billing-company-sub">Appears on issued invoices and receipts</span>
+                </div>
+
+                <!-- Billing Location -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Billing Jurisdiction &amp; Address</span>
+                  <div class="settings-kv-value" id="billing-location">
+                    <span class="skeleton-box" style="width: 180px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub" id="billing-address-sub">Used for regional tax determination (GST / VAT / Sales Tax)</span>
+                </div>
+
+                <!-- Billing Currency -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Account Billing Currency</span>
+                  <div class="settings-kv-value settings-kv-mono" id="billing-currency">
+                    <span class="skeleton-box" style="width: 80px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub">Settlement currency for subscription charges</span>
+                </div>
+
+                <!-- Tax ID -->
+                <div class="settings-kv-item">
+                  <span class="settings-kv-label">Tax Identification (GSTIN / VAT)</span>
+                  <div class="settings-kv-value settings-kv-mono" id="billing-tax-id">
+                    <span class="skeleton-box" style="width: 140px; height: 18px;"></span>
+                  </div>
+                  <span class="settings-kv-sub" id="billing-tax-sub">Optional business tax identifier for B2B invoices</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-section-footer">
+              <div class="settings-footer-note">
+                <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <span>Changes to your billing profile apply to future invoices while preserving historical issued PDFs.</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap;">
+                <a href="invoices.html" class="btn btn-secondary btn-sm">Invoice History</a>
+                <a href="transactions.html" class="btn btn-secondary btn-sm">Transactions</a>
+                <a href="billing.html" class="btn btn-primary btn-sm">Edit Billing Profile &rarr;</a>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- SITE FOOTER -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark" style="margin-bottom: var(--space-sm);">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span class="brand-text">ZdexCloud</span>
+          </a>
+          <p class="footer-brand-desc">
+            Turn your Android device into a secure, high-performance private cloud server with zero-configuration TLS relay and granular directory sandboxing.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="footer-col-title">Platform</h3>
+          <ul class="footer-links">
+            <li><a href="servers.html" class="footer-link">Servers &amp; Nodes</a></li>
+            <li><a href="subscription.html" class="footer-link">Subscription &amp; Plan</a></li>
+            <li><a href="transactions.html" class="footer-link">Transactions</a></li>
+            <li><a href="invoices.html" class="footer-link">Invoices</a></li>
+            <li><a href="billing.html" class="footer-link">Billing &amp; Receipts</a></li>
+            <li><a href="activity.html" class="footer-link">Activity</a></li>
+            <li><a href="settings.html" class="footer-link">Account Settings</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-col-title">Resources</h3>
+          <ul class="footer-links">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="architecture.html" class="footer-link">Security Architecture</a></li>
+            <li><a href="download.html" class="footer-link">Android Host APK</a></li>
+            <li><a href="faq.html" class="footer-link">Help &amp; FAQ</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-col-title">Legal</h3>
+          <ul class="footer-links">
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="refund.html" class="footer-link">Refund Policy</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copyright">&copy; 2026 ZdexCloud Infrastructure. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="../js/motion.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/notification-center.js"></script>
+  <script src="../js/main.js"></script>
+
+  <!-- Account Settings Controller (Phase 10.1) -->
+  <script>
+    (function () {
+      'use strict';
+
+      const PLAN_LABELS = {
+        free: 'Free Tier',
+        pro: 'Pro Tier',
+        max: 'Max Tier'
+      };
+
+      function formatDateTime(isoString) {
+        if (!isoString) return '—';
+        const d = new Date(isoString);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
+      function formatDateOnly(isoString) {
+        if (!isoString) return '—';
+        const d = new Date(isoString);
+        if (Number.isNaN(d.getTime())) return '—';
+        return d.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+      }
+
+      function populateHeaderIdentity(user) {
+        const emailEl = document.getElementById('user-email-header');
+        const avatarEl = document.getElementById('user-avatar-initial');
+        if (emailEl && user?.email) {
+          emailEl.textContent = user.email;
+        }
+        if (avatarEl) {
+          const source = (user?.fullName || user?.email || 'U').trim();
+          avatarEl.textContent = source.charAt(0).toUpperCase();
+        }
+      }
+
+      function populateAccountSection(user, session) {
+        const fullNameEl = document.getElementById('account-full-name');
+        const emailEl = document.getElementById('account-email');
+        const verifiedBadge = document.getElementById('account-email-verified-badge');
+        const createdAtEl = document.getElementById('account-created-at');
+        const statusPill = document.getElementById('account-status-pill');
+        const refIdEl = document.getElementById('account-ref-id');
+
+        if (fullNameEl) {
+          fullNameEl.textContent = user?.fullName || 'Not specified';
+        }
+        if (emailEl) {
+          emailEl.textContent = user?.email || '—';
+        }
+        if (verifiedBadge) {
+          verifiedBadge.style.display = 'inline-flex';
+          if (user?.emailVerified !== false) {
+            verifiedBadge.textContent = 'Verified';
+            verifiedBadge.className = 'settings-pill settings-pill--success';
+          } else {
+            verifiedBadge.textContent = 'Pending Verification';
+            verifiedBadge.className = 'settings-pill settings-pill--warning';
+          }
+        }
+        if (createdAtEl) {
+          createdAtEl.textContent = formatDateOnly(user?.createdAt);
+        }
+        if (statusPill) {
+          const rawStatus = String(user?.status || 'ACTIVE').toUpperCase();
+          if (rawStatus === 'ACTIVE') {
+            statusPill.textContent = 'Active Account';
+            statusPill.className = 'settings-pill settings-pill--success';
+          } else {
+            statusPill.textContent = rawStatus;
+            statusPill.className = 'settings-pill settings-pill--warning';
+          }
+        }
+        if (refIdEl) {
+          const rawId = String(user?.id || '');
+          refIdEl.textContent = rawId ? ('USR-' + rawId.slice(0, 8).toUpperCase()) : '—';
+        }
+
+        // Session timing details
+        const issuedAtEl = document.getElementById('session-issued-at');
+        const expiresAtEl = document.getElementById('session-expires-at');
+        if (issuedAtEl) {
+          issuedAtEl.textContent = session?.issuedAt ? formatDateTime(session.issuedAt) : 'Active session';
+        }
+        if (expiresAtEl) {
+          expiresAtEl.textContent = session?.expiresAt ? formatDateTime(session.expiresAt) : '24h rolling window';
+        }
+      }
+
+      async function loadBillingAndPlanSummary(user) {
+        const planNameEl = document.getElementById('account-plan-name');
+        const planSubEl = document.getElementById('account-plan-sub');
+        const legalNameEl = document.getElementById('billing-legal-name');
+        const companySubEl = document.getElementById('billing-company-sub');
+        const locationEl = document.getElementById('billing-location');
+        const addressSubEl = document.getElementById('billing-address-sub');
+        const currencyEl = document.getElementById('billing-currency');
+        const taxIdEl = document.getElementById('billing-tax-id');
+        const taxSubEl = document.getElementById('billing-tax-sub');
+        const profileStatusPill = document.getElementById('billing-profile-status-pill');
+
+        const res = await window.AuthService.apiFetch('/billing', { method: 'GET' });
+        if (!res.ok || !res.data?.success || !res.data?.data) {
+          if (planNameEl) {
+            const fallbackPlan = String(user?.plan || 'free').toLowerCase();
+            planNameEl.textContent = PLAN_LABELS[fallbackPlan] || 'Free Tier';
+          }
+          if (legalNameEl) legalNameEl.textContent = user?.fullName || 'Not configured';
+          if (locationEl) locationEl.textContent = 'Not configured';
+          if (currencyEl) currencyEl.textContent = '—';
+          if (taxIdEl) taxIdEl.textContent = 'Not configured';
+          if (profileStatusPill) {
+            profileStatusPill.textContent = 'Unavailable';
+            profileStatusPill.className = 'settings-pill settings-pill--warning';
+          }
+          throw new Error(res.data?.error || 'Failed to load billing summary');
+        }
+
+        const data = res.data.data;
+        const planKey = String(data.plan || user?.plan || 'free').toLowerCase();
+        if (planNameEl) {
+          planNameEl.textContent = PLAN_LABELS[planKey] || planKey.toUpperCase();
+        }
+        if (planSubEl && data.subscription?.status) {
+          const subStatus = String(data.subscription.status).toUpperCase();
+          planSubEl.textContent = 'Subscription status: ' + subStatus;
+        }
+
+        const profile = data.billingProfile || null;
+        const country = profile?.country || data.billingCountry || null;
+        const postalCode = profile?.postalCode || data.billingPostalCode || null;
+
+        if (legalNameEl) {
+          legalNameEl.textContent = profile?.fullName || user?.fullName || 'Not configured';
+        }
+        if (companySubEl) {
+          companySubEl.textContent = profile?.companyName
+            ? ('Organization: ' + profile.companyName)
+            : 'Individual account (no organization name set)';
+        }
+
+        if (locationEl) {
+          const parts = [profile?.city, profile?.stateProvince, country].filter(Boolean);
+          locationEl.textContent = parts.length > 0 ? parts.join(', ') : 'Not configured';
+        }
+        if (addressSubEl) {
+          addressSubEl.textContent = postalCode
+            ? ('Postal / ZIP Code: ' + postalCode)
+            : 'Configure your billing address in Billing & Receipts before checkout';
+        }
+
+        if (currencyEl) {
+          currencyEl.textContent = data.currency || 'INR / USD';
+        }
+
+        if (taxIdEl) {
+          if (profile?.taxId) {
+            const label = profile.taxIdType ? (profile.taxIdType + ': ') : '';
+            taxIdEl.textContent = label + profile.taxId;
+          } else {
+            taxIdEl.textContent = 'None configured';
+          }
+        }
+        if (taxSubEl) {
+          taxSubEl.textContent = profile?.taxId
+            ? 'Included on generated tax invoices'
+            : 'Optional — add GSTIN or VAT ID in Billing & Receipts if needed';
+        }
+
+        if (profileStatusPill) {
+          if (country && (profile?.fullName || postalCode)) {
+            profileStatusPill.textContent = 'Profile Configured';
+            profileStatusPill.className = 'settings-pill settings-pill--success';
+          } else {
+            profileStatusPill.textContent = 'Incomplete Profile';
+            profileStatusPill.className = 'settings-pill settings-pill--warning';
+          }
+        }
+      }
+
+      function renderRecentActivitySkeleton(container) {
+        container.textContent = '';
+        for (let i = 0; i < 3; i++) {
+          const row = document.createElement('div');
+          row.className = 'recent-activity-item';
+
+          const main = document.createElement('div');
+          main.className = 'recent-activity-item-main';
+
+          const s1 = document.createElement('span');
+          s1.className = 'skeleton-box';
+          s1.style.width = i === 0 ? '180px' : i === 1 ? '150px' : '190px';
+          s1.style.height = '14px';
+          s1.style.marginBottom = '4px';
+
+          const s2 = document.createElement('span');
+          s2.className = 'skeleton-box';
+          s2.style.width = i === 0 ? '280px' : i === 1 ? '240px' : '260px';
+          s2.style.height = '12px';
+
+          main.appendChild(s1);
+          main.appendChild(s2);
+
+          const time = document.createElement('span');
+          time.className = 'skeleton-box';
+          time.style.width = '90px';
+          time.style.height = '12px';
+
+          row.appendChild(main);
+          row.appendChild(time);
+          container.appendChild(row);
+        }
+      }
+
+      async function loadRecentActivityPreview() {
+        const container = document.getElementById('recent-activity-container');
+        if (!container) return;
+
+        renderRecentActivitySkeleton(container);
+
+        try {
+          const res = await window.AuthService.apiFetch('/account/activity?category=ACCOUNT_SECURITY&limit=5', { method: 'GET' });
+          container.textContent = '';
+
+          if (!res.ok || !res.data?.success || !Array.isArray(res.data?.data?.items)) {
+            const errRow = document.createElement('div');
+            errRow.className = 'recent-activity-item';
+            errRow.style.padding = 'var(--space-md)';
+            errRow.style.flexDirection = 'column';
+            errRow.style.alignItems = 'flex-start';
+            errRow.style.gap = '8px';
+
+            const errHeader = document.createElement('div');
+            errHeader.style.display = 'flex';
+            errHeader.style.alignItems = 'center';
+            errHeader.style.gap = '10px';
+            errHeader.style.flexWrap = 'wrap';
+
+            const errText = document.createElement('span');
+            errText.style.color = 'var(--color-text-secondary)';
+            errText.style.fontSize = 'var(--font-size-xs)';
+            errText.textContent = 'Unable to load security activity preview.';
+            errHeader.appendChild(errText);
+
+            const btnRetry = document.createElement('button');
+            btnRetry.type = 'button';
+            btnRetry.className = 'btn btn-secondary btn-sm';
+            btnRetry.style.padding = '2px 10px';
+            btnRetry.style.fontSize = '11px';
+            btnRetry.textContent = 'Retry';
+            btnRetry.addEventListener('click', function () {
+              loadRecentActivityPreview();
+            });
+            errHeader.appendChild(btnRetry);
+
+            const errLink = document.createElement('a');
+            errLink.href = 'activity.html?category=ACCOUNT_SECURITY';
+            errLink.style.fontSize = 'var(--font-size-xs)';
+            errLink.style.color = 'var(--color-brand-primary)';
+            errLink.style.fontWeight = 'var(--font-weight-medium)';
+            errLink.style.textDecoration = 'none';
+            errLink.textContent = 'Open Security Activity feed \u2192';
+
+            errRow.appendChild(errHeader);
+            errRow.appendChild(errLink);
+            container.appendChild(errRow);
+            return;
+          }
+
+          const items = res.data.data.items.slice(0, 5);
+          if (items.length === 0) {
+            const emptyRow = document.createElement('div');
+            emptyRow.className = 'recent-activity-item';
+            emptyRow.style.padding = 'var(--space-md)';
+            emptyRow.style.flexDirection = 'column';
+            emptyRow.style.alignItems = 'flex-start';
+            emptyRow.style.gap = '4px';
+
+            const emptyTitle = document.createElement('div');
+            emptyTitle.style.fontWeight = 'var(--font-weight-semibold)';
+            emptyTitle.style.fontSize = 'var(--font-size-body-sm)';
+            emptyTitle.style.color = 'var(--color-text-primary)';
+            emptyTitle.textContent = 'No security events recorded yet';
+
+            const emptyText = document.createElement('div');
+            emptyText.style.color = 'var(--color-text-secondary)';
+            emptyText.style.fontSize = 'var(--font-size-xs)';
+            emptyText.textContent = 'Security actions such as sign-ins, password updates, and session revocations will be logged here.';
+
+            emptyRow.appendChild(emptyTitle);
+            emptyRow.appendChild(emptyText);
+            container.appendChild(emptyRow);
+            return;
+          }
+
+          items.forEach(function (item) {
+            const row = document.createElement('div');
+            row.className = 'recent-activity-item';
+
+            const main = document.createElement('div');
+            main.className = 'recent-activity-item-main';
+
+            const titleRow = document.createElement('div');
+            titleRow.style.display = 'flex';
+            titleRow.style.alignItems = 'center';
+            titleRow.style.gap = '8px';
+            titleRow.style.flexWrap = 'wrap';
+
+            const title = document.createElement('span');
+            title.className = 'recent-activity-item-title';
+            title.textContent = String(item.title || 'Security Activity');
+            titleRow.appendChild(title);
+
+            // Severity pill
+            const severity = String(item.severity || 'INFO').toUpperCase();
+            const pill = document.createElement('span');
+            if (severity === 'CRITICAL') {
+              pill.className = 'settings-pill settings-pill--danger';
+              pill.textContent = 'Critical';
+            } else if (severity === 'WARNING') {
+              pill.className = 'settings-pill settings-pill--warning';
+              pill.textContent = 'Important';
+            } else {
+              pill.className = 'settings-pill settings-pill--info';
+              pill.textContent = 'Info';
+            }
+            pill.style.fontSize = '10px';
+            pill.style.padding = '1px 6px';
+            titleRow.appendChild(pill);
+
+            const desc = document.createElement('div');
+            desc.className = 'recent-activity-item-desc';
+            desc.textContent = String(item.description || '');
+
+            main.appendChild(titleRow);
+            main.appendChild(desc);
+
+            const time = document.createElement('span');
+            time.className = 'recent-activity-item-time';
+            time.textContent = formatDateTime(item.occurredAt || item.createdAt);
+
+            row.appendChild(main);
+            row.appendChild(time);
+            container.appendChild(row);
+          });
+        } catch (_) {
+          container.textContent = '';
+          const errRow = document.createElement('div');
+          errRow.className = 'recent-activity-item';
+          const errText = document.createElement('span');
+          errText.style.color = 'var(--color-text-secondary)';
+          errText.textContent = 'Unable to load security activity preview. Please refresh or retry.';
+          errRow.appendChild(errText);
+          container.appendChild(errRow);
+        }
+      }
+
+      function setupSubnavHighlighting() {
+        const links = document.querySelectorAll('.settings-subnav-link');
+        links.forEach(function (link) {
+          link.addEventListener('click', function () {
+            links.forEach(function (l) { l.classList.remove('active'); });
+            link.classList.add('active');
+          });
+        });
+      }
+
+      function setupPasswordSectionControls(currentUser) {
+        const toggleBtn = document.getElementById('btn-toggle-password-panel');
+        const closeBtn = document.getElementById('btn-close-password-panel');
+        const panel = document.getElementById('password-change-panel');
+        const form = document.getElementById('form-change-password');
+        const statusEl = document.getElementById('password-change-status');
+        const stepBadgeEl = document.getElementById('password-step-badge');
+        const currentPasswordInput = document.getElementById('current-password');
+        const newPasswordInput = document.getElementById('new-password');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const step1ActionsEl = document.getElementById('password-step-1-actions');
+        const submitStep1Btn = document.getElementById('btn-submit-password-change');
+        const stepOtpBox = document.getElementById('password-step-otp');
+        const otpInput = document.getElementById('password-change-otp');
+        const otpRecipientEl = document.getElementById('otp-recipient-email');
+        const otpExpiryEl = document.getElementById('otp-expiry-minutes');
+        const editInputsBtn = document.getElementById('btn-edit-password-inputs');
+        const confirmBtn = document.getElementById('btn-confirm-password-change');
+        const resendBtn = document.getElementById('btn-resend-password-otp');
+        const successCard = document.getElementById('password-change-success-card');
+        const successMessageEl = document.getElementById('password-change-success-message');
+        const redirectCountdownEl = document.getElementById('password-redirect-countdown');
+
+        let currentStep = 'CREDENTIALS'; // 'CREDENTIALS' | 'OTP_VERIFICATION' | 'COMPLETED'
+        let isSubmitting = false;
+        let resendCooldownTimer = null;
+        let resendRemainingSec = 0;
+        let redirectTimer = null;
+
+        function clearCooldownTimer() {
+          if (resendCooldownTimer) {
+            clearInterval(resendCooldownTimer);
+            resendCooldownTimer = null;
+          }
+          resendRemainingSec = 0;
+          if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend Code';
+          }
+        }
+
+        function startResendCooldown(seconds) {
+          clearCooldownTimer();
+          resendRemainingSec = Math.max(1, Number(seconds) || 60);
+          if (resendBtn) {
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Resend Code (' + resendRemainingSec + 's)';
+          }
+          resendCooldownTimer = setInterval(function () {
+            resendRemainingSec -= 1;
+            if (resendRemainingSec <= 0) {
+              clearCooldownTimer();
+            } else if (resendBtn) {
+              resendBtn.disabled = true;
+              resendBtn.textContent = 'Resend Code (' + resendRemainingSec + 's)';
+            }
+          }, 1000);
+        }
+
+        function showStatus(type, message) {
+          if (!statusEl) return;
+          if (!message) {
+            statusEl.style.display = 'none';
+            statusEl.textContent = '';
+            return;
+          }
+          statusEl.style.display = 'block';
+          statusEl.className = 'alert alert-' + type;
+          statusEl.textContent = String(message);
+        }
+
+        function updatePolicyChecklist() {
+          const currentVal = currentPasswordInput ? currentPasswordInput.value : '';
+          const val = newPasswordInput ? newPasswordInput.value : '';
+          const checks = [
+            { id: 'policy-length', pass: val.length >= 8 && val.length <= 128 },
+            { id: 'policy-upper', pass: /[A-Z]/.test(val) },
+            { id: 'policy-lower', pass: /[a-z]/.test(val) },
+            { id: 'policy-number', pass: /[0-9]/.test(val) },
+            { id: 'policy-different', pass: val.length > 0 && val !== currentVal }
+          ];
+          checks.forEach(function (c) {
+            const el = document.getElementById(c.id);
+            if (el) {
+              el.style.color = c.pass ? '#065F46' : 'var(--color-text-secondary)';
+              el.style.fontWeight = c.pass ? '600' : '400';
+            }
+          });
+        }
+
+        function setCredentialsLocked(locked) {
+          [currentPasswordInput, newPasswordInput, confirmPasswordInput].forEach(function (input) {
+            if (!input) return;
+            input.readOnly = Boolean(locked);
+            input.style.opacity = locked ? '0.75' : '1';
+          });
+        }
+
+        function transitionToCredentialsStep(preserveValues) {
+          currentStep = 'CREDENTIALS';
+          isSubmitting = false;
+          setCredentialsLocked(false);
+
+          if (!preserveValues && form) {
+            form.reset();
+            if (currentPasswordInput) currentPasswordInput.value = '';
+            if (newPasswordInput) newPasswordInput.value = '';
+            if (confirmPasswordInput) confirmPasswordInput.value = '';
+            if (otpInput) otpInput.value = '';
+            updatePolicyChecklist();
+          }
+
+          if (stepBadgeEl) {
+            stepBadgeEl.textContent = 'Step 1 of 2: Verify Credentials';
+          }
+          if (step1ActionsEl) {
+            step1ActionsEl.style.display = 'flex';
+          }
+          if (submitStep1Btn) {
+            submitStep1Btn.disabled = false;
+            submitStep1Btn.textContent = 'Send Verification Code';
+          }
+          if (stepOtpBox) {
+            stepOtpBox.setAttribute('hidden', '');
+          }
+          if (form) {
+            form.removeAttribute('hidden');
+            form.style.display = '';
+          }
+          if (successCard) {
+            successCard.setAttribute('hidden', '');
+          }
+        }
+
+        function transitionToOtpStep(otpMeta) {
+          currentStep = 'OTP_VERIFICATION';
+          isSubmitting = false;
+          setCredentialsLocked(true);
+
+          if (stepBadgeEl) {
+            stepBadgeEl.textContent = 'Step 2 of 2: Email OTP Verification';
+          }
+          if (step1ActionsEl) {
+            step1ActionsEl.style.display = 'none';
+          }
+          if (stepOtpBox) {
+            stepOtpBox.removeAttribute('hidden');
+          }
+          if (otpRecipientEl) {
+            otpRecipientEl.textContent = otpMeta?.emailMasked || currentUser?.email || 'your account email';
+          }
+          if (otpExpiryEl && otpMeta?.expiresInSeconds) {
+            otpExpiryEl.textContent = String(Math.max(1, Math.round(Number(otpMeta.expiresInSeconds) / 60)));
+          }
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm & Update Password';
+          }
+          if (otpInput) {
+            otpInput.value = '';
+            otpInput.focus();
+          }
+          startResendCooldown(otpMeta?.cooldownSeconds || 60);
+        }
+
+        function transitionToSuccessState(message) {
+          currentStep = 'COMPLETED';
+          isSubmitting = false;
+          clearCooldownTimer();
+
+          // Scrub all sensitive inputs from the DOM immediately
+          if (currentPasswordInput) currentPasswordInput.value = '';
+          if (newPasswordInput) newPasswordInput.value = '';
+          if (confirmPasswordInput) confirmPasswordInput.value = '';
+          if (otpInput) otpInput.value = '';
+          if (form) {
+            form.reset();
+            form.setAttribute('hidden', '');
+            form.style.display = 'none';
+          }
+          if (closeBtn) {
+            closeBtn.style.display = 'none';
+          }
+          if (stepBadgeEl) {
+            stepBadgeEl.textContent = 'Completed — Re-Authentication Required';
+          }
+          showStatus('info', '');
+
+          if (successMessageEl && message) {
+            successMessageEl.textContent = String(message);
+          }
+          if (successCard) {
+            successCard.removeAttribute('hidden');
+          }
+
+          let remainingRedirect = 4;
+          if (redirectCountdownEl) {
+            redirectCountdownEl.textContent = 'Redirecting to Sign In in ' + remainingRedirect + ' seconds...';
+          }
+          if (redirectTimer) clearInterval(redirectTimer);
+          redirectTimer = setInterval(function () {
+            remainingRedirect -= 1;
+            if (remainingRedirect <= 0) {
+              clearInterval(redirectTimer);
+              window.location.href = 'login.html?passwordChanged=true';
+            } else if (redirectCountdownEl) {
+              redirectCountdownEl.textContent = 'Redirecting to Sign In in ' + remainingRedirect + ' seconds...';
+            }
+          }, 1000);
+        }
+
+        function validatePasswordInputs() {
+          const currentVal = currentPasswordInput ? currentPasswordInput.value : '';
+          const newVal = newPasswordInput ? newPasswordInput.value : '';
+          const confirmVal = confirmPasswordInput ? confirmPasswordInput.value : '';
+
+          if (!currentVal || !newVal || !confirmVal) {
+            return {
+              valid: false,
+              error: 'Please enter your current password, new password, and password confirmation.'
+            };
+          }
+
+          if (newVal !== confirmVal) {
+            return {
+              valid: false,
+              error: 'New password and confirmation do not match.'
+            };
+          }
+
+          if (newVal === currentVal) {
+            return {
+              valid: false,
+              error: 'New password must be different from your current password.'
+            };
+          }
+
+          const policyPass =
+            newVal.length >= 8 &&
+            newVal.length <= 128 &&
+            /[A-Z]/.test(newVal) &&
+            /[a-z]/.test(newVal) &&
+            /[0-9]/.test(newVal);
+
+          if (!policyPass) {
+            return {
+              valid: false,
+              error: 'New password must be 8–128 characters and include at least one uppercase letter, one lowercase letter, and one number.'
+            };
+          }
+
+          return {
+            valid: true,
+            currentPassword: currentVal,
+            newPassword: newVal,
+            confirmPassword: confirmVal
+          };
+        }
+
+        if (toggleBtn && panel) {
+          toggleBtn.addEventListener('click', function () {
+            const isHidden = panel.hasAttribute('hidden');
+            if (isHidden) {
+              panel.removeAttribute('hidden');
+              toggleBtn.setAttribute('aria-expanded', 'true');
+              if (currentStep === 'CREDENTIALS' && currentPasswordInput) {
+                currentPasswordInput.focus();
+              } else if (currentStep === 'OTP_VERIFICATION' && otpInput) {
+                otpInput.focus();
+              }
+            } else {
+              panel.setAttribute('hidden', '');
+              toggleBtn.setAttribute('aria-expanded', 'false');
+            }
+          });
+        }
+
+        if (closeBtn && panel && toggleBtn) {
+          closeBtn.addEventListener('click', function () {
+            clearCooldownTimer();
+            transitionToCredentialsStep(false);
+            showStatus('info', '');
+            panel.setAttribute('hidden', '');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+          });
+        }
+
+        if (editInputsBtn) {
+          editInputsBtn.addEventListener('click', function () {
+            if (isSubmitting) return;
+            transitionToCredentialsStep(true);
+            showStatus('info', 'Update your password fields below and request a verification code when ready.');
+            if (currentPasswordInput) currentPasswordInput.focus();
+          });
+        }
+
+        // Password visibility toggles
+        document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const targetId = btn.getAttribute('data-toggle-password');
+            const input = targetId ? document.getElementById(targetId) : null;
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+          });
+        });
+
+        // Live complexity indicator
+        if (newPasswordInput) {
+          newPasswordInput.addEventListener('input', updatePolicyChecklist);
+        }
+        if (currentPasswordInput) {
+          currentPasswordInput.addEventListener('input', updatePolicyChecklist);
+        }
+
+        // Sanitize OTP input to digits only
+        if (otpInput) {
+          otpInput.addEventListener('input', function () {
+            const cleaned = (otpInput.value || '').replace(/\D+/g, '').slice(0, 6);
+            if (otpInput.value !== cleaned) {
+              otpInput.value = cleaned;
+            }
+          });
+        }
+
+        // Resend OTP handler
+        if (resendBtn) {
+          resendBtn.addEventListener('click', async function () {
+            if (isSubmitting || resendRemainingSec > 0) return;
+
+            const validation = validatePasswordInputs();
+            if (!validation.valid) {
+              transitionToCredentialsStep(true);
+              showStatus('error', validation.error);
+              return;
+            }
+
+            isSubmitting = true;
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
+            showStatus('info', 'Requesting a new 6-digit verification code...');
+
+            try {
+              const result = await window.AuthService.requestPasswordChangeOtp(
+                validation.currentPassword,
+                validation.newPassword,
+                validation.confirmPassword
+              );
+
+              isSubmitting = false;
+
+              if (!result.success) {
+                if (result.code === 'INVALID_CURRENT_PASSWORD' || result.code === 'PASSWORD_UNCHANGED' || result.code === 'CONFIRMATION_MISMATCH') {
+                  transitionToCredentialsStep(true);
+                } else {
+                  resendBtn.disabled = false;
+                  resendBtn.textContent = 'Resend Code';
+                }
+                showStatus('error', result.error || 'Could not resend verification code.');
+                return;
+              }
+
+              showStatus('info', result.message || 'A new 6-digit verification code has been sent to your account email.');
+              startResendCooldown(result.data?.cooldownSeconds || 60);
+              if (otpInput) {
+                otpInput.value = '';
+                otpInput.focus();
+              }
+            } catch (_) {
+              isSubmitting = false;
+              resendBtn.disabled = false;
+              resendBtn.textContent = 'Resend Code';
+              showStatus('error', 'Network error while requesting a new verification code. Please try again.');
+            }
+          });
+        }
+
+        // Form submission handler (Step 1: Request OTP, Step 2: Confirm OTP & Change Password)
+        if (form) {
+          form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            if (isSubmitting || currentStep === 'COMPLETED') return;
+
+            const validation = validatePasswordInputs();
+            if (!validation.valid) {
+              if (currentStep !== 'CREDENTIALS') {
+                transitionToCredentialsStep(true);
+              }
+              showStatus('error', validation.error);
+              return;
+            }
+
+            // STEP 1: Request 6-digit email OTP
+            if (currentStep === 'CREDENTIALS') {
+              isSubmitting = true;
+              if (submitStep1Btn) {
+                submitStep1Btn.disabled = true;
+                submitStep1Btn.textContent = 'Sending Verification Code...';
+              }
+              showStatus('info', 'Verifying your current password and sending a 6-digit code to your account email...');
+
+              try {
+                const result = await window.AuthService.requestPasswordChangeOtp(
+                  validation.currentPassword,
+                  validation.newPassword,
+                  validation.confirmPassword
+                );
+
+                isSubmitting = false;
+                if (submitStep1Btn) {
+                  submitStep1Btn.disabled = false;
+                  submitStep1Btn.textContent = 'Send Verification Code';
+                }
+
+                if (!result.success) {
+                  showStatus('error', result.error || 'Unable to initiate password change.');
+                  if (result.code === 'INVALID_CURRENT_PASSWORD' && currentPasswordInput) {
+                    currentPasswordInput.focus();
+                  } else if (result.code === 'PASSWORD_UNCHANGED' && newPasswordInput) {
+                    newPasswordInput.focus();
+                  }
+                  return;
+                }
+
+                showStatus('info', result.message || 'Verification code sent. Enter the 6-digit code from your email to finish changing your password.');
+                transitionToOtpStep(result.data || {});
+              } catch (_) {
+                isSubmitting = false;
+                if (submitStep1Btn) {
+                  submitStep1Btn.disabled = false;
+                  submitStep1Btn.textContent = 'Send Verification Code';
+                }
+                showStatus('error', 'Could not connect to the server. Please check your connection and try again.');
+              }
+              return;
+            }
+
+            // STEP 2: Confirm 6-digit email OTP and rotate password
+            if (currentStep === 'OTP_VERIFICATION') {
+              const otpCode = (otpInput ? otpInput.value : '').trim();
+              if (!/^\d{6}$/.test(otpCode)) {
+                showStatus('error', 'Please enter the 6-digit numeric verification code sent to your email.');
+                if (otpInput) otpInput.focus();
+                return;
+              }
+
+              isSubmitting = true;
+              if (confirmBtn) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = 'Verifying & Updating Password...';
+              }
+              if (resendBtn) {
+                resendBtn.disabled = true;
+              }
+              if (editInputsBtn) {
+                editInputsBtn.disabled = true;
+              }
+              showStatus('info', 'Verifying your 6-digit code and updating your account password...');
+
+              try {
+                const result = await window.AuthService.confirmPasswordChange(
+                  validation.currentPassword,
+                  validation.newPassword,
+                  validation.confirmPassword,
+                  otpCode
+                );
+
+                isSubmitting = false;
+                if (confirmBtn) {
+                  confirmBtn.disabled = false;
+                  confirmBtn.textContent = 'Confirm & Update Password';
+                }
+                if (resendBtn && resendRemainingSec <= 0) {
+                  resendBtn.disabled = false;
+                }
+                if (editInputsBtn) {
+                  editInputsBtn.disabled = false;
+                }
+
+                if (!result.success) {
+                  if (result.code === 'INVALID_CURRENT_PASSWORD' || result.code === 'PASSWORD_UNCHANGED' || result.code === 'CONFIRMATION_MISMATCH') {
+                    transitionToCredentialsStep(true);
+                    showStatus('error', result.error || 'Please check your password entries and try again.');
+                    return;
+                  }
+                  showStatus('error', result.error || 'Invalid or expired verification code.');
+                  if (otpInput) {
+                    otpInput.focus();
+                    otpInput.select();
+                  }
+                  return;
+                }
+
+                transitionToSuccessState(result.message);
+              } catch (_) {
+                isSubmitting = false;
+                if (confirmBtn) {
+                  confirmBtn.disabled = false;
+                  confirmBtn.textContent = 'Confirm & Update Password';
+                }
+                if (resendBtn && resendRemainingSec <= 0) {
+                  resendBtn.disabled = false;
+                }
+                if (editInputsBtn) {
+                  editInputsBtn.disabled = false;
+                }
+                showStatus('error', 'Could not connect to the server while confirming your password change. Please try again.');
+              }
+            }
+          });
+        }
+      }
+
+      async function initSettingsPage() {
+        if (!window.AuthService) return;
+
+        const sessionState = await window.AuthService.initSession();
+        if (!sessionState || !sessionState.authenticated || !sessionState.user) {
+          window.location.href = 'login.html?redirect=settings.html';
+          return;
+        }
+
+        const currentUser = sessionState.user;
+        const currentSession = sessionState.session || null;
+
+        populateHeaderIdentity(currentUser);
+        populateAccountSection(currentUser, currentSession);
+        setupSubnavHighlighting();
+        setupPasswordSectionControls(currentUser);
+
+        // Wire sign-out buttons
+        const logoutBtn = document.getElementById('btn-logout');
+        const sessionSignoutBtn = document.getElementById('btn-session-signout');
+        const handleLogout = function (e) {
+          e.preventDefault();
+          window.AuthService.logoutUser();
+        };
+        if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+        if (sessionSignoutBtn) sessionSignoutBtn.addEventListener('click', handleLogout);
+
+        const errorBanner = document.getElementById('settings-error-banner');
+        const retryBtn = document.getElementById('btn-retry-settings');
+
+        async function fetchDynamicSections() {
+          if (errorBanner) errorBanner.style.display = 'none';
+          try {
+            await Promise.all([
+              loadBillingAndPlanSummary(currentUser),
+              loadRecentActivityPreview()
+            ]);
+          } catch (_) {
+            if (errorBanner) errorBanner.style.display = 'flex';
+          }
+        }
+
+        if (retryBtn) {
+          retryBtn.addEventListener('click', fetchDynamicSections);
+        }
+
+        await fetchDynamicSections();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSettingsPage);
+      } else {
+        initSettingsPage();
+      }
+    })();
+  </script>
 </body>
 </html>

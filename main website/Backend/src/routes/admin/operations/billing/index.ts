@@ -4,6 +4,7 @@ import { requireOperationPermission } from '../middleware/require_operation_perm
 import { createSuccessResponse } from '../../../../schemas/response.js';
 import { ValidationError } from '../../../../errors/app-error.js';
 import { AdminBillingService } from './service.js';
+import { adminInvoiceNotificationOperationsRoutes } from './notifications_routes.js';
 import {
   AdminSubscriptionListQuerySchema,
   AdminPaymentListQuerySchema,
@@ -17,12 +18,16 @@ import {
   AdminResolveDiscrepancySchema,
   AdminSettlementListQuerySchema,
   AdminBillingSearchQuerySchema,
-  AdminBillingAuditListQuerySchema
+  AdminBillingAuditListQuerySchema,
+  AdminRetryDeferredInvoicesSchema
 } from './schemas.js';
 
 export * from './types.js';
 export * from './schemas.js';
 export * from './service.js';
+export * from './notifications_schemas.js';
+export * from './notifications_service.js';
+export * from './notifications_routes.js';
 
 export async function adminBillingOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -573,4 +578,29 @@ export async function adminBillingOperationsRoutes(app: FastifyInstance): Promis
       return reply.status(200).send(createSuccessResponse(result));
     }
   );
+
+  /**
+   * POST /api/v1/admin/operations/billing/invoices/retry-deferred
+   * Triggers bounded deferred statutory invoice recovery for eligible uninvoiced payments.
+   * Permission required: 'billing.reconcile'
+   */
+  app.post(
+    '/admin/operations/billing/invoices/retry-deferred',
+    {
+      preHandler: [adminAuthenticate, requireOperationPermission('billing.reconcile')]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const parsed = AdminRetryDeferredInvoicesSchema.safeParse(request.body || {});
+      if (!parsed.success) {
+        throw new ValidationError(parsed.error.errors[0]?.message || 'Invalid retry-deferred parameters');
+      }
+
+      const context = request.operationContext || (request as any).adminOperationContext;
+      const result = await AdminBillingService.retryDeferredInvoices(parsed.data, context);
+      return reply.status(200).send(createSuccessResponse(result));
+    }
+  );
+
+  // Register Invoice Notification Operations Routes (Phase 8.4 Batch E.5)
+  await app.register(adminInvoiceNotificationOperationsRoutes);
 }

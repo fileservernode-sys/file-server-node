@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database.js';
 import { CurrencyCode, AuditEventType, AccountBillingState } from '@prisma/client';
 import { ValidationError, NotFoundError } from '../../errors/app-error.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 
 // Complete, standard ISO 3166-1 alpha-2 officially assigned country codes
 export const ISO_3166_1_ALPHA_2_CODES = new Set([
@@ -161,7 +162,7 @@ export class BillingCountryService {
     }
 
     // 3. Atomic transaction with row locking
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Row-lock User record to serialize concurrent billing state updates
       await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
 
@@ -216,5 +217,16 @@ export class BillingCountryService {
         countryConfirmed: true
       };
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'BILLING.COUNTRY_CONFIRMED',
+      metadata: {
+        billingCountry: normalizedCountry,
+        currency: derivedCurrency
+      }
+    });
+
+    return result;
   }
 }

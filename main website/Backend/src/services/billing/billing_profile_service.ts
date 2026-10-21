@@ -2,6 +2,7 @@ import { prisma } from '../../config/database.js';
 import { CurrencyCode, AuditEventType } from '@prisma/client';
 import { ValidationError, NotFoundError } from '../../errors/app-error.js';
 import { BillingCountryService } from './billing_country_service.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 
 export interface UpdateBillingProfileParams {
   fullName: string;
@@ -28,6 +29,9 @@ export interface BillingProfileData {
   country: string;
   currency: CurrencyCode | null;
   countryConfirmed: boolean;
+  isLegacyAuditFallback?: boolean;
+  companyNameFallback?: boolean;
+  taxIdFallback?: boolean;
 }
 
 export class BillingProfileService {
@@ -204,30 +208,36 @@ export class BillingProfileService {
 
     const bs = user.billingState;
 
-    let companyName: string | null = null;
-    let taxId: string | null = null;
+    let companyName: string | null = bs?.companyName || null;
+    let taxId: string | null = bs?.taxId || null;
 
-    try {
-      const auditEvents = await prisma.auditEvent.findMany({
-        where: {
-          userId: user.id,
-          eventType: AuditEventType.BILLING_STATE_UPDATED
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 20
-      });
-      const profileAudit = auditEvents.find((evt) => {
-        const meta = evt.metadata as Record<string, unknown> | null;
-        return meta && meta.action === 'UPDATE_BILLING_PROFILE';
-      });
-      if (profileAudit?.metadata && typeof profileAudit.metadata === 'object') {
-        const meta = profileAudit.metadata as Record<string, unknown>;
-        if (typeof meta.companyName === 'string') companyName = meta.companyName;
-        if (typeof meta.taxId === 'string') taxId = meta.taxId;
+    if (!companyName || !taxId) {
+      try {
+        const auditEvents = await prisma.auditEvent.findMany({
+          where: {
+            userId: user.id,
+            eventType: AuditEventType.BILLING_STATE_UPDATED
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        });
+        const profileAudit = auditEvents.find((evt) => {
+          const meta = evt.metadata as Record<string, unknown> | null;
+          return meta && meta.action === 'UPDATE_BILLING_PROFILE';
+        });
+        if (profileAudit?.metadata && typeof profileAudit.metadata === 'object') {
+          const meta = profileAudit.metadata as Record<string, unknown>;
+          if (!companyName && typeof meta.companyName === 'string') companyName = meta.companyName;
+          if (!taxId && typeof meta.taxId === 'string') taxId = meta.taxId;
+        }
+      } catch {
+        // Non-blocking fallback
       }
-    } catch {
-      // Non-blocking fallback
     }
+
+    const companyNameFallback = Boolean(!bs?.companyName && companyName);
+    const taxIdFallback = Boolean(!bs?.taxId && taxId);
+    const isLegacyAuditFallback = companyNameFallback || taxIdFallback;
 
     return {
       fullName: bs?.billingName || user.fullName || '',
@@ -241,7 +251,10 @@ export class BillingProfileService {
       postalCode: bs?.billingPostalCode || '',
       country: bs?.billingCountry || '',
       currency: bs?.currency || (bs?.billingCountry ? BillingCountryService.deriveBillingCurrency(bs.billingCountry) : null),
-      countryConfirmed: Boolean(bs?.billingCountry)
+      countryConfirmed: Boolean(bs?.billingCountry),
+      isLegacyAuditFallback,
+      companyNameFallback,
+      taxIdFallback
     };
   }
 
@@ -278,7 +291,7 @@ export class BillingProfileService {
     }
 
     // 3. Atomic Transaction with Row Locking
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       // Row-lock User record to prevent concurrent race conditions
       await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
 
@@ -295,6 +308,8 @@ export class BillingProfileService {
           data: {
             userId: user.id,
             billingName: fullName,
+            companyName,
+            taxId,
             billingAddress1: addressLine1,
             billingAddress2: addressLine2,
             billingCity: city,
@@ -309,6 +324,8 @@ export class BillingProfileService {
           where: { id: billingState.id },
           data: {
             billingName: fullName,
+            companyName,
+            taxId,
             billingAddress1: addressLine1,
             billingAddress2: addressLine2,
             billingCity: city,
@@ -352,8 +369,8 @@ export class BillingProfileService {
       return {
         fullName: billingState.billingName || fullName,
         email: user.email,
-        companyName,
-        taxId,
+        companyName: billingState.companyName || companyName,
+        taxId: billingState.taxId || taxId,
         addressLine1: billingState.billingAddress1 || addressLine1,
         addressLine2: billingState.billingAddress2,
         city: billingState.billingCity || city,
@@ -361,8 +378,21 @@ export class BillingProfileService {
         postalCode: billingState.billingPostalCode || postalCode,
         country: billingState.billingCountry || country,
         currency: derivedCurrency,
-        countryConfirmed: true
+        countryConfirmed: true,
+        isLegacyAuditFallback: false
       };
     }, { maxWait: 15000, timeout: 30000 });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'BILLING.PROFILE_UPDATED',
+      metadata: {
+        billingCountry: country,
+        currency: derivedCurrency,
+        hasTaxId: Boolean(taxId)
+      }
+    });
+
+    return result;
   }
 }

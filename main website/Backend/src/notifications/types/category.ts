@@ -8,7 +8,8 @@ export enum NotificationCategory {
   DEVICE_SERVER = 'DEVICE_SERVER',
   FILE_OPERATIONS = 'FILE_OPERATIONS',
   STORAGE = 'STORAGE',
-  SYSTEM = 'SYSTEM'
+  SYSTEM = 'SYSTEM',
+  BILLING = 'BILLING'
 }
 
 export const ALL_NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = Object.freeze([
@@ -16,7 +17,8 @@ export const ALL_NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = Obje
   NotificationCategory.DEVICE_SERVER,
   NotificationCategory.FILE_OPERATIONS,
   NotificationCategory.STORAGE,
-  NotificationCategory.SYSTEM
+  NotificationCategory.SYSTEM,
+  NotificationCategory.BILLING
 ]);
 
 export function isValidNotificationCategory(category: string): category is NotificationCategory {

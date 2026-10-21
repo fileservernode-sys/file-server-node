@@ -171,5 +171,17 @@ export const AdminBillingAuditListQuerySchema = paginationQuerySchema.extend({
 
 export type AdminBillingAuditListQuery = z.infer<typeof AdminBillingAuditListQuerySchema>;
 
+export const AdminRetryDeferredInvoicesSchema = z.object({
+  batchSize: z.number().int().min(1).max(200).optional().default(50),
+  cursorCreatedAt: z.string().trim().datetime({ offset: true }).optional().or(z.string().datetime().optional()),
+  cursorId: z.string().trim().min(1).optional(),
+  dryRun: z.boolean().optional().default(false)
+}).refine(
+  (data) => (Boolean(data.cursorCreatedAt) === Boolean(data.cursorId)),
+  { message: 'Both cursorCreatedAt and cursorId must be provided together for keyset pagination' }
+);
+
+export type AdminRetryDeferredInvoicesInput = z.infer<typeof AdminRetryDeferredInvoicesSchema>;
+
 
 

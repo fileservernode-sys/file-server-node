@@ -62,6 +62,30 @@ export interface TaxCalculationResult {
   breakdown: TaxBreakdownComponent[];
 }
 
+export interface StatutoryTaxCalculationParams {
+  amountMinorUnits?: number; // For inclusive: gross amount. For exclusive: net taxable base amount.
+  grossAmountMinorUnits?: number; // Backward-compatible alias
+  currency: CurrencyCode;
+  customerCountry: string;
+  customerStateCode?: string | null;
+  supplierCountry: string;
+  supplierStateCode: string;
+  sacCode: string;
+  taxRateBasisPoints?: number; // Configurable tax rate basis points (defaults to 1800)
+  isExclusive?: boolean;
+  isExportApproved?: boolean; // Must be explicitly true for zero-rated export treatment
+  exportLutArn?: string | null; // Approved LUT reference if applicable
+  atDate?: Date;
+}
+
+export interface StatutoryTaxCalculationResult extends TaxCalculationResult {
+  supplierStateCode: string;
+  customerStateCode: string | null;
+  sacCode: string;
+  isInterState: boolean;
+  ruleExplanation: string;
+}
+
 /**
  * Authoritative, Versioned Tax Configuration Registry.
  * Holds legally constituted tax rate policies per country, jurisdiction, and effective period.
@@ -245,6 +269,175 @@ export class TaxCalculationService {
       taxVersion: taxConfig.version,
       authority: taxConfig.authority,
       breakdown
+    };
+  }
+
+  /**
+   * Calculates statutory tax for invoice issuance based on confirmed supplier location,
+   * customer place of supply, approved SAC classification, and versioned statutory tax rules.
+   *
+   * Enforces strict fail-closed validation:
+   * 1. If customerCountry === 'IN', requires valid customerStateCode and INR currency.
+   * 2. Branches dynamically between Intra-state (CGST 9% + SGST 9%) and Inter-state (IGST 18%).
+   * 3. For foreign customers, applies export of services zero-rated / non-taxable rule.
+   * 4. Enforces integer minor-unit arithmetic and checks MySQL 32-bit integer storage bounds.
+   */
+  public static calculateStatutoryInvoiceTax(
+    params: StatutoryTaxCalculationParams
+  ): StatutoryTaxCalculationResult {
+    const rawAmount = params.amountMinorUnits !== undefined ? params.amountMinorUnits : params.grossAmountMinorUnits;
+    if (rawAmount === undefined || !Number.isInteger(rawAmount) || rawAmount < 0 || rawAmount > 2147483647) {
+      throw new ValidationError('amountMinorUnits must be a non-negative integer within 32-bit limits (0 to 2147483647)');
+    }
+
+    const {
+      currency,
+      customerCountry,
+      customerStateCode,
+      supplierCountry,
+      supplierStateCode,
+      sacCode,
+      isExclusive = false,
+      isExportApproved = false,
+      exportLutArn = null
+    } = params;
+
+    if (!supplierCountry || supplierCountry.trim().toUpperCase() !== 'IN') {
+      throw new ValidationError(`Unsupported supplierCountry '${supplierCountry}': expected 'IN'`);
+    }
+
+    if (!supplierStateCode || !/^[0-9]{2}$/.test(supplierStateCode.trim())) {
+      throw new ValidationError(`Invalid supplierStateCode '${supplierStateCode}': must be a 2-digit numeric code`);
+    }
+
+    if (!sacCode || !/^[0-9]{6}$/.test(sacCode.trim())) {
+      throw new ValidationError(`Invalid sacCode '${sacCode}': must be a 6-digit numeric SAC code`);
+    }
+
+    const normCustomerCountry = (customerCountry || '').trim().toUpperCase();
+    if (!normCustomerCountry) {
+      throw new ValidationError('customerCountry is required for statutory tax calculation');
+    }
+
+    const normSupplierState = supplierStateCode.trim();
+    const isIndianCustomer = normCustomerCountry === 'IN';
+
+    let jurisdiction: string;
+    let taxType: TaxType;
+    let isInclusive: boolean;
+    let taxRateBasisPoints: number;
+    let taxableAmountMinorUnits: number;
+    let taxAmountMinorUnits: number;
+    let finalGrossMinorUnits: number;
+    let authority: string;
+    let isInterState: boolean;
+    let ruleExplanation: string;
+    const breakdown: TaxBreakdownComponent[] = [];
+
+    if (isIndianCustomer) {
+      if (currency !== CurrencyCode.INR) {
+        throw new ValidationError(`Invalid currency '${currency}' for domestic Indian GST invoice: must be INR`);
+      }
+
+      const normCustomerState = (customerStateCode || '').trim();
+      if (!normCustomerState || !/^[0-9]{2}$/.test(normCustomerState)) {
+        throw new TaxConfigurationMissingError(
+          `Place of supply determination requires a valid 2-digit numeric customerStateCode for Indian GST (got '${customerStateCode}')`
+        );
+      }
+
+      jurisdiction = 'IN';
+      taxType = TaxType.GST;
+      taxRateBasisPoints = params.taxRateBasisPoints !== undefined ? params.taxRateBasisPoints : 1800;
+      if (!Number.isInteger(taxRateBasisPoints) || taxRateBasisPoints < 0 || taxRateBasisPoints > 10000) {
+        throw new ValidationError(`Invalid taxRateBasisPoints '${taxRateBasisPoints}': must be between 0 and 10000`);
+      }
+
+      isInclusive = !isExclusive;
+
+      if (isInclusive) {
+        // Inclusive formula: tax derived from gross total
+        taxAmountMinorUnits = Math.round((rawAmount * taxRateBasisPoints) / (10000 + taxRateBasisPoints));
+        taxableAmountMinorUnits = rawAmount - taxAmountMinorUnits;
+        finalGrossMinorUnits = rawAmount;
+      } else {
+        // Exclusive formula: rawAmount is net taxable base; tax added to arrive at gross
+        const maxSafeBase = Math.floor(2147483647 / (1 + taxRateBasisPoints / 10000));
+        if (rawAmount > maxSafeBase) {
+          throw new ValidationError('Net taxable amount would overflow 32-bit integer limits once tax is added');
+        }
+        taxAmountMinorUnits = Math.round((rawAmount * taxRateBasisPoints) / 10000);
+        taxableAmountMinorUnits = rawAmount;
+        finalGrossMinorUnits = taxableAmountMinorUnits + taxAmountMinorUnits;
+      }
+
+      if (normSupplierState === normCustomerState) {
+        // Intra-State Supply: Split into equal CGST and SGST
+        isInterState = false;
+        authority = 'IN_GST_INTRA_STATE_CGST_SGST_18_PCT';
+        ruleExplanation = `Intra-state supply within state code ${normSupplierState}: CGST ${(taxRateBasisPoints / 200).toFixed(1)}% + SGST ${(taxRateBasisPoints / 200).toFixed(1)}% under SAC ${sacCode}`;
+
+        const halfRate = Math.floor(taxRateBasisPoints / 2);
+        const cgstAmount = Math.floor(taxAmountMinorUnits / 2);
+        const sgstAmount = taxAmountMinorUnits - cgstAmount; // Remainder allocation for exact integer sum
+
+        breakdown.push({ component: 'CGST', rateBasisPoints: halfRate, amountMinorUnits: cgstAmount });
+        breakdown.push({ component: 'SGST', rateBasisPoints: taxRateBasisPoints - halfRate, amountMinorUnits: sgstAmount });
+      } else {
+        // Inter-State Supply: Entire tax levied as IGST
+        isInterState = true;
+        authority = 'IN_GST_INTER_STATE_IGST_18_PCT';
+        ruleExplanation = `Inter-state supply from supplier state ${normSupplierState} to customer state ${normCustomerState}: IGST ${(taxRateBasisPoints / 100).toFixed(1)}% under SAC ${sacCode}`;
+
+        breakdown.push({ component: 'IGST', rateBasisPoints: taxRateBasisPoints, amountMinorUnits: taxAmountMinorUnits });
+      }
+    } else {
+      // Export / International Supply: Fail closed unless export rules are approved
+      if (!isExportApproved) {
+        throw new StatutoryConfigurationMissingError(
+          `Statutory invoice issuance for cross-border export to country '${normCustomerCountry}' is blocked: zero-rated export eligibility, LUT filing, and foreign currency remittance verification are unapproved`
+        );
+      }
+
+      jurisdiction = normCustomerCountry;
+      taxType = TaxType.NONE;
+      taxRateBasisPoints = 0;
+      isInclusive = false;
+      taxAmountMinorUnits = 0;
+      taxableAmountMinorUnits = rawAmount;
+      finalGrossMinorUnits = rawAmount;
+      isInterState = false;
+      authority = exportLutArn ? `EXPORT_UNDER_LUT_${exportLutArn}` : 'EXPORT_OF_SERVICES_ZERO_RATED';
+      ruleExplanation = `Cross-border export of digital services to customer in country ${normCustomerCountry} under approved zero-rated rules`;
+    }
+
+    // Exact reconciliation check
+    if (taxableAmountMinorUnits + taxAmountMinorUnits !== finalGrossMinorUnits) {
+      throw new ValidationError('Internal tax calculation reconciliation error: taxable amount plus tax does not equal gross total');
+    }
+
+    // Storage range checks
+    if (taxableAmountMinorUnits > 2147483647 || taxAmountMinorUnits > 2147483647 || finalGrossMinorUnits > 2147483647) {
+      throw new ValidationError('Computed tax or total amount exceeds MySQL 32-bit integer limits');
+    }
+
+    return {
+      jurisdiction,
+      taxType,
+      isInclusive,
+      taxRateBasisPoints,
+      taxableAmountMinorUnits,
+      taxAmountMinorUnits,
+      grossAmountMinorUnits: finalGrossMinorUnits,
+      currency,
+      taxVersion: 1,
+      authority,
+      breakdown,
+      supplierStateCode: normSupplierState,
+      customerStateCode: isIndianCustomer ? (customerStateCode || '').trim() : null,
+      sacCode,
+      isInterState,
+      ruleExplanation
     };
   }
 

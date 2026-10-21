@@ -498,6 +498,159 @@
           error: { code: 'NETWORK_ERROR', message: err && err.message ? err.message : 'Network error downloading receipt.' }
         };
       }
+    },
+
+    /**
+     * List customer's statutory tax invoices with pagination.
+     * Route: GET /api/v1/billing/invoices?page=1&limit=20
+     * @param {number} [page=1]
+     * @param {number} [limit=20]
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async getInvoices(page = 1, limit = 20) {
+      const p = Math.max(1, parseInt(page, 10) || 1);
+      const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+      return executeRequest('/billing/invoices?page=' + p + '&limit=' + l, 'GET');
+    },
+
+    /**
+     * Retrieve metadata and customer view for a specific invoice.
+     * Route: GET /api/v1/billing/invoices/:id
+     * @param {string} invoiceId
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async getInvoice(invoiceId) {
+      if (!invoiceId) {
+        return {
+          ok: false,
+          status: 400,
+          data: { success: false, error: { code: 'VALIDATION_ERROR', message: 'invoiceId is required' } }
+        };
+      }
+      return executeRequest('/billing/invoices/' + encodeURIComponent(invoiceId), 'GET');
+    },
+
+    /**
+     * Retrieve invoice for a specific payment ID.
+     * Route: GET /api/v1/billing/payments/:id/invoice
+     * @param {string} paymentId
+     * @returns {Promise<{ok: boolean, status: number, data: any}>}
+     */
+    async getPaymentInvoice(paymentId) {
+      if (!paymentId) {
+        return {
+          ok: false,
+          status: 400,
+          data: { success: false, error: { code: 'VALIDATION_ERROR', message: 'paymentId is required' } }
+        };
+      }
+      return executeRequest('/billing/payments/' + encodeURIComponent(paymentId) + '/invoice', 'GET');
+    },
+
+    /**
+     * Trigger browser download for statutory tax invoice PDF attachment.
+     * Route: GET /api/v1/billing/invoices/:id/download
+     * @param {string} invoiceId
+     * @returns {Promise<{ok: boolean, status: number, error?: any}>}
+     */
+    async downloadInvoice(invoiceId) {
+      if (!invoiceId) {
+        return {
+          ok: false,
+          status: 400,
+          error: { code: 'VALIDATION_ERROR', message: 'invoiceId is required' }
+        };
+      }
+
+      const base = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '/api/v1';
+      const url = base + '/billing/invoices/' + encodeURIComponent(invoiceId) + '/download';
+
+      try {
+        const res = await fetch(url, { method: 'GET', credentials: 'include' });
+        if (!res.ok) {
+          return { ok: false, status: res.status, error: { code: 'DOWNLOAD_FAILED', message: 'Failed to download invoice PDF.' } };
+        }
+
+        const disposition = res.headers.get('content-disposition') || '';
+        let filename = 'invoice-' + invoiceId + '.pdf';
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/i);
+        if (match && match[1]) {
+          filename = match[1].trim();
+        }
+
+        const blob = await res.blob();
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        return { ok: true, status: 200 };
+      } catch (err) {
+        return {
+          ok: false,
+          status: 0,
+          error: { code: 'NETWORK_ERROR', message: err && err.message ? err.message : 'Network error downloading invoice.' }
+        };
+      }
+    },
+
+    /**
+     * Trigger browser download for statutory tax invoice PDF attachment directly by payment ID.
+     * Route: GET /api/v1/billing/payments/:id/invoice/download
+     * @param {string} paymentId
+     * @returns {Promise<{ok: boolean, status: number, error?: any}>}
+     */
+    async downloadPaymentInvoice(paymentId) {
+      if (!paymentId) {
+        return {
+          ok: false,
+          status: 400,
+          error: { code: 'VALIDATION_ERROR', message: 'paymentId is required' }
+        };
+      }
+
+      const base = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '/api/v1';
+      const url = base + '/billing/payments/' + encodeURIComponent(paymentId) + '/invoice/download';
+
+      try {
+        const res = await fetch(url, { method: 'GET', credentials: 'include' });
+        if (!res.ok) {
+          return { ok: false, status: res.status, error: { code: 'DOWNLOAD_FAILED', message: 'Failed to download invoice PDF for payment.' } };
+        }
+
+        const disposition = res.headers.get('content-disposition') || '';
+        let filename = 'invoice-payment-' + paymentId + '.pdf';
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/i);
+        if (match && match[1]) {
+          filename = match[1].trim();
+        }
+
+        const blob = await res.blob();
+        if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(downloadUrl);
+        }
+
+        return { ok: true, status: 200 };
+      } catch (err) {
+        return {
+          ok: false,
+          status: 0,
+          error: { code: 'NETWORK_ERROR', message: err && err.message ? err.message : 'Network error downloading invoice.' }
+        };
+      }
     }
   };
 

@@ -47,6 +47,7 @@ import {
   connectionRegisterRateLimitConfig,
   customerStandardRateLimitConfig
 } from '../middleware/rate_limit_presets.js';
+import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
 
 export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
@@ -109,6 +110,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
     let remoteEndpointStr = 'https://pending-allocation.zdexcloud.com';
 
     if (serverInstance) {
+      const previousServerStatus = serverInstance.status;
       const endpoint = await EndpointService.reserveEndpoint(serverInstance.id);
       remoteEndpointStr = `https://${endpoint.hostname}`;
 
@@ -121,6 +123,22 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
           lastHeartbeatAt: new Date()
         }
       });
+
+      if (!failedGatewayNodeId) {
+        await CustomerActivityService.recordEventSafe({
+          userId: user.id,
+          eventType: 'SERVER.STARTED',
+          deviceId,
+          serverId: serverInstance.id,
+          previousState: previousServerStatus,
+          newState: 'RUNNING',
+          metadata: {
+            serverName: serverInstance.serverName || device.deviceName,
+            deviceName: device.deviceName,
+            remoteEndpoint: remoteEndpointStr
+          }
+        });
+      }
     }
 
     // Resolve or discover active GatewayNode with deterministic failover candidate selection
@@ -415,6 +433,17 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
         deviceId: connection.deviceId,
         eventType: 'REMOTE_CONNECTION_DISCONNECTED',
         metadata: { connectionId }
+      }
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'SERVER.REMOTE_TUNNEL_DISCONNECTED',
+      deviceId: connection.deviceId,
+      occurredAt: now,
+      metadata: {
+        deviceName: connection.device.deviceName,
+        remoteEndpoint: connection.remoteEndpoint
       }
     });
 

@@ -55,7 +55,25 @@ const PROHIBITED_KEYS = new Set([
   'rawexception',
   'stack',
   'stacktrace',
-  'errorstack'
+  'errorstack',
+  // Sensitive Billing & Financial Keys
+  'cvv',
+  'cardnumber',
+  'card_number',
+  'pan',
+  'paymentcredential',
+  'signature',
+  'razorpay_signature',
+  'rawpayload',
+  'taxid',
+  'customertaxid',
+  'gstin',
+  'vatnumber',
+  'accountnumber',
+  'account_number',
+  'privatedocumenturl',
+  'downloadurl',
+  'pdfurl'
 ]);
 
 export function validateAndSanitizeMetadata(metadata: Record<string, any> = {}): SafeNotificationMetadata {
@@ -120,9 +138,33 @@ export function createNotificationEvent(input: NotificationEventInput): Notifica
 
   const eventId = input.eventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-  // Default idempotency key strategy if not supplied
-  const idempotencyKey = input.idempotencyKey ||
-    `${input.eventType}:${input.userId}:${input.deviceId || 'nodev'}:${input.serverId || 'nosrv'}:${occurredAt.getTime()}`;
+  // Deterministic idempotency key derivation strategy:
+  // 1. Explicitly supplied idempotencyKey has highest precedence.
+  // 2. Stable domain entity identifier from metadata if available (prevents replay drift across retries).
+  // 3. Explicit input.occurredAt if supplied by caller.
+  // 4. Default fallback: eventType, userId, deviceId/serverId, and timestamp.
+  let idempotencyKey = input.idempotencyKey;
+  if (!idempotencyKey || idempotencyKey.trim() === '') {
+    const domainEntity =
+      sanitizedMetadata.invoiceId ||
+      sanitizedMetadata.paymentId ||
+      sanitizedMetadata.subscriptionId ||
+      sanitizedMetadata.refundId ||
+      sanitizedMetadata.orderId ||
+      sanitizedMetadata.transactionId ||
+      sanitizedMetadata.attemptId ||
+      sanitizedMetadata.auditId ||
+      sanitizedMetadata.ticketId ||
+      sanitizedMetadata.sessionId;
+
+    if (domainEntity) {
+      idempotencyKey = `${input.eventType}:${input.userId}:${String(domainEntity)}`;
+    } else if (input.occurredAt) {
+      idempotencyKey = `${input.eventType}:${input.userId}:${input.deviceId || 'nodev'}:${input.serverId || 'nosrv'}:${input.occurredAt.getTime()}`;
+    } else {
+      idempotencyKey = `${input.eventType}:${input.userId}:${input.deviceId || 'nodev'}:${input.serverId || 'nosrv'}:${occurredAt.getTime()}`;
+    }
+  }
 
   return {
     eventId,

@@ -23,6 +23,8 @@ class AndroidNotificationChannelInfo {
 }
 
 class PushNotificationService {
+  static final PushNotificationService instance = PushNotificationService();
+
   static const channelGeneral = AndroidNotificationChannelInfo(
     id: 'remotenode_general',
     name: 'General RemoteNode Notifications',
@@ -65,7 +67,41 @@ class PushNotificationService {
     AppLogger.info('[PushNotificationService] Initializing Android Notification Channels: '
         '${channelGeneral.id}, ${channelCritical.id}, ${channelSecurity.id}');
 
+    _channel.setMethodCallHandler(_handlePlatformCall);
+
     _initialized = true;
+  }
+
+  Future<dynamic> _handlePlatformCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onNotificationTap':
+        if (call.arguments is Map) {
+          handleNotificationTap(Map<String, dynamic>.from(call.arguments as Map));
+        }
+        break;
+      case 'onForegroundMessage':
+        if (call.arguments is Map) {
+          handleForegroundMessage(Map<String, dynamic>.from(call.arguments as Map));
+        }
+        break;
+    }
+  }
+
+  /// Checks if the app was launched by tapping an Android notification
+  Future<NotificationTarget?> checkInitialNotification() async {
+    try {
+      final payload = await _channel.invokeMethod<Map>('getInitialNotification');
+      if (payload != null) {
+        final typedPayload = Map<String, dynamic>.from(payload);
+        final target = NotificationRouter.parsePayload(typedPayload);
+        AppLogger.info('[PushNotificationService] App launched from notification tap: ${target.type}');
+        _notificationTapController.add(target);
+        return target;
+      }
+    } catch (e) {
+      AppLogger.warning('[PushNotificationService] Failed to check initial notification: $e');
+    }
+    return null;
   }
 
   /// Explicitly requests POST_NOTIFICATIONS permission on Android 13+ (API 33+)
@@ -96,6 +132,27 @@ class PushNotificationService {
       return _permissionGranted;
     } catch (e) {
       _permissionGranted = false;
+      return false;
+    }
+  }
+
+  /// Checks if permission rationale should be displayed (or if permanently denied)
+  Future<bool> checkNotificationPermissionRationale() async {
+    try {
+      final rationale = await _channel.invokeMethod<bool>('checkNotificationPermissionRationale');
+      return rationale ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Opens Android App Notification Settings screen
+  Future<bool> openNotificationSettings() async {
+    try {
+      final res = await _channel.invokeMethod<bool>('openNotificationSettings');
+      return res ?? false;
+    } catch (e) {
+      AppLogger.error('[PushNotificationService] Failed to open notification settings', e);
       return false;
     }
   }

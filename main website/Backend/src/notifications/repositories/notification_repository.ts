@@ -13,8 +13,11 @@ import { prisma } from '../../config/database.js';
 import { SafeNotificationMetadata } from '../types/event.js';
 import {
   UserNotificationPreferences,
-  getDefaultNotificationPreferences
+  getDefaultNotificationPreferences,
+  normalizeNotificationPreferences
 } from '../types/preference.js';
+import { isValidNotificationCategory } from '../types/category.js';
+
 
 export interface CreateNotificationRecordInput {
   id?: string;
@@ -130,7 +133,7 @@ export class NotificationRepository {
 
   public async getUserNotifications(
     userId: string,
-    options: { status?: NotificationRecordStatus; limit?: number; page?: number } = {}
+    options: { status?: NotificationRecordStatus; category?: string; limit?: number; page?: number } = {}
   ) {
     const limit = Math.min(Math.max(options.limit || 20, 1), 100);
     const page = Math.max(options.page || 1, 1);
@@ -138,7 +141,8 @@ export class NotificationRepository {
 
     const where: Prisma.NotificationRecordWhereInput = {
       userId,
-      ...(options.status ? { status: options.status } : {})
+      ...(options.status ? { status: options.status } : {}),
+      ...(options.category && options.category !== 'ALL' ? { category: options.category } : {})
     };
 
     const [items, total] = await Promise.all([
@@ -262,6 +266,34 @@ export class NotificationRepository {
     });
   }
 
+  public async getDeliveryRecordByTarget(
+    notificationId: string,
+    channel: string,
+    targetAddress?: string | null
+  ) {
+    try {
+      return await prisma.channelDeliveryRecord.findFirst({
+        where: {
+          notificationId,
+          channel,
+          ...(targetAddress !== undefined ? { targetAddress } : {})
+        }
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  public async getDeliveryRecordsForNotification(notificationId: string) {
+    try {
+      return await prisma.channelDeliveryRecord.findMany({
+        where: { notificationId }
+      });
+    } catch {
+      return [];
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // 3. UserNotificationPreferences Persistence
   // ---------------------------------------------------------------------------
@@ -275,13 +307,14 @@ export class NotificationRepository {
       return getDefaultNotificationPreferences(userId);
     }
 
-    return {
-      userId: record.userId,
+    const savedCategories = (record.categoryPreferences as any) || {};
+
+    return normalizeNotificationPreferences(userId, {
       globalPushEnabled: record.globalPushEnabled,
       globalEmailEnabled: record.globalEmailEnabled,
-      categories: record.categoryPreferences as any,
+      categories: savedCategories,
       updatedAt: record.updatedAt
-    };
+    });
   }
 
   public async updateUserPreferences(
@@ -294,25 +327,51 @@ export class NotificationRepository {
   ): Promise<UserNotificationPreferences> {
     const current = await this.getUserPreferences(userId);
 
-    const updatedGlobalPush = data.globalPushEnabled ?? current.globalPushEnabled;
-    const updatedGlobalEmail = data.globalEmailEnabled ?? current.globalEmailEnabled;
-    const updatedCategories = {
-      ...current.categories,
-      ...(data.categories || {})
-    };
+    const updatedGlobalPush = typeof data.globalPushEnabled === 'boolean'
+      ? data.globalPushEnabled
+      : current.globalPushEnabled;
+
+    const updatedGlobalEmail = typeof data.globalEmailEnabled === 'boolean'
+      ? data.globalEmailEnabled
+      : current.globalEmailEnabled;
+
+    // Deep merge incoming categories
+    const updatedCategories: Record<string, any> = { ...current.categories };
+    if (data.categories && typeof data.categories === 'object') {
+      for (const [catKey, catVal] of Object.entries(data.categories)) {
+        if (isValidNotificationCategory(catKey) && catVal && typeof catVal === 'object') {
+          const prev = updatedCategories[catKey] || {};
+          const incomingChannels = (catVal as any).channels || {};
+          updatedCategories[catKey] = {
+            enabled: typeof (catVal as any).enabled === 'boolean' ? (catVal as any).enabled : prev.enabled,
+            channels: {
+              ...(prev.channels || {}),
+              ...incomingChannels
+            }
+          };
+        }
+      }
+    }
+
+    const normalized = normalizeNotificationPreferences(userId, {
+      globalPushEnabled: updatedGlobalPush,
+      globalEmailEnabled: updatedGlobalEmail,
+      categories: updatedCategories as any,
+      updatedAt: new Date()
+    });
 
     const record = await prisma.userNotificationPreferences.upsert({
       where: { userId },
       create: {
         userId,
-        globalPushEnabled: updatedGlobalPush,
-        globalEmailEnabled: updatedGlobalEmail,
-        categoryPreferences: updatedCategories as unknown as Prisma.InputJsonValue
+        globalPushEnabled: normalized.globalPushEnabled,
+        globalEmailEnabled: normalized.globalEmailEnabled,
+        categoryPreferences: normalized.categories as unknown as Prisma.InputJsonValue
       },
       update: {
-        globalPushEnabled: updatedGlobalPush,
-        globalEmailEnabled: updatedGlobalEmail,
-        categoryPreferences: updatedCategories as unknown as Prisma.InputJsonValue
+        globalPushEnabled: normalized.globalPushEnabled,
+        globalEmailEnabled: normalized.globalEmailEnabled,
+        categoryPreferences: normalized.categories as unknown as Prisma.InputJsonValue
       }
     });
 
@@ -320,7 +379,7 @@ export class NotificationRepository {
       userId: record.userId,
       globalPushEnabled: record.globalPushEnabled,
       globalEmailEnabled: record.globalEmailEnabled,
-      categories: record.categoryPreferences as any,
+      categories: normalized.categories,
       updatedAt: record.updatedAt
     };
   }

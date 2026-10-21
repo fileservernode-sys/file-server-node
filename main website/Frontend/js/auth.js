@@ -97,7 +97,10 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         const isProtectedPage = currentPath.includes('dashboard') ||
                                 currentPath.includes('servers') ||
                                 currentPath.includes('subscription') ||
+                                currentPath.includes('transactions') ||
+                                currentPath.includes('invoices') ||
                                 currentPath.includes('billing') ||
+                                currentPath.includes('activity') ||
                                 currentPath.includes('settings') ||
                                 currentPath.includes('server-access') ||
                                 currentPath.includes('notifications') ||
@@ -239,7 +242,10 @@ function handleSessionExpired(reason = 'Your session has expired. Please sign in
   const isProtectedPage = currentPath.includes('dashboard') ||
                           currentPath.includes('servers') ||
                           currentPath.includes('subscription') ||
+                          currentPath.includes('transactions') ||
+                          currentPath.includes('invoices') ||
                           currentPath.includes('billing') ||
+                          currentPath.includes('activity') ||
                           currentPath.includes('settings') ||
                           currentPath.includes('server-access') ||
                           currentPath.includes('notifications') ||
@@ -338,7 +344,12 @@ async function initSession(forceRefresh = false) {
           }));
         } catch (_) {}
 
-        return { authenticated: true, user: _currentUser, csrfToken: _inMemoryCsrfToken };
+        return {
+          authenticated: true,
+          user: _currentUser,
+          csrfToken: _inMemoryCsrfToken,
+          session: res.data.data.session || null
+        };
       } else {
         _currentUser = null;
         _isAuthenticated = false;
@@ -468,19 +479,33 @@ if (typeof window !== 'undefined') {
 // -----------------------------------------------------------------------------
 
 // 1. Email + Password Registration -> Dispatches Email OTP
-async function registerUser(email, password, fullName) {
-  const result = await apiRequest('/auth/register', 'POST', { email, password, fullName });
+async function registerUser(email, password, fullName, confirmPassword) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const payload = {
+    email: cleanEmail,
+    password,
+    fullName: fullName ? String(fullName).trim() : undefined
+  };
+  if (confirmPassword !== undefined) {
+    payload.confirmPassword = confirmPassword;
+  }
+  const result = await apiRequest('/auth/register', 'POST', payload);
   if (result.ok && result.data && result.data.success && result.data.data && result.data.data.requiresOtp) {
     const urlParams = new URLSearchParams(window.location.search);
     const plan = urlParams.get('plan');
     const redirect = urlParams.get('redirect');
-    let target = `verify-otp.html?email=${encodeURIComponent(email)}&action=registration`;
+    let target = `verify-otp.html?email=${encodeURIComponent(cleanEmail)}&action=registration`;
     if (plan) target += `&plan=${encodeURIComponent(plan)}`;
     if (redirect) target += `&redirect=${encodeURIComponent(redirect)}`;
     window.location.href = target;
-    return { success: true };
+    return { success: true, data: result.data.data };
   }
-  return { success: false, error: result.data?.error?.message || 'Registration failed' };
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'REGISTRATION_FAILED',
+    error: result.data?.error?.message || 'Registration failed'
+  };
 }
 
 // 2. Email + Password Login -> Dispatches 2FA Email OTP
@@ -533,29 +558,80 @@ async function verifyOtp(email, code) {
 
 // 4. Request Password Reset -> Dispatches 6-Digit Reset OTP
 async function forgotPassword(email) {
-  const result = await apiRequest('/auth/forgot-password', 'POST', { email });
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const result = await apiRequest('/auth/forgot-password', 'POST', { email: cleanEmail });
   if (result.ok && result.data && result.data.success) {
-    return { success: true, message: result.data.data?.message };
+    return {
+      success: true,
+      data: result.data.data || {},
+      message:
+        result.data.data?.message ||
+        'If an account exists for this email, a password reset code has been sent.'
+    };
   }
-  return { success: false, error: result.data?.error?.message || 'Failed to request password reset' };
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'REQUEST_FAILED',
+    error: result.data?.error?.message || 'Failed to request password reset'
+  };
 }
 
-// 5. Verify Password Reset OTP
+// 5. Verify Password Reset OTP (Non-consuming pre-verification)
 async function verifyPasswordResetOtp(email, otp) {
-  const result = await apiRequest('/auth/verify-password-reset-otp', 'POST', { email, otp, code: otp });
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanOtp = String(otp || '').trim();
+  const result = await apiRequest('/auth/verify-password-reset-otp', 'POST', {
+    email: cleanEmail,
+    otp: cleanOtp,
+    code: cleanOtp
+  });
   if (result.ok && result.data && result.data.success) {
-    return { success: true, message: result.data.data?.message };
+    return {
+      success: true,
+      data: result.data.data || {},
+      message: result.data.data?.message || 'Reset code verified successfully'
+    };
   }
-  return { success: false, error: result.data?.error?.message || 'Invalid or expired password reset code' };
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'INVALID_OTP',
+    error: result.data?.error?.message || 'Invalid or expired password reset code'
+  };
 }
 
-// 6. Reset Password with OTP & New Password
-async function resetPassword(email, otp, newPassword) {
-  const result = await apiRequest('/auth/reset-password', 'POST', { email, otp, code: otp, newPassword });
-  if (result.ok && result.data && result.data.success) {
-    return { success: true, message: result.data.data?.message };
+// 6. Reset Password with OTP & New Password (Atomically consumes OTP and revokes sessions/device credentials)
+async function resetPassword(email, otp, newPassword, confirmPassword) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanOtp = String(otp || '').trim();
+  const payload = {
+    email: cleanEmail,
+    otp: cleanOtp,
+    code: cleanOtp,
+    newPassword
+  };
+  if (confirmPassword !== undefined) {
+    payload.confirmPassword = confirmPassword;
   }
-  return { success: false, error: result.data?.error?.message || 'Password reset failed' };
+  const result = await apiRequest('/auth/reset-password', 'POST', payload);
+  if (result.ok && result.data && result.data.success) {
+    clearSession();
+    broadcastAuthEvent('CUSTOMER_LOGGED_OUT');
+    return {
+      success: true,
+      data: result.data.data || {},
+      message:
+        result.data.data?.message ||
+        'Password has been reset successfully. You can now log in with your new password.'
+    };
+  }
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'RESET_FAILED',
+    error: result.data?.error?.message || 'Password reset failed'
+  };
 }
 
 // 7. Resend OTP
@@ -567,7 +643,59 @@ async function resendOtp(email) {
   return { success: false, error: result.data?.error?.message || 'Failed to resend verification code' };
 }
 
-// 8. Sign Out (Clears Backend Cookie & In-Memory State)
+// 8. Authenticated Password Change Step 1: Request 6-Digit Email OTP
+async function requestPasswordChangeOtp(currentPassword, newPassword, confirmPassword) {
+  const result = await apiRequest('/auth/change-password/request-otp', 'POST', {
+    currentPassword,
+    newPassword,
+    confirmPassword
+  });
+  if (result.ok && result.data && result.data.success) {
+    return {
+      success: true,
+      data: result.data.data || {},
+      message: result.data.data?.message || 'A 6-digit verification code has been sent to your account email.'
+    };
+  }
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'REQUEST_FAILED',
+    error: result.data?.error?.message || 'Failed to request password change verification code.'
+  };
+}
+
+// 9. Authenticated Password Change Step 2: Confirm OTP & Rotate Password
+async function confirmPasswordChange(currentPassword, newPassword, confirmPassword, otp) {
+  const cleanOtp = String(otp || '').trim();
+  const result = await apiRequest('/auth/change-password/confirm', 'POST', {
+    currentPassword,
+    newPassword,
+    confirmPassword,
+    otp: cleanOtp,
+    code: cleanOtp
+  });
+  if (result.ok && result.data && result.data.success) {
+    // Backend revokes all active sessions and clears the HttpOnly session cookie
+    clearSession();
+    broadcastAuthEvent('CUSTOMER_LOGGED_OUT');
+    return {
+      success: true,
+      data: result.data.data || {},
+      message:
+        result.data.data?.message ||
+        'Your password has been changed successfully. Please sign in again with your new password.'
+    };
+  }
+  return {
+    success: false,
+    status: result.status,
+    code: result.data?.error?.code || 'CONFIRM_FAILED',
+    error: result.data?.error?.message || 'Failed to confirm password change.'
+  };
+}
+
+// 10. Sign Out (Clears Backend Cookie & In-Memory State)
 async function logoutUser() {
   try {
     await apiRequest('/auth/logout', 'POST');
@@ -578,8 +706,17 @@ async function logoutUser() {
   window.location.href = isInnerPage ? 'login.html?logout=true' : 'pages/login.html?logout=true';
 }
 
+// Convenience wrapper matching fetch-style options object
+async function apiFetch(endpoint, options = {}) {
+  const method = options.method || 'GET';
+  const body = options.body !== undefined ? options.body : null;
+  return apiRequest(endpoint, method, body);
+}
+
 // Expose globally
 window.AuthService = {
+  apiRequest,
+  apiFetch,
   getAuthToken,
   getCsrfToken,
   setCsrfToken,
@@ -597,7 +734,10 @@ window.AuthService = {
   forgotPassword,
   verifyPasswordResetOtp,
   resetPassword,
+  requestPasswordChangeOtp,
+  confirmPasswordChange,
   resendOtp,
   logoutUser,
   SESSION_MAX_AGE_MS
 };
+

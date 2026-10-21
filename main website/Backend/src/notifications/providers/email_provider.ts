@@ -168,7 +168,9 @@ export class EmailNotificationProviderImpl implements EmailNotificationProvider 
       contentHtml: request.rendered.emailHtml,
       webPath: request.rendered.deepLink?.webPath
     });
-    const textBody = `${request.rendered.title}\n\n${request.rendered.body}\n\nZdexCloud Personal File Server Platform`;
+    const textBody = request.rendered.emailText && request.rendered.emailText.trim() !== ''
+      ? request.rendered.emailText
+      : `${request.rendered.title}\n\n${request.rendered.body}\n\nZdexCloud Personal File Server Platform`;
 
     try {
       const dispatched = await this.emailSvc.sendRawMail(targetEmail, subject, htmlBody, textBody, {

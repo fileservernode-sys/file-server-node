@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { EntitlementService } from './entitlement_service.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 import {
   BillingStatus,
   AuditEventType,
@@ -9,6 +10,7 @@ import {
   PlanPrice
 } from '@prisma/client';
 import { NotFoundError, ConflictError } from '../../errors/app-error.js';
+import { billingEventProducer } from '../../notifications/producers/billing_producer.js';
 
 export const GRACE_PERIOD_DAYS = 5;
 export const DUNNING_MILESTONES = [0, 2, 4, 5] as const;
@@ -150,6 +152,30 @@ export class DunningService {
       milestone: 0,
       planName: sub.plan.name,
       gracePeriodEndsAt
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: sub.userId,
+      eventType: 'BILLING.SUBSCRIPTION_PAYMENT_PAST_DUE',
+      subscriptionId: sub.id,
+      idempotencyKey: `past_due_${sub.id}_${gracePeriodStartedAt.toISOString()}`,
+      metadata: {
+        planCode: sub.plan.code,
+        planName: sub.plan.name,
+        gracePeriodEndsAt: gracePeriodEndsAt.toISOString()
+      }
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: sub.userId,
+      eventType: 'BILLING.SUBSCRIPTION_GRACE_PERIOD_STARTED',
+      subscriptionId: sub.id,
+      idempotencyKey: `grace_started_${sub.id}_${gracePeriodStartedAt.toISOString()}`,
+      metadata: {
+        planCode: sub.plan.code,
+        planName: sub.plan.name,
+        gracePeriodEndsAt: gracePeriodEndsAt.toISOString()
+      }
     });
 
     return updated;
@@ -374,34 +400,27 @@ export class DunningService {
       await EntitlementService.resolveUserEntitlements(sub.userId);
 
       // 5. In-App Expiration Notification
-      const idempotencyKey = `notif_cancel_expired_${sub.id}`;
       try {
-        const existing = await prisma.notificationRecord.findUnique({
-          where: { idempotencyKey }
+        await billingEventProducer.emitSubscriptionExpired({
+          id: sub.id,
+          userId: sub.userId,
+          planName: sub.plan.name,
+          eventId: 'cancel_period_end'
         });
-        if (!existing) {
-          await prisma.notificationRecord.create({
-            data: {
-              userId: sub.userId,
-              eventId: idempotencyKey,
-              eventType: 'SUBSCRIPTION_EXPIRED',
-              category: 'BILLING',
-              severity: 'CRITICAL',
-              title: 'Subscription Ended — Reverted to Free Plan',
-              body: `Your ZdexCloud ${sub.plan.name} paid period has ended and your account has reverted to the Free tier (1 server limit). Your existing servers and files remain safe and intact.`,
-              idempotencyKey,
-              status: NotificationRecordStatus.UNREAD,
-              metadata: {
-                subscriptionId: sub.id,
-                planCode: sub.plan.code,
-                expiredAt: now.toISOString()
-              }
-            }
-          });
-        }
       } catch {
         // Non-blocking
       }
+
+      await CustomerActivityService.recordEventSafe({
+        userId: sub.userId,
+        eventType: 'BILLING.SUBSCRIPTION_EXPIRED',
+        subscriptionId: sub.id,
+        idempotencyKey: `sub_expired_${sub.id}`,
+        metadata: {
+          planCode: sub.plan.code,
+          planName: sub.plan.name
+        }
+      });
     }
 
     return transitioned;
@@ -473,6 +492,17 @@ export class DunningService {
         planName: sub.plan.name,
         gracePeriodEndsAt: sub.gracePeriodEndsAt || now
       });
+
+      await CustomerActivityService.recordEventSafe({
+        userId: sub.userId,
+        eventType: 'BILLING.SUBSCRIPTION_EXPIRED',
+        subscriptionId: sub.id,
+        idempotencyKey: `sub_expired_${sub.id}`,
+        metadata: {
+          planCode: sub.plan.code,
+          planName: sub.plan.name
+        }
+      });
     }
 
     return transitioned;
@@ -490,74 +520,24 @@ export class DunningService {
   }): Promise<void> {
     const { userId, subscriptionId, milestone, planName, gracePeriodEndsAt } = params;
 
-    const formattedDate = gracePeriodEndsAt.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-
-    let eventType: string;
-    let title: string;
-    let body: string;
-    let severity: 'INFO' | 'WARNING' | 'CRITICAL';
-
-    switch (milestone) {
-      case 0:
-        eventType = 'SUBSCRIPTION_PAYMENT_FAILED';
-        title = 'Payment Failed — 5-Day Grace Period Started';
-        body = `Your recurring renewal payment for ZdexCloud ${planName} could not be processed. Your paid features remain active until ${formattedDate}. Please update your payment details.`;
-        severity = 'WARNING';
-        break;
-      case 2:
-        eventType = 'SUBSCRIPTION_PAYMENT_DUE';
-        title = 'Renewal Payment Due — Reminder';
-        body = `Your ZdexCloud ${planName} payment is past due. Your grace period will end on ${formattedDate}. Please resolve the payment to maintain uninterrupted service.`;
-        severity = 'WARNING';
-        break;
-      case 4:
-        eventType = 'SUBSCRIPTION_GRACE_PERIOD_FINAL_WARNING';
-        title = 'Final Notice — Grace Period Expiring Soon';
-        body = `Your ZdexCloud ${planName} subscription will expire on ${formattedDate}. If payment is not completed, your account will revert to the Free tier.`;
-        severity = 'CRITICAL';
-        break;
-      case 5:
-        eventType = 'SUBSCRIPTION_EXPIRED';
-        title = 'Subscription Expired — Reverted to Free Plan';
-        body = `Your ZdexCloud ${planName} subscription has expired and your account has reverted to the Free tier (1 server limit). Your existing servers and files remain safe and intact.`;
-        severity = 'CRITICAL';
-        break;
-      default:
-        return;
-    }
-
-    const idempotencyKey = `notif_dunning_${subscriptionId}_day_${milestone}`;
-
     try {
-      const existing = await prisma.notificationRecord.findUnique({
-        where: { idempotencyKey }
-      });
-
-      if (!existing) {
-        await prisma.notificationRecord.create({
-          data: {
-            userId,
-            eventId: idempotencyKey,
-            eventType,
-            category: 'BILLING',
-            severity,
-            title,
-            body,
-            idempotencyKey,
-            status: NotificationRecordStatus.UNREAD,
-            metadata: {
-              subscriptionId,
-              milestone,
-              gracePeriodEndsAt: gracePeriodEndsAt.toISOString()
-            }
-          }
+      if (milestone === 5) {
+        await billingEventProducer.emitSubscriptionExpired({
+          id: subscriptionId,
+          userId,
+          planName,
+          eventId: 'grace_exhausted'
+        });
+      } else if (milestone === 0 || milestone === 2 || milestone === 4) {
+        await billingEventProducer.emitSubscriptionDunningMilestone({
+          userId,
+          subscriptionId,
+          milestone,
+          planName,
+          gracePeriodEndsAt
         });
       }
-    } catch (err: any) {
+    } catch {
       // Non-blocking notification dispatch
     }
   }

@@ -6,6 +6,7 @@ enum NotificationTargetType {
   fileManager,
   securitySettings,
   deviceDetail,
+  billing,
   unknown,
 }
 
@@ -29,11 +30,13 @@ class NotificationRouter {
   static const String schemeFileManager = 'remotenode://filemanager';
   static const String schemeSecurity = 'remotenode://security';
   static const String schemeDevice = 'remotenode://device/';
+  static const String schemeBilling = 'remotenode://billing';
 
   static const String zSchemeServer = 'zdexcloud://server/';
   static const String zSchemeFileManager = 'zdexcloud://filemanager';
   static const String zSchemeSecurity = 'zdexcloud://security';
   static const String zSchemeDevice = 'zdexcloud://device/';
+  static const String zSchemeBilling = 'zdexcloud://billing';
 
   static NotificationTarget parsePayload(Map<String, dynamic> payload) {
     try {
@@ -98,6 +101,21 @@ class NotificationRouter {
         return NotificationTarget(
           type: NotificationTargetType.deviceDetail,
           deviceName: parsedDeviceName.isNotEmpty ? parsedDeviceName : deviceName,
+          rawDeepLink: deepLink,
+        );
+      }
+
+      // Billing & Invoices
+      if (deepLink.startsWith(schemeBilling) ||
+          deepLink.startsWith(zSchemeBilling) ||
+          deepLink.contains('/billing') ||
+          deepLink.contains('/invoices') ||
+          deepLink.contains('/subscription') ||
+          deepLink.contains('billing.html') ||
+          deepLink.contains('invoices.html') ||
+          deepLink.contains('subscription.html')) {
+        return NotificationTarget(
+          type: NotificationTargetType.billing,
           rawDeepLink: deepLink,
         );
       }

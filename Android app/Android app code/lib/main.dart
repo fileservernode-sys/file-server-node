@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_config.dart';
+import 'core/notifications/notification_router.dart';
 import 'core/notifications/push_notification_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -35,16 +37,47 @@ class ZdexCloudApp extends StatefulWidget {
 class _ZdexCloudAppState extends State<ZdexCloudApp>
     with WidgetsBindingObserver {
   final _pushService = PushNotificationService();
+  StreamSubscription<NotificationTarget>? _tapSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _pushService.initialize();
+    _tapSubscription = _pushService.onNotificationTap.listen(_handleNotificationNavigation);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pushService.checkInitialNotification();
+    });
+  }
+
+  void _handleNotificationNavigation(NotificationTarget target) {
+    AppLogger.info('[AppRouter] Executing notification navigation target: ${target.type}');
+    final nav = AppRouter.navigatorKey.currentState;
+    if (nav == null) return;
+
+    switch (target.type) {
+      case NotificationTargetType.serverDetail:
+        nav.pushNamed(AppRouter.serverStatusRoute);
+        break;
+      case NotificationTargetType.securitySettings:
+      case NotificationTargetType.deviceDetail:
+        nav.pushNamed(AppRouter.settingsRoute);
+        break;
+      case NotificationTargetType.billing:
+        nav.pushNamed(AppRouter.notificationsRoute);
+        break;
+      case NotificationTargetType.fileManager:
+      case NotificationTargetType.dashboard:
+      case NotificationTargetType.unknown:
+        nav.pushNamed(AppRouter.homeRoute);
+        break;
+    }
   }
 
   @override
   void dispose() {
+    _tapSubscription?.cancel();
+    _pushService.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -57,6 +90,7 @@ class _ZdexCloudAppState extends State<ZdexCloudApp>
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AppRouter.navigatorKey,
       title: 'ZdexCloud Personal File Server',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

@@ -23,7 +23,8 @@ import { NotificationSeverity } from '../types/severity.js';
 const paginationQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
-  status: z.enum(['UNREAD', 'READ', 'ARCHIVED']).optional()
+  status: z.enum(['UNREAD', 'READ', 'ARCHIVED']).optional(),
+  category: z.string().optional()
 });
 
 import { getAuthUser } from '../../middleware/customer-auth.js';
@@ -56,8 +57,44 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
     const result = await notificationRepository.getUserNotifications(user.id, {
       page: query.data.page,
       limit: query.data.limit,
-      status: query.data.status as NotificationRecordStatus | undefined
+      status: query.data.status as NotificationRecordStatus | undefined,
+      category: query.data.category
     });
+
+    const itemIds = result.items.map(item => item.id);
+    const deliveryMap: Record<string, { inApp: string; push?: string; email?: string; retryable: boolean }> = {};
+
+    if (itemIds.length > 0) {
+      try {
+        const records = await prisma.channelDeliveryRecord.findMany({
+          where: { notificationId: { in: itemIds } },
+          select: {
+            notificationId: true,
+            channel: true,
+            status: true
+          }
+        });
+        for (const rec of records) {
+          if (!deliveryMap[rec.notificationId]) {
+            deliveryMap[rec.notificationId] = { inApp: 'DELIVERED', retryable: false };
+          }
+          const chKey = rec.channel.toLowerCase();
+          if (chKey === 'push') {
+            deliveryMap[rec.notificationId].push = rec.status;
+            if (rec.status === 'FAILED' || rec.status === 'QUEUED') {
+              deliveryMap[rec.notificationId].retryable = true;
+            }
+          } else if (chKey === 'email') {
+            deliveryMap[rec.notificationId].email = rec.status;
+            if (rec.status === 'FAILED' || rec.status === 'QUEUED') {
+              deliveryMap[rec.notificationId].retryable = true;
+            }
+          }
+        }
+      } catch {
+        // Non-blocking status lookup fallback
+      }
+    }
 
     const formattedItems = result.items.map(item => ({
       id: item.id,
@@ -68,6 +105,7 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
       body: item.body,
       deepLink: item.deepLinkUri ? { uri: item.deepLinkUri, webPath: item.webPath || undefined } : null,
       status: item.status,
+      deliveryStatus: deliveryMap[item.id] || { inApp: 'DELIVERED', retryable: false },
       createdAt: item.createdAt,
       occurredAt: item.occurredAt
     }));
@@ -204,6 +242,74 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
       archivedAt: updated.archivedAt
     }));
   });
+
+  /**
+   * POST /api/v1/notifications/:notificationId/retry
+   * Safely retries undelivered or failed channels for an authenticated user's notification.
+   */
+  app.post(
+    '/notifications/:notificationId/retry',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const { notificationId } = request.params as { notificationId: string };
+
+      const notification = await notificationRepository.getNotificationById(notificationId);
+      if (!notification) {
+        throw new NotFoundError(`Notification ${notificationId} not found`);
+      }
+
+      if (notification.userId !== user.id) {
+        throw new ForbiddenError('You do not have permission to retry notifications belonging to another account');
+      }
+
+      const deliveryRecords = await notificationRepository.getDeliveryRecordsForNotification(notificationId);
+
+      const hasPermanentFailure = deliveryRecords.some(r => r.status === 'PERMANENTLY_FAILED');
+      const hasRetryableFailure = deliveryRecords.some(r => r.status === 'FAILED' || r.status === 'QUEUED');
+      const allDelivered = deliveryRecords.length > 0 && deliveryRecords.every(r => r.status === 'DELIVERED');
+
+      if (allDelivered) {
+        return reply.send(createSuccessResponse({
+          notificationId,
+          retried: false,
+          alreadyDelivered: true,
+          message: 'All notification channels are already delivered successfully'
+        }));
+      }
+
+      if (hasPermanentFailure && !hasRetryableFailure) {
+        return reply.status(400).send(createErrorResponse(
+          'DELIVERY_PERMANENTLY_FAILED',
+          'Notification delivery permanently failed for one or more channels (e.g. invalid push token or unrecoverable address). Please update your registered devices or contact support.'
+        ));
+      }
+
+      const result = await centralNotificationService.redeliverNotification(notificationId);
+
+      if (!result) {
+        return reply.status(500).send(createErrorResponse(
+          'REDELIVERY_ERROR',
+          'Unable to process redelivery for this notification at this time'
+        ));
+      }
+
+      return reply.send(createSuccessResponse({
+        notificationId,
+        retried: true,
+        message: 'Notification delivery retry processed',
+        deliveryResults: result.deliveryResults.map(dr => ({
+          channel: dr.channel,
+          success: dr.success,
+          deliveredAt: dr.deliveredAt || null
+        }))
+      }));
+    }
+  );
 
   /**
    * GET /api/v1/notifications/health

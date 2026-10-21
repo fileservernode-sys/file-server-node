@@ -13,6 +13,7 @@ import { CustomerStatusService } from '../services/customer_status_service.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
 import { resolveClientIp } from '../utils/ip.js';
+import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -206,6 +207,29 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         user.fullName || undefined
       ).catch(() => {});
       serverEventProducer.emitServerCreated(user.id, device.id, `srv_${device.id}`, serverName || device.deviceName, device.deviceName).catch(() => {});
+
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'DEVICE.LINKED',
+        deviceId: device.id,
+        idempotencyKey: `device_linked_${device.id}`,
+        metadata: {
+          deviceName: device.deviceName,
+          platform: device.platform,
+          osVersion: device.osVersion || undefined,
+          appVersion: device.appVersion || undefined
+        }
+      });
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'SERVER.CREATED',
+        deviceId: device.id,
+        idempotencyKey: `server_created_${device.id}`,
+        metadata: {
+          serverName: serverName || device.deviceName,
+          deviceName: device.deviceName
+        }
+      });
     }
 
     // Provision or refresh persistent DeviceAuthCredential for unattended Server Mode
@@ -486,6 +510,17 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'SECURITY.DEVICE_CREDENTIALS_REVOKED',
+      deviceId,
+      occurredAt: now,
+      metadata: {
+        deviceName: device.deviceName,
+        reasonLabel: 'Manual credential revocation'
+      }
+    });
+
     return reply.status(200).send(createSuccessResponse({
       message: 'Device credential revoked successfully.'
     }));
@@ -617,6 +652,20 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         deviceId,
         eventType: 'SERVER_STOPPED',
         metadata: { stoppedAt: now.toISOString(), source: 'device_stop' }
+      }
+    });
+
+    const primaryServer = device.servers?.[0];
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'SERVER.STOPPED',
+      deviceId,
+      serverId: primaryServer?.id || null,
+      occurredAt: now,
+      metadata: {
+        serverName: primaryServer?.serverName || device.deviceName,
+        deviceName: device.deviceName,
+        stoppedAt: now.toISOString()
       }
     });
 
@@ -916,6 +965,21 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         }
       });
     }, { maxWait: 15000, timeout: 30000 });
+
+    const deletedServer = device.servers?.[0];
+    const deletedHostname = deletedServer?.endpoints?.[0]?.hostname;
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'DEVICE.UNLINKED',
+      deviceId: targetDeviceId,
+      serverId: deletedServer?.id || null,
+      idempotencyKey: `device_unlinked_${targetDeviceId}`,
+      metadata: {
+        deviceName: targetDeviceName,
+        serverName: deletedServer?.serverName || targetDeviceName,
+        hostname: deletedHostname || undefined
+      }
+    });
 
     return reply.status(200).send(createSuccessResponse({
       message: 'Server, allocated subdomain endpoint, and all associated node data successfully deleted.'

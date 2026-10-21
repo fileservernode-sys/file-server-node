@@ -15,12 +15,17 @@ const updatePreferencesSchema = z.object({
   globalPushEnabled: z.boolean().optional(),
   globalEmailEnabled: z.boolean().optional(),
   categories: z.record(z.object({
-    enabled: z.boolean(),
-    channels: z.record(z.boolean())
+    enabled: z.boolean().optional(),
+    channels: z.record(z.boolean()).optional()
+  })).optional(),
+  categoryPreferences: z.record(z.object({
+    enabled: z.boolean().optional(),
+    channels: z.record(z.boolean()).optional()
   })).optional()
 });
 
 import { getAuthUser } from '../../middleware/customer-auth.js';
+import { CustomerActivityService } from '../../services/activity/customer_activity_service.js';
 
 export async function preferenceRoutes(app: FastifyInstance): Promise<void> {
 
@@ -46,7 +51,24 @@ export async function preferenceRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', body.error.errors[0].message));
     }
 
-    const updated = await notificationRepository.updateUserPreferences(user.id, body.data);
+    const categoriesPayload = body.data.categories || body.data.categoryPreferences;
+
+    const updated = await notificationRepository.updateUserPreferences(user.id, {
+      globalPushEnabled: body.data.globalPushEnabled,
+      globalEmailEnabled: body.data.globalEmailEnabled,
+      categories: categoriesPayload
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: user.id,
+      eventType: 'NOTIFICATION.PREFERENCES_UPDATED',
+      metadata: {
+        globalPushEnabled: body.data.globalPushEnabled,
+        globalEmailEnabled: body.data.globalEmailEnabled,
+        updatedCategories: categoriesPayload ? Object.keys(categoriesPayload).join(', ') : undefined
+      }
+    });
+
     return reply.send(createSuccessResponse(updated));
   });
 }

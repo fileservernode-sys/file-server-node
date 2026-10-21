@@ -310,6 +310,20 @@ export class CentralNotificationService {
 
     for (const channel of routingDecision.allowedChannels) {
       if (channel === NotificationChannel.IN_APP) {
+        // Channel-level deduplication: Skip if already delivered for this notification
+        try {
+          const existingInApp = await this.repository.getDeliveryRecordByTarget(notificationId, NotificationChannel.IN_APP);
+          if (existingInApp && existingInApp.status === ('DELIVERED' as any)) {
+            deliveryResults.push({
+              success: true,
+              channel: NotificationChannel.IN_APP,
+              providerName: 'InternalInAppStore',
+              deliveredAt: existingInApp.deliveredAt || new Date()
+            });
+            continue;
+          }
+        } catch {}
+
         deliveryResults.push({
           success: true,
           channel: NotificationChannel.IN_APP,
@@ -351,14 +365,31 @@ export class CentralNotificationService {
           const targetDevices = routingDecision.targetDevices.length > 0
             ? routingDecision.targetDevices
             : effectiveDevices;
-          targetAddresses = targetDevices.map(d => d.pushToken || '').filter(t => t.length > 0);
-          if (targetAddresses.length === 0 && event.metadata.pushToken) {
-            targetAddresses.push(String(event.metadata.pushToken));
+          const rawTokens = targetDevices.map(d => d.pushToken || '').filter(t => t.length > 0);
+          if (rawTokens.length === 0 && event.metadata.pushToken) {
+            rawTokens.push(String(event.metadata.pushToken));
           }
+          // Deduplicate push tokens to prevent multi-send to same device
+          targetAddresses = Array.from(new Set(rawTokens));
         } else if (channel === NotificationChannel.EMAIL) {
+          const rawEmails: string[] = [];
           if (event.metadata.userEmail) {
-            targetAddresses.push(String(event.metadata.userEmail));
+            rawEmails.push(String(event.metadata.userEmail));
+          } else if (event.userId) {
+            try {
+              const user = await prisma.user.findUnique({
+                where: { id: event.userId },
+                select: { email: true }
+              });
+              if (user?.email) {
+                rawEmails.push(user.email.trim());
+              }
+            } catch {
+              // Non-blocking lookup fallback
+            }
           }
+          // Deduplicate emails normalized to lowercase
+          targetAddresses = Array.from(new Set(rawEmails.map(e => e.trim().toLowerCase()).filter(e => e.length > 0)));
         }
 
         if (targetAddresses.length === 0) {
@@ -375,6 +406,23 @@ export class CentralNotificationService {
         }
 
         for (const address of targetAddresses) {
+          // Channel-level deduplication: Skip if already delivered for this notification
+          try {
+            const existingDelivery = await this.repository.getDeliveryRecordByTarget(notificationId, channel, address);
+            if (existingDelivery && existingDelivery.status === ('DELIVERED' as any)) {
+              console.log(`[NotificationService] Duplicate channel delivery skipped: notificationId=${notificationId}, channel=${channel}, target=${address}`);
+              deliveryResults.push({
+                success: true,
+                channel,
+                providerName: provider.providerName,
+                deliveredAt: existingDelivery.deliveredAt || new Date()
+              });
+              continue;
+            }
+          } catch {
+            // Non-blocking check fallback
+          }
+
           const deliveryId = `del_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
           try {
             const result = await provider.send({
@@ -547,6 +595,156 @@ export class CentralNotificationService {
     } catch {
       return !!cached;
     }
+  }
+
+  /**
+   * Retries undelivered channels for an existing notification without re-sending to channels that already succeeded.
+   */
+  public async redeliverNotification(notificationId: string): Promise<NotificationProcessingResult | null> {
+    const record = await this.repository.getNotificationById(notificationId);
+    if (!record) return null;
+
+    const existingDeliveries = await this.repository.getDeliveryRecordsForNotification(notificationId);
+    const deliveredChannels = new Set(
+      existingDeliveries
+        .filter(d => d.status === ('DELIVERED' as any))
+        .map(d => `${d.channel}:${d.targetAddress || ''}`)
+    );
+
+    const input: NotificationEventInput = {
+      eventId: record.eventId,
+      eventType: record.eventType as any,
+      userId: record.userId,
+      deviceId: record.deviceId || undefined,
+      serverId: record.serverId || undefined,
+      category: record.category as any,
+      severity: record.severity as any,
+      idempotencyKey: record.idempotencyKey,
+      metadata: (record.metadata as any) || {},
+      occurredAt: record.occurredAt
+    };
+
+    const event = createNotificationEvent(input);
+    const effectivePreferences = await this.repository.getUserPreferences(event.userId);
+    let effectiveDevices: DeviceRoutingTarget[] = [];
+    try {
+      const activeTokens = await this.repository.getActivePushTokensForUser(event.userId);
+      effectiveDevices = activeTokens.map(t => ({ deviceId: t.deviceId, pushToken: t.token }));
+    } catch {}
+
+    const routingDecision = this.channelRouter.evaluateRouting(event, effectivePreferences, effectiveDevices);
+    const rendered = templateRegistry.render(event.eventType, event.metadata, event.occurredAt);
+    const deliveryResults: ProviderDeliveryResult[] = [];
+
+    for (const channel of routingDecision.allowedChannels) {
+      if (channel === NotificationChannel.IN_APP) {
+        if (deliveredChannels.has(`${NotificationChannel.IN_APP}:`)) {
+          deliveryResults.push({
+            success: true,
+            channel: NotificationChannel.IN_APP,
+            providerName: 'InternalInAppStore',
+            deliveredAt: new Date()
+          });
+          continue;
+        }
+        try {
+          await this.repository.createChannelDeliveryRecord({
+            notificationId,
+            channel: NotificationChannel.IN_APP,
+            status: 'DELIVERED' as any,
+            correlationId: record.correlationId || undefined,
+            deliveredAt: new Date()
+          });
+          deliveryResults.push({
+            success: true,
+            channel: NotificationChannel.IN_APP,
+            providerName: 'InternalInAppStore',
+            deliveredAt: new Date()
+          });
+        } catch {}
+        continue;
+      }
+
+      const provider = this.providers.get(channel);
+      if (!provider) continue;
+
+      let targetAddresses: string[] = [];
+      if (channel === NotificationChannel.PUSH) {
+        const rawTokens = (routingDecision.targetDevices.length > 0 ? routingDecision.targetDevices : effectiveDevices)
+          .map(d => d.pushToken || '')
+          .filter(t => t.length > 0);
+        targetAddresses = Array.from(new Set(rawTokens));
+      } else if (channel === NotificationChannel.EMAIL) {
+        const rawEmails: string[] = [];
+        if (event.metadata.userEmail) {
+          rawEmails.push(String(event.metadata.userEmail));
+        } else if (event.userId) {
+          try {
+            const user = await prisma.user.findUnique({ where: { id: event.userId }, select: { email: true } });
+            if (user?.email) rawEmails.push(user.email.trim());
+          } catch {}
+        }
+        targetAddresses = Array.from(new Set(rawEmails.map(e => e.trim().toLowerCase()).filter(e => e.length > 0)));
+      }
+
+      for (const address of targetAddresses) {
+        if (deliveredChannels.has(`${channel}:${address}`)) {
+          console.log(`[NotificationService] Redelivery skipped: already delivered on ${channel} to ${address}`);
+          deliveryResults.push({
+            success: true,
+            channel,
+            providerName: provider.providerName,
+            deliveredAt: new Date()
+          });
+          continue;
+        }
+
+        const deliveryId = `redel_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        try {
+          const result = await provider.send({
+            deliveryId,
+            notificationId,
+            userId: event.userId,
+            targetAddress: address,
+            event,
+            rendered
+          });
+          deliveryResults.push(result);
+
+          await this.repository.createChannelDeliveryRecord({
+            notificationId,
+            channel,
+            targetAddress: address,
+            status: result.success ? ('DELIVERED' as any) : ('FAILED' as any),
+            providerMessageId: result.externalMessageId || undefined,
+            failureReason: result.errorMessage,
+            correlationId: record.correlationId || undefined,
+            deliveredAt: result.deliveredAt
+          });
+        } catch (err: any) {
+          deliveryResults.push({
+            success: false,
+            channel,
+            providerName: provider.providerName,
+            errorMessage: err?.message
+          });
+        }
+      }
+    }
+
+    return {
+      notificationId,
+      eventId: event.eventId,
+      idempotencyKey: event.idempotencyKey,
+      correlationId: record.correlationId || undefined,
+      processed: true,
+      duplicateSuppressed: false,
+      stormSuppressed: false,
+      coalesced: false,
+      throttled: false,
+      allowedChannels: routingDecision.allowedChannels,
+      deliveryResults
+    };
   }
 }
 

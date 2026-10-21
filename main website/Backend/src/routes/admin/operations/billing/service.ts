@@ -18,6 +18,9 @@ import { NotFoundError, ConflictError, ValidationError } from '../../../../error
 import { createPaginatedResponse, PaginatedResult } from '../utils/pagination.js';
 import { executeAdminOperation } from '../utils/operation_executor.js';
 import { AdminOperationContext } from '../types.js';
+import { AdminAuditService } from '../../../../services/admin/admin_audit_service.js';
+import { BillingInvoiceRecoveryService } from '../../../../services/billing/billing_invoice_recovery_service.js';
+import { AdminRetryDeferredInvoicesInput } from './schemas.js';
 import { RazorpayClient } from '../../../../services/billing/providers/razorpay/razorpay_client.js';
 import { BillingRefundService } from '../../../../services/billing/billing_refund_service.js';
 import { BillingReconciliationService } from '../../../../services/billing/billing_reconciliation_service.js';
@@ -2419,5 +2422,110 @@ export class AdminBillingService {
     }));
 
     return createPaginatedResponse(projected, total, page, pageSize);
+  }
+
+  /**
+   * Triggers bounded deferred invoice recovery with keyset pagination and audit logging.
+   * Excludes sensitive payment credentials and customer PII from operational response.
+   */
+  static async retryDeferredInvoices(
+    input: AdminRetryDeferredInvoicesInput,
+    context: AdminOperationContext
+  ): Promise<{
+    success: boolean;
+    dryRun: boolean;
+    totalDiscovered: number;
+    attempted: number;
+    succeeded: number;
+    alreadyIssued: number;
+    skippedIneligible: number;
+    skipped: number;
+    failed: number;
+    transientFailures: number;
+    permanentFailures: number;
+    isCompleteSuccess: boolean;
+    isPartialSuccess: boolean;
+    isCompleteFailure: boolean;
+    nextCursor: { createdAt: string; id: string } | null;
+    reason?: string;
+    configErrors?: string[];
+    errorSummary: Array<{ errorCode: string; count: number; category: string }>;
+  }> {
+    const cursor = input.cursorCreatedAt && input.cursorId ? {
+      createdAt: new Date(input.cursorCreatedAt),
+      id: input.cursorId.trim()
+    } : undefined;
+
+    const result = await BillingInvoiceRecoveryService.retryDeferredInvoices({
+      batchSize: input.batchSize,
+      cursor,
+      dryRun: input.dryRun
+    });
+
+    // Record administrative audit log
+    await AdminAuditService.logEvent({
+      adminId: context?.adminId || 'unknown',
+      action: AdminAuditAction.ADMIN_ACTION_EXECUTED,
+      status: result.success ? 'SUCCESS' : (result.failed > 0 && result.succeeded > 0 ? 'PARTIAL' : 'FAILED'),
+      ipAddress: context?.clientIp || null,
+      userAgent: context?.userAgent || null,
+      metadata: {
+        operationName: 'admin_retry_deferred_invoices',
+        dryRun: result.dryRun,
+        totalDiscovered: result.totalDiscovered,
+        attempted: result.attempted,
+        succeeded: result.succeeded,
+        alreadyIssued: result.alreadyIssued,
+        skippedIneligible: result.skippedIneligible,
+        skipped: result.skipped,
+        failed: result.failed,
+        permanentFailures: result.permanentFailures,
+        transientFailures: result.transientFailures,
+        isCompleteSuccess: result.isCompleteSuccess,
+        isPartialSuccess: result.isPartialSuccess,
+        isCompleteFailure: result.isCompleteFailure,
+        reason: result.reason || null
+      }
+    }).catch(err => console.error('[retryDeferredInvoices] Failed to log admin audit event:', err));
+
+    // Aggregate error categories without leaking customer IDs or raw error stacks
+    const errorCodeCounts: Record<string, { count: number; category: string }> = {};
+    for (const err of result.errors) {
+      const code = err.errorCode || 'UNKNOWN';
+      if (!errorCodeCounts[code]) {
+        errorCodeCounts[code] = { count: 0, category: err.category };
+      }
+      errorCodeCounts[code].count++;
+    }
+
+    const errorSummary = Object.entries(errorCodeCounts).map(([errorCode, data]) => ({
+      errorCode,
+      count: data.count,
+      category: data.category
+    }));
+
+    return {
+      success: result.success,
+      dryRun: result.dryRun,
+      totalDiscovered: result.totalDiscovered,
+      attempted: result.attempted,
+      succeeded: result.succeeded,
+      alreadyIssued: result.alreadyIssued,
+      skippedIneligible: result.skippedIneligible,
+      skipped: result.skipped,
+      failed: result.failed,
+      transientFailures: result.transientFailures,
+      permanentFailures: result.permanentFailures,
+      isCompleteSuccess: result.isCompleteSuccess,
+      isPartialSuccess: result.isPartialSuccess,
+      isCompleteFailure: result.isCompleteFailure,
+      nextCursor: result.nextCursor ? {
+        createdAt: result.nextCursor.createdAt instanceof Date ? result.nextCursor.createdAt.toISOString() : String(result.nextCursor.createdAt),
+        id: result.nextCursor.id
+      } : null,
+      reason: result.reason,
+      configErrors: result.configErrors,
+      errorSummary
+    };
   }
 }

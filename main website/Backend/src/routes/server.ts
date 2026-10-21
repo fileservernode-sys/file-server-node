@@ -8,6 +8,7 @@ import { defaultGatewayService } from '../gateway/gateway_service.js';
 import { ConnectionStateMachine } from '../services/connection_state_machine.js';
 import { getAuthUser } from '../middleware/customer-auth.js';
 import { expensiveCustomerRateLimitConfig, customerStandardRateLimitConfig } from '../middleware/rate_limit_presets.js';
+import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
@@ -177,6 +178,19 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         }
       });
 
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'SERVER.STOPPED',
+        deviceId: serverInstance.deviceId,
+        serverId: serverInstance.id,
+        occurredAt: now,
+        metadata: {
+          serverName: serverInstance.serverName || serverInstance.device.deviceName,
+          deviceName: serverInstance.device.deviceName,
+          stoppedAt: now.toISOString()
+        }
+      });
+
       return reply.status(200).send(createSuccessResponse({
         serverId: serverInstance.id,
         status: 'STOPPED',
@@ -234,6 +248,18 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
           deviceId: serverInstance.deviceId,
           eventType: 'SERVER_CREATED',
           metadata: { action: 'SERVER_RENAMED', serverId, previousName, newName: serverName }
+        }
+      });
+
+      await CustomerActivityService.recordEventSafe({
+        userId: user.id,
+        eventType: 'SERVER.RENAMED',
+        deviceId: serverInstance.deviceId,
+        serverId: serverInstance.id,
+        metadata: {
+          previousName: previousName || serverInstance.device.deviceName,
+          newName: serverName,
+          deviceName: serverInstance.device.deviceName
         }
       });
 

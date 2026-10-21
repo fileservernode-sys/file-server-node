@@ -49,3 +49,15 @@ export class ConflictError extends AppError {
   }
 }
 
+export class StatutoryConfigurationMissingError extends AppError {
+  constructor(message = 'Statutory configuration is incomplete or unapproved', errorCode = 'STATUTORY_CONFIGURATION_MISSING') {
+    super(message, 422, errorCode);
+  }
+}
+
+export class InvoiceIssuanceBlockedError extends AppError {
+  constructor(message = 'Invoice issuance is blocked due to unfulfilled prerequisites', errorCode = 'INVOICE_ISSUANCE_BLOCKED') {
+    super(message, 422, errorCode);
+  }
+}
+

@@ -67,7 +67,12 @@ class TemplateRegistry {
 
   private sanitizeMetadata(meta: SafeNotificationMetadata = {}): SafeNotificationMetadata {
     const clean: SafeNotificationMetadata = { ...meta };
-    const forbidden = ['password', 'token', 'jwt', 'fcmtoken', 'privatekey', 'secret', 'authorization', 'otp'];
+    const forbidden = [
+      'password', 'token', 'jwt', 'fcmtoken', 'privatekey', 'secret', 'authorization', 'otp',
+      'cvv', 'cardnumber', 'card_number', 'pan', 'paymentcredential', 'signature',
+      'razorpay_signature', 'rawpayload', 'taxid', 'customertaxid', 'gstin', 'vatnumber',
+      'accountnumber', 'account_number', 'privatedocumenturl', 'downloadurl', 'pdfurl'
+    ];
     for (const key of Object.keys(clean)) {
       if (forbidden.some((f) => key.toLowerCase().includes(f))) {
         delete (clean as any)[key];
@@ -339,6 +344,136 @@ class TemplateRegistry {
       defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH],
       defaultSeverity: NotificationSeverity.INFO,
       defaultDeepLink: () => createDeepLink('system', 'https://zdexcloud.com/pages/notifications.html', '/pages/notifications')
+    });
+
+    // 20. INVOICE_ISSUED (In-App and Mobile Push only; email is dispatched exclusively by dedicated transactional outbox)
+    this.registerTemplate({
+      type: NotificationType.INVOICE_ISSUED,
+      titleTemplate: (ctx) => `Tax Invoice Available${ctx.invoiceNumber ? ` (${ctx.invoiceNumber})` : ''}`,
+      bodyTemplate: (ctx) => `Tax invoice ${ctx.invoiceNumber || ''} is now available in your portal.${ctx.formattedAmount ? ` Total: ${ctx.currency || 'USD'} ${ctx.formattedAmount}.` : ''}`,
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Tax Invoice ${ctx.invoiceNumber || ''} Available`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 12px 0;">Tax Invoice Issued</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">Your statutory tax invoice <strong>${ctx.invoiceNumber || 'N/A'}</strong>${ctx.formattedAmount ? ` for <strong>${ctx.currency || 'USD'} ${ctx.formattedAmount}</strong>` : ''} has been issued. You can review and download the signed PDF from your authenticated portal.</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">For your security, invoices are stored securely within your dashboard and are not attached as raw files.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour tax invoice ${ctx.invoiceNumber || 'N/A'} is available in your account.${ctx.formattedAmount ? ` Total: ${ctx.currency || 'USD'} ${ctx.formattedAmount}.\n` : '\n'}Download your PDF invoice securely at: https://zdexcloud.com/pages/invoices.html\n\nSecurity Notice: Invoices are not sent as email attachments.`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH],
+      defaultSeverity: NotificationSeverity.SUCCESS,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/invoices.html', '/pages/invoices.html')
+    });
+
+    // 21. PAYMENT_SUCCEEDED
+    this.registerTemplate({
+      type: NotificationType.PAYMENT_SUCCEEDED,
+      titleTemplate: () => 'Payment Succeeded',
+      bodyTemplate: (ctx) => `Your payment${ctx.formattedAmount ? ` of ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''} was processed successfully.`,
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Payment Confirmation${ctx.formattedAmount ? ` — ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 12px 0;">Payment Confirmation</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">Your payment${ctx.formattedAmount ? ` of <strong>${ctx.currency || 'USD'} ${ctx.formattedAmount}</strong>` : ''} has been processed successfully.</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">You can view your complete payment history, active entitlements, and tax invoices in your account dashboard.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour payment${ctx.formattedAmount ? ` of ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''} was processed successfully.\n\nView your payment history at: https://zdexcloud.com/pages/billing.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.SUCCESS,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/billing.html', '/pages/billing.html')
+    });
+
+    // 22. PAYMENT_FAILED
+    this.registerTemplate({
+      type: NotificationType.PAYMENT_FAILED,
+      titleTemplate: () => 'Payment Failed',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Your payment could not be processed. Please update your payment method to maintain uninterrupted service.',
+      emailSubjectTemplate: () => '[ZdexCloud] Action Required: Payment Failed',
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #DC2626; margin: 0 0 12px 0;">Payment Authorization Failed</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || 'Your recent payment could not be processed by your payment provider.'}</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0 0 16px 0;">Please visit your billing dashboard to update your payment instrument and prevent service disruption.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nAction Required: Your payment could not be processed.\n\n${ctx.customSummary || 'Please update your payment method to maintain uninterrupted service.'}\n\nUpdate your billing details at: https://zdexcloud.com/pages/billing.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.WARNING,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/billing.html', '/pages/billing.html')
+    });
+
+    // 23. SUBSCRIPTION_ACTIVATED
+    this.registerTemplate({
+      type: NotificationType.SUBSCRIPTION_ACTIVATED,
+      titleTemplate: (ctx) => `ZdexCloud ${ctx.planName || 'Pro'} Activated`,
+      bodyTemplate: (ctx) => `Your ZdexCloud ${ctx.planName || 'Pro'} subscription is now active with full priority routing and node capacity.`,
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Welcome to ZdexCloud ${ctx.planName || 'Pro'}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 12px 0;">Subscription Activated</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">Your ZdexCloud <strong>${ctx.planName || 'Pro'}</strong> subscription is now active with priority routing and multi-server capacity.</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">You can start configuring extra servers on your phone hardware immediately from the control plane.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour ZdexCloud ${ctx.planName || 'Pro'} subscription is now active with full priority routing and multi-server capacity.\n\nManage your servers at: https://zdexcloud.com/pages/subscription.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.SUCCESS,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/subscription.html', '/pages/subscription.html')
+    });
+
+    // 24. SUBSCRIPTION_RENEWED
+    this.registerTemplate({
+      type: NotificationType.SUBSCRIPTION_RENEWED,
+      titleTemplate: () => 'Subscription Renewed',
+      bodyTemplate: (ctx) => `Your recurring subscription for ${ctx.planName || 'ZdexCloud Pro'} has been processed successfully.`,
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Subscription Renewal Confirmation — ${ctx.planName || 'Pro'}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 12px 0;">Subscription Renewed</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">Your recurring subscription for <strong>${ctx.planName || 'ZdexCloud Pro'}</strong>${ctx.formattedAmount ? ` (${ctx.currency || 'USD'} ${ctx.formattedAmount})` : ''} has been renewed successfully.</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">Invoices and billing details can be viewed anytime in your account portal.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour recurring subscription for ${ctx.planName || 'ZdexCloud Pro'} has been renewed successfully.${ctx.formattedAmount ? ` Amount: ${ctx.currency || 'USD'} ${ctx.formattedAmount}.\n` : '\n'}Manage your subscription at: https://zdexcloud.com/pages/subscription.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.INFO,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/subscription.html', '/pages/subscription.html')
+    });
+
+    // 25. SUBSCRIPTION_PAYMENT_FAILED
+    this.registerTemplate({
+      type: NotificationType.SUBSCRIPTION_PAYMENT_FAILED,
+      titleTemplate: () => 'Renewal Payment Failed — Grace Period Active',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Your renewal payment failed. Your paid features remain active during the grace period. Please update your payment details.',
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Urgent: Renewal Payment Failed for ${ctx.planName || 'Subscription'}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #DC2626; margin: 0 0 12px 0;">Subscription Renewal Failed</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || 'Your recurring renewal payment could not be processed. Paid features remain active during your 5-day grace period.'}</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0 0 16px 0;">Please update your payment instrument before the grace period ends to maintain uninterrupted service and prevent account reversion to the Free tier.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nUrgent: Your recurring renewal payment could not be processed.\n\n${ctx.customSummary || 'Your paid features remain active during the grace period. Please update your payment method.'}\n\nUpdate your billing details at: https://zdexcloud.com/pages/billing.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.WARNING,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/billing.html', '/pages/billing.html')
+    });
+
+    // 26. SUBSCRIPTION_CANCELLED
+    this.registerTemplate({
+      type: NotificationType.SUBSCRIPTION_CANCELLED,
+      titleTemplate: () => 'Subscription Cancellation Scheduled',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Your subscription has been scheduled for cancellation at the end of your current period.',
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Subscription Cancellation Scheduled — ${ctx.planName || 'Pro'}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #D97706; margin: 0 0 12px 0;">Subscription Cancellation Scheduled</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || 'Your subscription cancellation has been scheduled. You will retain access to your paid tier features until the end of your current billing period.'}</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">You can reactivate your subscription anytime at your subscription dashboard.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour subscription cancellation has been scheduled.\n\n${ctx.customSummary || 'You will retain access until the end of your current billing period.'}\n\nManage your subscription at: https://zdexcloud.com/pages/subscription.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.WARNING,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/subscription.html', '/pages/subscription.html')
+    });
+
+    // 27. SUBSCRIPTION_EXPIRED
+    this.registerTemplate({
+      type: NotificationType.SUBSCRIPTION_EXPIRED,
+      titleTemplate: () => 'Subscription Ended — Reverted to Free Plan',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Your paid subscription period has ended and your account has reverted to the Free tier. Your existing servers and files remain safe.',
+      emailSubjectTemplate: () => '[ZdexCloud] Subscription Expired — Account Reverted to Free Plan',
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #DC2626; margin: 0 0 12px 0;">Subscription Expired</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || 'Your paid subscription period has ended and your account has reverted to the Free tier (1 server limit).'}</p><p style="font-size: 13px; line-height: 1.5; color: #059669; margin: 0 0 16px 0;"><strong>Hardware Storage Guarantee:</strong> All personal files and servers remain safe and stored directly on your phone hardware.</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">You can upgrade your subscription at any time to reactivate additional server slots.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour paid subscription period has ended and your account has reverted to the Free tier.\n\nAll personal files and servers remain safe on your phone hardware.\n\nUpgrade your subscription at: https://zdexcloud.com/pages/subscription.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.PUSH, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.CRITICAL,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/subscription.html', '/pages/subscription.html')
+    });
+
+    // 28. BILLING_REFUND_PROCESSED
+    this.registerTemplate({
+      type: NotificationType.BILLING_REFUND_PROCESSED,
+      titleTemplate: () => 'Refund Processed',
+      bodyTemplate: (ctx) => ctx.customSummary || `Your refund${ctx.formattedAmount ? ` of ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''} has been processed successfully.`,
+      emailSubjectTemplate: (ctx) => `[ZdexCloud] Refund Processed${ctx.formattedAmount ? ` — ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''}`,
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #0F172A; margin: 0 0 12px 0;">Refund Processed</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || `Your refund${ctx.formattedAmount ? ` of <strong>${ctx.currency || 'USD'} ${ctx.formattedAmount}</strong>` : ''} has been processed successfully.`}</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">The refunded amount should reflect in your original payment method in accordance with your bank's processing timelines.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour refund${ctx.formattedAmount ? ` of ${ctx.currency || 'USD'} ${ctx.formattedAmount}` : ''} has been processed successfully.\n\nView details at: https://zdexcloud.com/pages/billing.html`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.INFO,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/billing.html', '/pages/billing.html')
+    });
+
+    // 29. BILLING_REFUND_FAILED
+    this.registerTemplate({
+      type: NotificationType.BILLING_REFUND_FAILED,
+      titleTemplate: () => 'Refund Request Failed',
+      bodyTemplate: (ctx) => ctx.customSummary || 'Your refund request could not be processed by the payment provider.',
+      emailSubjectTemplate: () => '[ZdexCloud] Refund Processing Notice',
+      emailHtmlTemplate: (ctx) => `<h2 style="font-size: 18px; font-weight: 700; color: #D97706; margin: 0 0 12px 0;">Refund Request Update</h2><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">Hello ${ctx.userName || 'Customer'},</p><p style="font-size: 14px; line-height: 1.6; color: #334155; margin: 0 0 16px 0;">${ctx.customSummary || 'Your refund request could not be completed by the payment processor.'}</p><p style="font-size: 13px; line-height: 1.5; color: #64748B; margin: 0;">Please contact support@zdexcloud.com for assistance with this transaction.</p>`,
+      emailTextTemplate: (ctx) => `Hello ${ctx.userName || 'Customer'},\n\nYour refund request could not be completed by the payment processor.\n\nPlease contact support@zdexcloud.com for assistance.`,
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.WARNING,
+      defaultDeepLink: () => createDeepLink('billing', 'https://zdexcloud.com/pages/billing.html', '/pages/billing.html')
     });
   }
 }

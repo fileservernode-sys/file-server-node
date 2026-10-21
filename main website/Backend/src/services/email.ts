@@ -4,6 +4,7 @@ import { config } from '../config/env.js';
 import {
   getEmailVerificationTemplate,
   getPasswordResetTemplate,
+  getPasswordChangeOtpTemplate,
   getLoginOtpTemplate
 } from './email_templates.js';
 import { emailTrackingService } from './email_tracking_service.js';
@@ -44,6 +45,7 @@ export interface EmailDispatchOptions {
 export interface EmailService {
   sendVerificationOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
   sendPasswordResetOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
+  sendPasswordChangeOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
   sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
   sendRawMail(to: string, subject: string, html: string, text: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult>;
 }
@@ -241,6 +243,29 @@ export class BrevoEmailService implements EmailService {
     return dispatchResult;
   }
 
+  async sendPasswordChangeOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    const expiryMinutes = Math.round(config.PASSWORD_RESET_OTP_EXPIRY_SECONDS / 60);
+    const template = getPasswordChangeOtpTemplate(otpCode, expiryMinutes);
+    const dispatchResult = await this.sendMail(email, template.subject, template.html, template.text);
+
+    // Track direct OTP email dispatch
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'PASSWORD_CHANGE_OTP',
+      templateId: options?.templateId || 'PASSWORD_CHANGE',
+      subject: template.subject,
+      senderEmail: config.SMTP_FROM_EMAIL,
+      senderName: config.SMTP_FROM_NAME,
+      dispatchResult,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return dispatchResult;
+  }
+
   async sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
     const expiryMinutes = Math.round(config.EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS / 60);
     const template = getLoginOtpTemplate(otpCode, expiryMinutes);
@@ -286,6 +311,22 @@ export class BrevoEmailService implements EmailService {
         serverId: options.serverId || null,
         metadata: options.metadata,
         attemptNumber: options.attemptNumber
+      }).catch(() => {});
+    } else if (options && options.sourcePipeline === 'TRANSACTIONAL') {
+      await emailTrackingService.recordTransactionalEmail({
+        userId: options.userId || null,
+        recipientEmail: to,
+        emailType: options.emailType || 'TRANSACTIONAL',
+        templateId: options.templateId || 'TRANSACTIONAL',
+        subject,
+        senderEmail: config.SMTP_FROM_EMAIL,
+        senderName: config.SMTP_FROM_NAME,
+        dispatchResult,
+        requestId: options.requestId || RequestContextStore.get()?.requestId || null,
+        correlationId: options.correlationId || null,
+        deviceId: options.deviceId || null,
+        serverId: options.serverId || null,
+        metadata: options.metadata
       }).catch(() => {});
     }
 
@@ -355,6 +396,31 @@ export class MockEmailService implements EmailService {
     return result;
   }
 
+  async sendPasswordChangeOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
+    this.dispatchedOtps.push({ email, otpCode, type: 'PASSWORD_CHANGE', options });
+    const result: EmailDispatchResult = {
+      success: true,
+      provider: 'MOCK',
+      transport: 'MOCK',
+      providerMessageId: `mock_otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      providerResponseCode: '200'
+    };
+
+    await emailTrackingService.recordDirectOtpEmail({
+      userId: options?.userId || null,
+      recipientEmail: email,
+      emailType: options?.emailType || 'PASSWORD_CHANGE_OTP',
+      templateId: options?.templateId || 'PASSWORD_CHANGE',
+      subject: '[ZdexCloud] Confirm Your Password Change',
+      dispatchResult: result,
+      requestId: options?.requestId || RequestContextStore.get()?.requestId || null,
+      correlationId: options?.correlationId || null,
+      metadata: options?.metadata
+    }).catch(() => {});
+
+    return result;
+  }
+
   async sendLoginOtp(email: string, otpCode: string, options?: EmailDispatchOptions): Promise<EmailDispatchResult> {
     this.dispatchedOtps.push({ email, otpCode, type: 'LOGIN', options });
     const result: EmailDispatchResult = {
@@ -406,6 +472,22 @@ export class MockEmailService implements EmailService {
         serverId: options.serverId || null,
         metadata: options.metadata,
         attemptNumber: options.attemptNumber
+      }).catch(() => {});
+    } else if (options && options.sourcePipeline === 'TRANSACTIONAL') {
+      await emailTrackingService.recordTransactionalEmail({
+        userId: options.userId || null,
+        recipientEmail: to,
+        emailType: options.emailType || 'TRANSACTIONAL',
+        templateId: options.templateId || 'TRANSACTIONAL',
+        subject,
+        senderEmail: config.SMTP_FROM_EMAIL,
+        senderName: config.SMTP_FROM_NAME,
+        dispatchResult: result,
+        requestId: options.requestId || RequestContextStore.get()?.requestId || null,
+        correlationId: options.correlationId || null,
+        deviceId: options.deviceId || null,
+        serverId: options.serverId || null,
+        metadata: options.metadata
       }).catch(() => {});
     }
 

@@ -8,6 +8,11 @@ import { EntitlementService } from '../../entitlement_service.js';
 import { DunningService } from '../../dunning_service.js';
 import { UpgradeReconciliationService } from '../../upgrade_reconciliation_service.js';
 import { BillingReceiptService } from '../../billing_receipt_service.js';
+import { BillingInvoiceService } from '../../billing_invoice_service.js';
+import { PriceFormatter } from '../../pricing_catalog_service.js';
+import { CustomerActivityService } from '../../../activity/customer_activity_service.js';
+import { StatutoryConfigurationMissingError } from '../../../../errors/app-error.js';
+import { billingEventProducer } from '../../../../notifications/producers/billing_producer.js';
 import {
   PaymentProvider,
   PaymentEnvironment,
@@ -483,38 +488,39 @@ export class RazorpayWebhookService {
       // 7. Entitlement Recalculation via Entitlement Engine
       await EntitlementService.resolveUserEntitlements(subscription.userId);
 
-      // 8. In-App Notification Dispatch (Non-blocking, zero rollback on failure)
+      // 8. In-App & Multi-Channel Notification Dispatch (Non-blocking, zero rollback on failure)
       try {
-        const notifIdempotencyKey = `notif_act_${subscription.id}_${providerEventId}`;
-        const existingNotif = await prisma.notificationRecord.findUnique({
-          where: { idempotencyKey: notifIdempotencyKey }
+        await billingEventProducer.emitSubscriptionActivated({
+          id: subscription.id,
+          userId: subscription.userId,
+          planName: subscription.plan.name,
+          planCode: subscription.plan.code,
+          currency: subscription.currency,
+          amountMinorUnits: subscription.amountMinorUnits,
+          eventId: providerEventId
         });
-
-        if (!existingNotif) {
-          await prisma.notificationRecord.create({
-            data: {
-              userId: subscription.userId,
-              eventId: providerEventId,
-              eventType: 'SUBSCRIPTION_ACTIVATED',
-              category: 'ACCOUNT_SECURITY',
-              severity: 'INFO',
-              title: 'ZdexCloud Pro Activated',
-              body: `Your ZdexCloud ${subscription.plan.name} subscription is now active. You have access to up to ${subscription.plan.serverLimit} servers with priority relay routing.`,
-              idempotencyKey: notifIdempotencyKey,
-              status: NotificationRecordStatus.UNREAD,
-              metadata: {
-                subscriptionId: subscription.id,
-                planCode: subscription.plan.code,
-                currency: subscription.currency
-              }
-            }
-          });
-        }
       } catch (notifErr: any) {
         if (params.payload?._logger) {
-          params.payload._logger.warn?.('Failed to create in-app activation notification record', notifErr);
+          params.payload._logger.warn?.('Failed to emit in-app activation notification record', notifErr);
         }
       }
+
+      await CustomerActivityService.recordEventSafe({
+        userId: subscription.userId,
+        eventType: 'BILLING.SUBSCRIPTION_ACTIVATED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `sub_activated_${subscription.id}`,
+        metadata: {
+          planCode: subscription.plan.code,
+          planName: subscription.plan.name,
+          billingInterval: subscription.billingInterval,
+          currency: subscription.currency,
+          amountMinorUnits: subscription.amountMinorUnits,
+          formattedAmount: PriceFormatter.format(subscription.amountMinorUnits, subscription.currency),
+          currentPeriodStart: currentPeriodStart.toISOString(),
+          currentPeriodEnd: currentPeriodEnd.toISOString()
+        }
+      });
 
       return {
         success: true,
@@ -983,50 +989,21 @@ export class RazorpayWebhookService {
     // 9. Entitlement Recalculation via Entitlement Engine
     await EntitlementService.resolveUserEntitlements(subscription.userId);
 
-    // 10. In-App Notification Dispatch (Non-blocking)
+    // 10. In-App & Multi-Channel Notification Dispatch (Non-blocking)
     try {
-      const notifIdempotencyKey = `notif_renew_${subscription.id}_${providerPaymentId || providerEventId}`;
-      const existingNotif = await prisma.notificationRecord.findUnique({
-        where: { idempotencyKey: notifIdempotencyKey }
+      await billingEventProducer.emitSubscriptionRenewed({
+        id: subscription.id,
+        userId: subscription.userId,
+        planName: subscription.plan.name,
+        planCode: subscription.plan.code,
+        currency: subscription.currency,
+        amountMinorUnits: subscription.amountMinorUnits,
+        isRecovery: isRecoveringFromGrace,
+        eventId: providerPaymentId || providerEventId
       });
-
-      if (!existingNotif) {
-        let title: string;
-        let body: string;
-
-        if (isRecoveringFromGrace) {
-          title = 'Payment Recovered — Pro Subscription Active';
-          body = `Your recurring payment of ${subscription.currency} ${(subscription.amountMinorUnits / 100).toFixed(2)} was successfully recovered. Your Pro access has been fully restored.`;
-        } else {
-          title = 'ZdexCloud Pro Subscription Renewed';
-          body = `Your recurring payment of ${subscription.currency} ${(subscription.amountMinorUnits / 100).toFixed(2)} for ${subscription.plan.name} has been processed successfully.`;
-        }
-
-        await prisma.notificationRecord.create({
-          data: {
-            userId: subscription.userId,
-            eventId: providerEventId,
-            eventType: isRecoveringFromGrace ? 'SUBSCRIPTION_PAYMENT_RECOVERED' : 'SUBSCRIPTION_RENEWED',
-            category: 'BILLING',
-            severity: 'INFO',
-            title,
-            body,
-            idempotencyKey: notifIdempotencyKey,
-            status: NotificationRecordStatus.UNREAD,
-            metadata: {
-              subscriptionId: subscription.id,
-              planCode: subscription.plan.code,
-              currency: subscription.currency,
-              amountMinorUnits: subscription.amountMinorUnits,
-              currentPeriodEnd: nextPeriodEnd.toISOString(),
-              recoveredFromGrace: isRecoveringFromGrace
-            }
-          }
-        });
-      }
     } catch (notifErr: any) {
       if (params.payload?._logger) {
-        params.payload._logger.warn?.('Failed to create in-app renewal notification record', notifErr);
+        params.payload._logger.warn?.('Failed to emit in-app renewal notification record', notifErr);
       }
     }
 
@@ -1045,11 +1022,83 @@ export class RazorpayWebhookService {
 
       if (paymentRecord) {
         await BillingReceiptService.generateReceiptForPayment(paymentRecord.id);
+        try {
+          await BillingInvoiceService.generateInvoiceForPayment(paymentRecord.id);
+        } catch (invErr: any) {
+          if (invErr instanceof StatutoryConfigurationMissingError || invErr.errorCode === 'STATUTORY_CONFIGURATION_MISSING') {
+            if (params.payload?._logger) {
+              params.payload._logger.info?.('[Webhook] Statutory invoice deferred: seller configuration is incomplete or unapproved', { paymentId: paymentRecord.id });
+            }
+          } else if (params.payload?._logger) {
+            params.payload._logger.warn?.('Failed to generate statutory invoice for subscription charge', invErr);
+          }
+        }
+
+        const formattedChargedAmount = PriceFormatter.format(subscription.amountMinorUnits, subscription.currency);
+        await CustomerActivityService.recordEventSafe({
+          userId: subscription.userId,
+          eventType: 'BILLING.PAYMENT_SUCCEEDED',
+          paymentId: paymentRecord.id,
+          subscriptionId: subscription.id,
+          idempotencyKey: `payment_succeeded_${paymentRecord.id}`,
+          metadata: {
+            planCode: subscription.plan.code,
+            planName: subscription.plan.name,
+            currency: subscription.currency,
+            amountMinorUnits: subscription.amountMinorUnits,
+            formattedAmount: formattedChargedAmount
+          }
+        });
+
+        billingEventProducer.emitPaymentSucceeded({
+          id: paymentRecord.id,
+          userId: subscription.userId,
+          amountMinorUnits: paymentRecord.amountMinorUnits,
+          currency: paymentRecord.currency,
+          planName: subscription.plan.name,
+          chargedAt: paymentRecord.chargedAt || now
+        }).catch(() => {});
       }
     } catch (receiptErr: any) {
       if (params.payload?._logger) {
         params.payload._logger.warn?.('Failed to generate billing receipt for subscription charge', receiptErr);
       }
+    }
+
+    const formattedRenewalAmount = PriceFormatter.format(subscription.amountMinorUnits, subscription.currency);
+    if (isRecoveringFromGrace) {
+      await CustomerActivityService.recordEventSafe({
+        userId: subscription.userId,
+        eventType: 'BILLING.SUBSCRIPTION_GRACE_PERIOD_RECOVERED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `grace_recovered_${subscription.id}_${nextPeriodEnd.toISOString()}`,
+        metadata: {
+          planCode: subscription.plan.code,
+          planName: subscription.plan.name,
+          currency: subscription.currency,
+          amountMinorUnits: subscription.amountMinorUnits,
+          formattedAmount: formattedRenewalAmount,
+          currentPeriodStart: nextPeriodStart.toISOString(),
+          currentPeriodEnd: nextPeriodEnd.toISOString()
+        }
+      });
+    } else {
+      await CustomerActivityService.recordEventSafe({
+        userId: subscription.userId,
+        eventType: 'BILLING.SUBSCRIPTION_RENEWED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `sub_renewed_${subscription.id}_${nextPeriodEnd.toISOString()}`,
+        metadata: {
+          planCode: subscription.plan.code,
+          planName: subscription.plan.name,
+          billingInterval: subscription.billingInterval,
+          currency: subscription.currency,
+          amountMinorUnits: subscription.amountMinorUnits,
+          formattedAmount: formattedRenewalAmount,
+          currentPeriodStart: nextPeriodStart.toISOString(),
+          currentPeriodEnd: nextPeriodEnd.toISOString()
+        }
+      });
     }
 
     return {
@@ -1197,6 +1246,24 @@ export class RazorpayWebhookService {
 
       await EntitlementService.resolveUserEntitlements(subscription.userId);
 
+      await CustomerActivityService.recordEventSafe({
+        userId: subscription.userId,
+        eventType: 'BILLING.SUBSCRIPTION_EXPIRED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `sub_expired_${subscription.id}`,
+        metadata: {
+          planCode: subscription.plan.code,
+          planName: subscription.plan.name
+        }
+      });
+
+      billingEventProducer.emitSubscriptionExpired({
+        id: subscription.id,
+        userId: subscription.userId,
+        planName: subscription.plan.name,
+        eventId: providerEventId
+      }).catch(() => {});
+
       return {
         success: true,
         message: 'Subscription transitioned to EXPIRED via provider webhook',
@@ -1249,6 +1316,26 @@ export class RazorpayWebhookService {
           }
         });
       }, { maxWait: 15000, timeout: 30000 });
+
+      await CustomerActivityService.recordEventSafe({
+        userId: subscription.userId,
+        eventType: 'BILLING.SUBSCRIPTION_CANCELLATION_REQUESTED',
+        subscriptionId: subscription.id,
+        idempotencyKey: `sub_cancel_req_${subscription.id}_${subscription.currentPeriodEnd.toISOString()}`,
+        metadata: {
+          planCode: subscription.plan.code,
+          planName: subscription.plan.name,
+          currentPeriodEnd: subscription.currentPeriodEnd.toISOString()
+        }
+      });
+
+      billingEventProducer.emitSubscriptionCancelled({
+        id: subscription.id,
+        userId: subscription.userId,
+        planName: subscription.plan.name,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+        eventId: providerEventId
+      }).catch(() => {});
 
       return {
         success: true,
@@ -1415,9 +1502,10 @@ export class RazorpayWebhookService {
     }
 
     // 6. Record failed payment entry if payment entity present
+    let failedPaymentRecordId: string | undefined;
     if (paymentEntity && paymentEntity.id) {
       try {
-        await prisma.billingPayment.create({
+        const failedPay = await prisma.billingPayment.create({
           data: {
             provider: PaymentProvider.RAZORPAY,
             environment,
@@ -1437,10 +1525,38 @@ export class RazorpayWebhookService {
             }
           }
         });
+        failedPaymentRecordId = failedPay.id;
       } catch (err: any) {
         // Ignore duplicate payment record
       }
     }
+
+    const failedAmount = paymentEntity?.amount || subscription.amountMinorUnits;
+    const failedCurrency = (paymentEntity?.currency?.toUpperCase() as CurrencyCode) || subscription.currency;
+    await CustomerActivityService.recordEventSafe({
+      userId: subscription.userId,
+      eventType: 'BILLING.PAYMENT_FAILED',
+      paymentId: failedPaymentRecordId,
+      subscriptionId: subscription.id,
+      idempotencyKey: `payment_failed_${paymentEntity?.id || providerEventId}`,
+      metadata: {
+        planCode: subscription.plan.code,
+        planName: subscription.plan.name,
+        currency: failedCurrency,
+        amountMinorUnits: failedAmount,
+        formattedAmount: PriceFormatter.format(failedAmount, failedCurrency),
+        reason: 'Payment authorization failed'
+      }
+    });
+
+    billingEventProducer.emitPaymentFailed({
+      id: failedPaymentRecordId,
+      userId: subscription.userId,
+      amountMinorUnits: failedAmount,
+      currency: failedCurrency,
+      reason: paymentEntity?.error_description || 'Payment authorization failed',
+      eventId: providerEventId
+    }).catch(() => {});
 
     // 7. Mark Webhook as PROCESSED
     await prisma.billingWebhookEvent.update({
@@ -1777,6 +1893,24 @@ export class RazorpayWebhookService {
       }
     } catch {}
 
+    await CustomerActivityService.recordEventSafe({
+      userId: subscription.userId,
+      eventType: isDowngrade ? 'BILLING.SUBSCRIPTION_DOWNGRADE_EFFECTIVE' : 'BILLING.SUBSCRIPTION_UPGRADED',
+      subscriptionId: subscription.id,
+      idempotencyKey: isDowngrade
+        ? `sub_downgrade_eff_${subscription.id}_${providerEventId}`
+        : `sub_upgraded_${subscription.id}_${mapping.plan.code}_${nextPeriodStart.toISOString()}`,
+      metadata: {
+        fromPlan: subscription.plan.name,
+        toPlan: mapping.plan.name,
+        planCode: mapping.plan.code,
+        planName: mapping.plan.name,
+        currency: subscription.currency,
+        amountMinorUnits: mapping.planPrice.amountMinorUnits,
+        formattedAmount: PriceFormatter.format(mapping.planPrice.amountMinorUnits, subscription.currency)
+      }
+    });
+
     return {
       success: true,
       message: `Subscription ${subscription.id} successfully updated to plan ${mapping.plan.code}`,
@@ -1993,21 +2127,13 @@ export class RazorpayWebhookService {
         });
 
         // Dispatch failure notification
-        const idempotencyKey = `notif_wh_ref_failed_${refundRecord.id}`;
-        await prisma.notificationRecord.upsert({
-          where: { idempotencyKey },
-          update: {},
-          create: {
-            eventId: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            userId: refundRecord.userId,
-            eventType: 'BILLING_REFUND_FAILED',
-            category: 'BILLING',
-            severity: 'INFO',
-            title: 'Refund Request Failed',
-            body: `Your refund of ${refundRecord.currency} ${(refundRecord.amountMinorUnits / 100).toFixed(2)} could not be processed by the payment provider.`,
-            metadata: { refundId: refundRecord.id },
-            idempotencyKey
-          }
+        // Dispatch failure notification via CentralNotificationService (Phase 11.2)
+        billingEventProducer.emitRefundFailed({
+          id: refundRecord.id,
+          userId: refundRecord.userId,
+          amountMinorUnits: refundRecord.amountMinorUnits,
+          currency: refundRecord.currency,
+          reason: refundEntity?.error_description
         }).catch(() => {});
       }
     } else {
@@ -2036,24 +2162,27 @@ export class RazorpayWebhookService {
           }
         });
 
-        // Dispatch success notification
-        const idempotencyKey = `notif_wh_ref_processed_${refundRecord.id}`;
-        await prisma.notificationRecord.upsert({
-          where: { idempotencyKey },
-          update: {},
-          create: {
-            eventId: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-            userId: refundRecord.userId,
-            eventType: 'BILLING_REFUND_PROCESSED',
-            category: 'BILLING',
-            severity: 'INFO',
-            title: 'Refund Processed',
-            body: `Your refund of ${refundRecord.currency} ${(refundRecord.amountMinorUnits / 100).toFixed(2)} has been successfully processed.`,
-            metadata: { refundId: refundRecord.id, providerRefundId },
-            idempotencyKey
-          }
+        // Dispatch success notification via CentralNotificationService (Phase 11.2)
+        billingEventProducer.emitRefundProcessed({
+          id: refundRecord.id,
+          userId: refundRecord.userId,
+          amountMinorUnits: refundRecord.amountMinorUnits,
+          currency: refundRecord.currency
         }).catch(() => {});
       }
+
+      await CustomerActivityService.recordEventSafe({
+        userId: refundRecord.userId,
+        eventType: 'BILLING.PAYMENT_REFUNDED',
+        paymentId: refundRecord.paymentId,
+        subscriptionId: refundRecord.subscriptionId,
+        idempotencyKey: `payment_refunded_${refundRecord.id}`,
+        metadata: {
+          currency: refundRecord.currency,
+          amountMinorUnits: refundRecord.amountMinorUnits,
+          formattedAmount: PriceFormatter.format(refundRecord.amountMinorUnits, refundRecord.currency)
+        }
+      });
     }
 
     // 5. Finalize Webhook Log

@@ -21,6 +21,7 @@ import {
   ConflictError
 } from '../../errors/app-error.js';
 import { TaxCalculationService } from './tax_calculation_service.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 
 export interface GenerateReceiptOptions {
   now?: Date;
@@ -313,6 +314,21 @@ export class BillingReceiptService {
         receiptId: receipt.id,
         receiptNumber: receipt.receiptNumber,
         paymentId: payment.id,
+        amountMinorUnits,
+        currency: payment.currency
+      }
+    });
+
+    await CustomerActivityService.recordEventSafe({
+      userId: payment.userId,
+      eventType: 'BILLING.RECEIPT_ISSUED',
+      receiptId: receipt.id,
+      paymentId: payment.id,
+      subscriptionId: payment.subscriptionId || null,
+      idempotencyKey: `receipt_issued_${receipt.id}`,
+      occurredAt: receipt.issuedAt,
+      metadata: {
+        receiptNumber: receipt.receiptNumber,
         amountMinorUnits,
         currency: payment.currency
       }

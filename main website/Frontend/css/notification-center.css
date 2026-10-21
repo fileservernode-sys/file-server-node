@@ -446,3 +446,224 @@
     background: #E2E8F0;
   }
 }
+
+/* -----------------------------------------------------------------------------
+   7. Granular Category & Channel Notification Preferences
+   ----------------------------------------------------------------------------- */
+.pref-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-primary, #0F172A);
+  margin: 0 0 12px 0;
+}
+
+.pref-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pref-category-card {
+  background: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pref-category-card:hover {
+  border-color: #CBD5E1;
+}
+
+.pref-category-card.is-mandatory {
+  border-left: 4px solid #D97706;
+}
+
+.pref-category-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pref-category-info {
+  flex: 1;
+}
+
+.pref-category-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pref-category-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #0F172A);
+  margin: 0;
+}
+
+.pref-category-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: var(--color-surface-secondary, #F1F5F9);
+  color: var(--color-text-secondary, #64748B);
+}
+
+.pref-category-badge--mandatory {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FCD34D;
+}
+
+.pref-category-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary, #64748B);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.pref-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border, #F1F5F9);
+}
+
+.pref-channel-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm, 6px);
+  background: var(--color-surface-secondary, #F8FAFC);
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-primary, #0F172A);
+  transition: background 0.15s ease;
+}
+
+.pref-channel-item:hover:not(.is-disabled) {
+  background: #F1F5F9;
+}
+
+.pref-channel-item.is-disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.pref-channel-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-brand-primary, #2563EB);
+}
+
+.pref-channel-item.is-disabled input[type="checkbox"] {
+  cursor: not-allowed;
+}
+
+.pref-channel-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.pref-channel-subtext {
+  font-size: 10px;
+  color: var(--color-text-tertiary, #94A3B8);
+}
+
+/* -----------------------------------------------------------------------------
+   7. Delivery Status Badges & Failure UX
+   ----------------------------------------------------------------------------- */
+.rn-delivery-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--color-border, #E2E8F0);
+}
+
+.delivery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.2px;
+}
+
+.delivery-badge--inapp {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+}
+
+.delivery-badge--success {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+}
+
+.delivery-badge--warning {
+  background: #FFFBEB;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.delivery-badge--error {
+  background: #FEF2F2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.rn-notif-error-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: var(--radius-md, 8px);
+  padding: 16px;
+  text-align: center;
+  color: #991B1B;
+}
+
+.rn-notif-error-box h4 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
+  color: #7F1D1D;
+}
+
+.rn-notif-error-box p {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+  color: #991B1B;
+}
+
+.rn-pagination-error-banner {
+  background: #FFFBEB;
+  border: 1px solid #FCD34D;
+  border-radius: var(--radius-md, 8px);
+  padding: 10px 16px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #92400E;
+}
+
+

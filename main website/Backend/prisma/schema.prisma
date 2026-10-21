@@ -1,4 +1,4 @@
-// Prisma Schema — Remote Android Personal File Server Platform (Control Plane)
+// Prisma Schema - Remote Android Personal File Server Platform (Control Plane)
 
 generator client {
   provider = "prisma-client-js"
@@ -276,6 +276,28 @@ enum BillingReceiptType {
   SUBSCRIPTION_UPGRADE
 }
 
+enum BillingInvoiceStatus {
+  DRAFT
+  ISSUED
+  VOIDED
+  SUPERSEDED
+}
+
+enum BillingInvoiceSettlementStatus {
+  PENDING
+  SETTLED
+  PARTIALLY_SETTLED
+  CREDITED
+}
+
+enum BillingInvoiceType {
+  SUBSCRIPTION_PURCHASE
+  SUBSCRIPTION_RENEWAL
+  SUBSCRIPTION_UPGRADE
+  CREDIT_NOTE
+  CORRECTIVE_INVOICE
+}
+
 enum RefundStatus {
   REQUESTED
   PROCESSING
@@ -412,7 +434,7 @@ enum IncidentStatus {
 // CORE ENTITIES
 // -----------------------------------------------------------------------------
 
-/// User Account (Control Plane Metadata Only — No User Files Stored Here)
+/// User Account (Control Plane Metadata Only - No User Files Stored Here)
 model User {
   id            String       @id @default(cuid())
   email         String       @unique
@@ -435,6 +457,7 @@ model User {
   payments                BillingPayment[]
   refunds                 BillingRefund[]
   receipts                BillingReceipt[]
+  invoices                BillingInvoice[]
   taxes                   BillingPaymentTax[]
   planChanges             SubscriptionPlanChange[]
   upgradeReconciliations  SubscriptionUpgradeReconciliation[]
@@ -442,6 +465,8 @@ model User {
   errorOccurrences        ErrorOccurrence[]
   emailMessages           EmailMessage[]
   deviceCredentials       DeviceAuthCredential[]
+  invoiceNotifications    InvoiceNotificationOutbox[]
+  customerActivityEvents  CustomerActivityEvent[]
 
   @@index([email])
 }
@@ -907,6 +932,8 @@ model AccountBillingState {
   status               BillingStatus @default(FREE)
   activeSubscriptionId String?       @unique
   billingName          String?
+  companyName          String?
+  taxId                String?
   billingAddress1      String?
   billingAddress2      String?
   billingCity          String?
@@ -959,6 +986,7 @@ model Subscription {
   payments             BillingPayment[]
   refunds              BillingRefund[]
   receipts             BillingReceipt[]
+  invoices             BillingInvoice[]
   planChanges          SubscriptionPlanChange[]
   upgradeReconciliations SubscriptionUpgradeReconciliation[]
 
@@ -1052,6 +1080,7 @@ model BillingPayment {
   planChange   SubscriptionPlanChange? @relation(fields: [planChangeId], references: [id], onDelete: SetNull)
   refunds       BillingRefund[]
   receipt       BillingReceipt?
+  invoice       BillingInvoice?
   tax           BillingPaymentTax?
   processingFee BillingPaymentProcessingFee?
   reconciliationRecords BillingReconciliationRecord[]
@@ -1104,6 +1133,7 @@ model SubscriptionPlanChange {
   reconciliation SubscriptionUpgradeReconciliation?
   payments       BillingPayment[]
   receipts       BillingReceipt[]
+  invoices       BillingInvoice[]
 
   @@index([userId])
   @@index([subscriptionId])
@@ -1265,6 +1295,132 @@ model BillingReceipt {
   @@index([receiptNumber], map: "billing_receipt_num_idx")
   @@index([status], map: "billing_receipt_status_idx")
   @@index([issuedAt], map: "billing_receipt_issued_idx")
+}
+
+// -----------------------------------------------------------------------------
+// CUSTOMER STATUTORY TAX INVOICE DOCUMENTS (PHASE 8.2)
+// -----------------------------------------------------------------------------
+
+/// Immutable Customer Statutory Tax Invoice Record
+model BillingInvoice {
+  id                     String                         @id @default(cuid())
+  invoiceNumber          String                         @unique(map: "billing_invoice_number_uniq")
+  sequenceNumber         Int
+  financialYear          String                         // e.g. "2026-2027"
+  seriesPrefix           String                         @default("ZCI")
+  userId                 String
+  subscriptionId         String?
+  paymentId              String?                        @unique(map: "billing_invoice_payment_uniq")
+  planChangeId           String?
+  originalInvoiceId      String?
+  type                   BillingInvoiceType             @default(SUBSCRIPTION_PURCHASE)
+  status                 BillingInvoiceStatus           @default(ISSUED)
+  settlementStatus       BillingInvoiceSettlementStatus @default(PENDING)
+
+  // Date snapshots
+  issuedAt               DateTime                       @default(now())
+  paidAt                 DateTime?
+  voidedAt               DateTime?
+  periodStart            DateTime?
+  periodEnd              DateTime?
+
+  // Plan & price snapshots
+  planCode               String
+  planName               String
+  billingInterval        BillingInterval
+  priceVersion           Int                            @default(1)
+
+  // Financial amounts in integer minor units (paise/cents)
+  currency               CurrencyCode
+  subtotalMinorUnits     Int
+  discountMinorUnits     Int                            @default(0)
+  taxMinorUnits          Int                            @default(0)
+  totalMinorUnits        Int
+  amountPaidMinorUnits   Int                            @default(0)
+  amountDueMinorUnits    Int                            @default(0)
+
+  // Customer snapshot at time of issuance
+  customerName           String?
+  customerEmail          String
+  customerCompanyName    String?
+  customerTaxId          String?
+  billingAddress         Json?
+  billingCountry         String?
+
+  // Seller snapshot
+  sellerName             String                         @default("ZdexCloud")
+  sellerAddress          String?
+  sellerSupportEmail     String                         @default("support@zdexcloud.com")
+  sellerTaxId            String?
+  sellerJurisdiction     String?
+
+  // Provider transaction snapshot (preserves auditability even if foreign payment is purged)
+  provider               PaymentProvider                @default(RAZORPAY)
+  providerEnvironment    PaymentEnvironment             @default(TEST)
+  providerPaymentId      String?
+  providerSubscriptionId String?
+  providerOrderId        String?
+  sourcePaymentSnapshot  Json?
+
+  // Tax & item snapshots (GST / SAC 998313 compliance)
+  hsnSacCode             String?                        @default("998313")
+  taxJurisdiction        String?
+  taxType                TaxType                        @default(GST)
+  taxRateBasisPoints     Int                            @default(0)
+  isInclusive            Boolean                        @default(true)
+  taxBreakdown           Json?
+  lineItems              Json?
+
+  // Cryptographic integrity snapshot
+  contentHash            String?
+  digitalSignature       String?
+  signatureAlgorithm     String?                        @default("HMAC-SHA256")
+  signatureKeyVersion    Int?                           @default(1)
+  signedAt               DateTime?
+
+  // Superseding & document controls
+  supersededByInvoiceId  String?
+  correctionReason       String?
+  creditNoteReason       String?
+  voidReason             String?
+  documentTitle          String                         @default("Tax Invoice")
+  documentVersion        Int                            @default(1)
+  metadata               Json?
+
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  subscription       Subscription?           @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  payment            BillingPayment?         @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  planChange         SubscriptionPlanChange? @relation(fields: [planChangeId], references: [id], onDelete: SetNull)
+  originalInvoice    BillingInvoice?             @relation("InvoiceCorrections", fields: [originalInvoiceId], references: [id], onDelete: SetNull)
+  correctiveInvoices BillingInvoice[]            @relation("InvoiceCorrections")
+  notifications      InvoiceNotificationOutbox[]
+
+  @@index([userId], map: "billing_invoice_user_idx")
+  @@index([subscriptionId], map: "billing_invoice_sub_idx")
+  @@index([paymentId], map: "billing_invoice_payment_idx")
+  @@index([planChangeId], map: "billing_invoice_plan_change_idx")
+  @@index([originalInvoiceId], map: "billing_invoice_orig_inv_idx")
+  @@index([invoiceNumber], map: "billing_invoice_num_idx")
+  @@index([status], map: "billing_invoice_status_idx")
+  @@index([settlementStatus], map: "billing_invoice_settlement_idx")
+  @@index([issuedAt], map: "billing_invoice_issued_idx")
+  @@index([financialYear, sequenceNumber], map: "billing_invoice_fy_seq_idx")
+}
+
+/// Concurrency-Safe Sequence Counter for Statutory Invoice Numbers
+model BillingInvoiceSequence {
+  id            String   @id @default(cuid())
+  scope         String   @default("TAX_INVOICE")
+  financialYear String   // e.g. "2026-2027"
+  seriesPrefix  String   @default("ZCI")
+  lastNumber    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([scope, financialYear, seriesPrefix], map: "billing_invoice_seq_scope_fy_series_uniq")
 }
 
 // -----------------------------------------------------------------------------
@@ -1831,5 +1987,196 @@ model ErrorOccurrence {
   @@map("error_occurrences")
 }
 
+// -----------------------------------------------------------------------------
+// INVOICE NOTIFICATION TRANSACTIONAL OUTBOX & WEBHOOK INBOX (Phase 8.4 Batch E.3)
+// -----------------------------------------------------------------------------
 
+enum InvoiceNotificationOutboxStatus {
+  PENDING
+  SHADOW_PENDING
+  CLAIMED
+  DISPATCHED
+  DELIVERED
+  RETRYABLE_FAILURE
+  AMBIGUOUS_OUTCOME
+  PERMANENT_FAILURE
+  EXHAUSTED
+  HISTORICAL_UNTRACKED
+}
 
+enum EmailWebhookInboxStatus {
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  DUPLICATE
+  UNMATCHED
+  UNMATCHED_NO_IDENTIFIER
+  FAILED
+}
+
+/// Transactional Outbox for Statutory Tax Invoice Availability Notifications
+model InvoiceNotificationOutbox {
+  id                       String                          @id @default(cuid())
+  invoiceId                String
+  userId                   String?
+  notificationType         String                          @default("INVOICE_ISSUED")
+
+  // Immutable dispatch intent snapshot
+  recipientEmail           String
+  recipientName            String?
+  documentTitle            String                          @default("Tax Invoice")
+  invoiceNumber            String
+  currency                 CurrencyCode
+  totalMinorUnits          Int
+
+  // Execution lifecycle state
+  status                   InvoiceNotificationOutboxStatus @default(PENDING)
+  attemptCount             Int                             @default(0)
+  maxAttempts              Int                             @default(3)
+  lastAttemptAt            DateTime?
+  nextAttemptAt            DateTime?
+
+  // Concurrency fencing & distributed worker lease
+  claimedBy                String?
+  claimedAt                DateTime?
+  claimExpiresAt           DateTime?
+  claimVersion             BigInt                          @default(0)
+
+  // Durable Transport-Boundary Evidence Marker (Phase 8.4 Batch E.3 Schema Specification)
+  // Nullable: set immediately prior to opening socket/calling transport I/O in future worker.
+  // Runtime Contract:
+  // 1. If claim expires and transportStartedAt IS NULL, sweeper may safely consider retry.
+  // 2. If claim expires and transportStartedAt IS NOT NULL, outcome is uncertain; MUST quarantine as AMBIGUOUS_OUTCOME.
+  // 3. Limitation: In this schema-only batch, runtime persistence of this marker is not yet wired to worker code.
+  transportStartedAt       DateTime?
+
+  // Dispatch & provider reconciliation evidence
+  provider                 String                          @default("BREVO")
+  providerMessageId        String?
+  emailMessageId           String?
+  dispatchedAt             DateTime?
+  deliveredAt              DateTime?
+  failedAt                 DateTime?
+
+  // Failure diagnostics & quarantine details
+  failureCode              String?
+  failureReason            String?                         @db.Text
+  ambiguousAt              DateTime?
+  ambiguousReason          String?                         @db.Text
+
+  // Operator governance & resend audit
+  resendAuthorized         Boolean                         @default(false)
+  resendAuthorizedBy       String?
+  resendAuthorizedAt       DateTime?
+  resendAuthorizationCount  Int                             @default(0)
+  resendReason             String?                         @db.Text
+
+  metadata                 Json?
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+
+  // Relations:
+  // - RESTRICT on BillingInvoice prevents deleting an issued statutory invoice that has notification history
+  // - SET NULL on User ensures notification audit remains intact even if customer account is deleted/anonymized
+  invoice                  BillingInvoice                  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  user                     User?                           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Uniqueness constraint: Exactly ONE notification lifecycle per invoice per notification type
+  @@unique([invoiceId, notificationType], map: "invoice_notification_outbox_inv_type_uniq")
+
+  // Worker polling index: Fetch eligible sendable rows ordered by priority/schedule
+  @@index([status, nextAttemptAt, createdAt], map: "invoice_notification_outbox_poll_idx")
+
+  // Sweeper & lease-reclamation index: Scan expired worker leases efficiently
+  @@index([status, claimExpiresAt], map: "invoice_notification_outbox_lease_idx")
+
+  // Provider webhook correlation index
+  @@index([providerMessageId], map: "invoice_notification_outbox_provider_msg_idx")
+
+  // User & Administrative lookup indexes
+  @@index([userId, createdAt], map: "invoice_notification_outbox_user_idx")
+  @@index([invoiceNumber], map: "invoice_notification_outbox_num_idx")
+}
+
+/// Durable Staging Inbox for Incoming Provider Email Webhooks
+model EmailWebhookInbox {
+  id                      String                  @id @default(cuid())
+  provider                String                  @default("BREVO")
+  eventId                 String                  // Deterministic deduplication fingerprint: SHA256(cleanMessageId:eventType:timestampSeconds)
+  eventType               String                  // e.g. request, delivered, deferred, soft_bounce, hard_bounce
+  providerMessageId       String?                 // Normalized clean message ID without angle brackets
+  recipientEmail          String?
+  eventTimestamp          DateTime?               // Normalized provider-reported event timestamp (nullable: null if missing/malformed in payload)
+  receivedAt              DateTime                @default(now()) // Authoritative non-null local application receipt timestamp
+  status                  EmailWebhookInboxStatus @default(RECEIVED)
+
+  // Reconciliation tracking
+  matchedEmailMessageId   String?
+  matchedOutboxId         String?
+  reconciledAt            DateTime?
+  processingAttempts      Int                     @default(0)
+  lastError               String?                 @db.Text
+
+  // Sanitized raw payload (Data minimized: no client IP, no auth secrets)
+  rawPayload              Json
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+
+  // Strict idempotency: Duplicate webhook transmissions from provider cannot insert duplicate records
+  @@unique([provider, eventId], map: "email_webhook_inbox_provider_event_uniq")
+
+  // Reconciliation lookup index
+  @@index([providerMessageId, eventType], map: "email_webhook_inbox_prov_msg_idx")
+
+  // Asynchronous processor polling index
+  @@index([status, createdAt], map: "email_webhook_inbox_status_poll_idx")
+}
+
+// =============================================================================
+// PHASE 9.2: CUSTOMER ACTIVITY EVENT LOG (Customer-Visible Activity Feed)
+// =============================================================================
+
+/// Customer-Visible Activity Event (Sanitized, Owner-Scoped, Immutable Timeline Record)
+model CustomerActivityEvent {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Authoritative Taxonomy Identifier (e.g., "AUTH.SIGN_IN_SUCCEEDED", "FILE.UPLOADED")
+  eventType      String   @db.VarChar(100)
+
+  /// Customer-Visible Category ("ACCOUNT_SECURITY" | "SERVERS_DEVICES" | "FILE_ACCESS" | "BILLING_INVOICES" | "NOTIFICATIONS")
+  category       String   @db.VarChar(50)
+
+  /// Customer-Visible Severity ("INFO" | "SUCCESS" | "WARNING" | "CRITICAL")
+  severity       String   @db.VarChar(20)
+
+  /// Pre-rendered Customer-Safe Title & Description Snapshot
+  title          String   @db.VarChar(200)
+  description    String   @db.VarChar(500)
+
+  /// Optional Entity References (Stored as scalar IDs without destructive FK cascades so deleted devices/servers preserve history)
+  deviceId       String?  @db.VarChar(191)
+  serverId       String?  @db.VarChar(191)
+  invoiceId      String?  @db.VarChar(191)
+  subscriptionId String?  @db.VarChar(191)
+  paymentId      String?  @db.VarChar(191)
+  receiptId      String?  @db.VarChar(191)
+
+  /// Sanitized, Whitelisted Customer-Safe Metadata Snapshot (Never stores raw IPs, tokens, or secrets)
+  metadata       Json?
+
+  /// Optional Deterministic Idempotency Key to Prevent Duplicate Activity Rows Across Retries/Webhooks
+  idempotencyKey String?  @unique(map: "customer_activity_idempotency_key_uniq") @db.VarChar(191)
+
+  /// Business Timestamp of When the Activity Occurred
+  occurredAt     DateTime @default(now())
+
+  /// Persistence Timestamp
+  createdAt      DateTime @default(now())
+
+  // Composite indexes for fast owner-scoped timeline pagination and filtering
+  @@index([userId, occurredAt(sort: Desc)], map: "customer_activity_user_time_idx")
+  @@index([userId, category, occurredAt(sort: Desc)], map: "customer_activity_user_cat_time_idx")
+  @@index([userId, eventType, occurredAt(sort: Desc)], map: "customer_activity_user_type_time_idx")
+}

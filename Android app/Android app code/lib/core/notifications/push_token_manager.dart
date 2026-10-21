@@ -94,6 +94,13 @@ class PushTokenManager {
   String? get lastRegisteredToken => _lastRegisteredToken;
   String? get lastRegisteredDeviceId => _lastRegisteredDeviceId;
 
+  /// Masks sensitive FCM tokens for privacy-preserving operational logs
+  static String maskToken(String? token) {
+    if (token == null || token.isEmpty) return '<none>';
+    if (token.length <= 10) return '***';
+    return '${token.substring(0, 6)}...${token.substring(token.length - 4)}';
+  }
+
   Future<bool> registerPushToken({
     required String deviceId,
     String platform = 'ANDROID',
@@ -102,7 +109,7 @@ class PushTokenManager {
     try {
       final token = await _fcmAdapter.getToken();
       if (token == null || token.isEmpty) {
-        AppLogger.warning('[PushTokenManager] No FCM token available to register.');
+        AppLogger.warning('[PushTokenManager] No genuine FCM token available to register. Skipping registration.');
         return false;
       }
 
@@ -134,7 +141,7 @@ class PushTokenManager {
       if (res.statusCode == 200 || res.statusCode == 201) {
         _lastRegisteredToken = token;
         _lastRegisteredDeviceId = deviceId;
-        AppLogger.info('[PushTokenManager] Push token registered successfully for device: $deviceId');
+        AppLogger.info('[PushTokenManager] Push token registered successfully for device: $deviceId (Token: ${maskToken(token)})');
         return true;
       } else {
         AppLogger.warning('[PushTokenManager] Failed to register token. Status: ${res.statusCode}');
@@ -173,7 +180,7 @@ class PushTokenManager {
       if (res.statusCode == 200) {
         _lastRegisteredToken = newToken;
         _lastRegisteredDeviceId = deviceId;
-        AppLogger.info('[PushTokenManager] Push token rotated successfully.');
+        AppLogger.info('[PushTokenManager] Push token rotated successfully for device: $deviceId (Token: ${maskToken(newToken)})');
         return true;
       }
       return false;

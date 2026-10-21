@@ -55,6 +55,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         showBrandMark: true,
         actions: [
           IconButton(
+            icon: const Icon(Icons.notifications_outlined, size: 20, color: AppColors.textSecondary),
+            tooltip: 'Notification Center',
+            onPressed: () {
+              Navigator.pushNamed(context, '/notifications');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh_outlined, size: 20, color: AppColors.textSecondary),
             tooltip: 'Sync Server Status',
             onPressed: () {

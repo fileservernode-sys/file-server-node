@@ -20,6 +20,7 @@ import {
 } from '../../errors/app-error.js';
 import { RazorpayClient, RazorpayRefundResponse } from './providers/razorpay/razorpay_client.js';
 import { EntitlementService } from './entitlement_service.js';
+import { CustomerActivityService } from '../activity/customer_activity_service.js';
 
 export interface RequestRefundParams {
   paymentId: string;
@@ -439,6 +440,19 @@ export class BillingRefundService {
           providerRefundId: rzpResponse?.id,
           amountMinorUnits: requestedAmountMinorUnits,
           currency: payment.currency
+        }
+      });
+
+      await CustomerActivityService.recordEventSafe({
+        userId,
+        eventType: 'BILLING.PAYMENT_REFUNDED',
+        paymentId: payment.id,
+        subscriptionId: subscription?.id || null,
+        idempotencyKey: `payment_refunded_${updated.id}`,
+        metadata: {
+          amountMinorUnits: requestedAmountMinorUnits,
+          currency: payment.currency,
+          reasonLabel: String(reason)
         }
       });
     }

@@ -1,7 +1,13 @@
 import { OtpPurpose } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { config } from '../config/env.js';
-import { generateOtpCode, hashOtp, verifyOtpCode } from './crypto.js';
+import {
+  generateOtpCode,
+  hashOtp,
+  verifyOtpCode,
+  hashPasswordChangeOtp,
+  verifyPasswordChangeOtpCode
+} from './crypto.js';
 import { emailService } from '../services/email.js';
 
 export interface IssueOtpResult {
@@ -13,6 +19,7 @@ export interface VerifyOtpResult {
   valid: boolean;
   error?: 'INVALID_OTP' | 'EXPIRED_OTP' | 'TOO_MANY_ATTEMPTS' | 'NO_ACTIVE_OTP';
   userId?: string;
+  otpRecordId?: string;
 }
 
 /**
@@ -27,11 +34,12 @@ export async function issueEmailOtp(
 ): Promise<IssueOtpResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  // Check Resend Cooldown
+  // Check Resend Cooldown (excluding operation-bound password-change OTPs)
   const recentOtp = await prisma.emailOtp.findFirst({
     where: {
       email: normalizedEmail,
       purpose,
+      NOT: { otpCode: { startsWith: 'pwdchg:' } },
       createdAt: { gt: new Date(Date.now() - config.OTP_RESEND_COOLDOWN_SECONDS * 1000) }
     },
     orderBy: { createdAt: 'desc' }
@@ -46,9 +54,14 @@ export async function issueEmailOtp(
     throw error;
   }
 
-  // Invalidate previous unused OTPs for this email and purpose
+  // Invalidate previous unused OTPs for this email and purpose (excluding password-change OTPs)
   await prisma.emailOtp.updateMany({
-    where: { email: normalizedEmail, purpose, used: false },
+    where: {
+      email: normalizedEmail,
+      purpose,
+      used: false,
+      NOT: { otpCode: { startsWith: 'pwdchg:' } }
+    },
     data: { used: true }
   });
 
@@ -107,23 +120,29 @@ export async function issueEmailOtp(
 export async function verifyEmailOtp(
   email: string,
   code: string,
-  purpose: OtpPurpose
+  purpose: OtpPurpose,
+  options?: { consume?: boolean; expectedUserId?: string }
 ): Promise<VerifyOtpResult> {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedCode = code.trim();
 
-  // Find most recent active unconsumed OTP
+  // Find most recent active unconsumed OTP (strictly excluding password-change OTPs)
   const record = await prisma.emailOtp.findFirst({
     where: {
       email: normalizedEmail,
       purpose,
-      used: false
+      used: false,
+      NOT: { otpCode: { startsWith: 'pwdchg:' } }
     },
     orderBy: { createdAt: 'desc' }
   });
 
   if (!record) {
     return { valid: false, error: 'NO_ACTIVE_OTP' };
+  }
+
+  if (options?.expectedUserId && record.userId !== options.expectedUserId) {
+    return { valid: false, error: 'INVALID_OTP' };
   }
 
   // Check if expired
@@ -165,11 +184,167 @@ export async function verifyEmailOtp(
     };
   }
 
-  // OTP is valid -> Mark as used (single-use)
-  await prisma.emailOtp.update({
-    where: { id: record.id },
+  // OTP is valid -> Mark as used (single-use) unless caller requested pre-verification only
+  if (options?.consume !== false) {
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: { used: true }
+    });
+  }
+
+  return { valid: true, userId: record.userId, otpRecordId: record.id };
+}
+
+/**
+ * Generates and dispatches an operation-bound, user-bound 6-digit OTP specifically for
+ * authenticated password change.
+ * Uses the existing EmailOtp persistence model with a `pwdchg:<userId>:<salt>:<hmac>` representation
+ * so password-change OTPs and forgot-password/login/registration OTPs cannot cross-validate.
+ */
+export async function issuePasswordChangeOtp(
+  userId: string,
+  email: string
+): Promise<IssueOtpResult> {
+  const cleanUserId = userId.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+  const prefix = `pwdchg:${cleanUserId}:`;
+
+  // Enforce resend cooldown scoped to this user's password-change OTPs
+  const recentOtp = await prisma.emailOtp.findFirst({
+    where: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      purpose: 'PASSWORD_RESET',
+      otpCode: { startsWith: prefix },
+      createdAt: { gt: new Date(Date.now() - config.OTP_RESEND_COOLDOWN_SECONDS * 1000) }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (recentOtp && !recentOtp.used) {
+    const elapsedSec = Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
+    const remainingSec = Math.max(1, config.OTP_RESEND_COOLDOWN_SECONDS - elapsedSec);
+    const error = new Error(`Please wait ${remainingSec} seconds before requesting a new verification code`);
+    (error as any).statusCode = 429;
+    (error as any).code = 'RESEND_COOLDOWN_ACTIVE';
+    (error as any).retryAfterSeconds = remainingSec;
+    throw error;
+  }
+
+  // Invalidate any prior unused password-change OTPs for this user
+  await prisma.emailOtp.updateMany({
+    where: {
+      userId: cleanUserId,
+      purpose: 'PASSWORD_RESET',
+      otpCode: { startsWith: prefix },
+      used: false
+    },
     data: { used: true }
   });
 
-  return { valid: true, userId: record.userId };
+  const otpCode = generateOtpCode();
+  const secureOtpRepresentation = hashPasswordChangeOtp(cleanUserId, otpCode);
+  const ttlSeconds = config.PASSWORD_RESET_OTP_EXPIRY_SECONDS;
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+  await prisma.emailOtp.create({
+    data: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      otpCode: secureOtpRepresentation,
+      purpose: 'PASSWORD_RESET',
+      expiresAt,
+      attempts: 0,
+      used: false
+    }
+  });
+
+  await emailService.sendPasswordChangeOtp(normalizedEmail, otpCode, {
+    userId: cleanUserId,
+    sourcePipeline: 'OTP',
+    emailType: 'PASSWORD_CHANGE_OTP',
+    templateId: 'PASSWORD_CHANGE'
+  });
+
+  return { otpCode, expiresAt };
 }
+
+/**
+ * Verifies an operation-bound, user-bound 6-digit OTP for authenticated password change.
+ * Enforces expiry, max attempts lockout, user binding, and single-use consumption.
+ */
+export async function verifyPasswordChangeOtp(
+  userId: string,
+  email: string,
+  code: string,
+  options?: { consume?: boolean }
+): Promise<VerifyOtpResult> {
+  const cleanUserId = userId.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedCode = code.trim();
+  const prefix = `pwdchg:${cleanUserId}:`;
+
+  const record = await prisma.emailOtp.findFirst({
+    where: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      purpose: 'PASSWORD_RESET',
+      otpCode: { startsWith: prefix },
+      used: false
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!record) {
+    return { valid: false, error: 'NO_ACTIVE_OTP' };
+  }
+
+  if (record.expiresAt < new Date()) {
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: { used: true }
+    });
+    return { valid: false, error: 'EXPIRED_OTP' };
+  }
+
+  if (record.attempts >= config.OTP_MAX_ATTEMPTS) {
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: { used: true }
+    });
+    return { valid: false, error: 'TOO_MANY_ATTEMPTS' };
+  }
+
+  const isMatch = verifyPasswordChangeOtpCode(cleanUserId, normalizedCode, record.otpCode);
+
+  if (!isMatch) {
+    const newAttempts = record.attempts + 1;
+    const shouldLockout = newAttempts >= config.OTP_MAX_ATTEMPTS;
+
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: {
+        attempts: newAttempts,
+        used: shouldLockout ? true : record.used
+      }
+    });
+
+    return {
+      valid: false,
+      error: shouldLockout ? 'TOO_MANY_ATTEMPTS' : 'INVALID_OTP'
+    };
+  }
+
+  if (options?.consume !== false) {
+    const consumed = await prisma.emailOtp.updateMany({
+      where: { id: record.id, userId: cleanUserId, used: false },
+      data: { used: true }
+    });
+    if (consumed.count !== 1) {
+      return { valid: false, error: 'NO_ACTIVE_OTP' };
+    }
+  }
+
+  return { valid: true, userId: record.userId, otpRecordId: record.id };
+}
+

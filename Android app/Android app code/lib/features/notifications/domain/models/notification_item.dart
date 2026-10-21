@@ -1,5 +1,40 @@
 enum NotificationStateEnum { unread, read, archived }
 
+class NotificationDeliveryStatus {
+  final String inApp;
+  final String? push;
+  final String? email;
+  final bool retryable;
+
+  const NotificationDeliveryStatus({
+    this.inApp = 'DELIVERED',
+    this.push,
+    this.email,
+    this.retryable = false,
+  });
+
+  factory NotificationDeliveryStatus.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return const NotificationDeliveryStatus();
+    }
+    return NotificationDeliveryStatus(
+      inApp: json['inApp'] as String? ?? 'DELIVERED',
+      push: json['push'] as String?,
+      email: json['email'] as String?,
+      retryable: json['retryable'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'inApp': inApp,
+      if (push != null) 'push': push,
+      if (email != null) 'email': email,
+      'retryable': retryable,
+    };
+  }
+}
+
 class NotificationItem {
   final String id;
   final String eventId;
@@ -15,6 +50,7 @@ class NotificationItem {
   final String? webPath;
   final NotificationStateEnum state;
   final DateTime createdAt;
+  final NotificationDeliveryStatus deliveryStatus;
 
   const NotificationItem({
     required this.id,
@@ -31,6 +67,7 @@ class NotificationItem {
     this.webPath,
     required this.state,
     required this.createdAt,
+    this.deliveryStatus = const NotificationDeliveryStatus(),
   });
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
@@ -63,6 +100,9 @@ class NotificationItem {
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'] as String)
           : DateTime.now(),
+      deliveryStatus: json['deliveryStatus'] != null && json['deliveryStatus'] is Map<String, dynamic>
+          ? NotificationDeliveryStatus.fromJson(json['deliveryStatus'] as Map<String, dynamic>)
+          : const NotificationDeliveryStatus(),
     );
   }
 
@@ -82,11 +122,13 @@ class NotificationItem {
       'webPath': webPath,
       'state': state.name.toUpperCase(),
       'createdAt': createdAt.toIso8601String(),
+      'deliveryStatus': deliveryStatus.toJson(),
     };
   }
 
   NotificationItem copyWith({
     NotificationStateEnum? state,
+    NotificationDeliveryStatus? deliveryStatus,
   }) {
     return NotificationItem(
       id: id,
@@ -103,6 +145,7 @@ class NotificationItem {
       webPath: webPath,
       state: state ?? this.state,
       createdAt: createdAt,
+      deliveryStatus: deliveryStatus ?? this.deliveryStatus,
     );
   }
 }

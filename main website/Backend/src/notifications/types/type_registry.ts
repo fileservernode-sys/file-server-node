@@ -41,7 +41,19 @@ export enum NotificationType {
   SERVICE_OUTAGE = 'SERVICE_OUTAGE',
   SERVICE_RECOVERED = 'SERVICE_RECOVERED',
   SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT',
-  TEST_NOTIFICATION = 'TEST_NOTIFICATION'
+  TEST_NOTIFICATION = 'TEST_NOTIFICATION',
+
+  // BILLING
+  INVOICE_ISSUED = 'INVOICE_ISSUED',
+  PAYMENT_SUCCEEDED = 'PAYMENT_SUCCEEDED',
+  PAYMENT_FAILED = 'PAYMENT_FAILED',
+  SUBSCRIPTION_ACTIVATED = 'SUBSCRIPTION_ACTIVATED',
+  SUBSCRIPTION_RENEWED = 'SUBSCRIPTION_RENEWED',
+  SUBSCRIPTION_PAYMENT_FAILED = 'SUBSCRIPTION_PAYMENT_FAILED',
+  SUBSCRIPTION_CANCELLED = 'SUBSCRIPTION_CANCELLED',
+  SUBSCRIPTION_EXPIRED = 'SUBSCRIPTION_EXPIRED',
+  BILLING_REFUND_PROCESSED = 'BILLING_REFUND_PROCESSED',
+  BILLING_REFUND_FAILED = 'BILLING_REFUND_FAILED'
 }
 
 export interface NotificationTypeMeta {
@@ -215,6 +227,68 @@ export const NOTIFICATION_TYPE_CATALOG: Record<NotificationType, NotificationTyp
     type: NotificationType.TEST_NOTIFICATION,
     category: NotificationCategory.SYSTEM,
     defaultSeverity: NotificationSeverity.INFO,
+    isSecurityCritical: false
+  },
+
+  // Billing
+  [NotificationType.INVOICE_ISSUED]: {
+    type: NotificationType.INVOICE_ISSUED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.SUCCESS,
+    isSecurityCritical: false
+  },
+  [NotificationType.PAYMENT_SUCCEEDED]: {
+    type: NotificationType.PAYMENT_SUCCEEDED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.SUCCESS,
+    isSecurityCritical: false
+  },
+  [NotificationType.PAYMENT_FAILED]: {
+    type: NotificationType.PAYMENT_FAILED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.WARNING,
+    isSecurityCritical: false
+  },
+  [NotificationType.SUBSCRIPTION_ACTIVATED]: {
+    type: NotificationType.SUBSCRIPTION_ACTIVATED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.SUCCESS,
+    isSecurityCritical: false
+  },
+  [NotificationType.SUBSCRIPTION_RENEWED]: {
+    type: NotificationType.SUBSCRIPTION_RENEWED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.INFO,
+    isSecurityCritical: false
+  },
+  [NotificationType.SUBSCRIPTION_PAYMENT_FAILED]: {
+    type: NotificationType.SUBSCRIPTION_PAYMENT_FAILED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.WARNING,
+    isSecurityCritical: false
+  },
+  [NotificationType.SUBSCRIPTION_CANCELLED]: {
+    type: NotificationType.SUBSCRIPTION_CANCELLED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.WARNING,
+    isSecurityCritical: false
+  },
+  [NotificationType.SUBSCRIPTION_EXPIRED]: {
+    type: NotificationType.SUBSCRIPTION_EXPIRED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.CRITICAL,
+    isSecurityCritical: false
+  },
+  [NotificationType.BILLING_REFUND_PROCESSED]: {
+    type: NotificationType.BILLING_REFUND_PROCESSED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.INFO,
+    isSecurityCritical: false
+  },
+  [NotificationType.BILLING_REFUND_FAILED]: {
+    type: NotificationType.BILLING_REFUND_FAILED,
+    category: NotificationCategory.BILLING,
+    defaultSeverity: NotificationSeverity.WARNING,
     isSecurityCritical: false
   }
 });

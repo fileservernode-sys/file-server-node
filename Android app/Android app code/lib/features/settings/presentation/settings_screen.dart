@@ -8,6 +8,7 @@ import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/utils/url_launcher_service.dart';
+import '../../../core/notifications/push_token_manager.dart';
 import '../../auth/application/auth_state.dart';
 import '../../setup/application/setup_state.dart';
 
@@ -259,7 +260,34 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.xl),
 
                   // -----------------------------------------------------------
-                  // 5. Support & Information
+                  // 5. Notifications & Communication
+                  // -----------------------------------------------------------
+                  const Text('Notifications & Communication',
+                      style: AppTypography.caption),
+                  const SizedBox(height: AppSpacing.xs),
+                  AppCard(
+                    child: Column(
+                      children: [
+                        _buildSettingTile(
+                          icon: Icons.notifications_outlined,
+                          title: 'Notification Center',
+                          subtitle: 'View security, billing, server and system alerts',
+                          onTap: () => Navigator.pushNamed(context, '/notifications'),
+                        ),
+                        const Divider(),
+                        _buildSettingTile(
+                          icon: Icons.tune_rounded,
+                          title: 'Notification Settings',
+                          subtitle: 'Manage push and email delivery preferences',
+                          onTap: () => Navigator.pushNamed(context, '/notifications/preferences'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // -----------------------------------------------------------
+                  // 6. Support & Information
                   // -----------------------------------------------------------
                   const Text('Support & Information',
                       style: AppTypography.caption),
@@ -346,6 +374,12 @@ class SettingsScreen extends ConsumerWidget {
                           primaryActionLabel: 'Sign Out',
                           isDestructive: true,
                           onPrimaryAction: () async {
+                            final devId = ref.read(setupStateProvider).deviceId;
+                            if (devId != null && devId.isNotEmpty) {
+                              try {
+                                await ref.read(pushTokenManagerProvider).revokePushToken(deviceId: devId);
+                              } catch (_) {}
+                            }
                             await ref.read(authStateProvider.notifier).logout();
                             if (context.mounted) {
                               Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
