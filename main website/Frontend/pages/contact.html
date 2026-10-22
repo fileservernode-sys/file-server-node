@@ -230,23 +230,31 @@
             <h2 class="card-title" style="margin-bottom: var(--space-xs);">Send a Support Message</h2>
             <p class="card-description" style="margin-bottom: var(--space-lg);">Fields marked with * are required. Please provide detailed diagnostic context.</p>
 
-            <form data-frontend-form id="contact-form">
+            <form id="contact-form" novalidate>
+              <!-- Anti-Spam Security Field (Hidden from Human Visitors) -->
+              <div style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none;" aria-hidden="true">
+                <label for="contact-hp">Do not fill this field</label>
+                <input type="text" id="contact-hp" name="_hp_security_check" tabindex="-1" autocomplete="off">
+              </div>
+
               <div class="form-group" style="margin-bottom: var(--space-md);">
                 <label for="contact-name" class="form-label">Full Name *</label>
-                <input type="text" id="contact-name" class="form-input" placeholder="e.g. Alex Morgan" required>
+                <input type="text" id="contact-name" name="name" class="form-input" placeholder="e.g. Alex Morgan" autocomplete="name" required aria-describedby="contact-name-error">
+                <div id="contact-name-error" class="form-error-msg" role="alert" style="margin-top: 4px; display: none;"></div>
               </div>
 
               <div class="form-group" style="margin-bottom: var(--space-md);">
                 <label for="contact-email" class="form-label">Email Address *</label>
-                <input type="email" id="contact-email" class="form-input" placeholder="name@example.com" required>
-                <small style="color: var(--text-tertiary); font-size: 0.825rem; display: block; margin-top: 4px;">
+                <input type="email" id="contact-email" name="email" class="form-input" placeholder="name@example.com" autocomplete="email" required aria-describedby="contact-email-helper contact-email-error">
+                <small id="contact-email-helper" style="color: var(--text-tertiary); font-size: 0.825rem; display: block; margin-top: 4px;">
                   Use the email address associated with your ZdexCloud platform account if applicable.
                 </small>
+                <div id="contact-email-error" class="form-error-msg" role="alert" style="margin-top: 4px; display: none;"></div>
               </div>
 
               <div class="form-group" style="margin-bottom: var(--space-md);">
                 <label for="contact-reason" class="form-label">Reason for Contact *</label>
-                <select id="contact-reason" class="form-select" required>
+                <select id="contact-reason" name="reason" class="form-select" required aria-describedby="contact-reason-error">
                   <option value="" disabled selected>Select an option...</option>
                   <option value="general">General Question</option>
                   <option value="support">Technical Support &amp; Setup</option>
@@ -257,22 +265,25 @@
                   <option value="feedback">Product Feedback &amp; Feature Requests</option>
                   <option value="other">Other</option>
                 </select>
+                <div id="contact-reason-error" class="form-error-msg" role="alert" style="margin-top: 4px; display: none;"></div>
               </div>
 
               <div class="form-group" style="margin-bottom: var(--space-md);">
                 <label for="contact-subject" class="form-label">Subject *</label>
-                <input type="text" id="contact-subject" class="form-input" placeholder="Brief summary of your inquiry" required>
+                <input type="text" id="contact-subject" name="subject" class="form-input" placeholder="Brief summary of your inquiry" required aria-describedby="contact-subject-error">
+                <div id="contact-subject-error" class="form-error-msg" role="alert" style="margin-top: 4px; display: none;"></div>
               </div>
 
               <div class="form-group" style="margin-bottom: var(--space-lg);">
                 <label for="contact-message" class="form-label">Message *</label>
-                <textarea id="contact-message" class="form-textarea" rows="6" placeholder="Provide details about your question or issue. If troubleshooting a connection, please include: phone model, Android version, browser, and the exact error message..." required></textarea>
-                <small style="color: var(--text-tertiary); font-size: 0.825rem; display: block; margin-top: 4px;">
+                <textarea id="contact-message" name="message" class="form-textarea" rows="6" placeholder="Provide details about your question or issue. If troubleshooting a connection, please include: phone model, Android version, browser, and the exact error message..." required aria-describedby="contact-message-helper contact-message-error"></textarea>
+                <small id="contact-message-helper" style="color: var(--text-tertiary); font-size: 0.825rem; display: block; margin-top: 4px;">
                   Helpful diagnostic details: Phone make/model, Android OS version, browser name, and observed status indicator.
                 </small>
+                <div id="contact-message-error" class="form-error-msg" role="alert" style="margin-top: 4px; display: none;"></div>
               </div>
 
-              <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+              <button type="submit" id="contact-submit-btn" class="btn btn-primary btn-lg" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
                 <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -280,7 +291,7 @@
                 <span>Send Message</span>
               </button>
               
-              <div class="form-feedback-area"></div>
+              <div id="contact-form-feedback" class="form-feedback-area" role="status" aria-live="polite"></div>
             </form>
           </div>
 
@@ -512,6 +523,7 @@
     </div>
   </footer>
 
+  <script src="../js/config.js"></script>
   <script src="../js/motion.js"></script>
   <script src="../js/main.js"></script>
 </body>

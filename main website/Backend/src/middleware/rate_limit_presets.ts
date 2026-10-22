@@ -1,6 +1,6 @@
 /**
  * Rate Limiting Tier Presets & Key Generators
- * Phase 14 Batch #10 — Rate Limiting & Abuse Protection
+ * Phase 14 Batch #10 - Rate Limiting & Abuse Protection
  *
  * Implements granular, identity-aware, defense-in-depth rate limiting tiers
  * across Control Plane (Authentication, Customer, Admin, File Manager, Webhooks)
@@ -124,7 +124,22 @@ export const publicStandardRateLimitConfig = {
 };
 
 /**
- * TIER B: Authentication — Login & Register & Password Reset
+ * TIER B: Customer & Public Contact Form Submissions
+ * Limit: 5 req/10 minutes per IP
+ * Protects support mailbox against spam and volumetric abuse.
+ */
+export const contactFormRateLimitConfig = {
+  max: 5,
+  timeWindow: '10 minutes',
+  keyGenerator: (req: FastifyRequest) => {
+    const ip = resolveClientIp(req) || '127.0.0.1';
+    return `contact_form_${ip}`;
+  },
+  errorResponseBuilder: buildRateLimitErrorResponse
+};
+
+/**
+ * TIER B: Authentication: Login & Register & Password Reset
  * Limit: 5 req/min per (IP + Account Identifier Hash)
  * Prevents credential stuffing, account enumeration, and brute force while preventing
  * an attacker with rotating IPs from overwhelming a single victim email.
@@ -142,7 +157,7 @@ export const authStrictRateLimitConfig = {
 };
 
 /**
- * TIER B: Authentication — OTP Verification (Email Verification, 2FA, Reset OTP)
+ * TIER B: Authentication: OTP Verification (Email Verification, 2FA, Reset OTP)
  * Limit: 10 req/min per (IP + Account Identifier Hash)
  */
 export const authOtpVerifyRateLimitConfig = {
@@ -158,7 +173,7 @@ export const authOtpVerifyRateLimitConfig = {
 };
 
 /**
- * TIER B: Authentication — Resend OTP & Forgot Password
+ * TIER B: Authentication: Resend OTP & Forgot Password
  * Limit: 5 req/min per (IP + Account Identifier Hash)
  * Protects against Brevo email bombing and transactional provider cost explosion.
  */

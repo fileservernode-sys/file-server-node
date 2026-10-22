@@ -1,6 +1,6 @@
 /* ==========================================================================
    MAIN WEBSITE INTERACTIVE SCRIPT - VANILLA JS (SHARED HOSTING COMPATIBLE)
-   Phase MW-1 — Batch MW-1.3: Unified Chrome & Navigation System
+   Phase MW-1 - Batch MW-1.3: Unified Chrome & Navigation System
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -373,36 +373,262 @@ function initAccordion() {
 }
 
 /**
- * 6. Interactive Frontend Form Submission Handlers
+ * 6. Customer Contact & Support Inquiries Form Handler (Phase 14.4)
+ * Provides accessible, validated, rate-limit-aware submission with honest delivery feedback.
  */
-function initFrontendFormHandlers() {
-  const forms = document.querySelectorAll('[data-frontend-form]');
-  forms.forEach(form => {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      const submitBtn = form.querySelector('[type="submit"]');
-      const feedbackContainer = form.querySelector('.form-feedback-area');
+function initContactForm() {
+  const form = document.getElementById('contact-form');
+  if (!form) return;
 
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = `<span class="spinner"></span> Processing...`;
+  const nameInput = form.querySelector('#contact-name');
+  const emailInput = form.querySelector('#contact-email');
+  const reasonSelect = form.querySelector('#contact-reason');
+  const subjectInput = form.querySelector('#contact-subject');
+  const messageInput = form.querySelector('#contact-message');
+  const hpInput = form.querySelector('#contact-hp');
+  const submitBtn = form.querySelector('#contact-submit-btn') || form.querySelector('button[type="submit"]');
+  const feedbackArea = form.querySelector('#contact-form-feedback') || form.querySelector('.form-feedback-area');
 
-        setTimeout(() => {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = originalText;
-          
-          if (feedbackContainer) {
-            feedbackContainer.innerHTML = `
-              <div class="alert alert-info" style="margin-top: var(--space-md);">
-                <strong>Notice:</strong> Form validation succeeded. Backend API processing active.
-              </div>`;
-          }
-        }, 800);
+  function clearErrors() {
+    form.querySelectorAll('.form-error-msg').forEach(el => {
+      el.textContent = '';
+      el.style.display = 'none';
+    });
+    form.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(el => {
+      el.removeAttribute('aria-invalid');
+    });
+    if (feedbackArea) {
+      feedbackArea.innerHTML = '';
+    }
+  }
+
+  function setFieldError(field, errorElId, message) {
+    if (field) {
+      field.setAttribute('aria-invalid', 'true');
+    }
+    const errEl = document.getElementById(errorElId);
+    if (errEl) {
+      errEl.textContent = message;
+      errEl.style.display = 'block';
+    }
+  }
+
+  // Clear field errors dynamically as user corrects their input
+  [nameInput, emailInput, reasonSelect, subjectInput, messageInput].forEach(field => {
+    if (!field) return;
+    const errId = field.id + '-error';
+    field.addEventListener('input', () => {
+      field.removeAttribute('aria-invalid');
+      const errEl = document.getElementById(errId);
+      if (errEl) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
       }
     });
+    if (field.tagName === 'SELECT') {
+      field.addEventListener('change', () => {
+        field.removeAttribute('aria-invalid');
+        const errEl = document.getElementById(errId);
+        if (errEl) {
+          errEl.textContent = '';
+          errEl.style.display = 'none';
+        }
+      });
+    }
   });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+
+    const name = (nameInput ? nameInput.value : '').trim();
+    const email = (emailInput ? emailInput.value : '').trim();
+    const reason = (reasonSelect ? reasonSelect.value : '').trim();
+    const subject = (subjectInput ? subjectInput.value : '').trim();
+    const message = (messageInput ? messageInput.value : '').trim();
+    const hp = (hpInput ? hpInput.value : '').trim();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    let hasError = false;
+    let firstInvalidField = null;
+
+    if (!name) {
+      setFieldError(nameInput, 'contact-name-error', 'Please enter your full name.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = nameInput;
+    } else if (name.length > 100) {
+      setFieldError(nameInput, 'contact-name-error', 'Name must not exceed 100 characters.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = nameInput;
+    }
+
+    if (!email) {
+      setFieldError(emailInput, 'contact-email-error', 'Please enter your email address.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = emailInput;
+    } else if (!emailRegex.test(email) || email.length > 254) {
+      setFieldError(emailInput, 'contact-email-error', 'Please enter a valid email address (e.g. name@example.com).');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = emailInput;
+    }
+
+    if (!reason) {
+      setFieldError(reasonSelect, 'contact-reason-error', 'Please select a reason for your inquiry.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = reasonSelect;
+    }
+
+    if (!subject) {
+      setFieldError(subjectInput, 'contact-subject-error', 'Please enter a subject.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = subjectInput;
+    } else if (subject.length < 3 || subject.length > 200) {
+      setFieldError(subjectInput, 'contact-subject-error', 'Subject must be between 3 and 200 characters.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = subjectInput;
+    }
+
+    if (!message) {
+      setFieldError(messageInput, 'contact-message-error', 'Please enter your message.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = messageInput;
+    } else if (message.length < 10) {
+      setFieldError(messageInput, 'contact-message-error', 'Message must be at least 10 characters long.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = messageInput;
+    } else if (message.length > 3000) {
+      setFieldError(messageInput, 'contact-message-error', 'Message must not exceed 3000 characters.');
+      hasError = true;
+      if (!firstInvalidField) firstInvalidField = messageInput;
+    }
+
+    if (hasError) {
+      if (firstInvalidField) firstInvalidField.focus();
+      return;
+    }
+
+    // Set loading state on submit button
+    const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Send Message';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner" aria-hidden="true" style="margin-right:8px;"></span><span>Sending Message...</span>';
+    }
+
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || protocol === 'file:' || !host;
+    const apiBase = (window.CONFIG && window.CONFIG.API_BASE_URL) ||
+                    window.API_BASE_URL ||
+                    (isLocal ? 'http://localhost:4000/api/v1' : 'https://api.zdexcloud.com/api/v1');
+
+    const mailtoSubject = encodeURIComponent('[ZdexCloud Support] ' + subject);
+    const mailtoBody = encodeURIComponent(
+      'Full Name: ' + name + '\n' +
+      'Email: ' + email + '\n' +
+      'Category: ' + reason + '\n\n' +
+      'Message:\n' + message
+    );
+    const mailtoUrl = 'mailto:support@zdexcloud.com?subject=' + mailtoSubject + '&body=' + mailtoBody;
+
+    try {
+      const response = await fetch(apiBase + '/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          reason: reason,
+          subject: subject,
+          message: message,
+          _hp_security_check: hp
+        })
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (response.ok && data && data.success) {
+        if (feedbackArea) {
+          feedbackArea.innerHTML = [
+            '<div class="alert alert-success" role="status" aria-live="polite" style="margin-top: var(--space-md); display: flex; align-items: flex-start; gap: var(--space-md);">',
+            '  <div style="flex-shrink:0;">',
+            '    <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+            '      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>',
+            '      <polyline points="22 4 12 14.01 9 11.01"></polyline>',
+            '    </svg>',
+            '  </div>',
+            '  <div>',
+            '    <strong style="display:block; margin-bottom: 2px;">Inquiry Sent Successfully</strong>',
+            '    <span>Your message has been received by our engineering support desk. We will review your inquiry and follow up at <strong>' + escapeHtml(email) + '</strong>.</span>',
+            '  </div>',
+            '</div>'
+          ].join('\n');
+        }
+        form.reset();
+      } else if (response.status === 429) {
+        if (feedbackArea) {
+          feedbackArea.innerHTML = [
+            '<div class="alert alert-warning" role="alert" aria-live="assertive" style="margin-top: var(--space-md);">',
+            '  <div>',
+            '    <strong style="display:block; margin-bottom: 2px;">Rate Limit Reached</strong>',
+            '    <span>You have submitted multiple requests recently. Please wait a few minutes before submitting again, or reach us directly at <a href="mailto:support@zdexcloud.com" style="text-decoration: underline; font-weight: 600;">support@zdexcloud.com</a>.</span>',
+            '  </div>',
+            '</div>'
+          ].join('\n');
+        }
+      } else {
+        const errorMsg = (data && data.error && data.error.message) ? data.error.message : 'Unable to submit your inquiry through the automated form.';
+        if (feedbackArea) {
+          feedbackArea.innerHTML = [
+            '<div class="alert alert-error" role="alert" aria-live="assertive" style="margin-top: var(--space-md);">',
+            '  <div>',
+            '    <strong style="display:block; margin-bottom: 4px;">Submission Notice</strong>',
+            '    <p style="margin:0 0 8px 0;">' + escapeHtml(errorMsg) + '</p>',
+            '    <a href="' + mailtoUrl + '" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">',
+            '      <span>Open in Email Client</span>',
+            '    </a>',
+            '  </div>',
+            '</div>'
+          ].join('\n');
+        }
+      }
+    } catch (networkErr) {
+      if (feedbackArea) {
+        feedbackArea.innerHTML = [
+          '<div class="alert alert-warning" role="alert" aria-live="assertive" style="margin-top: var(--space-md);">',
+          '  <div>',
+          '    <strong style="display:block; margin-bottom: 4px;">Automated Service Notice</strong>',
+          '    <p style="margin: 0 0 8px 0;">Could not connect to the automated intake service right now. Your message text has been retained below. You can send it directly to our support desk with your email client:</p>',
+          '    <a href="' + mailtoUrl + '" class="btn btn-secondary btn-sm" style="display:inline-flex; align-items:center; gap:6px;">',
+          '      <span>Send via Email Client</span>',
+          '    </a>',
+          '  </div>',
+          '</div>'
+        ].join('\n');
+      }
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
+      }
+    }
+  });
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+}
+
+function initFrontendFormHandlers() {
+  initContactForm();
 }
 
 /**
