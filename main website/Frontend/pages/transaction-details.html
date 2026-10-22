@@ -873,7 +873,93 @@
 
     </main>
 
-  </div>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- DASHBOARD CONTACT CTA -->
+  <section class="dashboard-contact-cta" aria-labelledby="dashboard-contact-cta-title">
+    <div class="container">
+      <div class="dashboard-contact-cta-card">
+        <div class="dashboard-contact-cta-content">
+          <div class="dashboard-contact-cta-icon" aria-hidden="true">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 id="dashboard-contact-cta-title" class="dashboard-contact-cta-title">Need help with ZdexCloud?</h2>
+            <p class="dashboard-contact-cta-desc">Contact our support team if you have questions or need assistance with your account or server.</p>
+          </div>
+        </div>
+        <div class="dashboard-contact-cta-action">
+          <a href="contact.html" class="btn btn-primary dashboard-contact-cta-btn">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand-col">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
+            <span class="brand-icon">
+              <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+              </svg>
+            </span>
+            <span>ZdexCloud</span>
+          </a>
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
+            <li><a href="documentation.html" class="footer-link">Documentation</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
+            <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
+      </div>
+    </div>
+  </footer>
 
   <!-- RECEIPT HTML PREVIEW MODAL -->
   <div id="receipt-viewer-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
@@ -911,7 +997,7 @@
   <div id="refund-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: var(--color-bg-surface); width: 95%; max-width: 520px; border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-xl); border: 1px solid var(--color-border);">
       <div style="padding: 16px 20px; background: var(--color-bg-secondary); border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
-        <strong style="font-size: var(--font-size-body); color: var(--color-text-primary);">Request Billing Refund</strong>
+        <strong style="font-size: var(--font-size-body); color: var(--color-text-primary);">Billing Support &amp; Inquiries</strong>
         <button type="button" onclick="closeRefundModal()" class="btn btn-ghost btn-sm" aria-label="Close modal" style="padding: 4px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -920,7 +1006,7 @@
         <div id="refund-error-banner" style="display: none; background: #FEF2F2; border: 1px solid #FECACA; color: #991B1B; padding: 10px 12px; border-radius: var(--radius-md); font-size: var(--font-size-xs); margin-bottom: 16px;"></div>
         
         <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); margin-bottom: 16px;">
-          Eligible purchases made within the last 7 days may be refunded under our money-back policy. Processing returns funds directly to your original payment method.
+          Under ZdexCloud terms of service, customer payments are final and non-refundable. For billing discrepancies or duplicate charges, please contact support@zdexcloud.com.
         </p>
 
         <form id="refund-form" onsubmit="submitRefundRequest(event)">

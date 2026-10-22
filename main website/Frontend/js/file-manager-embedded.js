@@ -11,7 +11,7 @@
  */
 
 // ---------------------------------------------------------------------------
-// Configuration — resolved once on page load
+// Configuration: resolved once on page load
 // ---------------------------------------------------------------------------
 const EmbeddedFileManager = {
   serverId: null,
@@ -64,11 +64,11 @@ const EmbeddedFileManager = {
 };
 
 // ---------------------------------------------------------------------------
-// EmbeddedApiAdapter — drop-in replacement for ApiService / LocalApiAdapter
+// EmbeddedApiAdapter: drop-in replacement for ApiService / LocalApiAdapter
 // ---------------------------------------------------------------------------
 const ApiService = {
 
-  // Always false — we never use the raw remote WebSocket in embedded mode
+  // Always false: we never use the raw remote WebSocket in embedded mode
   isRemoteMode() {
     return false;
   },
@@ -286,7 +286,7 @@ const ApiService = {
   },
 
   cancelTransfer(transferId, reason) {
-    // No-op in embedded HTTP mode — streaming handled by gateway
+    // No-op in embedded HTTP mode: streaming handled by gateway
   },
 
   getDownloadUrl(filePath) {
@@ -298,7 +298,7 @@ const ApiService = {
 };
 
 // ---------------------------------------------------------------------------
-// File Server Auth — integrated with ZdexCloud account authentication
+// File Server Auth: integrated with ZdexCloud account authentication
 // Single Sign-On: The authenticated ZdexCloud account is used directly.
 // No secondary username/password prompt is presented to the user.
 // ---------------------------------------------------------------------------

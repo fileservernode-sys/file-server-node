@@ -6,8 +6,8 @@
   
   <meta name="keywords" content="how Android file server works, Android remote file access, Android server architecture, outbound WebSocket connection, secure remote file access, CGNAT self-hosting, file server without port forwarding, Android home server, personal file server architecture">
 
-  <title>How It Works — Technical Connection Flow & Architecture | ZdexCloud</title>
-  <meta name="description" content="Step-by-step educational guide to how ZdexCloud turns an Android phone into a remote personal file server. Learn about outbound TLS 1.3 tunneling, CGNAT traversal, data transport flows, and the 5-stage setup sequence.">
+  <title>How It Works: Connection Flow & Architecture | ZdexCloud</title>
+  <meta name="description" content="Learn how ZdexCloud turns an Android phone into a personal file server using outbound TLS tunneling, CGNAT traversal, and direct browser-based remote access.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/how-it-works.html">
@@ -24,20 +24,20 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/how-it-works.html">
-  <meta property="og:title" content="How It Works — Technical Connection Flow & Architecture | ZdexCloud">
+  <meta property="og:title" content="How It Works: Technical Connection Flow & Architecture | ZdexCloud">
   <meta property="og:description" content="Step-by-step educational guide to how ZdexCloud turns an Android phone into a remote personal file server. Learn about outbound TLS 1.3 tunneling, CGNAT traversal, data transport flows, and the 5-stage setup sequence.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — How It Works Technical Architecture">
+  <meta property="og:image:alt" content="ZdexCloud: How It Works Technical Architecture">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="How It Works — Technical Connection Flow & Architecture | ZdexCloud">
+  <meta name="twitter:title" content="How It Works: Technical Connection Flow & Architecture | ZdexCloud">
   <meta name="twitter:description" content="Step-by-step educational guide to how ZdexCloud turns an Android phone into a remote personal file server. Learn about outbound TLS 1.3 tunneling, CGNAT traversal, data transport flows, and the 5-stage setup sequence.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — How It Works Technical Architecture">
+  <meta name="twitter:image:alt" content="ZdexCloud: How It Works Technical Architecture">
 
   <!-- Structured Data (Schema.org) -->
   <script type="application/ld+json">
@@ -48,7 +48,7 @@
         "@type": "WebPage",
         "@id": "https://zdexcloud.com/pages/how-it-works.html#webpage",
         "url": "https://zdexcloud.com/pages/how-it-works.html",
-        "name": "How It Works — Technical Connection Flow & Architecture | ZdexCloud",
+        "name": "How It Works: Technical Connection Flow & Architecture | ZdexCloud",
         "description": "Educational guide detailing the networking, server lifecycle, and remote access architecture of ZdexCloud personal file server.",
         "isPartOf": {
           "@type": "WebSite",
@@ -337,7 +337,7 @@
                   <strong>What happens:</strong> You install the ZdexCloud APK on your dedicated Android phone (Android 8.0+) and sign in using your account credentials.
                 </p>
                 <p class="stage-story-desc">
-                  <strong>Why it is necessary:</strong> The phone establishes a cryptographic hardware binding by generating a persistent <code class="font-mono">installationId</code> in Android Keystore and registers itself as one of your up to 5 allowed servers.
+                  <strong>Why it is necessary:</strong> The phone establishes a cryptographic hardware binding by generating a persistent <code class="font-mono">installationId</code> in Android Keystore and registers itself as one of your allowed server slots (1 server on the Free plan, up to 5 on Pro).
                 </p>
                 <div class="stage-callout-pill">
                   <span>What you see: Android login screen followed by the device setup and server configuration screen.</span>
@@ -391,7 +391,7 @@
               <div class="stage-story-body">
                 <h3 class="stage-story-title">Stage 5: Access Files Remotely in Any Web Browser</h3>
                 <p class="stage-story-desc">
-                  <strong>What happens:</strong> From any computer, tablet, or phone, you log in to <a href="dashboard.html" class="text-brand">zdexcloud.com</a>, select your active server, enter its server password, and open the web file manager.
+                  <strong>What happens:</strong> From any computer, tablet, or phone, you log in to <a href="servers.html" class="text-brand">zdexcloud.com/servers</a>, select your active server, enter its server password, and open the <a href="file-manager.html" class="text-brand">web file manager</a>.
                 </p>
                 <p class="stage-story-desc">
                   <strong>Why it is necessary:</strong> File directory listings, uploads, downloads, and streaming playback are tunneled through the gateway directly to your phone's storage.
@@ -420,42 +420,42 @@
 
         <div class="arch-flow-diagram">
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">1. User Web Browser</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">1. User Web Browser</h3>
             <p class="text-xs text-muted">
               You sign in to <code class="font-mono">zdexcloud.com</code>. The browser establishes an HTTPS/WSS session with the platform control plane and receives authenticated session cookies with strict 24-hour expiry.
             </p>
           </div>
 
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">2. ZdexCloud Control Plane</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">2. ZdexCloud Control Plane</h3>
             <p class="text-xs text-muted">
               Verifies account identity, confirms active device registration, checks gateway presence status, and issues connection authorization tickets. <strong>Zero file bytes pass through or reside in the control plane database.</strong>
             </p>
           </div>
 
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">3. ZdexCloud Relay Gateway</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">3. ZdexCloud Relay Gateway</h3>
             <p class="text-xs text-muted">
-              A high-throughput, stateless routing node. It holds active WebSocket connections in memory and routes RPC messages and binary streaming chunks between the browser and phone sockets. <strong>The gateway writes 0 bytes to disk.</strong>
+              A high-throughput, stateless routing node. It holds active WebSocket connections in memory and routes RPC messages and binary streaming chunks between the browser and phone sockets. <strong>The gateway writes 0 bytes to disk</strong> and does not create an unlimited cloud storage bucket. Knowing a server domain alone does not grant access without account session authorization and separate on-device server credentials.
             </p>
           </div>
 
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">4. Outbound TLS 1.3 Connection</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">4. Outbound TLS 1.3 Connection</h3>
             <p class="text-xs text-muted">
               The Android phone initiated this persistent connection out through port 443. All firewalls, home routers, and cellular carrier networks permit this outbound client socket without manual forwarding rules.
             </p>
           </div>
 
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">5. Android Server Engine &amp; Loopback Interface</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">5. Android Server Engine &amp; Loopback Interface</h3>
             <p class="text-xs text-muted">
               An internal bridge forwards RPC messages into the phone's internal HTTP engine bound strictly to the local loopback interface. This engine is isolated from your local Wi-Fi LAN to prevent unauthorized local access.
             </p>
           </div>
 
           <div class="flow-step-box">
-            <h4 class="text-sm font-bold text-brand mb-1">6. Physical Storage Host (Phone Flash &amp; Micro-SD)</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">6. Physical Storage Host (Phone Flash &amp; Micro-SD)</h3>
             <p class="text-xs text-muted">
               The phone reads file data from internal storage (<code class="font-mono">/storage/emulated/0</code>) or an inserted micro-SD card and sends data chunks back up through the outbound socket to your browser.
             </p>
@@ -496,8 +496,8 @@
             </p>
             <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
               <li>The phone connects outbound over standard HTTPS/WSS port 443, exactly like a browser opening a web page.</li>
-              <li>Because all consumer routers, NAT devices, and mobile carriers allow outbound connections, the tunnel establishes instantly.</li>
-              <li><strong>Carrier-Grade NAT (CGNAT) Compatible:</strong> Functions seamlessly behind 4G/5G mobile carriers, apartment Wi-Fi, university dorm networks, and residential fiber.</li>
+              <li>Because standard consumer routers, NAT devices, and mobile carriers permit typical outbound HTTPS traffic, the tunnel establishes smoothly under ordinary network conditions (subject to local firewall or proxy policies).</li>
+              <li><strong>Carrier-Grade NAT (CGNAT) Compatible:</strong> Functions behind 4G/5G mobile carriers, apartment Wi-Fi, university networks, and residential fiber without router configuration.</li>
               <li><strong>Zero Open Ports:</strong> Your home router exposes no listening ports to the outside world.</li>
             </ul>
           </div>
@@ -505,7 +505,7 @@
 
         <div class="callout-direct-answer mt-6">
           <p class="text-sm">
-            <strong>Direct AEO Answer:</strong> Can ZdexCloud work behind CGNAT? Yes. Carrier-Grade NAT (CGNAT) only restricts inbound connection requests from the public internet. Because ZdexCloud uses an outbound-only connection model where the Android smartphone initiates the connection out to the relay gateway over standard TLS 1.3 (port 443), it operates reliably across CGNAT, residential fiber, and mobile hotspot networks without router port forwarding.
+            <strong>Direct AEO Answer:</strong> Can ZdexCloud work behind CGNAT? Yes. Carrier-Grade NAT (CGNAT) only restricts inbound connection requests from the public internet. Because ZdexCloud uses an outbound-only connection model where the Android smartphone initiates the connection out to the relay gateway over standard TLS 1.3 (port 443), it operates reliably across CGNAT, residential fiber, and mobile hotspot networks without router port forwarding. However, eliminating router port forwarding does not make the service independent of network connectivity, continuous device battery power, or active Android background service execution.
           </p>
         </div>
       </div>
@@ -605,10 +605,12 @@
               The engine transitions predictably through distinct states:
             </p>
             <ul class="text-xs text-muted space-y-1 pl-4 list-disc mt-2">
-              <li><code class="font-mono">STOPPED</code>: Engine idle; 0 power drawn.</li>
-              <li><code class="font-mono">CONNECTING</code>: Initializing loopback server and reaching gateway.</li>
-              <li><code class="font-mono">CONNECTED / RUNNING</code>: Gateway tunnel verified; ready for remote requests.</li>
-              <li><code class="font-mono">RECONNECTING</code>: Wi-Fi dropped; backoff retry active.</li>
+              <li><code class="font-mono">STOPPED / DISCONNECTED</code>: Engine idle or manually stopped; 0 background battery drawn.</li>
+              <li><code class="font-mono">CONNECTING</code>: Loopback server initialized; outbound TLS handshake in progress.</li>
+              <li><code class="font-mono">CONNECTED / ONLINE</code>: Authenticated tunnel verified; keepalive pings verified every 15s; ready for requests.</li>
+              <li><code class="font-mono">RECONNECTING</code>: Transient network loss; exponential backoff retry active with jitter (1s to 30s).</li>
+              <li><code class="font-mono">OFFLINE</code>: Phone disconnected, unpowered, or silent past the 60s gateway reaper.</li>
+              <li><code class="font-mono">ERROR / FAILED</code>: Authentication or configuration error requiring credential check or app restart.</li>
             </ul>
           </div>
 
@@ -678,9 +680,10 @@
               Manage your personal server fleet from a unified dashboard:
             </p>
             <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
-              <li><strong>Strict 5-Device Cap:</strong> You can register up to 5 physical phone servers per account. We do not make false claims of "unlimited servers".</li>
+              <li><strong>Plan-Based Fleet Limits:</strong> Free accounts support 1 active phone server; Pro accounts support up to 5 physical servers, with an enforced constraint of 1 server instance per physical device.</li>
               <li><strong>1-Click Switching:</strong> Switch between online servers from the dropdown menu in the web file manager without logging out.</li>
               <li><strong>Independent Storage Metrics:</strong> Monitor individual storage capacity and remaining free space for each server separately.</li>
+              <li><strong>Offline &amp; Unlinking Handling:</strong> If a phone server is offline or unlinked, the web dashboard displays it as disconnected and halts file operations while keeping existing server settings intact.</li>
             </ul>
           </div>
         </div>
@@ -742,7 +745,19 @@
             </button>
             <div class="accordion-panel" id="faq-hw-4" role="region" aria-labelledby="faq-q-hw-4" hidden>
               <div class="accordion-panel-inner">
-                If the phone loses connectivity or battery power, the server shows as offline in your web dashboard. When power and network are restored, the Android foreground service automatically reconnects to the gateway.
+                If the phone loses connectivity or battery power, the server shows as offline in your web dashboard. When power and network are restored, the Android foreground service automatically reconnects to the gateway. See our <a href="documentation.html#troubleshooting">Troubleshooting Guide</a> for tips on preventing aggressive OS battery termination.
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <button class="accordion-trigger" aria-expanded="false" aria-controls="faq-hw-5" id="faq-q-hw-5">
+              <span>Is ZdexCloud an automatic cloud backup service?</span>
+              <span class="accordion-icon" aria-hidden="true">+</span>
+            </button>
+            <div class="accordion-panel" id="faq-hw-5" role="region" aria-labelledby="faq-q-hw-5" hidden>
+              <div class="accordion-panel-inner">
+                No. ZdexCloud is a remote personal file access solution, not an automated redundant cloud backup provider. Files remain on your linked Android device's local storage. We strongly recommend maintaining independent offline or secondary backups following the <a href="documentation.html#security-privacy">3-2-1 backup strategy documented in our guides</a> and <a href="faq.html#backups">FAQ</a>.
               </div>
             </div>
           </div>

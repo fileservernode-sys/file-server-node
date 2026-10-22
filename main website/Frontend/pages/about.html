@@ -7,7 +7,7 @@
   
   <meta name="keywords" content="About ZdexCloud, Android personal file server, self-hosted storage, hardware repurposing, local data sovereignty, outbound gateway tunnel, personal cloud alternative">
 
-  <title>About ZdexCloud — Personal File Server Mission &amp; Philosophy</title>
+  <title>About ZdexCloud | Personal File Server Mission & Story</title>
   <meta name="description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
 
   <!-- Canonical URL -->
@@ -25,41 +25,71 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/about.html">
-  <meta property="og:title" content="About ZdexCloud — Personal File Server Mission &amp; Philosophy">
+  <meta property="og:title" content="About ZdexCloud: Personal File Server Mission &amp; Philosophy">
   <meta property="og:description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server Mission and Architecture">
+  <meta property="og:image:alt" content="ZdexCloud: Personal File Server Mission and Architecture">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="About ZdexCloud — Personal File Server Mission &amp; Philosophy">
+  <meta name="twitter:title" content="About ZdexCloud: Personal File Server Mission &amp; Philosophy">
   <meta name="twitter:description" content="Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server Mission and Architecture">
+  <meta name="twitter:image:alt" content="ZdexCloud: Personal File Server Mission and Architecture">
 
-  <!-- AboutPage & Organization JSON-LD Schema -->
+  <!-- AboutPage, Organization & BreadcrumbList JSON-LD Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "AboutPage",
-    "name": "About ZdexCloud",
-    "url": "https://zdexcloud.com/pages/about.html",
-    "description": "ZdexCloud is a personal file server platform that repurposes Android smartphones into self-hosted remote file servers with physical storage ownership.",
-    "mainEntity": {
-      "@type": "Organization",
-      "name": "ZdexCloud",
-      "url": "https://zdexcloud.com",
-      "logo": "https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png",
-      "description": "Personal file server platform software turning Android devices into self-hosted, remotely accessible private file servers.",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "support@zdexcloud.com",
-        "contactType": "customer support"
+    "@graph": [
+      {
+        "@type": "AboutPage",
+        "@id": "https://zdexcloud.com/pages/about.html#webpage",
+        "url": "https://zdexcloud.com/pages/about.html",
+        "name": "About ZdexCloud | Personal File Server Mission & Story",
+        "description": "Discover ZdexCloud's mission to repurpose unused Android smartphones into personal, self-hosted file servers with user-owned storage and secure remote web access.",
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://zdexcloud.com/#website",
+          "name": "ZdexCloud",
+          "url": "https://zdexcloud.com/"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://zdexcloud.com/pages/about.html#breadcrumbs",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://zdexcloud.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "About",
+            "item": "https://zdexcloud.com/pages/about.html"
+          }
+        ]
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://zdexcloud.com/#organization",
+        "name": "ZdexCloud",
+        "url": "https://zdexcloud.com/",
+        "logo": "https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png",
+        "description": "Personal file server platform software turning Android devices into self-hosted, remotely accessible private file servers.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "support@zdexcloud.com",
+          "contactType": "customer support"
+        }
       }
-    }
+    ]
   }
   </script>
 
@@ -189,7 +219,7 @@
               Modern smartphones are complete, highly efficient computing nodes. Each phone contains a multi-core ARM processor, gigabytes of RAM, low-power radios, internal flash memory, microSD expansion capability, and a built-in battery that functions as an uninterruptible power supply (UPS).
             </p>
             <p class="card-description">
-              Instead of letting this hardware sit forgotten in a drawer, ZdexCloud runs an on-device HTTP file server as an Android foreground service. It connects outward through an encrypted WebSocket tunnel to our relay gateway, enabling you to browse, stream, download, and manage your private files from any web browser worldwide—with zero router port forwarding.
+              Instead of letting this hardware sit forgotten in a drawer, ZdexCloud runs an on-device HTTP file server as an Android foreground service. It connects outward through an encrypted WebSocket tunnel to our relay gateway, enabling you to browse, stream, download, and manage your private files from any web browser worldwide, with zero router port forwarding.
             </p>
           </div>
 
@@ -458,7 +488,7 @@
               </li>
               <li style="display: flex; align-items: flex-start; gap: 12px;">
                 <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-top: 3px; flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                <div><strong>Not a Commercial Hosting CDN:</strong> The system is engineered for personal, private file access and streaming—not for serving high-traffic public web applications.</div>
+                <div><strong>Not a Commercial Hosting CDN:</strong> The system is engineered for personal, private file access and streaming, not for serving high-traffic public web applications.</div>
               </li>
             </ul>
           </div>
@@ -607,7 +637,7 @@
               <span>Frequently Asked Questions</span>
               <svg class="icon icon-sm text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </h3>
-            <p class="card-description">Answers to 40+ operational, security, storage, and networking questions.</p>
+            <p class="card-description">Answers to 50+ operational, security, storage, and networking questions.</p>
           </a>
 
           <a href="contact.html" class="card" style="text-decoration: none; color: inherit; transition: transform 0.2s, border-color 0.2s; padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">

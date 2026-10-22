@@ -1,5 +1,5 @@
 /**
- * Frontend Authentication State & API Client — ZdexCloud Control Plane
+ * Frontend Authentication State & API Client - ZdexCloud Control Plane
  * COOKIE-AUTHENTICATED BROWSER SESSION ARCHITECTURE (PHASE 14.14)
  *
  * POLICY INVARIANTS:

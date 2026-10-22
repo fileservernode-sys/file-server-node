@@ -198,8 +198,8 @@ const UIManager = {
 
     if (nameEl) nameEl.textContent = item.name || 'File Details';
     if (categoryEl) categoryEl.textContent = (item.category || 'File').toUpperCase();
-    if (sizeEl) sizeEl.textContent = item.sizeBytes ? StorageUtils.formatBytes(item.sizeBytes) : '—';
-    if (modifiedEl) modifiedEl.textContent = item.modifiedAt ? StorageUtils.formatDate(item.modifiedAt) : '—';
+    if (sizeEl) sizeEl.textContent = item.sizeBytes ? StorageUtils.formatBytes(item.sizeBytes) : '-';
+    if (modifiedEl) modifiedEl.textContent = item.modifiedAt ? StorageUtils.formatDate(item.modifiedAt) : '-';
     if (pathEl) pathEl.textContent = item.path || '/';
 
     if (iconContainer) {

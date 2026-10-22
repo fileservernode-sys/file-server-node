@@ -296,3 +296,95 @@
     border-radius: var(--radius-lg, 16px);
   }
 }
+
+/* --------------------------------------------------------------------------
+   6. STANDARDIZED DASHBOARD CONTACT US CALL-TO-ACTION (Phase 14.3)
+   -------------------------------------------------------------------------- */
+.dashboard-contact-cta {
+  background-color: var(--color-bg-page, #FAFAFC);
+  border-top: 1px solid var(--color-border, #E2E8F0);
+  padding: var(--space-2xl) 0;
+}
+
+.dashboard-contact-cta-card {
+  background-color: var(--color-bg-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #E2E8F0);
+  border-radius: var(--radius-lg, 16px);
+  padding: var(--space-xl) var(--space-2xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+.dashboard-contact-cta-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+.dashboard-contact-cta-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: var(--color-brand-soft, #EFF6FF);
+  color: var(--color-brand-primary, #2563EB);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(37, 99, 235, 0.15);
+}
+
+.dashboard-contact-cta-title {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--color-text-primary, #0F172A);
+  margin-bottom: 4px;
+  line-height: var(--line-height-heading, 1.25);
+}
+
+.dashboard-contact-cta-desc {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body-sm, 0.875rem);
+  color: var(--color-text-secondary, #334155);
+  margin: 0;
+  line-height: var(--line-height-body, 1.6);
+}
+
+.dashboard-contact-cta-action {
+  flex-shrink: 0;
+}
+
+.dashboard-contact-cta-btn {
+  min-width: 140px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-contact-cta {
+    padding: var(--space-xl) 0;
+  }
+
+  .dashboard-contact-cta-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-lg);
+    gap: var(--space-md);
+  }
+
+  .dashboard-contact-cta-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
+  }
+
+  .dashboard-contact-cta-action {
+    width: 100%;
+  }
+
+  .dashboard-contact-cta-btn {
+    width: 100%;
+  }
+}

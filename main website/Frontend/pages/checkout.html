@@ -121,12 +121,16 @@
   <!-- TOP NAVIGATION BAR -->
   <header class="header sticky-header" role="banner">
     <div class="container header-container" style="display: flex; justify-content: space-between; align-items: center; height: 72px;">
-      <a href="../index.html" class="brand-logo" aria-label="ZdexCloud Home" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="#2563EB"/>
-          <path d="M9 16L14 21L23 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span style="font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--color-text-primary);">ZdexCloud</span>
+      <a href="../index.html" class="brand-mark" aria-label="ZdexCloud Homepage">
+        <span class="brand-icon">
+          <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+            <line x1="6" y1="6" x2="6.01" y2="6"></line>
+            <line x1="6" y1="18" x2="6.01" y2="18"></line>
+          </svg>
+        </span>
+        <span class="brand-text">ZdexCloud</span>
       </a>
 
       <div style="display: flex; align-items: center; gap: 16px;">
@@ -421,6 +425,20 @@
       </div>
     </div>
   </main>
+
+  <!-- COMPACT CHECKOUT FOOTER -->
+  <footer class="checkout-footer" style="padding: var(--space-xl) var(--space-md); text-align: center; font-size: var(--font-size-caption, 12px); color: var(--color-text-muted, #94a3b8); border-top: 1px solid var(--color-border-subtle, #e2e8f0); margin-top: auto;">
+    <div style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-xs); align-items: center;">
+      <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
+        <a href="terms.html" style="color: var(--color-text-secondary, #64748b); text-decoration: none;">Terms of Service</a>
+        <span aria-hidden="true">&bull;</span>
+        <a href="privacy.html" style="color: var(--color-text-secondary, #64748b); text-decoration: none;">Privacy Policy</a>
+        <span aria-hidden="true">&bull;</span>
+        <a href="contact.html" style="color: var(--color-text-secondary, #64748b); text-decoration: none;">Contact Support</a>
+      </div>
+      <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved. Secure 256-bit encrypted checkout.</div>
+    </div>
+  </footer>
 
   <!-- SCRIPTS -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>

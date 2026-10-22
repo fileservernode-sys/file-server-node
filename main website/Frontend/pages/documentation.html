@@ -6,8 +6,8 @@
   
   <meta name="keywords" content="ZdexCloud documentation, Android file server setup, turn old Android phone into server, Android file server tutorial, remote Android file access, Android server troubleshooting, Android foreground service file server, CGNAT file server, personal file server documentation, remote file manager, Android storage server">
 
-  <title>Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server</title>
-  <meta name="description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
+  <title>Documentation Hub & Guides | ZdexCloud Personal File Server</title>
+  <meta name="description" content="Official ZdexCloud documentation: Android app setup, storage permissions, foreground service lifecycle, remote file manager guide, and troubleshooting help.">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/documentation.html">
@@ -24,7 +24,7 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/documentation.html">
-  <meta property="og:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server">
+  <meta property="og:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud - Personal File Server">
   <meta property="og:description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
@@ -34,7 +34,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud — Personal File Server">
+  <meta name="twitter:title" content="Documentation Hub & Technical Knowledge Base | ZdexCloud - Personal File Server">
   <meta name="twitter:description" content="Official technical documentation for ZdexCloud Personal File Server: Android app setup, storage permissions, foreground service management, remote web file manager guide, 24-hour authentication session policy, and troubleshooting knowledge base.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud Documentation Hub">
@@ -298,7 +298,7 @@
                 <strong>Start Server Mode:</strong> Set a dedicated server password and tap "Start Server". Confirm the state becomes <code class="font-mono">RUNNING</code>.
               </li>
               <li>
-                <strong>Access Remotely:</strong> Open <a href="dashboard.html" class="text-brand">zdexcloud.com/pages/dashboard.html</a> on your PC or tablet, click your server, enter the server password, and begin managing files!
+                <strong>Access Remotely:</strong> Open <a href="servers.html" class="text-brand">zdexcloud.com/pages/servers.html</a> on your PC or tablet, click your server, enter the server password, and begin managing files!
               </li>
             </ol>
           </div>
@@ -373,6 +373,56 @@
             <li>Place the phone in a shaded, ventilated area to prevent thermal throttling.</li>
           </ul>
         </div>
+
+        <div class="card p-6 mt-4">
+          <h3 class="text-base font-bold mb-2">Server Lifecycle States &amp; Status Indicators</h3>
+          <p class="text-xs text-muted mb-3">
+            The ZdexCloud customer status engine evaluates server availability dynamically across 6 verified lifecycle states:
+          </p>
+          <div class="table-responsive-wrapper">
+            <table class="tech-table" aria-label="Server Lifecycle State Machine">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Lifecycle State</th>
+                  <th style="width: 25%;">Dashboard Badge</th>
+                  <th style="width: 50%;">Operational Meaning &amp; Behavior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code class="font-mono">ONLINE / RUNNING</code></td>
+                  <td><span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 700;">ONLINE</span></td>
+                  <td>The outbound TLS tunnel is authenticated and keepalive pings are verified every 15 seconds. File browsing and streaming are fully operational.</td>
+                </tr>
+                <tr>
+                  <td><code class="font-mono">CONNECTING</code></td>
+                  <td><span class="badge" style="background: rgba(37, 99, 235, 0.15); color: #2563EB; font-weight: 700;">CONNECTING</span></td>
+                  <td>The phone is establishing its loopback server and performing the outbound TLS handshake with the gateway.</td>
+                </tr>
+                <tr>
+                  <td><code class="font-mono">RECONNECTING</code></td>
+                  <td><span class="badge" style="background: rgba(217, 119, 6, 0.15); color: #D97706; font-weight: 700;">RECONNECTING</span></td>
+                  <td>Temporary network loss detected. The phone is automatically retrying connection using jittered exponential backoff (1s to 30s).</td>
+                </tr>
+                <tr>
+                  <td><code class="font-mono">STOPPED</code></td>
+                  <td><span class="badge" style="background: rgba(100, 116, 139, 0.15); color: #475569; font-weight: 700;">STOPPED</span></td>
+                  <td>The user explicitly toggled Server Mode off in the Android app. Background tunnel and reconnect timers are disabled.</td>
+                </tr>
+                <tr>
+                  <td><code class="font-mono">OFFLINE</code></td>
+                  <td><span class="badge" style="background: rgba(100, 116, 139, 0.15); color: #475569; font-weight: 700;">OFFLINE</span></td>
+                  <td>The phone is turned off, disconnected from Wi-Fi/cellular, or silent past the 60-second gateway silence reaper. Remote file access is unavailable until reconnected.</td>
+                </tr>
+                <tr>
+                  <td><code class="font-mono">FAILED / ERROR</code></td>
+                  <td><span class="badge" style="background: rgba(220, 38, 38, 0.15); color: #DC2626; font-weight: 700;">ERROR</span></td>
+                  <td>Terminal authentication or configuration failure (e.g. account suspension or revoked device token) requiring credential re-verification.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -382,7 +432,7 @@
         <div class="section-header">
           <div class="section-eyebrow"><span class="badge badge-subtle">Category 03</span></div>
           <h2 class="section-title">Remote File Manager Operator Guide</h2>
-          <p class="section-subtitle">How to perform file management, media streaming, and directory operations remotely.</p>
+          <p class="section-subtitle">How to perform file management, media streaming, and directory operations remotely using our <a href="file-manager.html">browser-based web file manager</a>.</p>
         </div>
 
         <div class="grid-3-col">
@@ -396,7 +446,7 @@
           <div class="card card-hover">
             <h3 class="card-title">File Uploads &amp; Downloads</h3>
             <p class="card-description">
-              Drag &amp; drop files into the upload modal to transfer files to your phone. Click the download icon on any file to stream it directly to your computer.
+              Drag &amp; drop files into the upload modal to transfer files to your phone with live queue progress meters. Click the download icon on any file to stream it directly to your computer.
             </p>
           </div>
 
@@ -415,9 +465,9 @@
           </div>
 
           <div class="card card-hover">
-            <h3 class="card-title">Safe Deletions</h3>
+            <h3 class="card-title">Immediate Deletions</h3>
             <p class="card-description">
-              Click "Delete" to remove unwanted files. A confirmation modal warns that the item will be permanently erased from your physical phone storage host.
+              Click "Delete" to remove files or folders. Deletion is immediate and permanent on the physical phone host to reclaim flash storage; there is no cloud trash or recycle bin.
             </p>
           </div>
 
@@ -425,6 +475,27 @@
             <h3 class="card-title">Storage Allocation Bar</h3>
             <p class="card-description">
               View real-time storage metrics: total phone capacity, ZdexCloud files volume, system/other app usage, free disk space, and largest stored files.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Search &amp; 6 Sorting Modes</h3>
+            <p class="card-description">
+              Filter files in real time with the quick search input. Sort directory listings by name ascending/descending, file size, modification date, or file type with grid and table views.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Access Flow &amp; Security</h3>
+            <p class="card-description">
+              Connect via Dashboard server card using separate on-device server credentials. Sessions persist for up to 24 hours. The gateway buffers in RAM and never writes file bytes to disk.
+            </p>
+          </div>
+
+          <div class="card card-hover">
+            <h3 class="card-title">Operational Boundaries</h3>
+            <p class="card-description">
+              Moving items across folders is not currently supported in the web interface. If the phone drops offline, the manager displays an offline banner and disables mutations until reconnected.
             </p>
           </div>
         </div>
@@ -450,6 +521,9 @@
               <li><strong>Zero Open Ports:</strong> Your home router requires no forwarded ports or static IP bindings.</li>
               <li><strong>Stateless Buffer:</strong> The gateway receives RPC requests from your browser and pushes them down to the phone's open socket in RAM.</li>
               <li><strong>Zero Disk Writes on Relay:</strong> Gateway memory buffers streaming chunks; zero file bytes are written to disk.</li>
+              <li><strong>Multi-Layer Authorization:</strong> Knowing a server domain alone does not grant access. Requests require active web session tokens, account-to-device ownership pairing, and separate on-device server credentials.</li>
+              <li><strong>No Cloud Storage Expansion:</strong> The gateway only proxies connections between client and phone; it does not expand phone storage or act as an automated cloud backup.</li>
+              <li><strong>Availability Boundaries:</strong> Avoiding router port forwarding eliminates manual network setup, but remote access still requires the physical phone to remain powered, connected to the internet via Wi-Fi or cellular data, and actively executing the background service.</li>
             </ul>
           </div>
 
@@ -480,9 +554,11 @@
           <div class="card p-6">
             <h3 class="text-base font-bold mb-2">Fleet Limits &amp; Identity</h3>
             <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
-              <li><strong>5 Server Cap:</strong> Each ZdexCloud account can register and run up to 5 active physical phone servers.</li>
-              <li><strong>Persistent Identity:</strong> Each device generates its own hardware-bound <code class="font-mono">installationId</code> stored in Android Keystore.</li>
+              <li><strong>Plan-Based Server Caps:</strong> Free accounts support 1 active phone server; Pro accounts support up to 5 active phone servers.</li>
+              <li><strong>One Server per Physical Device:</strong> Exactly one active server instance is permitted per physical Android device, enforced by its hardware-bound <code class="font-mono">installationId</code>.</li>
+              <li><strong>Persistent Identity:</strong> Each device generates its own hardware-bound identity stored securely in Android Keystore.</li>
               <li><strong>Independent Passwords:</strong> You can assign different server passwords to each phone for layered security.</li>
+              <li><strong>Offline &amp; Device Unlinking:</strong> When a phone is offline, powered off, or unlinked, the web dashboard displays it as disconnected and halts file access while preserving server configuration.</li>
             </ul>
           </div>
 
@@ -504,19 +580,21 @@
         <div class="section-header">
           <div class="section-eyebrow"><span class="badge badge-accent">Category 06</span></div>
           <h2 class="section-title">Security, Privacy &amp; Authentication Session Policy</h2>
-          <p class="section-subtitle">Understanding credential separation, transport encryption, and our strict 24-hour session model.</p>
+          <p class="section-subtitle">Understanding credential separation, transport encryption, session boundaries, and operational availability.</p>
         </div>
 
         <div class="grid-2-col">
           <div class="card p-6">
             <h3 class="text-base font-bold mb-2">Strict 24-Hour Authentication Session Model</h3>
             <p class="text-xs text-muted mb-3">
-              For security hygiene and compliance with modern enterprise standards, ZdexCloud enforces a <strong>strict 24-hour absolute session lifetime</strong>:
+              To minimize the risk of abandoned browser sessions, ZdexCloud enforces a <strong>strict 24-hour absolute session lifetime</strong>:
             </p>
             <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
-              <li>When you sign in with Email and 2FA OTP, your session token is valid for exactly 24 hours.</li>
-              <li>Sessions are <strong>not</strong> extended indefinitely by background activity.</li>
-              <li>After 24 hours, the session expires and you must sign in again with your credentials.</li>
+              <li>When you sign in with Email and 2FA OTP, your web session token is valid for exactly 24 hours.</li>
+              <li>Verification OTP codes remain valid for 10 minutes and permit up to 5 attempts before invalidation.</li>
+              <li>Sessions are <strong>not</strong> extended indefinitely by background browsing activity.</li>
+              <li>After 24 hours, the session expires automatically and you must sign in again.</li>
+              <li>Resetting your account password immediately revokes active web sessions and paired device tokens.</li>
               <li><strong>Server Independence:</strong> Your Android phone server continues running uninterrupted in the background regardless of whether your web browser session has expired.</li>
             </ul>
           </div>
@@ -524,19 +602,46 @@
           <div class="card p-6">
             <h3 class="text-base font-bold mb-2">Account Credentials vs. Server Passwords</h3>
             <p class="text-xs text-muted mb-3">
-              Access is protected by two distinct, decoupled security boundaries:
+              Access is protected by distinct, decoupled security boundaries:
             </p>
             <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
-              <li><strong>Platform Account (Email + 2FA OTP):</strong> Controls device pairing, account settings, and discovery.</li>
-              <li><strong>Server Password:</strong> Stored locally on the phone to authenticate remote file operations. Even if an account were compromised, the attacker cannot unlock server files without the distinct server password.</li>
+              <li><strong>Platform Account (Email + 2FA OTP):</strong> Controls web dashboard access, device registration, and server presence discovery.</li>
+              <li><strong>Server Password:</strong> Configured and stored on the phone to authenticate remote file operations. Even if an account credential were compromised, remote file operations require separate authentication against the phone server.</li>
+              <li><strong>Device Authorization:</strong> Knowing a server domain or gateway URL alone does not grant access. Requests are validated against verified account ownership and active server permissions.</li>
+              <li>Account authentication does not mean an Android device is currently paired or that Server Mode is active.</li>
+            </ul>
+          </div>
+
+          <div class="card p-6 mt-4">
+            <h3 class="text-base font-bold mb-2">Transport Security (TLS 1.3) vs. End-to-End Encryption</h3>
+            <p class="text-xs text-muted mb-3">
+              We define our cryptographic protections accurately without unsubstantiated claims:
+            </p>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li><strong>TLS 1.3 In-Flight Encryption:</strong> All communication between browser, gateway relay, and Android server uses TLS 1.3 transport encryption.</li>
+              <li><strong>No End-to-End Encryption (E2EE):</strong> Because the gateway bridges WebSockets and multiplexes binary streams in volatile system memory (RAM), data is not end-to-end encrypted or zero-knowledge.</li>
+              <li><strong>Zero Persistent Storage on Relays:</strong> The relay operates in RAM buffers and does not write, index, or store personal files on central disk storage.</li>
+              <li><strong>Zero Router Port Forwarding:</strong> Because the phone initiates an outbound connection over port 443, your home router does not expose open listening ports to the public internet.</li>
+            </ul>
+          </div>
+
+          <div class="card p-6 mt-4">
+            <h3 class="text-base font-bold mb-2">Operational Availability &amp; Responsible Reporting</h3>
+            <p class="text-xs text-muted mb-3">
+              Understanding physical server limitations and reporting security findings:
+            </p>
+            <ul class="text-xs text-muted space-y-2 pl-4 list-disc">
+              <li><strong>Availability Dependencies:</strong> Remote access depends on your Android phone remaining powered, connected to active Wi-Fi or cellular data, and the foreground service running without OS battery suspension.</li>
+              <li><strong>Not an Offsite Backup:</strong> ZdexCloud provides high-utility remote file access to host hardware, not automated disaster recovery. Always maintain independent backups.</li>
+              <li><strong>Responsible Vulnerability Reporting:</strong> If you discover a security vulnerability or bug, report it directly through our Contact page or via email at <code class="font-mono">support@zdexcloud.com</code> with detailed reproduction steps.</li>
             </ul>
           </div>
         </div>
 
-        <div class="card p-6 mt-6">
-          <h4 class="text-sm font-bold mb-2">Backup Recommendation: The 3-2-1 Rule</h4>
+        <div class="card p-6 mt-6" id="backup-recommendation">
+          <h3 class="text-sm font-bold mb-2">Backup Recommendation: The 3-2-1 Rule</h3>
           <p class="text-xs text-muted">
-            ZdexCloud turns your hardware into a high-utility <em>personal file server</em> for remote access, sharing, and streaming. It is <strong>not</strong> an automated offsite cold-disaster backup service. If your phone suffers physical damage, water damage, or hardware failure, files stored solely on that device could be lost. We strongly advise following the <strong>3-2-1 backup rule</strong>: keep 3 copies of important data on 2 different media types, with 1 copy stored in an independent cold or offsite location.
+            ZdexCloud turns your hardware into a high-utility <em>personal file server</em> for remote access, sharing, and streaming. It is <strong>not</strong> an automated offsite cold-disaster backup service. If your phone suffers physical damage, water damage, or hardware failure, files stored solely on that device could be lost. We strongly advise following the <strong>3-2-1 backup rule</strong>: keep 3 copies of important data on 2 different media types, with 1 copy stored in an independent cold or offsite location. Consult our <a href="faq.html#backups">FAQ section on Data Protection and Backups</a> for practical implementation advice.
           </p>
         </div>
       </div>
@@ -553,38 +658,52 @@
 
         <div class="space-y-4">
           <div class="troubleshoot-item">
-            <h4 class="text-sm font-bold text-brand mb-1">Symptom 1: Server shows "OFFLINE" in the Web Dashboard</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 1: Server shows "OFFLINE" in the Web Dashboard</h3>
             <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> The Android phone lost power, disconnected from Wi-Fi, or the Android OS suspended the background process.</p>
             <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Verify the phone is plugged into power, connected to Wi-Fi, and the ZdexCloud app status shows "RUNNING".</p>
             <p class="text-xs text-muted"><strong>Expected Result:</strong> Once network connectivity is restored, the phone reconnects to the gateway within seconds and displays "ONLINE".</p>
           </div>
 
           <div class="troubleshoot-item">
-            <h4 class="text-sm font-bold text-brand mb-1">Symptom 2: Server stops running when screen is locked or sleeping</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 2: Server stops running when screen is locked or sleeping</h3>
             <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Android Doze mode or manufacturer power saving terminated the background service.</p>
             <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Open Android Settings &gt; Apps &gt; ZdexCloud &gt; Battery and verify it is set to <strong>Unrestricted</strong>. On Xiaomi/Samsung phones, enable "Autostart".</p>
             <p class="text-xs text-muted"><strong>Expected Result:</strong> The foreground service maintains active server operation continuously while the screen is locked.</p>
           </div>
 
           <div class="troubleshoot-item">
-            <h4 class="text-sm font-bold text-brand mb-1">Symptom 3: "Invalid Server Password" error in web file manager</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 3: "Invalid Server Password" error in web file manager</h3>
             <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Entering your platform account password instead of the dedicated server password set on the phone.</p>
             <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Confirm the password entered matches the server password configured inside the Android app on the host device.</p>
             <p class="text-xs text-muted"><strong>Expected Result:</strong> Successful authentication unlocks the web file manager immediately.</p>
           </div>
 
           <div class="troubleshoot-item">
-            <h4 class="text-sm font-bold text-brand mb-1">Symptom 4: "Session Expired" notification after 24 hours</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 4: "Session Expired" notification after 24 hours</h3>
             <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Normal behavior under our strict 24-hour absolute session security model.</p>
             <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Simply log in again with your email and 2FA OTP code.</p>
             <p class="text-xs text-muted"><strong>Expected Result:</strong> A fresh 24-hour session is issued and your servers remain available.</p>
           </div>
 
           <div class="troubleshoot-item">
-            <h4 class="text-sm font-bold text-brand mb-1">Symptom 5: Remote upload or download fails mid-transfer</h4>
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 5: Remote upload or download fails mid-transfer</h3>
             <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Wi-Fi instability on the host phone or upstream bandwidth saturation.</p>
             <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Verify phone Wi-Fi signal strength and available storage space on the device.</p>
             <p class="text-xs text-muted"><strong>Expected Result:</strong> Retrying the transfer over stable Wi-Fi completes successfully.</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 6: Server stuck in "RECONNECTING" status</h3>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Transient network loss, gateway failover, or carrier cellular NAT reset triggering backoff delay.</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Ensure the phone has active network connectivity. Toggling Server Mode OFF and ON in the app forces an immediate reconnect without waiting for backoff timers.</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> The tunnel re-authenticates and the dashboard badge returns to "ONLINE".</p>
+          </div>
+
+          <div class="troubleshoot-item">
+            <h3 class="text-sm font-bold text-brand mb-1">Symptom 7: "MAX_SERVERS_REACHED" error when pairing a phone</h3>
+            <p class="text-xs text-muted mb-1"><strong>Likely Cause:</strong> Your account has reached its plan server limit (1 active server for Free, 5 for Pro).</p>
+            <p class="text-xs text-muted mb-1"><strong>What to Check:</strong> Visit the dashboard to delete an inactive server slot or upgrade to Pro to unlock multi-server fleet capacity.</p>
+            <p class="text-xs text-muted"><strong>Expected Result:</strong> An available slot allows immediate registration of the new hardware node.</p>
           </div>
         </div>
       </div>
@@ -645,7 +764,6 @@
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
             <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
-            <li><a href="contact.html" class="footer-link">Support &amp; Status</a></li>
           </ul>
         </div>
 

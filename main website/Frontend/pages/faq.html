@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, security, 24-hour web sessions, Android requirements, and pricing.">
+  <meta name="description" content="Answers to frequently asked questions about ZdexCloud Android file servers, storage limits, remote web access, security architecture, and subscription tiers.">
   <meta name="keywords" content="ZdexCloud FAQ, Android file server help, personal cloud questions, phone NAS guide, remote file access troubleshooting, self-hosted file server FAQ">
-  <title>Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server</title>
+  <title>Frequently Asked Questions (FAQ) | ZdexCloud File Server</title>
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/faq.html">
@@ -22,7 +22,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/faq.html">
-  <meta property="og:title" content="Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server">
+  <meta property="og:title" content="Frequently Asked Questions & Technical Help | ZdexCloud - Personal File Server">
   <meta property="og:description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, security, and sessions.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
@@ -32,7 +32,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Frequently Asked Questions & Technical Help | ZdexCloud — Personal File Server">
+  <meta name="twitter:title" content="Frequently Asked Questions & Technical Help | ZdexCloud - Personal File Server">
   <meta name="twitter:description" content="Authoritative FAQ and technical help for ZdexCloud personal Android file servers. Comprehensive answers on architecture, storage, remote access, and security.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud Technical FAQ">
@@ -89,6 +89,30 @@
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "ZdexCloud supports smartphones running Android 8.0 (Oreo / API level 26) and higher. The phone must remain powered and connected to Wi-Fi or cellular data with battery optimization disabled for the app."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does subscription cancellation and the refund policy work?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can cancel a Pro subscription at any time directly through your account billing settings. Upon cancellation, your Pro privileges remain fully active until the end of your current prepaid billing cycle (monthly or yearly). Under our Terms of Service, all customer payments are final and non-refundable. ZdexCloud does not issue prorated refunds or credits for partial periods. If you encounter an unexpected duplicate charge or technical billing failure, please reach out directly to support@zdexcloud.com for resolution."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does ZdexCloud provide automatic redundant cloud backup?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. ZdexCloud provides remote web access to your phone storage, not an automated redundant cloud backup service. If the phone is lost, damaged, or suffers hardware failure, files could be lost unless you maintain an independent backup strategy."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is ZdexCloud end-to-end encrypted (E2EE) or zero-knowledge?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. ZdexCloud is not end-to-end encrypted (E2EE) and does not claim zero-knowledge privacy. Data transmitted between your browser, the ZdexCloud secure gateway, and your Android phone is protected in flight using industry standard TLS 1.3 encryption."
         }
       }
     ]
@@ -299,7 +323,21 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  Almost any Android smartphone running Android 8.0 (API level 26) or newer with at least 2GB of RAM is fully supported. Older spare phones with cracked screens or missing SIM cards function perfectly as long as the touchscreen allows initial setup and the phone connects to Wi-Fi.
+                  Almost any Android smartphone running Android 8.0 (API level 26) or newer with at least 2GB of RAM is fully supported. Older spare phones with cracked screens or missing SIM cards function perfectly as long as the touchscreen allows initial setup and the phone connects to Wi-Fi. Review our step-by-step <a href="get-started.html">Getting Started Guide</a> for the complete hardware prerequisites checklist.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Does ZdexCloud provide automatic redundant cloud backup?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud provides remote personal file access to files hosted directly on your linked Android device. It is not an automated redundant cloud backup service. Files remain physically on your phone's internal flash storage or microSD card. For true disaster recovery and protection against hardware failure, we strongly recommend maintaining independent offline or secondary backups following the <a href="#backups">3-2-1 backup strategy explained in our Data Protection section</a> and <a href="documentation.html#security-privacy">documentation</a>.
                 </div>
               </div>
             </div>
@@ -402,7 +440,7 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  No. ZdexCloud operates without router port forwarding, UPnP, or static public IPs. The Android app initiates an outbound TLS 1.3 WebSocket connection to our cloud gateway, which standard home firewalls and mobile carriers permit without opening inbound ports.
+                  No. ZdexCloud operates without router port forwarding, UPnP, or static public IPs. The Android app initiates an outbound TLS 1.3 WebSocket connection to our cloud gateway, which standard home firewalls and mobile carriers permit without opening inbound ports. Read more in our <a href="how-it-works.html#outbound-and-cgnat">How It Works architecture guide on outbound tunneling and CGNAT traversal</a>.
                 </div>
               </div>
             </div>
@@ -543,7 +581,35 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  The web file manager provides a complete, modern desktop-grade file browsing interface directly in your browser. Capabilities include hierarchical folder navigation, multi-file uploads with progress tracking, file downloads, renaming, deleting, in-browser image previews, and direct media streaming.
+                  The web file manager provides desktop-grade file management directly in your browser. Supported capabilities include hierarchical folder browsing with breadcrumb navigation, drag-and-drop multi-file uploads with progress bars, file downloads, new folder creation, item renaming, immediate permanent deletion, lightbox photo previews, and in-browser audio and video streaming. It also features 6 sorting modes (name, date, size, type), real-time search filtering, and live storage allocation metrics. Explore our <a href="product.html#file-manager-features">Product Overview</a> or read the <a href="documentation.html#remote-access-guide">Remote Access Operator Guide</a> for full details.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Can I move files between folders in the web file manager?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Moving files or folders between directories is not currently supported in the web interface. You can create new folders, rename items within their current directory, upload files directly to your target destination folder, download items locally, and delete unwanted files.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Is there a recycle bin or trash folder when I delete files?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. When you confirm deletion in the web file manager, the item is permanently erased from your physical Android storage host immediately to release storage space and prevent ghost files. There is no cloud recycle bin or trash recovery folder. Always ensure you have backups of critical files before confirming deletion.
                 </div>
               </div>
             </div>
@@ -558,6 +624,34 @@
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
                   Yes. The built-in file server supports HTTP range requests (byte-range streaming), allowing web browsers to seek, pause, and stream video (MP4, WebM) and audio files directly without waiting to download the entire file first.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How do file uploads and transfer limits work?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Uploads can be initiated via file picker or drag-and-drop into the upload drop zone. Transfers are processed through a multi-file queue with per-file progress meters. Bytes stream directly through the transient gateway memory buffer to your phone's storage. Upload capacity is bounded by your phone's available disk space and browser memory, without artificial platform file quotas.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens if my phone loses connection while I am in the file manager?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  If the host Android phone loses cellular or Wi-Fi connectivity, or if the server process stops, the web file manager detects the lost gateway tunnel. An offline notification banner is displayed and modification actions (upload, rename, delete, new folder) are disabled to protect data integrity until the phone reconnects.
                 </div>
               </div>
             </div>
@@ -601,7 +695,7 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  Under the Free plan, you can register 1 active Android phone server. On the Pro tiers (Pro Monthly at ₹49/month or Pro Yearly at ₹500/year), you can register and concurrently manage up to 5 Android phone servers from a single dashboard.
+                  Under the Free plan, you can register 1 active Android phone server. On the Pro tiers (Pro Monthly at ₹49/month or Pro Yearly at ₹500/year), you can register and concurrently manage up to 5 Android phone servers from a single dashboard. Compare feature allowances and pricing details on our <a href="pricing.html">Pricing Plans page</a>.
                 </div>
               </div>
             </div>
@@ -630,6 +724,20 @@
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
                   Yes. All registered servers on a Pro plan maintain independent outbound WebSocket connections simultaneously. Each phone serves its own storage media independently, allowing you to organize storage by category (e.g. Server 1 for media, Server 2 for documents).
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What is the one-server-per-physical-device rule and how does unlinking work?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  Each physical Android phone can host exactly one active ZdexCloud server instance at a time, mapped to its unique hardware-bound installation ID. If you unlink or delete a server from your web dashboard, its gateway connection is terminated, its public routing endpoint is revoked, and remote file access is halted. The files physically residing on the phone's flash storage or microSD card remain completely untouched.
                 </div>
               </div>
             </div>
@@ -700,6 +808,48 @@
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
                   No. ZdexCloud does not possess administrative bypasses or hidden backdoor credentials into your phone's file storage. The Android application executes strictly within standard sandboxed Android OS permissions and only accesses folders explicitly selected during configuration.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Is ZdexCloud end-to-end encrypted (E2EE) or zero-knowledge?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. ZdexCloud is not end-to-end encrypted (E2EE) and does not claim zero-knowledge privacy. Data transmitted between your browser, the ZdexCloud secure gateway, and your Android phone is protected in flight using industry-standard TLS 1.3 cryptographic transport. At the relay layer, data frames are forwarded entirely in volatile memory (RAM) and are never written to central persistent disk or indexed. Because the relay inspects protocol headers to route data streams between client and phone, transport encryption must not be confused with client-side end-to-end encryption.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>Can anyone access my files if they know my server domain or device URL?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  No. Knowing a server domain or public relay URL is never sufficient to access your files. Accessing your files requires three distinct layers of security: first, an active, authenticated ZdexCloud platform session; second, verified device ownership linking your account to that specific Android node; and third, separate file-server credentials authenticated directly against the phone. Unauthorized third parties attempting to access the URL without valid session tokens and server credentials are systematically blocked at the gateway.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How do I report a security vulnerability or security bug?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  We take security seriously and welcome responsible disclosure of vulnerabilities. If you discover a potential security issue or defect in ZdexCloud, please email support@zdexcloud.com with detailed reproduction steps, technical evidence, and the affected components, or submit a report through our <a href="contact.html">Contact Support page</a> by selecting &quot;Security Inquiries &amp; Vulnerability Reports&quot;. We review incoming vulnerability submissions promptly and ask that you allow reasonable time for remediation prior to public disclosure.
                 </div>
               </div>
             </div>
@@ -774,6 +924,20 @@
                 </div>
               </div>
             </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What happens to active sessions and paired devices when I reset my password?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  When you complete a password reset, ZdexCloud immediately and atomically revokes all existing web dashboard sessions and active device authorization tokens across all browsers and devices. Any active sessions are terminated instantly, requiring re-authentication with the new password and a fresh email verification code. This guarantees that if your credentials were compromised, an unauthorized session cannot persist.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -799,7 +963,7 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  ZdexCloud offers three commercial plans: <strong>Free (₹0 forever)</strong> for starting with 1 registered Android phone server; <strong>Pro Monthly (₹49/month)</strong> for managing up to 5 servers with priority routing and monthly flexibility; and <strong>Pro Yearly (₹500/year)</strong> for managing up to 5 servers while saving ₹88 per year (effective ₹41.67/month vs ₹588 monthly equivalent).
+                  ZdexCloud offers three commercial plans: <strong>Free (₹0 forever)</strong> for starting with 1 registered Android phone server; <strong>Pro Monthly (₹49/month)</strong> for managing up to 5 servers with priority routing and monthly flexibility; and <strong>Pro Yearly (₹500/year)</strong> for managing up to 5 servers while saving ₹88 per year (effective ₹41.67/month vs ₹588 monthly equivalent). Explore all plan features and upgrade options on our <a href="pricing.html">Pricing page</a>.
                 </div>
               </div>
             </div>
@@ -842,6 +1006,20 @@
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
                   Your files are completely safe and unaffected because they reside on your physical smartphone. If a Pro subscription ends, your account transitions to the Free plan: your primary server remains online and accessible, while additional servers beyond the 1-server limit pause until Pro is renewed.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>How does subscription cancellation and the refund policy work?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  You can cancel a Pro subscription at any time directly through your account billing settings. Upon cancellation, your Pro privileges remain fully active until the end of your current prepaid billing cycle (monthly or yearly). Under our Terms of Service, all customer payments are final and non-refundable. ZdexCloud does not issue prorated refunds or credits for partial periods. If you encounter an unexpected duplicate charge or technical billing failure, please reach out directly to support@zdexcloud.com for resolution.
                 </div>
               </div>
             </div>
@@ -898,6 +1076,20 @@
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
                   Unlike traditional PC or NAS servers that instantly crash during power cuts, an Android smartphone contains an integrated battery that functions as an automatic Uninterruptible Power Supply (UPS). If your home router is also on a small UPS or the phone has active cellular data fallback, the server remains online throughout the outage.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What do the different server lifecycle status badges mean on the dashboard?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  ZdexCloud evaluates availability dynamically across 6 verified status indicators: ONLINE (green: phone is connected, authenticated, and ready to serve files), CONNECTING (blue: loopback engine initialized and outbound TLS handshake in progress), RECONNECTING (orange: temporary network loss detected; automatic jittered exponential backoff active), STOPPED (gray: server was manually stopped in the app), OFFLINE (gray: phone is unpowered, disconnected, or silent past the 60-second gateway silence reaper), and ERROR (red: terminal authentication or configuration issue requiring re-verification).
                 </div>
               </div>
             </div>
@@ -983,7 +1175,7 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  An 'Offline' status typically indicates: 1) The Android phone lost Wi-Fi or cellular Internet connectivity; 2) Server Mode was stopped in the app; 3) The phone ran out of battery; or 4) Android OS power management terminated the background service. Check that the phone has an active network connection, verify the persistent notification is visible in the Android status bar, and ensure battery optimization is disabled.
+                  An 'Offline' status typically indicates: 1) The Android phone lost Wi-Fi or cellular Internet connectivity; 2) Server Mode was stopped in the app; 3) The phone ran out of battery; or 4) Android OS power management terminated the background service. Check that the phone has an active network connection, verify the persistent notification is visible in the Android status bar, and ensure battery optimization is disabled. Consult our <a href="documentation.html#troubleshooting">Documentation Troubleshooting Guide</a> for full diagnostics.
                 </div>
               </div>
             </div>
@@ -1025,7 +1217,21 @@
               </h3>
               <div class="accordion-panel">
                 <div class="accordion-panel-inner">
-                  If camera scanning fails, ensure the browser screen brightness is adequate and clean the phone camera lens. Alternatively, you can bypass the camera scan by signing in directly with your email and password within the Android application.
+                  If camera scanning fails, ensure the browser screen brightness is adequate and clean the phone camera lens. Alternatively, you can bypass the camera scan by signing in directly with your email and password within the Android application. See <a href="get-started.html#step-3">Step 3 of our Getting Started Guide</a> for complete pairing instructions.
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item">
+              <h3 class="accordion-header">
+                <button class="accordion-trigger" aria-expanded="false">
+                  <span>What should I do if my phone server remains stuck in 'RECONNECTING' or 'OFFLINE'?</span>
+                  <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+              </h3>
+              <div class="accordion-panel">
+                <div class="accordion-panel-inner">
+                  First, verify the phone has continuous AC power and active Wi-Fi or cellular connectivity. Second, check that the ZdexCloud persistent notification is visible in the Android status bar. Third, confirm Android Settings > Apps > ZdexCloud > Battery is set to 'Unrestricted', and that 'Autostart' is enabled on manufacturer skins (Xiaomi, Samsung, Huawei). Finally, toggle Server Mode OFF and ON within the Android app to force an immediate reconnection without waiting for backoff timers.
                 </div>
               </div>
             </div>
@@ -1089,7 +1295,7 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>

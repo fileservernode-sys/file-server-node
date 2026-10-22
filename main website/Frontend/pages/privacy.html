@@ -7,7 +7,7 @@
 
   <meta name="keywords" content="ZdexCloud privacy policy, on-device file storage, personal cloud privacy, data protection, no port forwarding privacy, self-hosted privacy, strict 24-hour session">
 
-  <title>Privacy Policy | ZdexCloud — Personal File Server</title>
+  <title>Privacy Policy | ZdexCloud - Personal File Server</title>
   <meta name="description" content="Transparent Privacy Policy for ZdexCloud detailing physical on-device storage custody, control plane metadata, strict 24-hour sessions, and privacy protections.">
 
   <!-- Canonical URL -->
@@ -25,7 +25,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/privacy.html">
-  <meta property="og:title" content="Privacy Policy | ZdexCloud — Personal File Server">
+  <meta property="og:title" content="Privacy Policy | ZdexCloud - Personal File Server">
   <meta property="og:description" content="Transparent Privacy Policy for ZdexCloud detailing physical on-device storage custody, control plane metadata, strict 24-hour sessions, and privacy protections.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
@@ -35,7 +35,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Privacy Policy | ZdexCloud — Personal File Server">
+  <meta name="twitter:title" content="Privacy Policy | ZdexCloud - Personal File Server">
   <meta name="twitter:description" content="Transparent Privacy Policy for ZdexCloud detailing physical on-device storage custody, control plane metadata, strict 24-hour sessions, and privacy protections.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud Privacy Policy and Data Architecture">
@@ -165,7 +165,7 @@
         <div class="page-header-eyebrow"><span class="badge badge-accent">Data Protection &amp; Architectural Transparency</span></div>
         <h1 class="page-header-title">ZdexCloud Privacy Policy</h1>
         <p class="page-header-subtitle">
-          Last updated: September 2026. This policy explains how ZdexCloud handles account and device metadata, establishes physical on-device storage boundaries, and protects user data.
+          Last updated: October 2026. This policy explains how ZdexCloud handles account metadata, device information, transient relay data, payment records, and user rights, while preserving your physical on-device file storage boundaries.
         </p>
       </div>
     </div>
@@ -199,7 +199,7 @@
           <section id="scope">
             <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">1. Overview &amp; Scope of This Policy</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              This Privacy Policy applies to the ZdexCloud website (<a href="https://zdexcloud.com" class="text-primary font-medium">zdexcloud.com</a>), the web platform dashboard, the backend platform services, the secure connection service, and the ZdexCloud Android application.
+              This Privacy Policy applies to the ZdexCloud website (<a href="https://zdexcloud.com" class="text-primary font-medium">zdexcloud.com</a>), the web platform dashboard, the backend platform services, the secure connection service, and the ZdexCloud Android application (package: <code>net.remotenode.fileserver</code>).
             </p>
             <p class="card-description">
               This policy explains what information is collected, how it is processed to deliver personal server connectivity, what information remains strictly on your personal hardware, and the safeguards we maintain.
@@ -216,13 +216,13 @@
               <div class="card" style="padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                 <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-xs);">Platform Control Plane Data</h3>
                 <p class="card-description" style="font-size: 0.95rem;">
-                  Includes your account credentials, email address, registered device identifiers, pairing metadata, session tokens, and security audit logs. This metadata is stored in our secure database to manage authentication and server discovery.
+                  Includes your account credentials, email address, registered device identifiers, pairing metadata, session tokens, notification preferences, billing status, and security audit logs. This metadata is stored in our database to manage authentication, device discovery, and account operations.
                 </p>
               </div>
               <div class="card" style="padding: var(--space-lg); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
                 <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: var(--space-xs);">Device-Hosted File Data</h3>
                 <p class="card-description" style="font-size: 0.95rem;">
-                  Includes your personal documents, family photographs, audio, video, and directories. <strong>These files reside physically on the internal flash memory or microSD card of your Android phone.</strong> They are not stored in our database.
+                  Includes your personal documents, photographs, audio, video, directories, and files. <strong>These files reside physically on the internal flash memory or microSD card of your Android phone.</strong> They are not stored in our central platform database.
                 </p>
               </div>
             </div>
@@ -232,27 +232,27 @@
           <section id="account-info">
             <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">3. Information Associated With Your Account</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              When you create an account on ZdexCloud, we collect:
+              When you create and manage an account on ZdexCloud, we collect:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Email Address:</strong> Used as your primary account identifier for login, security notifications, two-factor authentication, and password recovery.</li>
-              <li><strong>Full Name (Optional):</strong> Provided during registration for personalized communications.</li>
-              <li><strong>Cryptographic Password Hash:</strong> We never store plaintext passwords. Passwords are transformed using standard cryptographic one-way hashing algorithms before storage.</li>
-              <li><strong>Account Status &amp; Timestamps:</strong> Verification status, registration timestamp, and last profile update timestamp.</li>
+              <li><strong>Email Address:</strong> Used as your primary account identifier for sign in, security notices, verification codes, and password recovery.</li>
+              <li><strong>Full Name (Optional):</strong> Collected during registration when provided for account profile identification.</li>
+              <li><strong>Cryptographic Password Hash:</strong> We never store plaintext passwords. Passwords are transformed using one-way cryptographic hashing algorithms prior to database storage.</li>
+              <li><strong>Account Status &amp; Timestamps:</strong> Email verification status, account registration timestamp, and profile update timestamps.</li>
             </ul>
           </section>
 
           <!-- 4. Authentication & Session Data -->
           <section id="authentication">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">4. Information Used During Authentication &amp; Session Security</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">4. Information Used During Authentication, Sessions &amp; Security Auditing</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              ZdexCloud enforces robust authentication policies to protect against account takeover and session hijacking:
+              ZdexCloud enforces explicit authentication controls to protect against account takeover and session abuse:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>One-Time Verification Codes (OTP):</strong> 6-digit numeric codes generated for registration verification, login 2FA, and password resets. OTP codes are stored temporarily with an expiration limit of 10 minutes and invalidated upon use.</li>
-              <li><strong>Strict 24-Hour Absolute Session Lifetime:</strong> Web platform sessions are governed by an absolute 24-hour expiration policy. Active browser use does not extend or slide this lifetime indefinitely; after 24 hours from initial authentication, the session strictly expires and re-authentication is required.</li>
-              <li><strong>Security Audit Logs:</strong> We record authentication audit events (such as successful logins, failed attempts, and password reset requests) along with timestamps to protect against brute-force attacks.</li>
+              <li><strong>One-Time Verification Codes (OTP):</strong> 6-digit numeric codes generated for registration verification, two-factor authentication, and password resets. OTP codes expire automatically after 10 minutes (600 seconds), enforce an attempt limit of 5 attempts, and are invalidated immediately upon use.</li>
+              <li><strong>Strict 24-Hour Absolute Session Lifetime:</strong> Web platform sessions are governed by an absolute 24-hour expiration policy from creation. Active browsing does not extend or slide this lifetime; after 24 hours, the session strictly expires, requiring fresh re-authentication.</li>
               <li><strong>Credential Separation:</strong> Your web platform account credentials are decoupled from your on-device file-server credentials. Dedicated file-server credentials configured in the Android app are stored locally on your device and are not uploaded to our central database.</li>
+              <li><strong>Security Audit Logs:</strong> We record authentication audit events (such as successful logins, failed attempts, and password reset requests) along with timestamps, client IP addresses, and user-agent strings to defend against brute-force attacks and unauthorized access.</li>
             </ul>
           </section>
 
@@ -260,38 +260,39 @@
           <section id="device-info">
             <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">5. Device and Server Registration Information</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              To enable your Android device to register as a discoverable file server, we store:
+              To enable your Android device to register as a discoverable personal file server, we store:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Installation Identifier:</strong> A persistent unique identifier generated by the application installation to bind the phone server to your account and prevent multiple conflicting registrations from the same hardware.</li>
-              <li><strong>Hardware &amp; System Metadata:</strong> Device model, platform, Android OS version, and application version to verify compatibility.</li>
-              <li><strong>Server Instance Metadata:</strong> User-defined server name, server operational status (Running, Stopped, Error), start timestamp, and last recorded heartbeat timestamp.</li>
+              <li><strong>Installation Identifier:</strong> A persistent unique identifier (UUID) generated by the application installation to bind the phone server to your account without collecting invasive hardware telemetry.</li>
+              <li><strong>Hardware &amp; System Metadata:</strong> Device model, platform, Android OS version, and application build version to ensure compatibility and support.</li>
+              <li><strong>Server Instance Metadata:</strong> User-defined server name, allocated subdomain routing endpoint, server operational status (Running, Stopped, Error), start timestamp, and last recorded heartbeat timestamp.</li>
             </ul>
           </section>
 
           <!-- 6. Remote Connections & Relay Activity -->
           <section id="remote-connections">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">6. Information Related to Remote Connections &amp; Gateway Relay</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">6. Information Related to Remote Connections &amp; Ephemeral Relay Buffering</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              When accessing your phone server remotely through the web file manager:
+              When accessing your phone server remotely through the web file manager or companion applications:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Outbound WebSocket Tunnel:</strong> Remote access is facilitated via an outbound TLS 1.3 WebSocket tunnel established by the Android app to our relay gateway. This architecture avoids requiring inbound router port forwarding on your home network.</li>
-              <li><strong>Ephemeral Routing Tokens:</strong> Short-lived gateway connection tokens are issued to authenticate client browser sessions with the phone's relay tunnel.</li>
-              <li><strong>In-Flight Byte Forwarding:</strong> The relay gateway acts as a bridge for encrypted file transfers and media streaming. File payloads traverse memory buffers in flight and are not written to persistent disk storage on our servers.</li>
+              <li><strong>Outbound TLS 1.3 Tunnel:</strong> Remote access is facilitated via an outbound TLS 1.3 WebSocket tunnel established by the Android app to our relay gateway. This architecture avoids requiring inbound router port forwarding or public IP addresses on your home network.</li>
+              <li><strong>Ephemeral Routing Tokens:</strong> Short-lived gateway connection tokens are issued to authenticate client browser sessions with the phone relay tunnel.</li>
+              <li><strong>Transient In-Memory Byte Forwarding:</strong> The relay gateway acts as a bridge for file transfers and media streaming. File directory listings and file payloads traverse memory buffers in flight and are not written to persistent disk storage, cached, or indexed on our central servers.</li>
+              <li><strong>Transport Security vs. End-to-End Encryption:</strong> Communications between the client and gateway, and between the gateway and Android phone, use TLS 1.3 transport encryption. Because relay servers process and multiplex packets in memory to bridge sessions, transport encryption is not zero-knowledge end-to-end encryption.</li>
             </ul>
           </section>
 
           <!-- 7. Files and Storage Custody -->
           <section id="files-custody">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">7. Files and Storage Custody</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">7. Files and Physical Storage Custody</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              Your personal files remain your own:
+              Your personal files remain under your physical control:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>User-Configured Scope:</strong> You choose which directories the Android server exposes via system file permissions.</li>
-              <li><strong>No Central Content Indexing:</strong> ZdexCloud does not index file contents, scan documents for marketing profiles, or analyze personal photos.</li>
-              <li><strong>Device Lifecycle Independence:</strong> The Android server runs as a background foreground service independently of your web browser sessions. Logging out of the website does not erase or disrupt files stored on your phone.</li>
+              <li><strong>User-Configured Storage Scope:</strong> You select which folders on the Android phone are exposed by granting explicit storage permissions in the Android application.</li>
+              <li><strong>No Central Content Indexing:</strong> ZdexCloud does not inspect file contents, analyze private photographs, build marketing profiles from your documents, or train machine learning models on your files.</li>
+              <li><strong>Device Lifecycle Independence:</strong> The Android server runs as a background foreground service independently of your web browser sessions. Logging out of the website or session expiration does not alter, delete, or interrupt files stored on your phone.</li>
             </ul>
           </section>
 
@@ -302,133 +303,158 @@
               We maintain minimal, privacy-preserving website operations:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Diagnostic Server Logs:</strong> Standard HTTP request logs (IP address, user agent, request path, timestamp, response code) are processed temporarily for diagnostic monitoring and DDoS prevention.</li>
-              <li><strong>Zero Advertising Trackers:</strong> We do not load third-party marketing trackers, behavioral profiling scripts, or advertising networks.</li>
-              <li><strong>Essential Session Storage:</strong> Web browser sessions utilize standard client-side tokens required strictly to maintain your authenticated login state.</li>
+              <li><strong>Diagnostic Server Logs:</strong> Standard HTTP request logs (IP address, user agent, request path, timestamp, response code) are processed temporarily for diagnostic monitoring, DDoS defense, and rate limiting.</li>
+              <li><strong>Zero Advertising Trackers:</strong> We do not load third-party marketing trackers, cross-site behavioral profiling scripts, or advertising networks.</li>
+              <li><strong>Essential Session Storage:</strong> Web browser sessions utilize standard client-side authentication tokens required strictly to maintain your authenticated login state.</li>
             </ul>
           </section>
 
-          <!-- 9. Email & Notifications -->
+          <!-- 9. Notifications & Communications -->
           <section id="notifications">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">9. Email Communications &amp; Push Notifications</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">9. Customer Notification Preferences, In-App Records &amp; Push Notifications</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              We transmit only functional and security-related communications:
+              We handle customer communications and notifications as follows:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Transactional Email:</strong> Registration OTP codes, login verifications, and password reset instructions are dispatched via Brevo (HTTPS REST API / SMTP relay). Only your email address, recipient name, and temporary code are transmitted for delivery.</li>
-              <li><strong>Push Notifications:</strong> Server connectivity notifications (e.g. server offline or reconnection alerts) are dispatched to registered Android devices via Google Firebase Cloud Messaging (FCM). Push tokens can be disabled in the app settings.</li>
+              <li><strong>Notification Preferences:</strong> Your delivery preferences for in-app, push, and email channels across categories (billing, server lifecycle, and security) are stored in the backend database. Critical security notices remain enabled to ensure account safety.</li>
+              <li><strong>In-App Notification Center:</strong> Event notifications (such as server unlinked, billing invoice generated) are recorded in the platform database so you can review them in the web dashboard or Android notification center.</li>
+              <li><strong>Push Notifications:</strong> Server connectivity notifications (e.g. server offline or reconnection alerts) are dispatched to registered Android devices via Google Firebase Cloud Messaging (FCM) using push registration tokens. Push tokens can be disabled in app settings.</li>
+              <li><strong>Transactional Email:</strong> Registration OTP codes, login verifications, password resets, and tax invoices are dispatched via Brevo HTTPS REST API or standard SMTP relay (StackMail). Only the recipient email address, recipient name, and temporary message payload are transmitted for delivery.</li>
             </ul>
           </section>
 
-          <!-- 10. How Information Is Used -->
+          <!-- 10. Billing and Payment Information -->
+          <section id="billing-info">
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">10. Billing, Subscription &amp; Payment Information</h2>
+            <p class="card-description" style="margin-bottom: var(--space-sm);">
+              For customers who subscribe to paid tiers (such as Pro Monthly or Pro Yearly):
+            </p>
+            <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
+              <li><strong>Payment Processing via Razorpay:</strong> Payment checkout and recurring billing are processed securely by Razorpay Software Private Limited. Razorpay is certified PCI-DSS Level 1 compliant.</li>
+              <li><strong>Information Stored by ZdexCloud:</strong> To manage your subscription entitlements, ZdexCloud stores your Razorpay customer identifier, subscription identifier, payment transaction ID, subscription plan tier, subscription status (e.g., active, cancelling, expired), billing period dates, tax invoice records, and payment timestamps.</li>
+              <li><strong>No Card or Bank Secrets Stored:</strong> ZdexCloud never collects, receives, or stores raw credit card numbers, debit card numbers, card verification values (CVV), or bank online passwords. Payment credentials are submitted directly to Razorpay's secure checkout interface.</li>
+            </ul>
+          </section>
+
+          <!-- 11. How Information Is Used -->
           <section id="usage">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">10. How Information Is Used</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">11. How Information Is Used</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
               We use collected information strictly to:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
               <li>Authenticate your account and maintain active 24-hour web platform sessions.</li>
               <li>Facilitate discovery and encrypted WebSocket relay connections between your browser and registered phone servers.</li>
-              <li>Enforce plan boundaries (e.g. 1 registered server on Free, up to 5 on Pro).</li>
+              <li>Enforce subscription plan boundaries (1 registered server on Free, up to 5 on Pro).</li>
+              <li>Maintain billing status, deliver invoices, and manage subscription renewal states.</li>
               <li>Investigate and prevent unauthorized access, credential abuse, and network attacks.</li>
               <li>Respond to support requests initiated by you.</li>
             </ul>
           </section>
 
-          <!-- 11. Security Safeguards -->
+          <!-- 12. Security Safeguards & Trust Model -->
           <section id="security">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">11. How Information Is Protected</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">12. Security Safeguards &amp; Trust Model</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              We implement defensive, verified architectural safeguards:
+              We maintain defensive architectural safeguards and transparent operational boundaries:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Transport Security:</strong> All web dashboard and gateway relay communications utilize TLS 1.3 encryption in transit.</li>
+              <li><strong>Transport Security:</strong> All web dashboard, API, and gateway relay communications utilize TLS 1.3 encryption in transit.</li>
               <li><strong>Outbound Tunneling:</strong> Your home router requires zero open incoming ports, protecting your local network from external scanning.</li>
+              <li><strong>Credential Decoupling:</strong> Platform account login credentials authenticate solely with the central control plane; separate file-server credentials reside on the Android phone.</li>
               <li><strong>Strict Session Timeout:</strong> Web platform sessions expire strictly after 24 hours to prevent persistent session hijacking.</li>
-              <li><strong>Rate Limiting &amp; Hashing:</strong> Sensitive authentication endpoints enforce rate limiting, and passwords are cryptographically hashed.</li>
-              <li><strong>Realistic Security Stance:</strong> While we employ industry-standard defensive practices, no electronic transmission or storage system can guarantee absolute security. Users must protect their own devices and credentials.</li>
+              <li><strong>Rate Limiting &amp; Hashing:</strong> Authentication endpoints enforce rate limiting, and passwords are cryptographically hashed.</li>
+              <li><strong>Operational Dependencies:</strong> Service availability depends on phone battery, AC power, active network connectivity, and Android OEM battery optimization configurations ("Unrestricted" recommended).</li>
+              <li><strong>Responsible Security Reporting:</strong> If you identify a security vulnerability in our platform, please report it directly to <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a> with reproducible technical details. We review and remediate confirmed issues promptly.</li>
+              <li><strong>Transparent Commitments:</strong> While we implement verified defensive practices, no network transmission or software system can guarantee absolute security or uninterrupted availability. Users must protect their own hardware and credentials.</li>
             </ul>
           </section>
 
-          <!-- 12. Service Providers -->
+          <!-- 13. Service Providers & Third Parties -->
           <section id="service-providers">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">12. Service Providers &amp; Third Parties</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">13. Service Providers &amp; Third Parties</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
               We do not sell, rent, or trade your personal data to third-party data brokers or advertisers. We share information only with technical infrastructure providers necessary to operate the service:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Brevo:</strong> Transactional email delivery service for OTP verification codes and security notices.</li>
+              <li><strong>Razorpay Software Private Limited:</strong> Payment gateway and subscription management for processing paid tier upgrades.</li>
+              <li><strong>Brevo (formerly Sendinblue) / StackMail SMTP:</strong> Transactional email delivery service for verification codes, security notices, and invoices.</li>
               <li><strong>Google Firebase Cloud Messaging (FCM):</strong> Push notification relay for Android server status notifications.</li>
-              <li><strong>Cloudflare:</strong> Reverse proxy and DNS edge routing for DDoS protection and transport security.</li>
+              <li><strong>Cloudflare, Inc.:</strong> Reverse proxy, DDoS protection, DNS edge routing, and transport security.</li>
             </ul>
           </section>
 
-          <!-- 13. Data Retention -->
+          <!-- 14. Data Retention -->
           <section id="data-retention">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">13. Data Retention Policies</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">14. Data Retention Policies</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              We retain information only as long as necessary to provide platform services:
+              We retain information only as long as necessary to provide platform services or meet legal obligations:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
               <li><strong>Account &amp; Device Records:</strong> Maintained for the duration of your active platform account.</li>
-              <li><strong>One-Time Passwords (OTP):</strong> Expire automatically after 10 minutes and are deleted or marked used immediately upon consumption.</li>
+              <li><strong>File Transit Streams:</strong> Processed ephemerally in RAM buffers during active transfer and never stored on disk.</li>
+              <li><strong>One-Time Passwords (OTP):</strong> Expire automatically after 10 minutes (600 seconds) and are marked used or deleted.</li>
               <li><strong>Web Session Tokens:</strong> Expire strictly after 24 hours from creation.</li>
-              <li><strong>Audit &amp; Operational Logs:</strong> Retained for security diagnostics, rate limiting, and anomaly detection before periodic rotation.</li>
+              <li><strong>Notification &amp; Delivery Records:</strong> Retained for in-app viewing and delivery audit history.</li>
+              <li><strong>Billing &amp; Tax Invoices:</strong> Retained for accounting, fraud prevention, and statutory tax compliance.</li>
+              <li><strong>Security Audit Logs:</strong> Retained temporarily for security diagnostics, rate limiting, and anomaly detection before periodic log rotation.</li>
             </ul>
           </section>
 
-          <!-- 14. Account Deletion & User Rights -->
+          <!-- 15. Account Deletion & User Rights -->
           <section id="account-deletion">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">14. Account Deletion &amp; User Rights</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">15. Account Deletion, Device Unlinking &amp; User Privacy Rights</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              You maintain control over your personal data:
+              You maintain control over your personal account metadata:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
-              <li><strong>Account Deletion:</strong> You may request deletion of your platform account at any time by contacting <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a>. Upon deletion, your account profile, device pairings, and session tokens are purged from the control plane database.</li>
-              <li><strong>Local Files Preserved:</strong> Because your personal files reside physically on your Android phone, deleting your ZdexCloud platform account does not delete files from your phone's hardware.</li>
+              <li><strong>Account Deletion Request:</strong> You may request deletion of your platform account at any time by sending an email from your registered address to <a href="mailto:support@zdexcloud.com" class="text-primary font-medium">support@zdexcloud.com</a>. Upon verification, your account profile, registered device records, server instances, and active session tokens are purged from the central control plane database. Certain transaction records may be retained where required by law.</li>
+              <li><strong>Self-Service Device Unlinking:</strong> You can unlink a registered server node at any time directly through the web dashboard or API. Unlinking immediately releases the allocated subdomain, evicts the active relay session, and deletes server instance records from the database.</li>
+              <li><strong>Phone Storage Remains Intact:</strong> Because your personal files reside physically on your Android phone, deleting your ZdexCloud website account or unlinking a server does not delete files from your phone hardware. Files remain on the phone until you remove them locally.</li>
+              <li><strong>Access &amp; Rectification:</strong> You may request access to or correction of your account metadata by contacting our support team.</li>
             </ul>
           </section>
 
-          <!-- 15. User Responsibilities -->
+          <!-- 16. User Responsibilities -->
           <section id="user-responsibilities">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">15. User Security Responsibilities</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">16. User Security Responsibilities</h2>
             <p class="card-description" style="margin-bottom: var(--space-sm);">
-              Personal cloud security is a shared responsibility:
+              Personal file server security is a shared responsibility:
             </p>
             <ul style="display: flex; flex-direction: column; gap: var(--space-xs); margin-left: var(--space-lg); color: var(--text-secondary); line-height: 1.6;">
               <li><strong>Device Physical Security:</strong> Maintain physical custody and screen-lock protection on the Android phone operating as your file server.</li>
               <li><strong>Strong Credentials:</strong> Use a strong, unique platform password and distinct file-server credentials. Never disclose your password or OTP to anyone.</li>
-              <li><strong>Independent Backups:</strong> Because a single phone represents a single physical node, <strong>users must maintain independent backups</strong> (such as the 3-2-1 backup rule: 3 copies, 2 media types, 1 offsite copy) for all mission-critical data.</li>
+              <li><strong>Independent Backups:</strong> Because a single phone represents a single physical node, <strong>users must maintain independent backups</strong> (such as the 3-2-1 backup rule: 3 copies, 2 media types, 1 offsite copy) for all critical data.</li>
             </ul>
           </section>
 
-          <!-- 16. Children's Privacy -->
+          <!-- 17. Children's Privacy -->
           <section id="children">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">16. Children's Privacy</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">17. Children's Privacy</h2>
             <p class="card-description">
               ZdexCloud is designed for general audiences and is not intended for use by children under the age of 13 (or the applicable legal age of digital consent in your jurisdiction). We do not knowingly collect personal information from children.
             </p>
           </section>
 
-          <!-- 17. International Access -->
+          <!-- 18. International Access -->
           <section id="international">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">17. International Access &amp; Geographic Custody</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">18. International Access &amp; Geographic Custody</h2>
             <p class="card-description">
               ZdexCloud services are accessible globally via the internet. Because your personal files are physically hosted on the Android smartphone you configure, the geographic custody and physical storage location of your files remain wherever you choose to maintain your physical phone hardware.
             </p>
           </section>
 
-          <!-- 18. Policy Changes -->
+          <!-- 19. Policy Changes -->
           <section id="policy-changes">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">18. Changes to This Privacy Policy</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">19. Changes to This Privacy Policy</h2>
             <p class="card-description">
               We may update this policy periodically to reflect architectural changes or regulatory updates. Any revisions will be published on this page with an updated "Last updated" date. We encourage users to review this page periodically.
             </p>
           </section>
 
-          <!-- 19. Contact -->
+          <!-- 20. Contact -->
           <section id="contact">
-            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">19. Contact &amp; Privacy Inquiries</h2>
+            <h2 style="font-size: 1.4rem; margin-bottom: var(--space-sm); color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: var(--space-xs);">20. Contact &amp; Privacy Inquiries</h2>
             <p class="card-description">
               If you have questions, concerns, or data requests regarding this Privacy Policy or our data handling practices, please contact our support desk:
             </p>
@@ -438,7 +464,7 @@
             </div>
           </section>
 
-          <!-- 20. Privacy AEO Knowledge Blocks -->
+          <!-- Privacy AEO Knowledge Blocks -->
           <section id="privacy-qa" style="margin-top: var(--space-xl);">
             <div class="section-header text-center" style="margin-bottom: var(--space-xl);">
               <div class="badge badge-accent" style="margin-bottom: var(--space-sm);">Direct Privacy Answers</div>
@@ -506,21 +532,21 @@
               <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
                 <h3 style="font-size: 1.2rem; margin-bottom: var(--space-sm); color: var(--text-primary);">What information does ZdexCloud collect?</h3>
                 <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
-                  ZdexCloud collects only essential platform metadata: your email, cryptographic password hash, device hardware model, server names, and connection status.
+                  ZdexCloud collects only essential platform metadata: email, cryptographic password hash, device hardware model, server names, connection status, notification preferences, and subscription transaction records.
                 </p>
                 <p class="card-description">
-                  We do not collect or store your private files in our database, and we do not use third-party advertising cookies or cross-site tracking scripts.
+                  We do not collect or store your private files in our database, and we do not use third-party advertising cookies, cross-site trackers, or data-broker integrations.
                 </p>
               </div>
 
               <!-- Q7 -->
               <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
-                <h3 style="font-size: 1.2rem; margin-bottom: var(--space-sm); color: var(--text-primary);">Can I use my own Android phone as the storage host?</h3>
+                <h3 style="font-size: 1.2rem; margin-bottom: var(--space-sm); color: var(--text-primary);">What happens to my files if I delete my ZdexCloud account?</h3>
                 <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
-                  Yes, that is the primary purpose of ZdexCloud. You provide the Android phone (Android 8.0+) as your self-hosted hardware storage host.
+                  Your files remain completely safe and intact on your Android phone hardware.
                 </p>
                 <p class="card-description">
-                  You configure which folders the phone exposes, giving you complete physical custody over your storage media without monthly storage fees.
+                  Because files reside physically on your phone's storage and are never uploaded to ZdexCloud cloud storage, deleting your web account or unlinking a server only removes control plane pairing records, leaving on-device files unaffected.
                 </p>
               </div>
 

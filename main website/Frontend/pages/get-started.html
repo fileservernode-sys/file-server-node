@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
-  <meta name="description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud. Zero router port forwarding, zero monthly storage fees.">
+  <meta name="description" content="Step-by-step guide to turn an unused Android phone into a personal file server with ZdexCloud. Zero router port forwarding and zero monthly storage markups.">
   <meta name="keywords" content="Android file server setup, turn old phone into file server, personal cloud storage onboarding, Android NAS guide, self-hosted phone storage setup, remote file server without port forwarding">
-  <title>Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud</title>
+  <title>Getting Started Guide | ZdexCloud Personal File Server</title>
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://zdexcloud.com/pages/get-started.html">
@@ -23,7 +23,7 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/get-started.html">
-  <meta property="og:title" content="Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud">
+  <meta property="og:title" content="Get Started: Turn an Android Phone into a Personal File Server | ZdexCloud">
   <meta property="og:description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
@@ -33,12 +33,12 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Get Started — Turn an Android Phone into a Personal File Server | ZdexCloud">
+  <meta name="twitter:title" content="Get Started: Turn an Android Phone into a Personal File Server | ZdexCloud">
   <meta name="twitter:description" content="Step-by-step onboarding guide to turn an unused Android phone into a private, remotely accessible personal file server with ZdexCloud.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="ZdexCloud Onboarding Guide">
 
-  <!-- HowTo & WebPage JSON-LD Schema -->
+  <!-- HowTo, WebPage & BreadcrumbList JSON-LD Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -47,14 +47,32 @@
         "@type": "WebPage",
         "@id": "https://zdexcloud.com/pages/get-started.html#webpage",
         "url": "https://zdexcloud.com/pages/get-started.html",
-        "name": "Get Started — Turn an Android Phone into a Personal File Server",
+        "name": "Get Started: Turn an Android Phone into a Personal File Server",
         "description": "Step-by-step onboarding guide to convert an Android smartphone into a private, remotely accessible personal file server.",
         "isPartOf": {
           "@type": "WebSite",
           "@id": "https://zdexcloud.com/#website",
           "name": "ZdexCloud",
-          "url": "https://zdexcloud.com"
+          "url": "https://zdexcloud.com/"
         }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://zdexcloud.com/pages/get-started.html#breadcrumbs",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://zdexcloud.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Get Started",
+            "item": "https://zdexcloud.com/pages/get-started.html"
+          }
+        ]
       },
       {
         "@type": "HowTo",
@@ -144,7 +162,7 @@
       <!-- Desktop Header Actions -->
       <div class="header-actions">
         <a href="login.html" class="btn btn-ghost" id="header-btn-signin">Sign In</a>
-        <a href="get-started.html" class="btn btn-primary active" id="header-btn-signup">Get Started</a>
+        <a href="get-started.html" class="btn btn-primary active" id="header-btn-signup" aria-current="page">Get Started</a>
       </div>
 
       <!-- Mobile Menu Toggle Button -->
@@ -192,7 +210,7 @@
     </div>
     <div class="drawer-actions">
       <a href="login.html" class="btn btn-secondary btn-block">Sign In</a>
-      <a href="get-started.html" class="btn btn-primary btn-block">Get Started</a>
+      <a href="get-started.html" class="btn btn-primary btn-block active" aria-current="page">Get Started</a>
     </div>
   </aside>
 
@@ -278,7 +296,7 @@
           <span class="badge badge-accent" style="margin-bottom: var(--space-xs);">Onboarding Step 1 of 6</span>
           <h2 class="section-title" style="margin-top: var(--space-xs);">Step 1: Create Your ZdexCloud Platform Account</h2>
           <p class="section-subtitle" style="text-align: left; margin: 0; max-width: 800px;">
-            Your ZdexCloud account serves as your central control plane. It coordinates device discovery and grants browser access to your registered Android servers. Storage capacity is hosted on your phone hardware (₹0 cloud storage fees).
+            Your ZdexCloud account serves as your central control plane to view registered servers and access the web dashboard. Registering your account creates your platform login; your phone file server is initialized in Step 2 through the Android application using dedicated on-device credentials.
           </p>
         </div>
 
@@ -341,12 +359,12 @@
             
             <div class="auth-card-header">
               <h3 class="auth-card-title" style="font-size: var(--font-size-xl);">Register Your Platform Account</h3>
-              <p class="auth-card-subtitle">Enter your details to create your control plane credentials.</p>
+              <p class="auth-card-subtitle">Enter your details to create your platform account credentials.</p>
             </div>
 
             <!-- Error Alert Container -->
-            <div id="register-error-alert" class="alert alert-error hidden" style="margin-bottom: var(--space-md);">
-              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <div id="register-error-alert" class="alert alert-error hidden" role="alert" aria-live="assertive" style="margin-bottom: var(--space-md);">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <span id="register-error-message"></span>
             </div>
 
@@ -366,15 +384,15 @@
                 <label for="reg-password" class="form-label">Password *</label>
                 <div class="password-toggle-wrapper">
                   <input type="password" id="reg-password" class="form-input" placeholder="8 to 128 characters" required minlength="8" maxlength="128" autocomplete="new-password">
-                  <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" onclick="togglePasswordVisibility('reg-password', this)">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="3"></circle></svg>
+                  <button type="button" class="password-toggle-btn" aria-label="Show password" aria-pressed="false" onclick="togglePasswordVisibility('reg-password', this)">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   </button>
                 </div>
                 <ul aria-label="Password requirements" style="list-style: none; padding: 0; margin: 8px 0 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; font-size: 11px; color: var(--color-text-secondary);">
                   <li id="reg-policy-length"><span aria-hidden="true">&bull;</span> 8 to 128 characters</li>
-                  <li id="reg-policy-upper"><span aria-hidden="true">&bull;</span> At least 1 uppercase (A–Z)</li>
-                  <li id="reg-policy-lower"><span aria-hidden="true">&bull;</span> At least 1 lowercase (a–z)</li>
-                  <li id="reg-policy-number"><span aria-hidden="true">&bull;</span> At least 1 number (0–9)</li>
+                  <li id="reg-policy-upper"><span aria-hidden="true">&bull;</span> At least 1 uppercase (A-Z)</li>
+                  <li id="reg-policy-lower"><span aria-hidden="true">&bull;</span> At least 1 lowercase (a-z)</li>
+                  <li id="reg-policy-number"><span aria-hidden="true">&bull;</span> At least 1 number (0-9)</li>
                 </ul>
               </div>
 
@@ -382,8 +400,8 @@
                 <label for="reg-confirm" class="form-label">Confirm Password *</label>
                 <div class="password-toggle-wrapper">
                   <input type="password" id="reg-confirm" class="form-input" placeholder="Repeat password" required minlength="8" autocomplete="new-password">
-                  <button type="button" class="password-toggle-btn" aria-label="Toggle password visibility" onclick="togglePasswordVisibility('reg-confirm', this)">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <button type="button" class="password-toggle-btn" aria-label="Show confirm password" aria-pressed="false" onclick="togglePasswordVisibility('reg-confirm', this)">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                   </button>
                 </div>
               </div>
@@ -396,18 +414,14 @@
               </div>
 
               <button type="submit" id="btn-register-submit" class="btn btn-primary btn-lg" style="width: 100%;">
-                Create Account & Send Verification Code
+                Create Account &amp; Send Verification Code
               </button>
             </form>
 
-            <div class="auth-divider">
-              <span>Or register with</span>
+            <!-- Authentication Method Status Note -->
+            <div style="margin-top: var(--space-md); padding: var(--space-xs) var(--space-sm); border: 1px dashed var(--color-border); border-radius: var(--radius-sm); font-size: var(--font-size-xs); color: var(--color-text-muted); text-align: center; line-height: 1.5;">
+              Primary registration: Direct account email and password with 6-digit email OTP verification. Third-party social logins are not configured in this release.
             </div>
-
-            <button type="button" class="btn-google" onclick="alert('Google Sign-In integrates with backend Google Identity provider.')">
-              <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-              <span>Continue with Google</span>
-            </button>
 
             <div style="text-align: center; margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border-subtle); font-size: var(--font-size-sm); color: var(--color-text-secondary);">
               Already have an account? <a href="login.html" style="font-weight: var(--font-weight-semibold); color: var(--color-brand-primary);">Sign In</a>
@@ -576,9 +590,9 @@
           <!-- CHECKLISTS -->
           <div class="grid-2-col" style="gap: var(--space-lg);">
             <div class="card" style="background-color: var(--color-bg-surface);">
-              <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
                 Before-You-Start Checklist
-              </h4>
+              </h3>
               <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs); color: var(--color-text-secondary);">
                 <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Phone backed up and factory reset (recommended for dedicated servers)</li>
                 <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Connected to 2.4GHz or 5GHz home Wi-Fi network</li>
@@ -588,9 +602,9 @@
             </div>
 
             <div class="card" style="background-color: var(--color-bg-surface);">
-              <h4 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+              <h3 style="font-size: var(--font-size-base); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-sm); color: var(--color-text-primary);">
                 Continuous Reliability Checklist
-              </h4>
+              </h3>
               <ul class="footer-link-list" style="display: flex; flex-direction: column; gap: var(--space-xs); font-size: var(--font-size-xs); color: var(--color-text-secondary);">
                 <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Battery optimization disabled ('Unrestricted')</li>
                 <li style="display: flex; gap: 8px; align-items: center;"><svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> 'Start on Boot' enabled in app settings</li>
@@ -624,7 +638,7 @@
                   Open the ZdexCloud Dashboard
                 </h3>
                 <p style="font-size: var(--font-size-body-sm); color: var(--color-text-secondary); line-height: 1.6; margin-bottom: var(--space-md);">
-                  On your laptop, office computer, or secondary phone, visit <strong>zdexcloud.com</strong> and sign in. Your registered Android server will display with an "Online" status badge. Click into the web file manager to upload documents, download files, view images, and stream high-definition videos directly from your phone storage.
+                  On your laptop, office computer, or secondary phone, visit <strong>zdexcloud.com</strong> and sign in to the platform control plane. Your registered Android server will display with an &quot;Online&quot; status badge. Select your server, enter the dedicated file-server password you established in Step 4, and open the remote file manager to browse, upload, download, and stream media directly from your phone storage.
                 </p>
                 <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
                   <a href="login.html" class="btn btn-primary">Sign In to Dashboard</a>
@@ -840,7 +854,7 @@
           <h4 class="footer-col-title">Resources</h4>
           <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="faq.html" class="footer-link">FAQ & Help</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
             <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
@@ -876,12 +890,17 @@
     function togglePasswordVisibility(inputId, btnEl) {
       const input = document.getElementById(inputId);
       if (!input) return;
-      if (input.type === 'password') {
+      const isPassword = input.type === 'password';
+      if (isPassword) {
         input.type = 'text';
-        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+        btnEl.setAttribute('aria-label', 'Hide password');
+        btnEl.setAttribute('aria-pressed', 'true');
+        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
       } else {
         input.type = 'password';
-        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        btnEl.setAttribute('aria-label', 'Show password');
+        btnEl.setAttribute('aria-pressed', 'false');
+        btnEl.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
       }
     }
 
@@ -948,7 +967,7 @@
         const hasNumber = /[0-9]/.test(password);
 
         if (!hasLength || !hasUpper || !hasLower || !hasNumber) {
-          errorMessage.textContent = 'Password must be 8–128 characters and include uppercase, lowercase, and numbers.';
+          errorMessage.textContent = 'Password must be 8 to 128 characters and include uppercase, lowercase, and numbers.';
           errorAlert.classList.remove('hidden');
           return;
         }

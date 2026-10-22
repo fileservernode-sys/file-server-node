@@ -7,7 +7,7 @@
   
   <meta name="keywords" content="ZdexCloud support, contact ZdexCloud, Android file server help, technical support desk, device pairing assistance, account support">
 
-  <title>Contact Support &amp; Technical Inquiries | ZdexCloud — Personal File Server</title>
+  <title>Contact Support & Technical Inquiries | ZdexCloud</title>
   <meta name="description" content="Get in touch with the ZdexCloud support team for technical setup assistance, account inquiries, device connectivity help, or bug reports.">
 
   <!-- Canonical URL -->
@@ -25,7 +25,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/contact.html">
-  <meta property="og:title" content="Contact Support &amp; Technical Inquiries | ZdexCloud — Personal File Server">
+  <meta property="og:title" content="Contact Support &amp; Technical Inquiries | ZdexCloud - Personal File Server">
   <meta property="og:description" content="Get in touch with the ZdexCloud support team for technical setup assistance, account inquiries, device connectivity help, or bug reports.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
@@ -35,29 +35,60 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="Contact Support &amp; Technical Inquiries | ZdexCloud — Personal File Server">
+  <meta name="twitter:title" content="Contact Support &amp; Technical Inquiries | ZdexCloud - Personal File Server">
   <meta name="twitter:description" content="Get in touch with the ZdexCloud support team for technical setup assistance, account inquiries, device connectivity help, or bug reports.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta name="twitter:image:alt" content="Contact ZdexCloud Technical Support Desk">
 
-  <!-- ContactPage JSON-LD Schema -->
+  <!-- ContactPage, Organization & BreadcrumbList JSON-LD Schema -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "ContactPage",
-    "name": "Contact ZdexCloud Support",
-    "url": "https://zdexcloud.com/pages/contact.html",
-    "description": "Support desk and technical inquiry submission portal for ZdexCloud personal file server users.",
-    "mainEntity": {
-      "@type": "Organization",
-      "name": "ZdexCloud",
-      "url": "https://zdexcloud.com",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "support@zdexcloud.com",
-        "contactType": "customer support"
+    "@graph": [
+      {
+        "@type": "ContactPage",
+        "@id": "https://zdexcloud.com/pages/contact.html#webpage",
+        "url": "https://zdexcloud.com/pages/contact.html",
+        "name": "Contact ZdexCloud Support | Technical Help & Inquiries",
+        "description": "Contact ZdexCloud customer and technical support for help with Android personal file servers, setup guidance, billing questions, and remote access inquiries.",
+        "isPartOf": {
+          "@type": "WebSite",
+          "@id": "https://zdexcloud.com/#website",
+          "name": "ZdexCloud",
+          "url": "https://zdexcloud.com/"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": "https://zdexcloud.com/pages/contact.html#breadcrumbs",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://zdexcloud.com/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Contact",
+            "item": "https://zdexcloud.com/pages/contact.html"
+          }
+        ]
+      },
+      {
+        "@type": "Organization",
+        "@id": "https://zdexcloud.com/#organization",
+        "name": "ZdexCloud",
+        "url": "https://zdexcloud.com/",
+        "logo": "https://zdexcloud.com/android-chrome-512x512.png",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "support@zdexcloud.com",
+          "contactType": "customer support"
+        }
       }
-    }
+    ]
   }
   </script>
 
@@ -222,7 +253,7 @@
                   <option value="pairing">Device Pairing &amp; Connectivity</option>
                   <option value="account">Account &amp; Authentication (2FA, Sessions)</option>
                   <option value="billing">Billing &amp; Subscription Plans</option>
-                  <option value="security">Security &amp; Privacy Questions</option>
+                  <option value="security">Security Inquiries &amp; Vulnerability Reports</option>
                   <option value="feedback">Product Feedback &amp; Feature Requests</option>
                   <option value="other">Other</option>
                 </select>
@@ -274,7 +305,7 @@
                 </a>
               </div>
               <p style="color: var(--text-tertiary); font-size: 0.85rem; margin-top: var(--space-sm); margin-bottom: 0;">
-                All support requests are reviewed by our engineering team in the order received.
+                All support requests are reviewed by our engineering team in the order received. Typical response time is within 1 to 2 business days.
               </p>
             </div>
 
@@ -304,7 +335,7 @@
                 <li>
                   <a href="faq.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-primary); font-weight: 500;">
                     <svg class="icon icon-xs text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-                    <span>Browse 40+ Technical Answers in FAQ</span>
+                    <span>Browse 50+ Technical Answers in FAQ</span>
                   </a>
                 </li>
                 <li>
@@ -375,7 +406,7 @@
               Yes, our team can help troubleshoot gateway relay connectivity, TLS handshake failures, and device registration issues.
             </p>
             <p class="card-description">
-              Before reaching out, verify that the Android phone is connected to active Wi-Fi, battery optimization is disabled for the app, and the Android foreground service is actively running.
+              Before reaching out, verify that the Android phone is connected to active Wi-Fi, battery optimization is disabled for the app, and the Android foreground service is actively running. For common resolution steps, consult our <a href="documentation.html#troubleshooting">Troubleshooting Knowledge Base</a>.
             </p>
           </div>
 
@@ -386,7 +417,7 @@
               Check that your phone has continuous power, is connected to Wi-Fi, and that Android has not killed the background foreground service.
             </p>
             <p class="card-description">
-              On aggressive Android OEM skins (such as Xiaomi MIUI, Samsung One UI, or OnePlus OxygenOS), you must explicitly set battery optimization to "Unrestricted" and lock the app in the recent apps tray to support continuous background operation.
+              On aggressive Android OEM skins (such as Xiaomi MIUI, Samsung One UI, or OnePlus OxygenOS), you must explicitly set battery optimization to &quot;Unrestricted&quot; and lock the app in the recent apps tray to support continuous background operation. Follow our detailed OEM guides in the <a href="documentation.html#troubleshooting">Troubleshooting Guide</a> and <a href="get-started.html">Onboarding Walkthrough</a>.
             </p>
           </div>
 
@@ -398,6 +429,17 @@
             </p>
             <p class="card-description">
               ZdexCloud support engineers will never ask for your account password or your private on-device server credentials. If anyone claims to represent ZdexCloud and asks for your credentials, do not disclose them.
+            </p>
+          </div>
+
+          <!-- Q6 -->
+          <div class="card" style="padding: var(--space-xl); background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+            <h3 style="font-size: 1.25rem; margin-bottom: var(--space-sm); color: var(--text-primary);">How do I report a security vulnerability or security bug?</h3>
+            <p style="font-size: 1.05rem; font-weight: 500; color: var(--accent-primary); margin-bottom: var(--space-sm);">
+              Report suspected vulnerabilities directly to support@zdexcloud.com or select "Security Inquiries &amp; Vulnerability Reports" in the contact form above.
+            </p>
+            <p class="card-description">
+              Please include technical reproduction steps, affected URLs or endpoints, and proof-of-concept details without compromising any user data. We review incoming vulnerability reports promptly and request coordinated disclosure to protect all users.
             </p>
           </div>
         </div>

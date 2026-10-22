@@ -1,5 +1,5 @@
 /**
- * ZdexCloud File Manager — Multi-View Storage Product Controller
+ * ZdexCloud File Manager: Multi-View Storage Product Controller
  */
 
 const AppIcons = {
@@ -32,7 +32,7 @@ const StorageUtils = {
   },
 
   formatDate(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
@@ -550,7 +550,7 @@ const MyFilesController = {
                 <span>${item.name}</span>
               </div>
             </td>
-            <td>${isDir ? '—' : StorageUtils.formatBytes(item.sizeBytes)}</td>
+            <td>${isDir ? '-' : StorageUtils.formatBytes(item.sizeBytes)}</td>
             <td>${StorageUtils.formatDate(item.modifiedAt)}</td>
             <td>
               <div style="display: flex; gap: 4px;">

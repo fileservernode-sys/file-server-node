@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="ZdexCloud Account Settings — Manage your account profile, password and authentication security, active browser session, recent activity, and billing profile." />
-  <title>Account Settings — ZdexCloud</title>
+  <meta name="description" content="ZdexCloud Account Settings: Manage your account profile, password and authentication security, active browser session, recent activity, and billing profile." />
+  <title>Account Settings | ZdexCloud Personal File Server</title>
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -557,9 +557,7 @@
       <!-- Desktop Navigation -->
       <nav class="desktop-nav" aria-label="Authenticated Navigation">
         <a href="servers.html" class="nav-link">Dashboard</a>
-        <a href="activity.html" class="nav-link">Activity</a>
         <a href="notifications.html" class="nav-link">Notifications</a>
-        <a href="settings.html" class="nav-link active" aria-current="page">Settings</a>
         <a href="documentation.html" class="nav-link">Documentation</a>
         <a href="faq.html" class="nav-link">Help &amp; FAQ</a>
       </nav>
@@ -951,7 +949,7 @@
                   <line x1="12" y1="16" x2="12" y2="12"></line>
                   <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
-                <span>Account Reference: <strong id="account-ref-id" class="settings-kv-mono">—</strong></span>
+                <span>Account Reference: <strong id="account-ref-id" class="settings-kv-mono">--</strong></span>
               </div>
               <a href="servers.html" class="btn btn-secondary btn-sm">View Paired Servers</a>
             </div>
@@ -1420,14 +1418,36 @@
       </div>
     </main>
 
-  </div>
+  </div><!-- /dashboard-shell-layout -->
+
+  <!-- DASHBOARD CONTACT CTA -->
+  <section class="dashboard-contact-cta" aria-labelledby="dashboard-contact-cta-title">
+    <div class="container">
+      <div class="dashboard-contact-cta-card">
+        <div class="dashboard-contact-cta-content">
+          <div class="dashboard-contact-cta-icon" aria-hidden="true">
+            <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 id="dashboard-contact-cta-title" class="dashboard-contact-cta-title">Need help with ZdexCloud?</h2>
+            <p class="dashboard-contact-cta-desc">Contact our support team if you have questions or need assistance with your account or server.</p>
+          </div>
+        </div>
+        <div class="dashboard-contact-cta-action">
+          <a href="contact.html" class="btn btn-primary dashboard-contact-cta-btn">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- SITE FOOTER -->
-  <footer class="site-footer" role="contentinfo">
+  <footer class="site-footer">
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand-col">
-          <a href="../index.html" class="brand-mark" style="margin-bottom: var(--space-sm);">
+          <a href="../index.html" class="brand-mark brand-mark--light" aria-label="ZdexCloud Homepage">
             <span class="brand-icon">
               <svg class="icon icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
@@ -1436,49 +1456,52 @@
                 <line x1="6" y1="18" x2="6.01" y2="18"></line>
               </svg>
             </span>
-            <span class="brand-text">ZdexCloud</span>
+            <span>ZdexCloud</span>
           </a>
-          <p class="footer-brand-desc">
-            Turn your Android device into a secure, high-performance private cloud server with zero-configuration TLS relay and granular directory sandboxing.
+          <p class="footer-tagline">
+            Personal infrastructure created from hardware you already own. Securely host remotely accessible personal file servers.
           </p>
         </div>
 
         <div>
-          <h3 class="footer-col-title">Platform</h3>
-          <ul class="footer-links">
-            <li><a href="servers.html" class="footer-link">Servers &amp; Nodes</a></li>
-            <li><a href="subscription.html" class="footer-link">Subscription &amp; Plan</a></li>
-            <li><a href="transactions.html" class="footer-link">Transactions</a></li>
-            <li><a href="invoices.html" class="footer-link">Invoices</a></li>
-            <li><a href="billing.html" class="footer-link">Billing &amp; Receipts</a></li>
-            <li><a href="activity.html" class="footer-link">Activity</a></li>
-            <li><a href="settings.html" class="footer-link">Account Settings</a></li>
+          <h4 class="footer-col-title">Product</h4>
+          <ul class="footer-link-list">
+            <li><a href="product.html" class="footer-link">Product Overview</a></li>
+            <li><a href="how-it-works.html" class="footer-link">How It Works</a></li>
+            <li><a href="pricing.html" class="footer-link">Pricing</a></li>
+            <li><a href="get-started.html" class="footer-link">Get Started</a></li>
           </ul>
         </div>
 
         <div>
-          <h3 class="footer-col-title">Resources</h3>
-          <ul class="footer-links">
+          <h4 class="footer-col-title">Resources</h4>
+          <ul class="footer-link-list">
             <li><a href="documentation.html" class="footer-link">Documentation</a></li>
-            <li><a href="architecture.html" class="footer-link">Security Architecture</a></li>
-            <li><a href="download.html" class="footer-link">Android Host APK</a></li>
-            <li><a href="faq.html" class="footer-link">Help &amp; FAQ</a></li>
+            <li><a href="faq.html" class="footer-link">FAQ &amp; Help</a></li>
+            <li><a href="server-access.html" class="footer-link">Server Discovery</a></li>
           </ul>
         </div>
 
         <div>
-          <h3 class="footer-col-title">Legal</h3>
-          <ul class="footer-links">
-            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
-            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
-            <li><a href="refund.html" class="footer-link">Refund Policy</a></li>
+          <h4 class="footer-col-title">Company</h4>
+          <ul class="footer-link-list">
+            <li><a href="about.html" class="footer-link">About ZdexCloud</a></li>
             <li><a href="contact.html" class="footer-link">Contact Support</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Legal</h4>
+          <ul class="footer-link-list">
+            <li><a href="terms.html" class="footer-link">Terms of Service</a></li>
+            <li><a href="privacy.html" class="footer-link">Privacy Policy</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p class="footer-copyright">&copy; 2026 ZdexCloud Infrastructure. All rights reserved.</p>
+        <div>&copy; 2026 ZdexCloud Personal File Server Platform. All rights reserved.</div>
+        <div class="footer-tech-tag">Personal Remote Infrastructure • Self-Hosted Host Storage</div>
       </div>
     </div>
   </footer>
@@ -1501,9 +1524,9 @@
       };
 
       function formatDateTime(isoString) {
-        if (!isoString) return '—';
+        if (!isoString) return '--';
         const d = new Date(isoString);
-        if (Number.isNaN(d.getTime())) return '—';
+        if (Number.isNaN(d.getTime())) return '--';
         return d.toLocaleDateString(undefined, {
           year: 'numeric',
           month: 'short',
@@ -1514,9 +1537,9 @@
       }
 
       function formatDateOnly(isoString) {
-        if (!isoString) return '—';
+        if (!isoString) return '--';
         const d = new Date(isoString);
-        if (Number.isNaN(d.getTime())) return '—';
+        if (Number.isNaN(d.getTime())) return '--';
         return d.toLocaleDateString(undefined, {
           year: 'numeric',
           month: 'long',
@@ -1548,7 +1571,7 @@
           fullNameEl.textContent = user?.fullName || 'Not specified';
         }
         if (emailEl) {
-          emailEl.textContent = user?.email || '—';
+          emailEl.textContent = user?.email || '--';
         }
         if (verifiedBadge) {
           verifiedBadge.style.display = 'inline-flex';
@@ -1575,7 +1598,7 @@
         }
         if (refIdEl) {
           const rawId = String(user?.id || '');
-          refIdEl.textContent = rawId ? ('USR-' + rawId.slice(0, 8).toUpperCase()) : '—';
+          refIdEl.textContent = rawId ? ('USR-' + rawId.slice(0, 8).toUpperCase()) : '--';
         }
 
         // Session timing details
@@ -1609,7 +1632,7 @@
           }
           if (legalNameEl) legalNameEl.textContent = user?.fullName || 'Not configured';
           if (locationEl) locationEl.textContent = 'Not configured';
-          if (currencyEl) currencyEl.textContent = '—';
+          if (currencyEl) currencyEl.textContent = '--';
           if (taxIdEl) taxIdEl.textContent = 'Not configured';
           if (profileStatusPill) {
             profileStatusPill.textContent = 'Unavailable';
@@ -1666,7 +1689,7 @@
         if (taxSubEl) {
           taxSubEl.textContent = profile?.taxId
             ? 'Included on generated tax invoices'
-            : 'Optional — add GSTIN or VAT ID in Billing & Receipts if needed';
+            : 'Optional: add GSTIN or VAT ID in Billing & Receipts if needed';
         }
 
         if (profileStatusPill) {
@@ -2051,7 +2074,7 @@
             closeBtn.style.display = 'none';
           }
           if (stepBadgeEl) {
-            stepBadgeEl.textContent = 'Completed — Re-Authentication Required';
+            stepBadgeEl.textContent = 'Completed: Re-Authentication Required';
           }
           showStatus('info', '');
 

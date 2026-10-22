@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>File Manager | ZdexCloud — Personal File Server</title>
+  <title>File Manager | ZdexCloud: Personal File Server</title>
   <meta name="description" content="Remotely view, upload, stream, and manage files physically hosted on your registered Android phone server via secure gateway tunnel.">
 
   <!-- Canonical URL -->
@@ -23,20 +23,20 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ZdexCloud">
   <meta property="og:url" content="https://zdexcloud.com/pages/file-manager.html">
-  <meta property="og:title" content="File Manager | ZdexCloud — Personal File Server">
+  <meta property="og:title" content="File Manager | ZdexCloud: Personal File Server">
   <meta property="og:description" content="Remotely view, upload, stream, and manage files physically hosted on your registered Android phone server via secure gateway tunnel.">
   <meta property="og:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta property="og:image:alt" content="ZdexCloud: Personal File Server on Android">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@zdexcloud">
-  <meta name="twitter:title" content="File Manager | ZdexCloud — Personal File Server">
+  <meta name="twitter:title" content="File Manager | ZdexCloud: Personal File Server">
   <meta name="twitter:description" content="Remotely view, upload, stream, and manage files physically hosted on your registered Android phone server via secure gateway tunnel.">
   <meta name="twitter:image" content="https://zdexcloud.com/assets/brand/social/zdexcloud-og-banner.png">
-  <meta name="twitter:image:alt" content="ZdexCloud — Personal File Server on Android">
+  <meta name="twitter:image:alt" content="ZdexCloud: Personal File Server on Android">
 
   
   <!-- Core & Shared Platform Stylesheets -->
@@ -114,13 +114,14 @@
   </style>
 </head>
 <body style="background-color: var(--color-bg-secondary); overflow-x: hidden;">
+  <h1 style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;">ZdexCloud Remote File Manager</h1>
 
   <!-- =========================================================================
        1. TOP PLATFORM / EMBEDDED CONTEXT HEADER BAR
        ========================================================================= -->
   <header class="vd-top-bar" id="vd-top-bar">
     <div class="vd-top-bar-left">
-      <a href="../index.html" class="vd-brand-link" aria-label="ZdexCloud Home">
+      <a href="../index.html" class="vd-brand-link" aria-label="ZdexCloud Homepage">
         <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
           <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
@@ -162,9 +163,10 @@
         <svg class="icon icon-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path><path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></svg>
       </div>
       <h2 style="font-size: var(--font-size-xl); margin-bottom: var(--space-xs); color: var(--color-text-primary);" id="vd-offline-title">Server Host Offline</h2>
-      <p style="color: var(--color-text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-xl); font-size: var(--font-size-sm);" id="vd-offline-message">
+      <p style="color: var(--color-text-secondary); line-height: var(--line-height-relaxed); margin-bottom: var(--space-md); font-size: var(--font-size-sm);" id="vd-offline-message">
         Target Android device is not running Server Mode or tunnel connection was lost.
       </p>
+      <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-xl); max-width: 440px; margin-left: auto; margin-right: auto;">Ensure your phone is powered on, connected to Wi-Fi or mobile data, and Server Mode is running in the ZdexCloud app.</p>
       <div style="display: flex; gap: var(--space-md); justify-content: center; flex-wrap: wrap;">
         <button class="btn btn-primary" onclick="window.location.reload()">Retry Connection</button>
         <a href="dashboard.html" class="btn btn-secondary">Back to Dashboard</a>
@@ -246,7 +248,7 @@
         <div class="header-right">
           <div class="search-box">
             <svg class="icon icon-sm search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="global-search-input" class="search-input" placeholder="Search files, photos, videos..." aria-label="Search files">
+            <input type="text" id="global-search-input" class="search-input" placeholder="Filter current folder by name..." aria-label="Filter current folder by name">
           </div>
 
           <button class="btn btn-primary btn-sm" id="btn-quick-upload" onclick="document.getElementById('file-picker').click()" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -263,8 +265,8 @@
         <section id="view-home" class="view-section view-content active" style="display: block;">
           <div class="view-header">
             <div>
-              <h1 class="view-title" id="home-title">Storage Dashboard</h1>
-              <p class="view-subtitle">Real-time overview of files physically stored on your Android server host.</p>
+              <h2 class="view-title" id="home-title">Storage Dashboard</h2>
+              <p class="view-subtitle">Real-time overview of files physically stored on your linked Android device. Files remain on device storage and stream on demand via a secure TLS-protected gateway connection.</p>
             </div>
           </div>
 
@@ -400,8 +402,8 @@
         <section id="view-files" class="view-section view-content" style="display: none;">
           <div class="view-header">
             <div>
-              <h1 class="view-title" id="files-title">My Files</h1>
-              <p class="view-subtitle">Browse and manage the full filesystem hierarchy hosted on your phone.</p>
+              <h2 class="view-title" id="files-title">My Files</h2>
+              <p class="view-subtitle">Browse, upload, download, and manage directory trees stored physically on your Android server host.</p>
             </div>
             
             <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
@@ -429,12 +431,12 @@
             <div class="toolbar-group">
               <label for="sort-select" style="font-size: var(--font-size-xs); color: var(--color-text-muted); font-weight: 600;">Sort By:</label>
               <select id="sort-select" class="form-input" style="padding: 4px 8px; font-size: var(--font-size-xs); width: auto;">
-                <option value="name_asc">Name (A-Z)</option>
-                <option value="name_desc">Name (Z-A)</option>
-                <option value="size_desc">Size (Largest)</option>
-                <option value="size_asc">Size (Smallest)</option>
-                <option value="date_desc">Modified (Newest)</option>
-                <option value="date_asc">Modified (Oldest)</option>
+                <option value="name_asc">Name (A to Z)</option>
+                <option value="name_desc">Name (Z to A)</option>
+                <option value="size_desc">Size (Largest first)</option>
+                <option value="size_asc">Size (Smallest first)</option>
+                <option value="date_desc">Modified (Newest first)</option>
+                <option value="date_asc">Modified (Oldest first)</option>
               </select>
             </div>
 
@@ -459,7 +461,7 @@
         <section id="view-photos" class="view-section view-content" style="display: none;">
           <div class="view-header">
             <div>
-              <h1 class="view-title" id="photos-title">Photos &amp; Images</h1>
+              <h2 class="view-title" id="photos-title">Photos &amp; Images</h2>
               <p class="view-subtitle">All photos stored across your phone host automatically cataloged.</p>
             </div>
             
@@ -483,7 +485,7 @@
         <section id="view-videos" class="view-section view-content" style="display: none;">
           <div class="view-header">
             <div>
-              <h1 class="view-title" id="videos-title">Video Library</h1>
+              <h2 class="view-title" id="videos-title">Video Library</h2>
               <p class="view-subtitle">Stream video files hosted directly from your Android phone.</p>
             </div>
 
@@ -507,7 +509,7 @@
         <section id="view-storage" class="view-section view-content" style="display: none;">
           <div class="view-header">
             <div>
-              <h1 class="view-title" id="storage-title">Storage Insights</h1>
+              <h2 class="view-title" id="storage-title">Storage Insights</h2>
               <p class="view-subtitle">Detailed allocation breakdown and largest files hosted on your device.</p>
             </div>
 
@@ -636,23 +638,27 @@
 
   <!-- MODAL DIALOGS -->
   <!-- Upload File Dropzone Modal -->
-  <div id="modal-upload" class="modal modal-overlay" style="display: none;" aria-hidden="true">
+  <div id="modal-upload" class="modal modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-upload-title">
     <div class="modal-card modal-content">
       <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+        <h3 class="modal-title" id="modal-upload-title" style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <span>Upload Files</span>
+          <span>Upload to Android Server</span>
         </h3>
         <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-upload')" aria-label="Close modal"><svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
       <div class="modal-body">
+        <div id="upload-destination-banner" style="font-size: var(--font-size-xs); color: var(--color-text-secondary); margin-bottom: var(--space-md); padding: 8px 12px; background: var(--color-bg-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border-subtle); display: flex; align-items: center; gap: 8px;">
+          <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Destination on phone: <strong id="upload-target-path" class="font-mono">/</strong></span>
+        </div>
         <div class="upload-dropzone" id="upload-drop-zone" onclick="document.getElementById('file-picker').click()" style="border: 2px dashed var(--color-border); border-radius: var(--radius-lg); padding: var(--space-2xl) var(--space-md); text-align: center; cursor: pointer; background-color: var(--color-bg-secondary); transition: all 0.2s ease;">
           <div class="dropzone-icon" style="margin-bottom: var(--space-sm); color: var(--color-brand-primary);">
             <svg class="icon icon-xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
           </div>
-          <div class="dropzone-heading" style="font-weight: 700; font-size: var(--font-size-sm); margin-bottom: 4px; color: var(--color-text-primary);">Drag &amp; drop files here</div>
-          <div class="dropzone-subtext" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">Files will be saved directly to your Android device host</div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); document.getElementById('file-picker').click()">Choose Files</button>
+          <div class="dropzone-heading" style="font-weight: 700; font-size: var(--font-size-sm); margin-bottom: 4px; color: var(--color-text-primary);">Drag and drop files here</div>
+          <div class="dropzone-subtext" style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-md);">Files are sent directly to your connected Android phone via secure TLS gateway tunnel. Keep this window open during transfer.</div>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); document.getElementById('file-picker').click()">Choose Files from Device</button>
         </div>
         <div id="modal-upload-queue" style="margin-top: 16px;"></div>
       </div>
@@ -662,10 +668,10 @@
     </div>
   </div>
 
-  <div class="modal modal-overlay" id="modal-new-folder" style="display: none;" aria-hidden="true">
+  <div class="modal modal-overlay" id="modal-new-folder" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-new-folder-title">
     <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+        <h3 class="modal-title" id="modal-new-folder-title" style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
           <span>Create New Folder</span>
         </h3>
@@ -688,10 +694,10 @@
     </div>
   </div>
 
-  <div class="modal modal-overlay" id="modal-rename" style="display: none;" aria-hidden="true">
+  <div class="modal modal-overlay" id="modal-rename" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-rename-title">
     <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+        <h3 class="modal-title" id="modal-rename-title" style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           <span>Rename Item</span>
         </h3>
@@ -715,24 +721,24 @@
     </div>
   </div>
 
-  <div class="modal modal-overlay" id="modal-delete" style="display: none;" aria-hidden="true">
+  <div class="modal modal-overlay" id="modal-delete" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
     <div class="modal-content modal-card" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px; color: #DC2626;">
+        <h3 class="modal-title" id="delete-modal-title" style="display: flex; align-items: center; gap: 8px; color: #DC2626;">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          <span>Confirm Delete</span>
+          <span id="delete-title-text">Confirm Permanent Deletion</span>
         </h3>
         <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-delete')" aria-label="Close dialog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
       <div class="modal-body">
-        <p style="margin-bottom: var(--space-sm); color: var(--color-text-primary);">
+        <p style="margin-bottom: var(--space-sm); color: var(--color-text-primary);" id="delete-prompt-message">
           Are you sure you want to delete <strong id="delete-item-name">item</strong>?
         </p>
         <div class="alert alert-warning" style="background: #FFFBEB; border: 1px solid #FCD34D; color: #92400E; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-xs); display: flex; gap: 8px; align-items: flex-start;">
           <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-          <span>This will permanently erase the file from your physical Android phone storage host.</span>
+          <span id="delete-warning-text">This will permanently erase the file from your physical Android phone storage host. This action is irreversible and cannot be recovered from cloud trash or version history.</span>
         </div>
       </div>
       <div class="modal-footer">
@@ -805,10 +811,10 @@
     </div>
   </div>
 
-  <div class="modal modal-overlay" id="modal-file-info" style="display: none;" aria-hidden="true">
+  <div class="modal modal-overlay" id="modal-file-info" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-file-info-title">
     <div class="modal-content modal-card" style="max-width: 480px;">
       <div class="modal-header">
-        <h3 class="modal-title">File Details</h3>
+        <h3 class="modal-title" id="modal-file-info-title">File Details</h3>
         <button class="modal-close-btn btn btn-ghost btn-sm" onclick="UIManager.hideModal('modal-file-info')" aria-label="Close dialog">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
@@ -831,10 +837,11 @@
           <div style="font-weight: 600; color: var(--color-text-secondary);">Location</div>
           <div id="file-info-path" style="color: var(--color-text-primary); font-family: monospace; font-size: 0.8rem; word-break: break-all;"></div>
         </div>
+        <p style="font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 16px; margin-bottom: 0;">Hosted on physical Android phone storage. Downloads stream directly to this device over TLS.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="UIManager.hideModal('modal-file-info')">Close</button>
-        <a id="file-info-download-link" href="#" class="btn btn-primary" download>Download</a>
+        <a id="file-info-download-link" href="#" class="btn btn-primary" download>Download to Device</a>
       </div>
     </div>
   </div>
@@ -859,11 +866,13 @@
       const serverBreadcrumb = document.getElementById('vd-server-name-breadcrumb');
       const userBadge = document.getElementById('vd-user-email');
 
-      function showOffline(message) {
+      function showOffline(message, title = 'Server Host Offline') {
         if (loadingState) loadingState.style.display = 'none';
         if (offlineState) {
           offlineState.style.display = 'flex';
+          const titleEl = document.getElementById('vd-offline-title');
           const msgEl = document.getElementById('vd-offline-message');
+          if (titleEl) titleEl.textContent = title;
           if (msgEl) msgEl.textContent = message;
         }
       }
@@ -900,12 +909,31 @@
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-              showOffline(data?.error?.message || 'Server host unreachable.');
+              const errCode = data?.error?.code;
+              if (errCode === 'PERMISSION_DENIED' || errCode === 'STORAGE_PERMISSION_DENIED') {
+                showOffline(
+                  'The ZdexCloud app on your Android phone requires file storage permission. Please open the app on your phone, go to Server Settings, and grant storage permission.',
+                  'Android Storage Permission Required'
+                );
+              } else if (res.status === 401 || errCode === 'UNAUTHORIZED' || errCode === 'SESSION_EXPIRED') {
+                showOffline(
+                  'Your website session has expired. Please sign in again to re-establish access to your Android server.',
+                  'Session Expired'
+                );
+              } else {
+                showOffline(
+                  data?.error?.message || 'Unable to establish connection to target Android server host.',
+                  'Server Connection Error'
+                );
+              }
               return;
             }
 
             if (!data.data?.online) {
-              showOffline('Your Android phone server is currently offline. Please ensure Server Mode is active in the ZdexCloud app on your phone.');
+              showOffline(
+                'Your Android phone server is currently offline or unreachable. Please ensure Server Mode is active in the ZdexCloud app on your phone, and the device has an active Wi-Fi or mobile data connection.',
+                'Android Server Host Offline'
+              );
               return;
             }
 
