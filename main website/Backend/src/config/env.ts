@@ -39,6 +39,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:8080,https://zdexcloud.com,https://www.zdexcloud.com,https://app.zdexcloud.com,https://api.zdexcloud.com,https://gateway.zdexcloud.com'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   API_BASE_URL: z.string().default('http://localhost:4000/api/v1'),
+  FRONTEND_URL: z.string().default('https://zdexcloud.com'),
 
   // Configurable Trusted Proxy Strategy for Fastify (Phase 13.6)
   // Supports: comma-separated IP/CIDRs, 'loopback', 'linklocal', 'uniquelocal', or boolean string 'true'/'false'

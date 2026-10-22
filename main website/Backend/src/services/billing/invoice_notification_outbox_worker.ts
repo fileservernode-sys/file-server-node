@@ -38,6 +38,7 @@ import {
   calculateNextRetryDate,
   sanitizeFailureReason
 } from '../email_failure_classifier.js';
+import { sanitizeJsonPayload } from '../../utils/email_sanitizer.js';
 
 export interface OutboxWorkerOptions {
   workerId?: string;

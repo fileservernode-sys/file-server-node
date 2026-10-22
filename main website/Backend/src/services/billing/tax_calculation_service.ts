@@ -6,7 +6,7 @@ import {
   Prisma,
   BillingPaymentTax
 } from '@prisma/client';
-import { AppError, ValidationError, NotFoundError } from '../../errors/app-error.js';
+import { AppError, ValidationError, NotFoundError, StatutoryConfigurationMissingError } from '../../errors/app-error.js';
 
 export class TaxConfigurationMissingError extends AppError {
   public readonly errorCode = 'TAX_CONFIGURATION_MISSING';

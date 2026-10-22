@@ -357,6 +357,7 @@ export class EmailWebhookReconciliationWorker {
         providerMessageId: r.providerMessageId ? String(r.providerMessageId).trim() : null,
         recipientEmail: r.recipientEmail ? String(r.recipientEmail).trim().toLowerCase() : null,
         eventTimestamp: r.eventTimestamp ? new Date(r.eventTimestamp) : null,
+        receivedAt: r.receivedAt ? new Date(r.receivedAt) : null,
         status: String(r.status),
         processingAttempts: Number(r.processingAttempts || 0),
         rawPayload: typeof r.rawPayload === 'string' ? JSON.parse(r.rawPayload) : r.rawPayload
@@ -381,6 +382,7 @@ export class EmailWebhookReconciliationWorker {
       providerMessageId: string | null;
       recipientEmail: string | null;
       eventTimestamp: Date | null;
+      receivedAt?: Date | null;
       status: string;
       processingAttempts: number;
       rawPayload: any;

@@ -2465,7 +2465,7 @@ export class AdminBillingService {
     // Record administrative audit log
     await AdminAuditService.logEvent({
       adminId: context?.adminId || 'unknown',
-      action: AdminAuditAction.ADMIN_ACTION_EXECUTED,
+      action: AdminAuditAction.ADMIN_STATUS_UPDATED,
       status: result.success ? 'SUCCESS' : (result.failed > 0 && result.succeeded > 0 ? 'PARTIAL' : 'FAILED'),
       ipAddress: context?.clientIp || null,
       userAgent: context?.userAgent || null,

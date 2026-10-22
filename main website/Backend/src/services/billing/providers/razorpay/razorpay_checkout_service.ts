@@ -46,6 +46,8 @@ export interface VerifyCheckoutPaymentResult {
   paymentId: string;
   receiptNumber?: string;
   receiptId?: string;
+  invoiceNumber?: string | null;
+  invoiceId?: string | null;
 }
 
 export interface CheckoutPriceBreakdownTax {

@@ -67,7 +67,7 @@ export class BillingProfileBackfillService {
     let hasMore = true;
 
     while (hasMore) {
-      const events = await prisma.auditEvent.findMany({
+      const events: any[] = await prisma.auditEvent.findMany({
         where: {
           eventType: AuditEventType.BILLING_STATE_UPDATED
         },

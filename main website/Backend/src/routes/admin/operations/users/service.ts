@@ -72,6 +72,9 @@ export interface UserDetailResult {
     billingName: string | null;
     companyName?: string | null;
     taxId?: string | null;
+    isLegacyAuditFallback?: boolean;
+    companyNameFallback?: boolean;
+    taxIdFallback?: boolean;
     billingAddress1: string | null;
     billingAddress2: string | null;
     billingCity: string | null;

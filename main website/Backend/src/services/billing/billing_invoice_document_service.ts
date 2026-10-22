@@ -218,11 +218,11 @@ export class BillingInvoiceDocumentService {
    * Formats currency amounts in minor integer units into clean localized display string with Unicode symbol.
    */
   public static formatAmount(amountMinorUnits: number, currency: CurrencyCode): string {
-    const symbols: Record<CurrencyCode, string> = {
+    const symbols: Record<string, string> = {
       [CurrencyCode.INR]: '₹',
       [CurrencyCode.USD]: '$',
-      [CurrencyCode.EUR]: '€',
-      [CurrencyCode.GBP]: '£'
+      EUR: '€',
+      GBP: '£'
     };
     const symbol = symbols[currency] || (currency === CurrencyCode.INR ? '₹' : '$');
     const major = (amountMinorUnits / 100).toFixed(2);
@@ -236,11 +236,11 @@ export class BillingInvoiceDocumentService {
    * until a repository-controlled TrueType/OpenType Unicode font is approved and bundled.
    */
   public static formatAmountAscii(amountMinorUnits: number, currency: CurrencyCode): string {
-    const prefixes: Record<CurrencyCode, string> = {
+    const prefixes: Record<string, string> = {
       [CurrencyCode.INR]: 'INR ',
       [CurrencyCode.USD]: 'USD ',
-      [CurrencyCode.EUR]: 'EUR ',
-      [CurrencyCode.GBP]: 'GBP '
+      EUR: 'EUR ',
+      GBP: 'GBP '
     };
     const prefix = prefixes[currency] || `${String(currency)} `;
     const major = (amountMinorUnits / 100).toFixed(2);

@@ -34,3 +34,5 @@ export interface ObjectAuthorizationParams {
   context: AdminOperationContext;
   targetOwnerUserId?: string | null;
 }
+
+export type { PaginatedResult } from './utils/pagination.js';

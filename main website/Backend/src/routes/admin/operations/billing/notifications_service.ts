@@ -107,6 +107,12 @@ export class AdminInvoiceNotificationService {
         maxAttempts: Number(r.maxAttempts),
         resendAuthorizationCount: Number(r.resendAuthorizationCount)
       })),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages
+      },
       total,
       page,
       pageSize,
@@ -265,6 +271,12 @@ export class AdminInvoiceNotificationService {
         ...r,
         processingAttempts: Number(r.processingAttempts)
       })),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages
+      },
       total,
       page,
       pageSize,
@@ -381,7 +393,7 @@ export class AdminInvoiceNotificationService {
               { providerMessageId: cleanId },
               { providerMessageId: `<${cleanId}>` }
             ],
-            to: outbox.recipientEmail
+            recipientEmail: outbox.recipientEmail
           },
           select: { id: true, provider: true, providerMessageId: true, status: true }
         })

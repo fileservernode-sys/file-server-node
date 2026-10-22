@@ -686,7 +686,7 @@ export class CustomerActivityService {
 
       const eventType: CustomerActivityEventType = rawEventType;
       const definition = CUSTOMER_ACTIVITY_TAXONOMY[eventType];
-      const dedupeMode = definition.deduplication?.mode || (definition as any).deduplicationRule || 'NONE';
+      const dedupeMode: string = definition.deduplication?.mode || (definition as any).deduplicationRule || 'NONE';
       const cooldownSeconds =
         definition.deduplication?.cooldownSeconds ?? (definition as any).cooldownSeconds ?? 0;
 
