@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import crypto from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { createSuccessResponse, createErrorResponse } from '../schemas/response.js';
 import { ValidationError, UnauthorizedError, ForbiddenError, NotFoundError } from '../errors/app-error.js';
@@ -193,7 +194,7 @@ export async function connectionRoutes(app: FastifyInstance): Promise<void> {
 
     // Atomic connection registration & stale connection reconciliation
     const now = new Date();
-    const token = `conn-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+    const token = `conn_${crypto.randomBytes(32).toString('hex')}`;
 
     const connection = await prisma.$transaction(async (tx) => {
       // Find existing connection records for this device

@@ -24,8 +24,13 @@ const serverIdParamSchema = z.object({
 // ---------------------------------------------------------------------------
 async function resolveAuthorisedServer(serverId: string, userId: string) {
   // 1. Find the ServerInstance
-  const serverInstance = await prisma.serverInstance.findUnique({
-    where: { id: serverId },
+  const serverInstance = await prisma.serverInstance.findFirst({
+    where: {
+      OR: [
+        { id: serverId },
+        { deviceId: serverId }
+      ]
+    },
     include: { device: true }
   });
 
@@ -593,7 +598,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
    * Proxies file-server credential authentication.
    * Accepts JSON body: { username: string, password: string }
    * Used when the Android file server requires its own login.
-   * NEVER stores the password — only proxies it to Android for verification.
+   * NEVER stores the password - only proxies it to Android for verification.
    * Returns a file-server session token (not the ZdexCloud token).
    */
   app.post(
@@ -624,7 +629,7 @@ export async function fileManagerRoutes(app: FastifyInstance): Promise<void> {
     // The Android server validates the credentials and returns a token
     const result = await proxyToGateway(device.id, 'AUTH_LOGIN', {
       name: body.username,
-      path: body.password  // Reusing path field for password — gateway passes it as-is
+      path: body.password  // Reusing path field for password - gateway passes it as-is
     });
 
     // Log the auth event (without password)

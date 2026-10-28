@@ -1,5 +1,5 @@
 /**
- * ZDEXCLOUD ADMIN CONTROL PLANE — HTTP API CLIENT
+ * ZDEXCLOUD ADMIN CONTROL PLANE - HTTP API CLIENT
  * Phase 7.4: Admin Layout & UI Foundation
  */
 
@@ -639,7 +639,7 @@
     }
 
     // =========================================================================
-    // PHASE 17 BATCH 17.6 — BACKGROUND JOBS & OPERATIONS API
+    // PHASE 17 BATCH 17.6 - BACKGROUND JOBS & OPERATIONS API
     // =========================================================================
 
     getBackgroundJobsMetrics() {
@@ -717,7 +717,7 @@
     }
 
     // =========================================================================
-    // PHASE 17 BATCH 17.7 — SYSTEM CONFIGURATION & FEATURE FLAGS API
+    // PHASE 17 BATCH 17.7 - SYSTEM CONFIGURATION & FEATURE FLAGS API
     // =========================================================================
 
     getSystemConfigOverview() {
@@ -756,7 +756,7 @@
     }
 
     // =========================================================================
-    // PHASE 17 BATCH 17.8 — SYSTEM SECURITY CONTROLS API
+    // PHASE 17 BATCH 17.8 - SYSTEM SECURITY CONTROLS API
     // =========================================================================
 
     getSecurityOverview() {

@@ -6,7 +6,7 @@ import { GatewayService, TokenValidator } from '../src/gateway/gateway_service.j
 import { loadGatewayConfig } from '../src/gateway/gateway_config.js';
 
 // ---------------------------------------------------------------------------
-// In-memory mock: no DB, no TCP — resolves instantly so tests don't stall
+// In-memory mock: no DB, no TCP - resolves instantly so tests don't stall
 // ---------------------------------------------------------------------------
 const VALID_TOKEN = 'mock-token-123';
 const VALID_DEVICE = 'mock-device-456';
@@ -262,6 +262,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     });
 
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => clientSocket.once('open', resolve));
 
     // 1. Legitimate request with matching authorized user
     const response = await new Promise<any>((resolve, reject) => {
@@ -273,18 +274,16 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
       });
       clientSocket.on('error', reject);
 
-      setTimeout(() => {
-        clientSocket.send(
-          JSON.stringify({
-            type: 'FILE_REQUEST',
-            requestId: 'req-authorized-user',
-            connectionId,
-            authorizedUserId: VALID_USER_ID,
-            operation: 'LIST',
-            path: '/'
-          })
-        );
-      }, 50);
+      clientSocket.send(
+        JSON.stringify({
+          type: 'FILE_REQUEST',
+          requestId: 'req-authorized-user',
+          connectionId,
+          authorizedUserId: VALID_USER_ID,
+          operation: 'LIST',
+          path: '/'
+        })
+      );
     });
 
     assert.strictEqual(response.success, true);
@@ -300,18 +299,16 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
       });
       clientSocket.on('error', reject);
 
-      setTimeout(() => {
-        clientSocket.send(
-          JSON.stringify({
-            type: 'FILE_REQUEST',
-            requestId: 'req-cross-user',
-            connectionId,
-            authorizedUserId: 'unauthorized-user-bob-999',
-            operation: 'LIST',
-            path: '/'
-          })
-        );
-      }, 50);
+      clientSocket.send(
+        JSON.stringify({
+          type: 'FILE_REQUEST',
+          requestId: 'req-cross-user',
+          connectionId,
+          authorizedUserId: 'unauthorized-user-bob-999',
+          operation: 'LIST',
+          path: '/'
+        })
+      );
     });
 
     assert.strictEqual(crossUserResponse.success, false);
@@ -360,6 +357,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     });
 
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => clientSocket.once('open', resolve));
 
     // First request
     await new Promise<void>((resolve) => {
@@ -437,6 +435,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
     });
 
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => clientSocket.once('open', resolve));
 
     const cancelReceivedPromise = new Promise<any>((resolve) => {
       clientSocket.on('message', (data) => {
@@ -504,6 +503,7 @@ describe('Production Gateway Infrastructure & Transport Service', () => {
 
   test('Gateway rejects FILE_REQUEST targeting offline connection ID', async () => {
     const clientSocket = new WebSocket(`ws://localhost:${testPort}`);
+    await new Promise<void>((resolve) => clientSocket.once('open', resolve));
 
     const response = await new Promise<any>((resolve, reject) => {
       clientSocket.on('message', (data) => {

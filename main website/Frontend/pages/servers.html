@@ -840,7 +840,7 @@
           </div>
           <div>
             <div class="stat-card-title">Gateway Tunnel</div>
-            <div class="stat-card-value" style="font-size: var(--font-size-md); color: var(--color-brand-primary);">TLS 1.3 Active</div>
+            <div class="stat-card-value" id="stat-gateway-tunnel" style="font-size: var(--font-size-md); color: var(--color-brand-primary);">Standby (TLS 1.3)</div>
           </div>
         </div>
       </div>
@@ -1107,6 +1107,26 @@
   <script>
     let isFetchingServers = false;
     let currentServerCount = 0;
+    let autoRefreshTimer = null;
+    let serverFetchSequence = 0;
+
+    function startAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+      autoRefreshTimer = setInterval(() => {
+        if (document.hidden) return;
+        loadUserServers(true);
+      }, 10000);
+    }
+
+    function stopAutoRefresh() {
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       let authResult = { authenticated: false, user: null };
@@ -1143,12 +1163,23 @@
       }
 
       document.getElementById('btn-logout')?.addEventListener('click', () => {
+        stopAutoRefresh();
         AuthService.logoutUser();
       });
 
       document.getElementById('btn-manual-refresh')?.addEventListener('click', () => {
         loadUserServers(false);
       });
+
+      // Tab visibility listener: refresh when tab becomes active, save background resources
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          loadUserServers(true);
+        }
+      });
+
+      window.addEventListener('beforeunload', stopAutoRefresh);
+      window.addEventListener('pagehide', stopAutoRefresh);
 
       // Initialize Subscription State for slot capacity
       BillingState.subscribe(state => {
@@ -1160,10 +1191,8 @@
       renderSkeletonLoaders();
       loadUserServers(false);
 
-      // Auto-refresh servers every 10 seconds
-      setInterval(() => {
-        loadUserServers(true);
-      }, 10000);
+      // Start auto-refresh interval
+      startAutoRefresh();
     });
 
     function updateServerEntitlementsUI(state) {
@@ -1267,12 +1296,23 @@
     async function loadUserServers(isBackground = false) {
       if (isFetchingServers) return;
       isFetchingServers = true;
+      const currentSeq = ++serverFetchSequence;
 
       const grid = document.getElementById('user-devices-grid');
       const indicator = document.getElementById('refresh-indicator');
 
       try {
         const res = await apiRequest('/devices', 'GET');
+
+        // Check if a newer request was dispatched while this was in-flight
+        if (currentSeq !== serverFetchSequence) {
+          isFetchingServers = false;
+          return;
+        }
+
+        if (res.status === 401) {
+          stopAutoRefresh();
+        }
 
         if (!res.ok || !res.data || res.data.success === false) {
           if (!isBackground && grid) {
@@ -1301,6 +1341,17 @@
         const linkedEl = document.getElementById('stat-linked-devices');
         if (onlineEl) onlineEl.textContent = onlineCount;
         if (linkedEl) linkedEl.textContent = devices.length;
+
+        const gatewayTunnelEl = document.getElementById('stat-gateway-tunnel');
+        if (gatewayTunnelEl) {
+          if (onlineCount > 0) {
+            gatewayTunnelEl.textContent = 'TLS 1.3 Active';
+            gatewayTunnelEl.style.color = 'var(--color-brand-primary)';
+          } else {
+            gatewayTunnelEl.textContent = 'Standby (TLS 1.3)';
+            gatewayTunnelEl.style.color = 'var(--color-text-secondary)';
+          }
+        }
 
         updateServerEntitlementsUI(BillingState.getState());
 
@@ -1370,10 +1421,11 @@
             const isRemoteAvailable = typeof device.isRemoteAvailable === 'boolean'
               ? device.isRemoteAvailable
               : (typeof server?.isRemoteAvailable === 'boolean' ? server.isRemoteAvailable : (effectiveRemoteStatus === 'ONLINE'));
-            const isOnline = effectiveRemoteStatus === 'ONLINE' || isRemoteAvailable;
+            const isOnline = effectiveRemoteStatus === 'ONLINE' && (isRemoteAvailable !== false);
             const isConnecting = effectiveRemoteStatus === 'CONNECTING';
             const isReconnecting = effectiveRemoteStatus === 'RECONNECTING';
             const isError = effectiveRemoteStatus === 'ERROR';
+            const isStopped = !isOnline && !isConnecting && !isReconnecting && (server?.status === 'STOPPED' || device.statusReason === 'server_stopped' || device.statusReason === 'explicitly_stopped');
 
             let statusBadge = '';
             if (isOnline) {
@@ -1384,6 +1436,8 @@
               statusBadge = `<span class="status-indicator status-reconnecting" aria-label="Server status: Reconnecting"><span class="status-dot"></span> Reconnecting</span>`;
             } else if (isError) {
               statusBadge = `<span class="status-indicator" style="background: #FEF2F2; color: #DC2626; border: 1px solid rgba(220, 38, 38, 0.2);" aria-label="Server status: Error"><span class="status-dot" style="background: #DC2626;"></span> Error</span>`;
+            } else if (isStopped) {
+              statusBadge = `<span class="status-indicator status-offline" aria-label="Server status: Stopped"><span class="status-dot"></span> Stopped</span>`;
             } else {
               statusBadge = `<span class="status-indicator status-offline" aria-label="Server status: Offline"><span class="status-dot"></span> Offline</span>`;
             }
@@ -1413,6 +1467,8 @@
               gatewayDotClass = 'gateway-dot--warning';
             } else if (isError) {
               gatewayText = 'Gateway: Connection Error';
+            } else if (isStopped) {
+              gatewayText = 'Gateway: Inactive (Server Stopped)';
             }
 
             // Status reason context
@@ -1425,8 +1481,8 @@
             ` : '';
 
             // Storage representation
-            const storageStatusText = isOnline ? 'Host Storage Active' : 'Offline';
-            const storageDetailText = isOnline ? 'Physically hosted on Android phone' : 'Connect phone to view storage';
+            const storageStatusText = isOnline ? 'Host Storage Active' : (isStopped ? 'Server Stopped' : 'Offline');
+            const storageDetailText = isOnline ? 'Physically hosted on Android phone' : (isStopped ? 'Turn Server Mode ON in phone app to resume' : 'Connect phone to view storage');
             const lastActiveTimestamp = formatRelativeTime(device.effectiveLastSeenAt || device.lastSeenAt || server?.effectiveLastSeenAt || server?.updatedAt);
 
             // Action Button
@@ -1443,6 +1499,13 @@
                 <button type="button" class="btn btn-secondary btn-sm server-card-cta" disabled>
                   <span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span>
                   <span>Connecting to Server...</span>
+                </button>
+              `;
+            } else if (isStopped) {
+              actionButtonHtml = `
+                <button type="button" class="btn btn-secondary btn-sm server-card-cta" onclick="openStartGuideModal()" title="Start Server Mode in the ZdexCloud app on your phone to open files">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+                  <span>Start on Phone</span>
                 </button>
               `;
             } else {

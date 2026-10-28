@@ -554,7 +554,7 @@ object RemoteNodeTunnelManager {
                         sessionTok = refreshedToken
                         storedSessionToken = refreshedToken
                     } else if (isPermanentAuthFailure) {
-                        emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
+                        emitState(STATE_AUTH_FAILED, "ZdexCloud: Sign-in Required")
                         isConnectingOrReconnecting = false
                         return@execute
                     } else {
@@ -650,7 +650,7 @@ object RemoteNodeTunnelManager {
                                         metadata = mapOf("httpStatus" to 401, "attempt" to registrationAttempts, "generation" to generation)
                                     )
                                 )
-                                emitState(STATE_AUTH_FAILED, "ZdexCloud — Sign-in Required")
+                                emitState(STATE_AUTH_FAILED, "ZdexCloud: Sign-in Required")
                                 isConnectingOrReconnecting = false
                                 return@execute
                             } else {

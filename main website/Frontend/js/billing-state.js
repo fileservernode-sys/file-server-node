@@ -1,6 +1,6 @@
 /**
  * ZdexCloud Frontend Billing State & Presentation Layer
- * Phase 7.2A — Shared Billing Foundation & API Client
+ * Phase 7.2A - Shared Billing Foundation & API Client
  *
  * ARCHITECTURAL INVARIANTS:
  * 1. Four-Dimensional State Separation:

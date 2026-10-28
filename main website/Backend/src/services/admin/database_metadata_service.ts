@@ -1,6 +1,6 @@
 /**
  * Database Metadata Service
- * Phase 15 Batch 15.1 & Batch 15.2 — Database Management Foundation & Professional Data Grid
+ * Phase 15 Batch 15.1 & Batch 15.2 - Database Management Foundation & Professional Data Grid
  *
  * Provides safe, read-only introspection and metadata retrieval of the ZdexCloud application
  * database via MySQL information_schema and Prisma client. Implements table classification,

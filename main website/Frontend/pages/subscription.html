@@ -688,6 +688,17 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, match => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[match]);
+    }
+
     function renderSubscriptionCard(state) {
       const skeleton = document.getElementById('subscription-card-skeleton');
       const content = document.getElementById('subscription-card-content');
@@ -699,27 +710,32 @@
       if (errBox) errBox.style.display = 'none';
       content.style.display = 'block';
 
-      const planName = state.planDisplayName || (state.tier === 'PRO' ? 'ZdexCloud Pro' : 'ZdexCloud Free');
-      const intervalLabel = state.billingInterval === 'YEARLY' ? 'Annual Billing' : (state.tier === 'PRO' ? 'Monthly Billing' : 'Standard Tier');
-      const statusBadge = state.status === 'ACTIVE' 
-        ? '<span class="badge badge-success">ACTIVE</span>'
-        : (state.status === 'CANCELLED' || state.cancelAtPeriodEnd ? '<span class="badge badge-warning">CANCELLING</span>' : '<span class="badge">FREE TIER</span>');
+      const sub = state.subscription;
+      const isPaid = Boolean(state.statusConfig?.isPaid || (state.plan && state.plan !== 'FREE') || (sub && sub.status !== 'EXPIRED'));
+      const planName = state.planConfig?.name || sub?.planName || (isPaid ? 'ZdexCloud Pro' : 'ZdexCloud Free');
+      const billingInterval = sub?.billingInterval || (state.plan === 'PRO_YEARLY' ? 'YEARLY' : (isPaid ? 'MONTHLY' : null));
+      const intervalLabel = billingInterval === 'YEARLY' ? 'Annual Billing' : (isPaid ? 'Monthly Billing' : 'Standard Tier');
+      
+      const statusLabel = state.statusConfig?.label || (isPaid ? 'ACTIVE' : 'FREE TIER');
+      const statusBadgeClass = state.statusConfig?.badgeClass || (isPaid ? 'badge-success' : '');
+      const statusBadge = `<span class="badge ${escapeHtml(statusBadgeClass)}">${escapeHtml(statusLabel)}</span>`;
 
-      const maxServers = state.entitlements?.maxServers || 1;
-      const renewalDateStr = state.currentPeriodEnd ? new Date(state.currentPeriodEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Never Expires';
+      const maxServers = state.entitlements?.maxServers || (isPaid ? 5 : 1);
+      const periodEnd = sub?.currentPeriodEnd || state.currentPeriodEnd;
+      const renewalDateStr = periodEnd ? new Date(periodEnd).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : (isPaid ? 'Cycle Active' : 'Never Expires');
 
       let actionButtons = '';
-      if (state.tier === 'FREE') {
+      if (!isPaid || state.plan === 'FREE') {
         actionButtons = `
           <a href="pricing.html" class="btn btn-primary btn-sm">Upgrade to Pro</a>
         `;
-      } else if (state.tier === 'PRO' && state.billingInterval === 'MONTHLY') {
+      } else if (billingInterval === 'MONTHLY') {
         actionButtons = `
           <button type="button" onclick="openUpgradeModal()" class="btn btn-primary btn-sm">Upgrade to Yearly (Save 20%)</button>
           <button type="button" onclick="openCancelSubscriptionModal()" class="btn btn-secondary btn-sm" style="color: #DC2626;">Cancel Subscription</button>
         `;
-      } else if (state.tier === 'PRO' && state.billingInterval === 'YEARLY') {
-        if (state.pendingDowngrade) {
+      } else if (billingInterval === 'YEARLY') {
+        if (sub?.pendingDowngrade) {
           actionButtons = `
             <button type="button" onclick="openCancelDowngradeModal()" class="btn btn-secondary btn-sm">Keep Annual Plan</button>
           `;
@@ -738,8 +754,8 @@
               <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
             </div>
             <div>
-              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">${planName}</h2>
-              <span class="text-xs text-muted">${intervalLabel}</span>
+              <h2 style="font-size: var(--font-size-lg); font-weight: 700; margin: 0; color: var(--color-text-primary);">${escapeHtml(planName)}</h2>
+              <span class="text-xs text-muted">${escapeHtml(intervalLabel)}</span>
             </div>
           </div>
           <div>${statusBadge}</div>
@@ -752,7 +768,7 @@
           </div>
           <div class="billing-metric-card">
             <div class="billing-metric-label">Renewal / Cycle Date</div>
-            <div class="billing-metric-value" style="font-size: var(--font-size-sm);">${renewalDateStr}</div>
+            <div class="billing-metric-value" style="font-size: var(--font-size-sm);">${escapeHtml(renewalDateStr)}</div>
           </div>
           <div class="billing-metric-card">
             <div class="billing-metric-label">Gateway Protocol</div>
@@ -809,7 +825,7 @@
       if (errBox) errBox.style.display = 'none';
 
       try {
-        const result = await BillingApi.upgradeToYearly();
+        const result = await BillingAPI.upgradeSubscription('PRO_YEARLY');
         if (result.ok) {
           closeUpgradeModal();
           initDashboardBilling();
@@ -836,7 +852,7 @@
       if (errBox) errBox.style.display = 'none';
 
       try {
-        const result = await BillingApi.scheduleDowngradeToMonthly();
+        const result = await BillingAPI.downgradeSubscription('PRO_MONTHLY');
         if (result.ok) {
           closeDowngradeModal();
           initDashboardBilling();
@@ -863,7 +879,7 @@
       if (errBox) errBox.style.display = 'none';
 
       try {
-        const result = await BillingApi.cancelPendingDowngrade();
+        const result = await BillingAPI.cancelDowngrade();
         if (result.ok) {
           closeCancelDowngradeModal();
           initDashboardBilling();
@@ -893,7 +909,7 @@
       if (errBox) errBox.style.display = 'none';
 
       try {
-        const result = await BillingApi.cancelSubscription(reason);
+        const result = await BillingAPI.cancelSubscription(reason);
         if (result.ok) {
           closeCancelSubscriptionModal();
           initDashboardBilling();

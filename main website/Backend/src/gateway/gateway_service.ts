@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { prisma } from '../config/database.js';
 import { GatewayConfig, loadGatewayConfig } from './gateway_config.js';
@@ -107,6 +108,14 @@ export class PrismaTokenValidator implements TokenValidator {
         include: { device: true }
       });
       if (!record) return null;
+
+      // Bound token lifetime to 5 minutes from registration or update
+      const maxAgeMs = 5 * 60 * 1000;
+      const tokenAgeMs = Date.now() - record.updatedAt.getTime();
+      if (tokenAgeMs > maxAgeMs) {
+        return null;
+      }
+
       return {
         id: record.id,
         deviceId: record.deviceId,
@@ -124,7 +133,8 @@ export class PrismaTokenValidator implements TokenValidator {
         connectionId,
         nextStatus: ConnectionStatus.CONNECTED,
         eventSource: 'AUTH_SUCCESS',
-        timestamp: now
+        timestamp: now,
+        connectionToken: null
       });
     } catch {
       // Ignore DB errors during state transition
@@ -146,7 +156,7 @@ export class PrismaTokenValidator implements TokenValidator {
 }
 
 /**
- * Production Gateway Service — Transport & Proxy Layer for RemoteNode Personal File Servers
+ * Production Gateway Service - Transport & Proxy Layer for RemoteNode Personal File Servers
  * (Strictly routes messages without storing user files or owning filesystem data)
  *
  * Batch 11A.13 Hardened In-Memory Runtime Maps & Registries:
@@ -454,7 +464,7 @@ export class GatewayService {
           return;
         }
 
-        const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+        const requestId = 'http-req-' + crypto.randomBytes(8).toString('hex');
         const targetSessionId = targetConn.sessionId;
         const targetEpoch = targetConn.sessionEpoch;
 
@@ -919,7 +929,7 @@ export class GatewayService {
           // Increment device monotonic session epoch
           const nextEpoch = (this.deviceEpochMap.get(deviceId) || 0) + 1;
           this.deviceEpochMap.set(deviceId, nextEpoch);
-          const newSessionId = `${connRecord.id}-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+          const newSessionId = `${connRecord.id}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
 
           // 1. Clean Handover / Fast Stale Socket Eviction
           // If the same connectionId or deviceId has an active session, evict it immediately
@@ -1004,7 +1014,7 @@ export class GatewayService {
         if (authenticatedConnectionId && authenticatedSessionId) {
           const currentConn = this.activeConnections.get(authenticatedConnectionId);
           if (!currentConn || currentConn.sessionId !== authenticatedSessionId || currentConn.isEvicted || currentConn.isClosed) {
-            // Stale socket attempted to communicate — reject / ignore
+            // Stale socket attempted to communicate - reject / ignore
             this.log('warn', 'Rejected frame from evicted/stale socket session', {
               type: msg.type,
               connectionId: authenticatedConnectionId,
@@ -1125,9 +1135,9 @@ export class GatewayService {
           if (requestId && this.pendingRequests.has(requestId)) {
             const pending = this.pendingRequests.get(requestId)!;
             
-            // Stale session validation: If response came from a socket that does not match pending sessionId
-            if (authenticatedSessionId && pending.sessionId && pending.sessionId !== authenticatedSessionId) {
-              this.log('warn', 'Ignoring FILE_RESPONSE from non-matching or stale session', {
+            // Stale or unauthenticated session validation: Response must originate from the authoritative host session
+            if (!authenticatedSessionId || (pending.sessionId && pending.sessionId !== authenticatedSessionId)) {
+              this.log('warn', 'Ignoring FILE_RESPONSE from non-matching, unauthenticated, or stale session', {
                 requestId,
                 expectedSessionId: pending.sessionId,
                 actualSessionId: authenticatedSessionId
@@ -1622,7 +1632,7 @@ export class GatewayService {
       });
     }
 
-    const requestId = 'http-req-' + Math.random().toString(36).substring(2, 10);
+    const requestId = 'http-req-' + crypto.randomBytes(8).toString('hex');
     const targetSessionId = targetConn.sessionId;
     const targetEpoch = targetConn.sessionEpoch;
     const bodyPayload = (request.body && typeof request.body === 'object') ? request.body : {};
@@ -1742,6 +1752,25 @@ export class GatewayService {
       dataBase64?: string;
     } = {}
   ): Promise<any> {
+    // Defensive depth: Path traversal and null byte rejection
+    const checkPath = (p?: string) => {
+      if (typeof p === 'string' && (p.includes('\0') || p.includes('..'))) {
+        return false;
+      }
+      return true;
+    };
+
+    if (!checkPath(params.path) || !checkPath(params.oldPath) || !checkPath(params.name) || !checkPath(params.newName)) {
+      this.log('warn', `[FILE_MANAGER] path traversal attempt blocked deviceId=${deviceId}`);
+      return {
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Invalid path traversal detected.'
+        }
+      };
+    }
+
     const connId = this.deviceToConnectionMap.get(deviceId);
     if (!connId || !this.activeConnections.has(connId)) {
       this.log('warn', `[FILE_MANAGER] device offline deviceId=${deviceId}`);
@@ -1766,7 +1795,7 @@ export class GatewayService {
       };
     }
 
-    const requestId = 'fm-' + Math.random().toString(36).substring(2, 12);
+    const requestId = 'fm-' + crypto.randomBytes(16).toString('hex');
     const targetSessionId = targetConn.sessionId;
     const targetEpoch = targetConn.sessionEpoch;
 

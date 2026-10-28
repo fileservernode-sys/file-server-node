@@ -35,3 +35,13 @@ npm-debug.log*
 Android app/Android app code/.idea/*
 !Android app/Android app code/.idea/runConfigurations/
 Android app/.idea/
+
+# Database backups
+db_backup_*/
+*.sql
+*.dump
+
+# Local prompt notes
+prompt_*.txt
+
+

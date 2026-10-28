@@ -13,7 +13,7 @@ enum RemoteConnectionState {
   failed,
 }
 
-/// Data Transfer Model — Remote Connection Status Details
+/// Data Transfer Model - Remote Connection Status Details
 class RemoteConnectionInfo {
   final String? connectionId;
   final String? gatewayHostname;

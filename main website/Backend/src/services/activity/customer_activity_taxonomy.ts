@@ -1,7 +1,7 @@
 import { AuditEventType } from '@prisma/client';
 
 /**
- * ZDEXCLOUD PHASE 9.1 — AUTHORITATIVE CUSTOMER ACTIVITY EVENT TAXONOMY
+ * ZDEXCLOUD PHASE 9.1 - AUTHORITATIVE CUSTOMER ACTIVITY EVENT TAXONOMY
  *
  * Defines the canonical, customer-visible activity categories, event types,
  * display templates, safe metadata allowlists, existing AuditEventType mappings,
@@ -125,6 +125,7 @@ export interface ActivityEntityReferences {
 export interface AuditEventMappingRule {
   auditEventType: AuditEventType | string;
   metadataActionDiscriminator?: string;
+  discriminatingCondition?: string;
 }
 
 export interface CustomerActivityEventSpec {
@@ -1337,9 +1338,12 @@ export const EXISTING_AUDIT_EVENT_CLASSIFICATION: Readonly<Record<string, AuditE
   },
   PASSWORD_RESET_SUCCESS: {
     auditEventType: 'PASSWORD_RESET_SUCCESS',
-    visibility: 'CUSTOMER_VISIBLE_DIRECT',
-    mappedCustomerEventTypes: [CustomerActivityEventType.SECURITY_PASSWORD_RESET_COMPLETED],
-    rationale: 'Customer-visible password reset completion.'
+    visibility: 'CUSTOMER_VISIBLE_DISCRIMINATED',
+    mappedCustomerEventTypes: [
+      CustomerActivityEventType.SECURITY_PASSWORD_RESET_COMPLETED,
+      CustomerActivityEventType.SECURITY_PASSWORD_CHANGED
+    ],
+    rationale: 'Customer-visible password reset or authenticated change completion.'
   },
   OTP_SENT: {
     auditEventType: 'OTP_SENT',
@@ -1888,6 +1892,10 @@ export function maskIpAddressForCustomerDisplay(ip?: string | null): string {
  */
 export function isProhibitedActivityMetadataKey(key: string): boolean {
   const normalized = key.trim().toLowerCase();
+  // Safe taxonomy-permitted keys: sessionsInvalidated, revokedSessions
+  if (normalized === 'sessionsinvalidated' || normalized === 'revokedsessions') {
+    return false;
+  }
   return PROHIBITED_ACTIVITY_METADATA_SUBSTRINGS.some((forbidden) => normalized.includes(forbidden));
 }
 
@@ -2085,6 +2093,16 @@ export function resolveAuditEventToCustomerActivity(
       return CustomerActivityEventType.BILLING_COUNTRY_CONFIRMED;
     }
     return null;
+  }
+
+  if (auditEventType === 'PASSWORD_RESET_SUCCESS') {
+    if (
+      action === 'AUTHENTICATED_PASSWORD_CHANGE' ||
+      metadata?.operation === 'AUTHENTICATED_PASSWORD_CHANGE'
+    ) {
+      return CustomerActivityEventType.SECURITY_PASSWORD_CHANGED;
+    }
+    return CustomerActivityEventType.SECURITY_PASSWORD_RESET_COMPLETED;
   }
 
   const classification = EXISTING_AUDIT_EVENT_CLASSIFICATION[auditEventType];

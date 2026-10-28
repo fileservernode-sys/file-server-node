@@ -501,6 +501,19 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       data: { revokedAt: now }
     });
 
+    // 1. Evict active gateway WebSocket session immediately
+    defaultGatewayService.evictDeviceSession(deviceId, 'Device credentials revoked by user');
+
+    // 2. Invalidate active connection records and connectionTokens
+    await prisma.deviceConnection.updateMany({
+      where: { deviceId, status: { not: 'DISCONNECTED' } },
+      data: {
+        status: 'DISCONNECTED',
+        connectionToken: null,
+        disconnectedAt: now
+      }
+    });
+
     await prisma.auditEvent.create({
       data: {
         userId: user.id,

@@ -259,7 +259,7 @@ class RemoteNodeServerService : Service() {
             RemoteNodeTunnelManager.STATE_AUTHENTICATING -> "Personal file server on port $activePort | Gateway: Authenticating..."
             RemoteNodeTunnelManager.STATE_RECONNECTING -> "Personal file server on port $activePort | Gateway: Reconnecting..."
             RemoteNodeTunnelManager.STATE_NETWORK_UNAVAILABLE -> "Personal file server on port $activePort | Waiting for network..."
-            RemoteNodeTunnelManager.STATE_AUTH_FAILED -> "ZdexCloud — Device Authorization Required"
+            RemoteNodeTunnelManager.STATE_AUTH_FAILED -> "ZdexCloud: Device Authorization Required"
             RemoteNodeTunnelManager.STATE_ERROR -> "Personal file server on port $activePort | Gateway: Reconnecting..."
             RemoteNodeTunnelManager.STATE_STOPPED -> {
                 if (getDesiredTunnelEnabled(this)) {

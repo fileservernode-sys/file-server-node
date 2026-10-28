@@ -119,8 +119,13 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       if (!params.success) throw new ValidationError('Invalid server ID');
 
       const { serverId } = params.data;
-      const serverInstance = await prisma.serverInstance.findUnique({
-        where: { id: serverId },
+      const serverInstance = await prisma.serverInstance.findFirst({
+        where: {
+          OR: [
+            { id: serverId },
+            { deviceId: serverId }
+          ]
+        },
         include: { device: true, endpoints: true }
       });
 
@@ -223,8 +228,13 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
       const { serverId } = params.data;
       const { serverName } = body.data;
 
-      const serverInstance = await prisma.serverInstance.findUnique({
-        where: { id: serverId },
+      const serverInstance = await prisma.serverInstance.findFirst({
+        where: {
+          OR: [
+            { id: serverId },
+            { deviceId: serverId }
+          ]
+        },
         include: { device: true }
       });
 

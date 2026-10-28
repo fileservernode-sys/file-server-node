@@ -1,6 +1,6 @@
 /**
  * Administrative Database Management API Routes (/api/v1/admin/database)
- * Phase 15 Batch 15.1 & Batch 15.2 — Database Management Foundation & Professional Data Grid
+ * Phase 15 Batch 15.1 & Batch 15.2 - Database Management Foundation & Professional Data Grid
  *
  * Protected by admin authentication and 'database.management.view' RBAC permission.
  * Exposes secure, read-only metadata endpoints for schema inspection, table topology,
