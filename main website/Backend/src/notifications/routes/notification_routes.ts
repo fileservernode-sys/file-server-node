@@ -213,6 +213,38 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   });
 
   /**
+   * PATCH /api/v1/notifications/:notificationId/unread
+   * Marks a notification as unread (user ownership enforced).
+   */
+  app.patch(
+    '/notifications/:notificationId/unread',
+    {
+      config: {
+        rateLimit: customerStandardRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const { notificationId } = request.params as { notificationId: string };
+
+      const updated = await notificationRepository.markAsUnread(notificationId, user.id);
+      if (!updated) {
+        const existing = await notificationRepository.getNotificationById(notificationId);
+        if (existing && existing.userId !== user.id) {
+          throw new ForbiddenError('You do not have permission to modify this notification');
+        }
+        throw new NotFoundError(`Notification ${notificationId} not found`);
+      }
+
+      return reply.send(createSuccessResponse({
+        id: updated.id,
+        status: updated.status,
+        readAt: updated.readAt
+      }));
+    }
+  );
+
+  /**
    * PATCH /api/v1/notifications/:notificationId/archive
    * Marks a notification as archived (user ownership enforced).
    */

@@ -188,6 +188,21 @@ export class NotificationRepository {
     });
   }
 
+  public async markAsUnread(notificationId: string, userId: string) {
+    const existing = await prisma.notificationRecord.findFirst({
+      where: { id: notificationId, userId }
+    });
+    if (!existing) return null;
+
+    return prisma.notificationRecord.update({
+      where: { id: notificationId },
+      data: {
+        status: NotificationRecordStatus.UNREAD,
+        readAt: null
+      }
+    });
+  }
+
   public async markAllAsRead(userId: string): Promise<number> {
     const result = await prisma.notificationRecord.updateMany({
       where: {

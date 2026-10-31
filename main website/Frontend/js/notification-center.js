@@ -488,6 +488,22 @@
       }
     }
 
+    async markAsUnread(notificationId) {
+      try {
+        const res = await notifFetch(`${getApiBase()}/notifications/${notificationId}/unread`, {
+          method: 'PATCH'
+        });
+        if (res.ok) {
+          await this.fetchUnreadCount();
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.error('[NotificationCenter] Failed to mark as unread', err);
+        return false;
+      }
+    }
+
     async markAsArchived(notificationId) {
       try {
         const res = await notifFetch(`${getApiBase()}/notifications/${notificationId}/archive`, {
@@ -741,11 +757,21 @@
             ${deliveryBadgesHtml}
           </div>
 
-          <div class="rn-notif-card-actions" style="margin-top: 10px;">
-            ${targetWebPath ? `<a href="${targetWebPath}" class="btn btn-secondary btn-sm" style="min-height: 36px;">Open Target</a>` : ''}
-            ${isUnread ? `<button type="button" class="btn btn-ghost btn-sm btn-mark-read" data-id="${item.id}" style="min-height: 36px;">Mark as Read</button>` : '<span style="font-size: 12px; color: var(--color-text-tertiary);">Read</span>'}
-            ${isRetryable ? `<button type="button" class="btn btn-secondary btn-sm btn-retry-delivery" data-id="${item.id}" style="min-height: 36px;">Retry Delivery</button>` : ''}
-            <button type="button" class="btn btn-ghost btn-sm btn-archive" data-id="${item.id}" style="color: var(--color-text-tertiary); min-height: 36px;">Archive</button>
+          <div class="rn-notif-card-actions" style="margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            ${isUnread 
+              ? `<button type="button" class="btn btn-secondary btn-sm btn-mark-read" data-id="${item.id}" style="min-height: 32px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                   <span>Mark as Read</span>
+                 </button>` 
+              : `<button type="button" class="btn btn-ghost btn-sm btn-mark-unread" data-id="${item.id}" style="min-height: 32px; font-size: 12px; color: var(--color-text-secondary); display: inline-flex; align-items: center; gap: 6px;">
+                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                   <span>Mark as Unread</span>
+                 </button>
+                 <span class="rn-read-badge" style="font-size: 12px; color: var(--color-text-tertiary); display: inline-flex; align-items: center; gap: 4px;">
+                   <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-status-success, #10B981);" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                   <span>Read</span>
+                 </span>`
+            }
           </div>
         </div>
       `;
@@ -760,47 +786,12 @@
         });
       }
 
-      const btnRetryDelivery = div.querySelector('.btn-retry-delivery');
-      if (btnRetryDelivery) {
-        btnRetryDelivery.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (this.isRetryingDelivery.has(item.id)) return;
-          this.isRetryingDelivery.add(item.id);
-          btnRetryDelivery.disabled = true;
-          btnRetryDelivery.textContent = 'Retrying Delivery...';
-
-          try {
-            const res = await notifFetch(`${getApiBase()}/notifications/${item.id}/retry`, {
-              method: 'POST'
-            });
-            const resJson = await res.json().catch(() => ({}));
-
-            if (res.ok) {
-              btnRetryDelivery.textContent = 'Retried Successfully';
-              btnRetryDelivery.style.background = '#ECFDF5';
-              btnRetryDelivery.style.color = '#065F46';
-              btnRetryDelivery.style.borderColor = '#A7F3D0';
-              setTimeout(() => this.loadHistoryItems(), 1500);
-            } else {
-              btnRetryDelivery.textContent = 'Retry Unavailable';
-              alert(resJson.error?.message || 'Unable to retry notification delivery at this time.');
-              btnRetryDelivery.disabled = false;
-            }
-          } catch {
-            btnRetryDelivery.textContent = 'Network Error';
-            btnRetryDelivery.disabled = false;
-          } finally {
-            this.isRetryingDelivery.delete(item.id);
-          }
-        });
-      }
-
-      const btnArchive = div.querySelector('.btn-archive');
-      if (btnArchive) {
-        btnArchive.addEventListener('click', async () => {
-          btnArchive.disabled = true;
-          btnArchive.textContent = 'Archiving...';
-          await this.markAsArchived(item.id);
+      const btnUnread = div.querySelector('.btn-mark-unread');
+      if (btnUnread) {
+        btnUnread.addEventListener('click', async () => {
+          btnUnread.disabled = true;
+          btnUnread.textContent = 'Updating...';
+          await this.markAsUnread(item.id);
           await this.loadHistoryItems();
         });
       }
