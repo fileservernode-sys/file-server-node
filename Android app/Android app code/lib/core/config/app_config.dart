@@ -57,6 +57,14 @@ class AppConfig {
     );
   }
 
+  /// Base URL of web portal (e.g. https://zdexcloud.com or http://10.0.2.2:3000)
+  String get portalBaseUrl {
+    if (environment == 'development') {
+      return 'http://10.0.2.2:3000';
+    }
+    return 'https://$baseDomain';
+  }
+
   static AppConfig _current = AppConfig.testing();
 
   static AppConfig get current => _current;

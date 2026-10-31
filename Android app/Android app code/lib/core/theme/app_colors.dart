@@ -32,4 +32,9 @@ class AppColors {
 
   static const Color statusError = Color(0xFFDC2626); // Destructive Red
   static const Color statusErrorBg = Color(0xFFFEF2F2);
+
+  // General Semantic Aliases
+  static const Color error = statusError;
+  static const Color success = statusOnline;
+  static const Color warning = statusConnecting;
 }
