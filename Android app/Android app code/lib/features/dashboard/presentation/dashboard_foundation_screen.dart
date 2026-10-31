@@ -6,13 +6,16 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../setup/application/setup_state.dart';
 
 /// Dashboard Foundation Screen — Visually demonstrates the Android UI Design System
 class DashboardFoundationScreen extends StatelessWidget {
-  const DashboardFoundationScreen({super.key});
+  final SetupState? setupState;
+  const DashboardFoundationScreen({super.key, this.setupState});
 
   @override
   Widget build(BuildContext context) {
+    final setup = setupState ?? const SetupState();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const AppHeader(
@@ -152,14 +155,14 @@ class DashboardFoundationScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xl),
 
                   // Storage Capacity Summary Card
-                  const AppCard(
+                  AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
+                            const Expanded(
                               child: Row(
                                 children: [
                                   Icon(Icons.sd_storage_outlined, size: 20, color: AppColors.primary),
@@ -174,28 +177,59 @@ class DashboardFoundationScreen extends StatelessWidget {
                                 ],
                               ),
                             ),
-                            SizedBox(width: AppSpacing.xs),
-                            Text('64 GB Free', style: AppTypography.caption),
+                            const SizedBox(width: AppSpacing.xs),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySubtle,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                              ),
+                              child: Text(
+                                setup.formattedAvailable.isNotEmpty
+                                    ? '${setup.formattedAvailable} Free'
+                                    : 'Checking...',
+                                style: AppTypography.caption
+                                    .copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ],
                         ),
-                        SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.sm),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
-                              child: Text('0 GB used',
-                                  style: AppTypography.bodySmall,
-                                  softWrap: true),
+                              child: Text(
+                                setup.formattedUsed.isNotEmpty
+                                    ? '${setup.formattedUsed} used'
+                                    : 'Calculating...',
+                                style: AppTypography.bodySmall,
+                                softWrap: true,
+                              ),
                             ),
-                            Text('64 GB total', style: AppTypography.caption),
+                            Text(
+                              setup.formattedTotal.isNotEmpty
+                                  ? '${setup.formattedTotal} total'
+                                  : '',
+                              style: AppTypography.caption,
+                            ),
                           ],
                         ),
-                        SizedBox(height: AppSpacing.xs),
-                        LinearProgressIndicator(
-                          value: 0.0,
-                          minHeight: 8.0,
-                          backgroundColor: AppColors.surfaceSubtle,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                        const SizedBox(height: AppSpacing.xs),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                          child: LinearProgressIndicator(
+                            value: setup.resolvedUsageRatio,
+                            minHeight: 8.0,
+                            backgroundColor: AppColors.surfaceSubtle,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              setup.resolvedUsageRatio > 0.90
+                                  ? AppColors.error
+                                  : (setup.resolvedUsageRatio > 0.75
+                                      ? AppColors.warning
+                                      : AppColors.primary),
+                            ),
+                          ),
                         ),
                       ],
                     ),

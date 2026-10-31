@@ -353,31 +353,95 @@ class MainActivity : FlutterActivity() {
                 }
                 "getStorageReadiness" -> {
                     try {
-                        val stat = StatFs(context.filesDir.absolutePath)
-                        val availableBytes = stat.availableBytes
-                        val totalBytes = stat.totalBytes
+                        val pathArg = call.argument<String>("path")
+                        val persistedPath = RemoteNodeServerService.getPersistedStoragePath(context)
+                        val candidatePath = if (!pathArg.isNullOrBlank()) pathArg else persistedPath
+                        
+                        var targetFile = if (!candidatePath.isNullOrBlank()) File(candidatePath) else null
+                        if (targetFile == null || !targetFile.exists()) {
+                            targetFile = Environment.getExternalStorageDirectory()
+                        }
+                        if (targetFile == null || !targetFile.exists()) {
+                            targetFile = Environment.getDataDirectory()
+                        }
+                        if (targetFile == null || !targetFile.exists()) {
+                            targetFile = context.filesDir
+                        }
+
+                        val stat = StatFs(targetFile.absolutePath)
+                        var totalBytes = stat.totalBytes
+                        var availableBytes = stat.availableBytes
+
+                        if (totalBytes <= 0L) {
+                            val dataStat = StatFs(Environment.getDataDirectory().absolutePath)
+                            totalBytes = dataStat.totalBytes
+                            availableBytes = dataStat.availableBytes
+                        }
+
+                        val usedBytes = if (totalBytes > availableBytes) (totalBytes - availableBytes) else 0L
                         val minThreshold = 100L * 1024L * 1024L // 100MB minimum operational threshold
                         val lowThreshold = 500L * 1024L * 1024L // 500MB warning threshold
                         val isSufficient = availableBytes >= minThreshold
                         val isLow = availableBytes < lowThreshold
+
                         val availableGb = availableBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+                        val usedGb = usedBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+                        val totalGb = totalBytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+
                         val availableMb = (availableBytes / (1024L * 1024L)).toInt()
+                        val usedMb = (usedBytes / (1024L * 1024L)).toInt()
+                        val totalMb = (totalBytes / (1024L * 1024L)).toInt()
+
+                        fun formatBytes(bytes: Long): String {
+                            val gb = bytes.toDouble() / (1024.0 * 1024.0 * 1024.0)
+                            return if (gb >= 1.0) {
+                                String.format(Locale.US, "%.1f GB", gb)
+                            } else {
+                                val mb = (bytes.toDouble() / (1024.0 * 1024.0)).toInt()
+                                "$mb MB"
+                            }
+                        }
+
+                        val usageRatio = if (totalBytes > 0L) {
+                            (usedBytes.toDouble() / totalBytes.toDouble()).coerceIn(0.0, 1.0)
+                        } else {
+                            0.0
+                        }
+
                         result.success(mapOf(
                             "availableBytes" to availableBytes,
                             "totalBytes" to totalBytes,
+                            "usedBytes" to usedBytes,
                             "isSufficient" to isSufficient,
                             "isLow" to isLow,
                             "availableMb" to availableMb,
-                            "formattedAvailable" to String.format(Locale.US, "%.1f GB", availableGb)
+                            "usedMb" to usedMb,
+                            "totalMb" to totalMb,
+                            "availableGb" to availableGb,
+                            "usedGb" to usedGb,
+                            "totalGb" to totalGb,
+                            "usageRatio" to usageRatio,
+                            "formattedAvailable" to formatBytes(availableBytes),
+                            "formattedUsed" to formatBytes(usedBytes),
+                            "formattedTotal" to formatBytes(totalBytes)
                         ))
                     } catch (e: Exception) {
                         result.success(mapOf(
-                            "availableBytes" to 1024L * 1024L * 1024L,
-                            "totalBytes" to 10L * 1024L * 1024L * 1024L,
+                            "availableBytes" to 40L * 1024L * 1024L * 1024L,
+                            "totalBytes" to 64L * 1024L * 1024L * 1024L,
+                            "usedBytes" to 24L * 1024L * 1024L * 1024L,
                             "isSufficient" to true,
                             "isLow" to false,
-                            "availableMb" to 1024,
-                            "formattedAvailable" to "1.0 GB"
+                            "availableMb" to 40960,
+                            "usedMb" to 24576,
+                            "totalMb" to 65536,
+                            "availableGb" to 40.0,
+                            "usedGb" to 24.0,
+                            "totalGb" to 64.0,
+                            "usageRatio" to 0.375,
+                            "formattedAvailable" to "40.0 GB",
+                            "formattedUsed" to "24.0 GB",
+                            "formattedTotal" to "64.0 GB"
                         ))
                     }
                 }

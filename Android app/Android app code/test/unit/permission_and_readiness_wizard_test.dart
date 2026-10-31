@@ -38,7 +38,7 @@ class CustomMockServerService extends MockServerService {
   Future<String> getDeviceModel() async => mockDeviceModel;
 
   @override
-  Future<Map<String, dynamic>> getStorageReadiness() async => mockStorage;
+  Future<Map<String, dynamic>> getStorageReadiness({String? path}) async => mockStorage;
 
   @override
   Future<Map<String, dynamic>> getPowerReadiness() async => mockPower;

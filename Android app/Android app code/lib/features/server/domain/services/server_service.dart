@@ -17,7 +17,7 @@ abstract class ServerService {
   Future<bool> openNotificationSettings();
   Future<String> getDeviceModel();
   Future<String> getOsVersion();
-  Future<Map<String, dynamic>> getStorageReadiness();
+  Future<Map<String, dynamic>> getStorageReadiness({String? path});
   Future<Map<String, dynamic>> getPowerReadiness();
   Future<String> getDefaultStoragePath();
   Future<List<Map<String, dynamic>>> getAvailableStorageLocations();
@@ -201,19 +201,18 @@ class MethodChannelServerService implements ServerService {
   }
 
   @override
-  Future<Map<String, dynamic>> getStorageReadiness() async {
+  Future<Map<String, dynamic>> getStorageReadiness({String? path}) async {
     try {
-      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('getStorageReadiness');
-      return res != null ? Map<String, dynamic>.from(res) : {
-        'availableBytes': 1024 * 1024 * 1024,
-        'totalBytes': 10 * 1024 * 1024 * 1024,
-        'isSufficient': true,
-        'isLow': false,
-        'availableMb': 1024,
-        'formattedAvailable': '1.0 GB'
-      };
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        'getStorageReadiness',
+        path != null ? {'path': path} : null,
+      );
+      if (res != null) {
+        return Map<String, dynamic>.from(res);
+      }
+      return await const MockServerService().getStorageReadiness(path: path);
     } catch (e) {
-      return const MockServerService().getStorageReadiness();
+      return await const MockServerService().getStorageReadiness(path: path);
     }
   }
 
@@ -397,14 +396,23 @@ class MockServerService implements ServerService {
   }
 
   @override
-  Future<Map<String, dynamic>> getStorageReadiness() async {
+  Future<Map<String, dynamic>> getStorageReadiness({String? path}) async {
     return {
-      'availableBytes': 5 * 1024 * 1024 * 1024,
+      'availableBytes': 40 * 1024 * 1024 * 1024,
       'totalBytes': 64 * 1024 * 1024 * 1024,
+      'usedBytes': 24 * 1024 * 1024 * 1024,
       'isSufficient': true,
       'isLow': false,
-      'availableMb': 5120,
-      'formattedAvailable': '5.0 GB',
+      'availableMb': 40960,
+      'usedMb': 24576,
+      'totalMb': 65536,
+      'availableGb': 40.0,
+      'usedGb': 24.0,
+      'totalGb': 64.0,
+      'usageRatio': 0.375,
+      'formattedAvailable': '40.0 GB',
+      'formattedUsed': '24.0 GB',
+      'formattedTotal': '64.0 GB',
     };
   }
 

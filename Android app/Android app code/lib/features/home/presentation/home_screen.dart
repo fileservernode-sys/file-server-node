@@ -26,6 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(setupStateProvider.notifier).syncWithBackend();
+      ref.read(setupStateProvider.notifier).refreshStorageInfo();
     });
   }
 
@@ -66,6 +67,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             tooltip: 'Sync Server Status',
             onPressed: () {
               ref.read(setupStateProvider.notifier).syncWithBackend();
+              ref.read(setupStateProvider.notifier).refreshStorageInfo();
             },
           ),
         ],
@@ -281,7 +283,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                                 ),
                                 child: Text(
-                                  '64 GB Free',
+                                  setup.formattedAvailable.isNotEmpty
+                                      ? '${setup.formattedAvailable} Free'
+                                      : 'Checking...',
                                   style: AppTypography.caption
                                       .copyWith(color: AppColors.primary, fontWeight: FontWeight.bold),
                                 ),
@@ -289,25 +293,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: AppSpacing.sm),
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text('0 GB used',
-                                    style: AppTypography.bodySmall,
-                                    softWrap: true),
+                                child: Text(
+                                  setup.formattedUsed.isNotEmpty
+                                      ? '${setup.formattedUsed} used'
+                                      : 'Calculating...',
+                                  style: AppTypography.bodySmall,
+                                  softWrap: true,
+                                ),
                               ),
-                              Text('64 GB total', style: AppTypography.caption),
+                              Text(
+                                setup.formattedTotal.isNotEmpty
+                                    ? '${setup.formattedTotal} total'
+                                    : '',
+                                style: AppTypography.caption,
+                              ),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.xs),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                             child: LinearProgressIndicator(
-                              value: isOnline ? 0.15 : 0.0,
+                              value: setup.resolvedUsageRatio,
                               minHeight: 8.0,
                               backgroundColor: AppColors.surfaceSubtle,
-                              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                setup.resolvedUsageRatio > 0.90
+                                    ? AppColors.error
+                                    : (setup.resolvedUsageRatio > 0.75
+                                        ? AppColors.warning
+                                        : AppColors.primary),
+                              ),
                             ),
                           ),
                           const SizedBox(height: AppSpacing.sm),

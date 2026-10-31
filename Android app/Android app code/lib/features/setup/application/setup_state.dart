@@ -39,6 +39,14 @@ class SetupState {
   final String storagePath;
   final String storageFolderName;
 
+  final int availableBytes;
+  final int totalBytes;
+  final int usedBytes;
+  final String formattedAvailable;
+  final String formattedUsed;
+  final String formattedTotal;
+  final double storageUsageRatio;
+
   const SetupState({
     this.deviceName = 'Android Device',
     this.serverName = '',
@@ -63,7 +71,23 @@ class SetupState {
     this.activeServersCount = 1,
     this.storagePath = '/storage/emulated/0/Download',
     this.storageFolderName = 'Download Folder (Default)',
+    this.availableBytes = 0,
+    this.totalBytes = 0,
+    this.usedBytes = 0,
+    this.formattedAvailable = '',
+    this.formattedUsed = '',
+    this.formattedTotal = '',
+    this.storageUsageRatio = 0.0,
   });
+
+  /// Real physical host storage usage ratio between 0.0 and 1.0
+  double get resolvedUsageRatio {
+    if (storageUsageRatio > 0.0) return storageUsageRatio.clamp(0.0, 1.0);
+    if (totalBytes > 0 && usedBytes >= 0) {
+      return (usedBytes / totalBytes).clamp(0.0, 1.0);
+    }
+    return 0.0;
+  }
 
   /// Authoritative server running condition: Local engine running AND remote tunnel connected
   bool get isServerRunning => isLocalOnline && isGatewayConnected;
@@ -126,6 +150,13 @@ class SetupState {
     int? activeServersCount,
     String? storagePath,
     String? storageFolderName,
+    int? availableBytes,
+    int? totalBytes,
+    int? usedBytes,
+    String? formattedAvailable,
+    String? formattedUsed,
+    String? formattedTotal,
+    double? storageUsageRatio,
   }) {
     return SetupState(
       deviceName: deviceName ?? this.deviceName,
@@ -151,6 +182,13 @@ class SetupState {
       activeServersCount: activeServersCount ?? this.activeServersCount,
       storagePath: storagePath ?? this.storagePath,
       storageFolderName: storageFolderName ?? this.storageFolderName,
+      availableBytes: availableBytes ?? this.availableBytes,
+      totalBytes: totalBytes ?? this.totalBytes,
+      usedBytes: usedBytes ?? this.usedBytes,
+      formattedAvailable: formattedAvailable ?? this.formattedAvailable,
+      formattedUsed: formattedUsed ?? this.formattedUsed,
+      formattedTotal: formattedTotal ?? this.formattedTotal,
+      storageUsageRatio: storageUsageRatio ?? this.storageUsageRatio,
     );
   }
 }
@@ -241,6 +279,8 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         state = state.copyWith(storagePath: cachedPath);
       }
     } catch (_) {}
+
+    await refreshStorageInfo();
   }
 
   void setConfiguration({
@@ -292,6 +332,46 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       secureStorage.write(key: 'cached_storage_path', value: path.trim());
       secureStorage.write(key: 'cached_storage_folder_name', value: folderName.trim());
     } catch (_) {}
+
+    refreshStorageInfo(path: path.trim());
+  }
+
+  /// Queries the Android host filesystem for actual physical storage capacity and usage.
+  Future<void> refreshStorageInfo({String? path}) async {
+    if (!mounted) return;
+    try {
+      final serverService = _ref.read(serverServiceProvider);
+      final info = await serverService.getStorageReadiness(
+        path: path ?? (state.storagePath.isNotEmpty ? state.storagePath : null),
+      );
+      if (!mounted) return;
+
+      final avail = (info['availableBytes'] as num?)?.toInt() ?? 0;
+      final total = (info['totalBytes'] as num?)?.toInt() ?? 0;
+      final used = (info['usedBytes'] as num?)?.toInt() ?? ((total > avail) ? (total - avail) : 0);
+      final fmtAvail = info['formattedAvailable'] as String? ??
+          (avail > 0 ? '${(avail / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB' : '0 GB');
+      final fmtUsed = info['formattedUsed'] as String? ??
+          (used > 0 ? '${(used / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB' : '0 GB');
+      final fmtTotal = info['formattedTotal'] as String? ??
+          (total > 0 ? '${(total / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB' : '0 GB');
+      final ratio = (info['usageRatio'] as num?)?.toDouble() ??
+          ((total > 0) ? (used / total) : 0.0);
+
+      state = state.copyWith(
+        availableBytes: avail,
+        totalBytes: total,
+        usedBytes: used,
+        formattedAvailable: fmtAvail,
+        formattedUsed: fmtUsed,
+        formattedTotal: fmtTotal,
+        storageUsageRatio: ratio.clamp(0.0, 1.0),
+      );
+    } catch (e) {
+      if (mounted) {
+        AppLogger.warning('[SetupState] refreshStorageInfo error: $e');
+      }
+    }
   }
 
   /// Central Current-Device Resolution (Batch 5):
@@ -466,6 +546,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           activeServersCount: 0,
         );
       }
+      await refreshStorageInfo();
     } catch (_) {
       // Ignored if offline during initial sync
     }
