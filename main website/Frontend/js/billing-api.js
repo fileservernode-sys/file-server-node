@@ -11,12 +11,17 @@
  */
 (function(root, factory) {
   'use strict';
+  const instance = factory();
   if (typeof define === 'function' && define.amd) {
-    define([], factory);
+    define([], function() { return instance; });
   } else if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.BillingAPI = factory();
+    module.exports = instance;
+  }
+  if (root) {
+    root.BillingAPI = root.BillingAPI ? Object.assign(root.BillingAPI, instance) : instance;
+  }
+  if (typeof window !== 'undefined' && window !== root) {
+    window.BillingAPI = window.BillingAPI ? Object.assign(window.BillingAPI, instance) : instance;
   }
 }(typeof self !== 'undefined' ? self : this, function() {
   'use strict';

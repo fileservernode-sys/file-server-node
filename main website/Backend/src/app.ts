@@ -289,7 +289,7 @@ export async function buildApp(): Promise<FastifyInstance> {
     let filePath = path.normalize(path.join(baseDir, relativePath));
     const isAdminRoute = urlPath === '/admin' || urlPath.startsWith('/admin/');
 
-    const applyCacheHeaders = (isHtml: boolean, isAsset: boolean) => {
+    const applyCacheHeaders = (isHtml: boolean, isAsset: boolean, ext: string = '') => {
       if (isHtml) {
         if (isAdminRoute || filePath.includes(`${path.sep}admin`)) {
           reply.header('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -298,6 +298,9 @@ export async function buildApp(): Promise<FastifyInstance> {
         } else {
           reply.header('Cache-Control', 'no-cache, must-revalidate');
         }
+      } else if (ext === '.js' || ext === '.css') {
+        reply.header('Cache-Control', 'no-cache, must-revalidate');
+        reply.header('Pragma', 'no-cache');
       } else if (isAsset) {
         if (isAdminRoute || filePath.includes(`${path.sep}admin`)) {
           reply.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
@@ -313,7 +316,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       const contentType = MIME_TYPES[ext] || 'application/octet-stream';
       const isHtml = ext === '.html';
       const isAsset = ext === '.css' || ext === '.js' || ext === '.svg' || ext === '.png' || ext === '.jpg' || ext === '.woff' || ext === '.woff2' || ext === '.ico';
-      applyCacheHeaders(isHtml, isAsset);
+      applyCacheHeaders(isHtml, isAsset, ext);
       reply.type(contentType);
       return reply.send(fs.createReadStream(filePath));
     }

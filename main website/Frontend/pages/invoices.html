@@ -727,12 +727,12 @@
   </footer>
 
   <!-- CORE SCRIPTS -->
-  <script src="../js/motion.js"></script>
-  <script src="../js/auth.js"></script>
-  <script src="../js/billing-api.js"></script>
-  <script src="../js/billing-state.js"></script>
-  <script src="../js/notification-center.js"></script>
-  <script src="../js/main.js"></script>
+  <script src="../js/motion.js?v=2.1.0"></script>
+  <script src="../js/auth.js?v=2.1.0"></script>
+  <script src="../js/billing-api.js?v=2.1.0"></script>
+  <script src="../js/billing-state.js?v=2.1.0"></script>
+  <script src="../js/notification-center.js?v=2.1.0"></script>
+  <script src="../js/main.js?v=2.1.0"></script>
   <script>
     let currentPage = 1;
     let totalPages = 1;
@@ -835,7 +835,16 @@
       if (errorBox) errorBox.style.display = 'none';
 
       try {
-        const response = await BillingAPI.getInvoices(page, 10);
+        let response;
+        if (typeof BillingAPI !== 'undefined' && typeof BillingAPI.getInvoices === 'function') {
+          response = await BillingAPI.getInvoices(page, 10);
+        } else if (typeof window !== 'undefined' && typeof window.apiRequest === 'function') {
+          response = await window.apiRequest('/billing/invoices?page=' + page + '&limit=10', 'GET');
+        } else if (typeof apiRequest === 'function') {
+          response = await apiRequest('/billing/invoices?page=' + page + '&limit=10', 'GET');
+        } else {
+          throw new Error('Billing API client is not initialized in the current browser runtime.');
+        }
 
         if (skeleton) skeleton.style.display = 'none';
 
@@ -1033,10 +1042,33 @@
 
     async function downloadInvoiceFile(invoiceId) {
       try {
-        const res = await BillingAPI.downloadInvoice(invoiceId);
+        if (typeof BillingAPI !== 'undefined' && typeof BillingAPI.downloadInvoice === 'function') {
+          const res = await BillingAPI.downloadInvoice(invoiceId);
+          if (res && res.ok) return;
+        }
+
+        const base = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : '/api/v1';
+        const url = base + '/billing/invoices/' + encodeURIComponent(invoiceId) + '/download';
+        const res = await fetch(url, { method: 'GET', credentials: 'include' });
         if (!res.ok) {
           alert('Could not download statutory invoice PDF. The document may still be issuing or not yet available.');
+          return;
         }
+
+        const disposition = res.headers.get('content-disposition') || '';
+        let filename = 'invoice-' + invoiceId + '.pdf';
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/i);
+        if (match && match[1]) filename = match[1].trim();
+
+        const blob = await res.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(downloadUrl);
       } catch (err) {
         alert('Could not download statutory invoice PDF. Please try again later.');
       }
