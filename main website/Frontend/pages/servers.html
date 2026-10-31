@@ -1082,11 +1082,26 @@
         <div id="delete-purge-warning" style="display: none; background: #FFF1F2; border: 1px solid #FECDD3; border-radius: var(--radius-sm, 6px); padding: 8px 12px; font-size: 11px; color: #9F1239; margin-bottom: var(--space-sm);">
           <strong>Notice:</strong> The host phone must be connected to the gateway to automatically purge files remotely. If offline, the server registration will still be removed from your account.
         </div>
+
+        <!-- Confirmation Phrase Input -->
+        <div style="margin-top: var(--space-md); padding-top: var(--space-sm); border-top: 1px solid var(--color-border-subtle, #E2E8F0);">
+          <label for="delete-confirm-input" style="display: block; font-size: 12px; font-weight: 500; color: var(--color-text-primary, #0F172A); margin-bottom: 6px;">
+            To confirm, type <strong id="delete-confirm-phrase" style="color: #991B1B; font-family: var(--font-family-mono, monospace); background: #FEE2E2; padding: 2px 6px; border-radius: 4px; user-select: all;">...</strong> below:
+          </label>
+          <input 
+            type="text" 
+            id="delete-confirm-input" 
+            autocomplete="off" 
+            placeholder="Type confirmation phrase here" 
+            style="width: 100%; box-sizing: border-box; padding: 8px 12px; font-size: 13px; font-family: var(--font-family-mono, monospace); border: 1px solid var(--color-border-subtle, #CBD5E1); border-radius: var(--radius-sm, 6px); outline: none; transition: border-color 0.2s;"
+            oninput="validateDeleteConfirmationInput()"
+          />
+        </div>
       </div>
       <input type="hidden" id="delete-target-id-input">
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeAllActionModals()">Cancel</button>
-        <button type="button" id="btn-confirm-delete" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; border: 1px solid #DC2626;" onclick="handleDeleteConfirm()">
+        <button type="button" id="btn-confirm-delete" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; border: 1px solid #DC2626; opacity: 0.45; cursor: not-allowed;" disabled onclick="handleDeleteConfirm()">
           <span class="btn-text">Delete Server (Keep Files)</span>
         </button>
       </div>
@@ -1921,6 +1936,32 @@
           if (warningBox) warningBox.style.display = 'none';
           if (confirmBtn) confirmBtn.querySelector('.btn-text').textContent = 'Delete Server (Keep Files)';
         }
+        validateDeleteConfirmationInput();
+      }
+    }
+
+    let currentDeleteExpectedPhrase = '';
+
+    function validateDeleteConfirmationInput() {
+      const input = document.getElementById('delete-confirm-input');
+      const btn = document.getElementById('btn-confirm-delete');
+      if (!btn) return;
+
+      const typed = input ? input.value.trim() : '';
+      const isMatch = Boolean(currentDeleteExpectedPhrase && typed === currentDeleteExpectedPhrase);
+
+      if (isMatch) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        if (input) input.style.borderColor = '#16A34A';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.45';
+        btn.style.cursor = 'not-allowed';
+        if (input) {
+          input.style.borderColor = typed.length > 0 ? '#DC2626' : 'var(--color-border-subtle, #CBD5E1)';
+        }
       }
     }
 
@@ -1932,6 +1973,19 @@
       const targetNameEl = document.getElementById('delete-target-name');
       const targetIdEl = document.getElementById('delete-target-id');
 
+      const trimmedName = (serverName || 'Server').trim();
+      currentDeleteExpectedPhrase = `${trimmedName} DELETE`;
+
+      const phraseEl = document.getElementById('delete-confirm-phrase');
+      if (phraseEl) phraseEl.textContent = currentDeleteExpectedPhrase;
+
+      const confirmInput = document.getElementById('delete-confirm-input');
+      if (confirmInput) {
+        confirmInput.value = '';
+        confirmInput.placeholder = currentDeleteExpectedPhrase;
+        confirmInput.style.borderColor = 'var(--color-border-subtle, #CBD5E1)';
+      }
+
       if (targetIdInput) targetIdInput.value = deviceId;
       if (targetNameEl) targetNameEl.textContent = serverName;
       if (targetIdEl) targetIdEl.textContent = `ID: ${serverId}`;
@@ -1939,9 +1993,13 @@
       const preserveRadio = document.getElementById('delete-opt-preserve');
       if (preserveRadio) preserveRadio.checked = true;
       updateDeleteModalUi();
+      validateDeleteConfirmationInput();
 
       backdrop.style.display = 'block';
       modal.style.display = 'block';
+      if (confirmInput) {
+        setTimeout(() => confirmInput.focus(), 50);
+      }
     }
 
     async function handleDeleteConfirm() {
@@ -1949,8 +2007,14 @@
       const deviceId = document.getElementById('delete-target-id-input')?.value;
       const btn = document.getElementById('btn-confirm-delete');
       const deleteFiles = document.getElementById('delete-opt-purge')?.checked === true;
+      const typed = document.getElementById('delete-confirm-input')?.value?.trim();
 
       if (!deviceId) return;
+
+      if (!currentDeleteExpectedPhrase || typed !== currentDeleteExpectedPhrase) {
+        showToast(`Please type "${currentDeleteExpectedPhrase}" to confirm deletion.`, 'error');
+        return;
+      }
 
       isActionSubmitting = true;
       if (btn) {

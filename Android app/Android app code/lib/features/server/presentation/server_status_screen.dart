@@ -200,6 +200,13 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
   Future<void> _handleDeleteServer() async {
     bool deleteFiles = false;
+    final setup = ref.read(setupStateProvider);
+    final targetServerName = setup.serverName.isNotEmpty
+        ? setup.serverName
+        : (setup.deviceName.isNotEmpty ? setup.deviceName : 'Server');
+    final expectedPhrase = '${targetServerName.trim()} DELETE';
+    final confirmController = TextEditingController();
+    bool isPhraseMatching = false;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -226,6 +233,42 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.statusError.withValues(alpha: 0.08),
+                    border: Border.all(
+                      color: AppColors.statusError.withValues(alpha: 0.25),
+                    ),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        targetServerName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.statusError,
+                          fontSize: 14,
+                        ),
+                      ),
+                      if (setup.deviceId != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          'ID: ${setup.deviceId}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.statusError.withValues(alpha: 0.8),
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
                 const Text(
                   'Choose whether to preserve or purge your uploaded files when deleting this server node:',
                   style: AppTypography.bodySmall,
@@ -362,6 +405,81 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                     ),
                   ),
                 ),
+
+                const SizedBox(height: AppSpacing.md),
+                const Divider(height: 1),
+                const SizedBox(height: AppSpacing.md),
+
+                Text.rich(
+                  TextSpan(
+                    text: 'To confirm, type ',
+                    style: AppTypography.bodySmall,
+                    children: [
+                      TextSpan(
+                        text: expectedPhrase,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.statusError,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const TextSpan(text: ' in the box below:'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                TextField(
+                  controller: confirmController,
+                  autofocus: false,
+                  decoration: InputDecoration(
+                    hintText: expectedPhrase,
+                    hintStyle: TextStyle(
+                      color: AppColors.textMuted.withValues(alpha: 0.6),
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surfaceSubtle,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      borderSide: const BorderSide(color: AppColors.borderSubtle),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      borderSide: BorderSide(
+                        color: isPhraseMatching
+                            ? AppColors.success
+                            : AppColors.borderSubtle,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      borderSide: BorderSide(
+                        color: isPhraseMatching
+                            ? AppColors.success
+                            : AppColors.statusError,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  onChanged: (val) {
+                    final matches = val.trim() == expectedPhrase;
+                    if (matches != isPhraseMatching) {
+                      setDialogState(() {
+                        isPhraseMatching = matches;
+                      });
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -376,11 +494,14 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                 backgroundColor: AppColors.statusError,
                 foregroundColor: Colors.white,
                 elevation: 0,
+                disabledBackgroundColor:
+                    AppColors.statusError.withValues(alpha: 0.35),
+                disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                 ),
               ),
-              onPressed: () => Navigator.pop(ctx, true),
+              onPressed: isPhraseMatching ? () => Navigator.pop(ctx, true) : null,
               child: Text(deleteFiles
                   ? 'Delete & Purge Files'
                   : 'Delete Server (Keep Files)'),
@@ -390,6 +511,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
       ),
     );
 
+    confirmController.dispose();
     if (confirmed != true) return;
 
     setState(() => _isLoading = true);
