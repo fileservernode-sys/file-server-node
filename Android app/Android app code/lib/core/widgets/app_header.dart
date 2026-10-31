@@ -84,6 +84,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                           child: Text(
                             title,
                             style: AppTypography.cardTitle,
+                            softWrap: true,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -99,6 +101,8 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                         subtitle!,
                         style: AppTypography.caption
                             .copyWith(color: AppColors.textSecondary),
+                        softWrap: true,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

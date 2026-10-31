@@ -65,7 +65,10 @@ class PrimaryButton extends StatelessWidget {
                   Flexible(
                     child: Text(
                       label,
+                      textAlign: TextAlign.center,
                       style: AppTypography.button.copyWith(color: Colors.white),
+                      softWrap: true,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -141,8 +144,11 @@ class SecondaryButton extends StatelessWidget {
                   Flexible(
                     child: Text(
                       label,
+                      textAlign: TextAlign.center,
                       style: AppTypography.button
                           .copyWith(color: AppColors.textPrimary),
+                      softWrap: true,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -200,7 +206,10 @@ class TertiaryButton extends StatelessWidget {
             Flexible(
               child: Text(
                 label,
+                textAlign: TextAlign.center,
                 style: AppTypography.button.copyWith(color: AppColors.primary),
+                softWrap: true,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -269,7 +278,10 @@ class DestructiveButton extends StatelessWidget {
                   Flexible(
                     child: Text(
                       label,
+                      textAlign: TextAlign.center,
                       style: AppTypography.button.copyWith(color: Colors.white),
+                      softWrap: true,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),

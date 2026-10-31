@@ -154,7 +154,8 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                                           ? setup.serverName
                                           : setup.deviceName,
                                       style: AppTypography.cardTitle,
-                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
+                                      maxLines: 2,
                                     ),
                                     const SizedBox(height: AppSpacing.xxs),
                                     Text(
@@ -163,7 +164,8 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                                         fontFamily: 'monospace',
                                         color: AppColors.textSecondary,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
+                                      maxLines: 2,
                                     ),
                                   ],
                                 ),
@@ -197,7 +199,7 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.primary,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
                                 ),
                               ),
                             ],
@@ -230,11 +232,11 @@ class _ServerScreenState extends ConsumerState<ServerScreen> {
                                     Icon(Icons.hub_outlined,
                                         size: 20, color: AppColors.primary),
                                     SizedBox(width: AppSpacing.xs),
-                                    Flexible(
+                                    Expanded(
                                       child: Text(
                                         'Outbound Gateway Relay',
                                         style: AppTypography.cardTitle,
-                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
                                       ),
                                     ),
                                   ],

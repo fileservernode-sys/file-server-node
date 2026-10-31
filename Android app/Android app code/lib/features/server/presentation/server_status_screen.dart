@@ -73,10 +73,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
             children: [
               Icon(Icons.notifications_active_outlined, color: AppColors.primary, size: 24),
               SizedBox(width: AppSpacing.xs),
-              Flexible(
+              Expanded(
                 child: Text('Enable Notification',
                     style: AppTypography.cardTitle,
-                    overflow: TextOverflow.ellipsis),
+                    softWrap: true),
               ),
             ],
           ),
@@ -150,10 +150,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
           children: [
             Icon(Icons.pause_circle_outline, color: AppColors.textSecondary, size: 24),
             SizedBox(width: AppSpacing.xs),
-            Flexible(
+            Expanded(
               child: Text('Stop Local Server?',
                   style: AppTypography.cardTitle,
-                  overflow: TextOverflow.ellipsis),
+                  softWrap: true),
             ),
           ],
         ),
@@ -221,10 +221,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
               Icon(Icons.warning_amber_rounded,
                   color: AppColors.statusError, size: 24),
               SizedBox(width: AppSpacing.xs),
-              Flexible(
+              Expanded(
                 child: Text('Delete Server Node',
                     style: AppTypography.cardTitle,
-                    overflow: TextOverflow.ellipsis),
+                    softWrap: true),
               ),
             ],
           ),
@@ -562,10 +562,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                                   Icon(Icons.public_rounded,
                                       color: AppColors.primary, size: 22),
                                   SizedBox(width: AppSpacing.xs),
-                                  Flexible(
+                                  Expanded(
                                     child: Text('Access Your Server',
                                         style: AppTypography.cardTitle,
-                                        overflow: TextOverflow.ellipsis),
+                                        softWrap: true),
                                   ),
                                 ],
                               ),
@@ -615,10 +615,14 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(Icons.workspace_premium_rounded,
                                     color: AppColors.primary, size: 20),
@@ -638,7 +642,7 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                                     BorderRadius.circular(AppSpacing.radiusFull),
                               ),
                               child: Text(
-                                '${setup.activeServersCount} / ${setup.maxServers} Active Server Node${setup.maxServers > 1 ? 's' : ''}',
+                                '${setup.activeServersCount} / ${setup.maxServers} Active Node${setup.maxServers > 1 ? 's' : ''}',
                                 style: AppTypography.caption.copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.w600,
@@ -673,11 +677,11 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                               Icon(Icons.battery_alert_rounded,
                                   size: 22, color: AppColors.statusConnecting),
                               SizedBox(width: AppSpacing.xs),
-                              Flexible(
+                              Expanded(
                                 child: Text(
                                   'Background Optimization Active',
                                   style: AppTypography.cardTitle,
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
                                 ),
                               ),
                             ],
@@ -732,14 +736,15 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                                         ? setup.deviceName
                                         : 'Personal File Server',
                                     style: AppTypography.cardTitle,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    maxLines: 2,
                                   ),
                                   const SizedBox(height: AppSpacing.xxs),
                                   Text(
                                     'Node ID: ${setup.deviceId ?? 'inst-local-node-01'}',
                                     style: AppTypography.caption
                                         .copyWith(fontFamily: 'monospace'),
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
                                   ),
                                 ],
                               ),
@@ -885,20 +890,44 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.caption),
-        const SizedBox(width: AppSpacing.xs),
-        Flexible(
-          child: Text(
-            value,
-            style:
-                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w500),
-            overflow: TextOverflow.ellipsis,
+    final isMonospace = value.startsWith('/') ||
+        value.startsWith('http') ||
+        value.startsWith('inst-');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: AppTypography.caption
+                  .copyWith(color: AppColors.textSecondary),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: isMonospace
+                  ? AppTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    )
+                  : AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+              softWrap: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

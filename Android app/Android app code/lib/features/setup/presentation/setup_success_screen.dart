@@ -90,10 +90,10 @@ class SetupSuccessScreen extends ConsumerWidget {
                                     Icon(Icons.public_rounded,
                                         color: AppColors.primary, size: 22),
                                     SizedBox(width: AppSpacing.xs),
-                                    Flexible(
+                                    Expanded(
                                       child: Text('Access Your Server',
                                           style: AppTypography.cardTitle,
-                                          overflow: TextOverflow.ellipsis),
+                                          softWrap: true),
                                     ),
                                   ],
                                 ),
@@ -139,7 +139,7 @@ class SetupSuccessScreen extends ConsumerWidget {
                               const Expanded(
                                 child: Text('Local Node Details',
                                     style: AppTypography.cardTitle,
-                                    overflow: TextOverflow.ellipsis),
+                                    softWrap: true),
                               ),
                               const SizedBox(width: AppSpacing.xs),
                               StatusBadge(
@@ -215,19 +215,42 @@ class _SuccessRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.caption),
-        Flexible(
-          child: Text(
-            value,
-            style:
-                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
+    final isMonospace = value.startsWith('http') || value.startsWith('/');
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: AppTypography.caption
+                  .copyWith(color: AppColors.textSecondary),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: isMonospace
+                  ? AppTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    )
+                  : AppTypography.bodySmall.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+              softWrap: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

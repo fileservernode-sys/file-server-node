@@ -228,21 +228,21 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Row(
+                                      Wrap(
+                                        spacing: AppSpacing.xs,
+                                        runSpacing: 2,
+                                        crossAxisAlignment:
+                                            WrapCrossAlignment.center,
                                         children: [
-                                          Flexible(
-                                            child: Text(
-                                              name,
-                                              style: AppTypography.cardTitle.copyWith(
-                                                color: isSelected
-                                                    ? AppColors.primary
-                                                    : AppColors.textPrimary,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
+                                          Text(
+                                            name,
+                                            style: AppTypography.cardTitle.copyWith(
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
                                             ),
                                           ),
                                           if (isDefault) ...[
-                                            const SizedBox(width: AppSpacing.xs),
                                             Container(
                                               padding: const EdgeInsets.symmetric(
                                                 horizontal: AppSpacing.xs,
@@ -275,7 +275,7 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
                                           color: AppColors.textSecondary,
                                           fontFamily: 'monospace',
                                         ),
-                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
                                       ),
                                     ],
                                   ),

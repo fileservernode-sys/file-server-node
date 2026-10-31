@@ -46,7 +46,6 @@ class DashboardFoundationScreen extends StatelessWidget {
                             const Text(
                               'Welcome back',
                               style: AppTypography.pageTitle,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -98,7 +97,8 @@ class DashboardFoundationScreen extends StatelessWidget {
                                   Text(
                                     'Android Phone Host Node',
                                     style: AppTypography.cardTitle,
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    maxLines: 2,
                                   ),
                                   SizedBox(height: 2),
                                   Text(
@@ -164,11 +164,11 @@ class DashboardFoundationScreen extends StatelessWidget {
                                 children: [
                                   Icon(Icons.sd_storage_outlined, size: 20, color: AppColors.primary),
                                   SizedBox(width: AppSpacing.xs),
-                                  Flexible(
+                                  Expanded(
                                     child: Text(
                                       'Host Storage Capacity',
                                       style: AppTypography.cardTitle,
-                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
                                     ),
                                   ),
                                 ],
@@ -185,7 +185,7 @@ class DashboardFoundationScreen extends StatelessWidget {
                             Expanded(
                               child: Text('0 GB used',
                                   style: AppTypography.bodySmall,
-                                  overflow: TextOverflow.ellipsis),
+                                  softWrap: true),
                             ),
                             Text('64 GB total', style: AppTypography.caption),
                           ],

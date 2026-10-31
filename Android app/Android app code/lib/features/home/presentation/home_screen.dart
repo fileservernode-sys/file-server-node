@@ -80,28 +80,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Page Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xs,
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Control Center',
-                              style: AppTypography.caption
-                                  .copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Server Control Center',
-                              style: AppTypography.pageTitle,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Control Center',
+                            style: AppTypography.caption
+                                .copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Server Control Center',
+                            style: AppTypography.pageTitle,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.xs),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -178,7 +177,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     Text(
                                       displayName,
                                       style: AppTypography.cardTitle,
-                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: true,
+                                      maxLines: 2,
                                     ),
                                     const SizedBox(height: 2),
                                     const Text(
@@ -263,11 +263,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   children: [
                                     Icon(Icons.sd_storage_outlined, size: 20, color: AppColors.primary),
                                     SizedBox(width: AppSpacing.xs),
-                                    Flexible(
+                                    Expanded(
                                       child: Text(
                                         'Host Storage Capacity',
                                         style: AppTypography.cardTitle,
-                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: true,
                                       ),
                                     ),
                                   ],
@@ -295,7 +295,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Expanded(
                                 child: Text('0 GB used',
                                     style: AppTypography.bodySmall,
-                                    overflow: TextOverflow.ellipsis),
+                                    softWrap: true),
                               ),
                               Text('64 GB total', style: AppTypography.caption),
                             ],
@@ -338,7 +338,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Text(
                                   setup.deviceName,
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                  maxLines: 2,
                                 ),
                               ],
                             ),
@@ -357,7 +358,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Text(
                                   isOnline ? 'Port 8080' : 'Idle',
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                  maxLines: 2,
                                 ),
                               ],
                             ),
@@ -389,7 +391,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                   : 'Connecting'))
                                           : 'Disconnected'),
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                  maxLines: 2,
                                 ),
                               ],
                             ),
@@ -408,7 +411,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 Text(
                                   '${setup.activeServersCount} / ${setup.maxServers} Limit',
                                   style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                  maxLines: 2,
                                 ),
                               ],
                             ),

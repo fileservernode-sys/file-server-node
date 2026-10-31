@@ -118,10 +118,10 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
             children: [
               Icon(Icons.notifications_active_outlined, color: AppColors.primary, size: 24),
               SizedBox(width: AppSpacing.xs),
-              Flexible(
+              Expanded(
                 child: Text('Enable Server Notifications',
                     style: AppTypography.cardTitle,
-                    overflow: TextOverflow.ellipsis),
+                    softWrap: true),
               ),
             ],
           ),
@@ -171,10 +171,10 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
             children: [
               Icon(Icons.battery_alert_rounded, color: AppColors.statusConnecting, size: 24),
               SizedBox(width: AppSpacing.xs),
-              Flexible(
+              Expanded(
                 child: Text('Always-On Server Battery Mode',
                     style: AppTypography.cardTitle,
-                    overflow: TextOverflow.ellipsis),
+                    softWrap: true),
               ),
             ],
           ),

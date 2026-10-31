@@ -76,7 +76,8 @@ class SettingsScreen extends ConsumerWidget {
                                     style: AppTypography.bodySmall.copyWith(
                                         color: AppColors.textSecondary,
                                         fontWeight: FontWeight.w500),
-                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: true,
+                                    maxLines: 2,
                                   ),
                                 ],
                               ),
@@ -139,7 +140,8 @@ class SettingsScreen extends ConsumerWidget {
                                 children: [
                                   Text(deviceName,
                                       style: AppTypography.cardTitle,
-                                      overflow: TextOverflow.ellipsis),
+                                      softWrap: true,
+                                      maxLines: 2),
                                   const Text(
                                     'Physical Android Host Node',
                                     style: AppTypography.caption,
@@ -452,25 +454,39 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: AppTypography.caption),
-        Flexible(
-          child: Text(
-            value,
-            style: isMonospace
-                ? AppTypography.caption.copyWith(
-                    fontFamily: 'monospace',
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  )
-                : AppTypography.bodySmall
-                    .copyWith(fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: AppTypography.caption
+                  .copyWith(color: AppColors.textSecondary),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: isMonospace
+                  ? AppTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    )
+                  : AppTypography.bodySmall
+                      .copyWith(fontWeight: FontWeight.w600),
+              softWrap: true,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
