@@ -9,6 +9,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
+import '../../auth/application/auth_state.dart';
 import '../../setup/application/setup_state.dart';
 
 /// Server Status Detail Screen - Displays local HTTP file server engine state, public subdomain endpoint, and control triggers
@@ -200,13 +201,32 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
 
   Future<void> _handleDeleteServer() async {
     bool deleteFiles = false;
-    final setup = ref.read(setupStateProvider);
-    final targetServerName = setup.serverName.isNotEmpty
-        ? setup.serverName
-        : (setup.deviceName.isNotEmpty ? setup.deviceName : 'Server');
+    var setup = ref.read(setupStateProvider);
+
+    // If serverName is empty, attempt an immediate sync with backend to resolve the authoritative server name
+    if (setup.serverName.trim().isEmpty) {
+      await ref.read(setupStateProvider.notifier).syncWithBackend();
+      setup = ref.read(setupStateProvider);
+    }
+
+    String resolvedServerName = setup.serverName.trim();
+    if (resolvedServerName.isEmpty) {
+      try {
+        final cached = await ref.read(secureStorageProvider).read(key: 'cached_server_name');
+        if (cached != null && cached.trim().isNotEmpty) {
+          resolvedServerName = cached.trim();
+        }
+      } catch (_) {}
+    }
+
+    final targetServerName = resolvedServerName.isNotEmpty
+        ? resolvedServerName
+        : 'Server';
     final expectedPhrase = '${targetServerName.trim()} DELETE';
     final confirmController = TextEditingController();
     bool isPhraseMatching = false;
+
+    if (!mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -255,10 +275,10 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                           fontSize: 14,
                         ),
                       ),
-                      if (setup.deviceId != null) ...[
+                      if (setup.serverInstanceId != null || setup.deviceId != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'ID: ${setup.deviceId}',
+                          'ID: ${setup.serverInstanceId ?? setup.deviceId}',
                           style: TextStyle(
                             fontSize: 11,
                             color: AppColors.statusError.withValues(alpha: 0.8),

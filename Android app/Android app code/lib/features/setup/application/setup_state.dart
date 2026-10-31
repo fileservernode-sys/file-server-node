@@ -225,6 +225,22 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         state = state.copyWith(deviceName: model);
       }
     } catch (_) {}
+
+    try {
+      final secureStorage = _ref.read(secureStorageProvider);
+      final cachedServer = await secureStorage.read(key: 'cached_server_name');
+      final cachedFolder = await secureStorage.read(key: 'cached_storage_folder_name');
+      final cachedPath = await secureStorage.read(key: 'cached_storage_path');
+      if (cachedServer != null && cachedServer.isNotEmpty && state.serverName.isEmpty) {
+        state = state.copyWith(serverName: cachedServer);
+      }
+      if (cachedFolder != null && cachedFolder.isNotEmpty && state.storageFolderName.isEmpty) {
+        state = state.copyWith(storageFolderName: cachedFolder);
+      }
+      if (cachedPath != null && cachedPath.isNotEmpty && state.storagePath.isEmpty) {
+        state = state.copyWith(storagePath: cachedPath);
+      }
+    } catch (_) {}
   }
 
   void setConfiguration({
@@ -243,6 +259,11 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       fileServerPassword: 'registered_account_auth',
       errorMessage: null,
     );
+
+    try {
+      final secureStorage = _ref.read(secureStorageProvider);
+      secureStorage.write(key: 'cached_server_name', value: serverName.trim());
+    } catch (_) {}
   }
 
   void setCredentials({
@@ -265,6 +286,12 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       storageFolderName: folderName.trim(),
       errorMessage: null,
     );
+
+    try {
+      final secureStorage = _ref.read(secureStorageProvider);
+      secureStorage.write(key: 'cached_storage_path', value: path.trim());
+      secureStorage.write(key: 'cached_storage_folder_name', value: folderName.trim());
+    } catch (_) {}
   }
 
   /// Central Current-Device Resolution (Batch 5):
@@ -349,6 +376,20 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final devName = currentDev['deviceName'] as String? ?? state.deviceName;
         final srv = currentDev['server'] as Map<String, dynamic>?;
         final srvId = srv?['id'] as String?;
+        final srvServerName = (srv?['serverName'] as String?)?.trim();
+        final srvName = (srvServerName != null && srvServerName.isNotEmpty)
+            ? srvServerName
+            : ((srv?['name'] as String?)?.trim() ??
+                ((currentDev['serverName'] as String?)?.trim() ??
+                    state.serverName));
+
+        if (srvName.isNotEmpty) {
+          try {
+            final secureStorage = _ref.read(secureStorageProvider);
+            secureStorage.write(key: 'cached_server_name', value: srvName);
+          } catch (_) {}
+        }
+
         final ep = srv?['endpoint'] as Map<String, dynamic>?;
         final hostname = ep?['hostname'] as String?;
         final pubUrl = ep?['publicUrl'] as String? ?? (hostname != null ? 'https://$hostname' : null);
@@ -398,6 +439,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           deviceId: devId,
           serverInstanceId: srvId,
           deviceName: devName,
+          serverName: srvName.isNotEmpty ? srvName : state.serverName,
           assignedSubdomain: hostname,
           publicUrl: pubUrl,
           endpointStatus: epStatus,
@@ -797,6 +839,9 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
       try {
         final secureStorage = _ref.read(secureStorageProvider);
         await secureStorage.delete(key: 'device_credential');
+        await secureStorage.delete(key: 'cached_server_name');
+        await secureStorage.delete(key: 'cached_storage_folder_name');
+        await secureStorage.delete(key: 'cached_storage_path');
       } catch (_) {}
       state = const SetupState();
       return true;
