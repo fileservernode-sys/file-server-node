@@ -71,7 +71,8 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
           select: {
             notificationId: true,
             channel: true,
-            status: true
+            status: true,
+            targetAddress: true
           }
         });
         for (const rec of records) {
@@ -80,9 +81,11 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
           }
           const chKey = rec.channel.toLowerCase();
           if (chKey === 'push') {
-            deliveryMap[rec.notificationId].push = rec.status;
-            if (rec.status === 'FAILED' || rec.status === 'QUEUED') {
-              deliveryMap[rec.notificationId].retryable = true;
+            if (rec.targetAddress || rec.status === 'DELIVERED') {
+              deliveryMap[rec.notificationId].push = rec.status;
+              if (rec.status === 'FAILED' || rec.status === 'QUEUED') {
+                deliveryMap[rec.notificationId].retryable = true;
+              }
             }
           } else if (chKey === 'email') {
             deliveryMap[rec.notificationId].email = rec.status;

@@ -393,15 +393,7 @@ export class CentralNotificationService {
         }
 
         if (targetAddresses.length === 0) {
-          try {
-            await this.repository.createChannelDeliveryRecord({
-              notificationId,
-              channel,
-              status: 'QUEUED' as any,
-              failureReason: 'No registered push tokens or email address',
-              correlationId
-            });
-          } catch {}
+          // If no devices or destination tokens exist for this channel, skip dispatch cleanly
           continue;
         }
 

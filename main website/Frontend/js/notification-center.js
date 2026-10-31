@@ -721,8 +721,6 @@
             deliveryBadgesHtml += '<span class="delivery-badge delivery-badge--success" title="Delivered to Android device">Push: Delivered</span>';
           } else if (pStatus === 'FAILED' || pStatus === 'QUEUED') {
             deliveryBadgesHtml += `<span class="delivery-badge delivery-badge--warning" title="Push delivery pending or delayed">Push: ${pStatus === 'QUEUED' ? 'Pending' : 'Failed'}</span>`;
-          } else if (pStatus === 'PERMANENTLY_FAILED') {
-            deliveryBadgesHtml += '<span class="delivery-badge delivery-badge--error" title="FCM token is no longer active">Push: Inactive</span>';
           }
         }
         if (item.deliveryStatus.email) {

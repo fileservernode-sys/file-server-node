@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/utils/logger.dart';
+import '../../auth/application/auth_state.dart';
 import '../domain/models/notification_item.dart';
 import '../domain/models/notification_preferences.dart';
 
@@ -50,21 +51,41 @@ class NotificationListState {
 class NotificationListNotifier extends StateNotifier<NotificationListState> {
   final SecureStorageService _storageService;
   final HttpClient _httpClient;
+  final Ref? _ref;
 
   NotificationListNotifier({
     SecureStorageService? storageService,
     HttpClient? httpClient,
+    Ref? ref,
   })  : _storageService = storageService ?? InMemorySecureStorageService(),
         _httpClient = httpClient ?? (HttpClient()..badCertificateCallback = (cert, host, port) => AppConfig.current.environment != 'production'),
+        _ref = ref,
         super(const NotificationListState());
+
+  Future<String?> _resolveSessionToken() async {
+    try {
+      final session = await _storageService.getSession();
+      if (session?.accessToken != null && session!.accessToken.isNotEmpty) {
+        return session.accessToken;
+      }
+    } catch (_) {}
+    if (_ref != null) {
+      try {
+        final authSession = _ref!.read(authStateProvider).session;
+        if (authSession?.accessToken != null && authSession!.accessToken.isNotEmpty) {
+          return authSession.accessToken;
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
 
   Future<void> loadNotifications({String? category}) async {
     if (state.isLoading) return;
     state = state.copyWith(isLoading: true, errorMessage: null, isSessionExpired: false);
 
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) {
         state = state.copyWith(
           isLoading: false,
@@ -143,8 +164,7 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
 
   Future<void> markAsRead(String notificationId) async {
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) return;
 
       final updatedItems = state.items.map((item) {
@@ -168,8 +188,7 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
 
   Future<void> markAllAsRead() async {
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) return;
 
       final updatedItems = state.items.map((item) {
@@ -189,8 +208,7 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
 
   Future<void> markAsArchived(String notificationId) async {
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) return;
 
       final updatedItems = state.items.where((item) => item.id != notificationId).toList();
@@ -214,8 +232,7 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
     state = state.copyWith(inFlightRetryIds: updatedInFlight);
 
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) {
         state = state.copyWith(
           inFlightRetryIds: Set<String>.from(state.inFlightRetryIds)..remove(notificationId),
@@ -286,24 +303,47 @@ class NotificationListNotifier extends StateNotifier<NotificationListState> {
 }
 
 final notificationListProvider = StateNotifierProvider<NotificationListNotifier, NotificationListState>(
-  (ref) => NotificationListNotifier(),
+  (ref) => NotificationListNotifier(
+    storageService: ref.watch(secureStorageProvider),
+    ref: ref,
+  ),
 );
 
 class NotificationPreferencesNotifier extends StateNotifier<AsyncValue<NotificationPreferences>> {
   final SecureStorageService _storageService;
   final HttpClient _httpClient;
+  final Ref? _ref;
 
   NotificationPreferencesNotifier({
     SecureStorageService? storageService,
     HttpClient? httpClient,
+    Ref? ref,
   })  : _storageService = storageService ?? InMemorySecureStorageService(),
         _httpClient = httpClient ?? (HttpClient()..badCertificateCallback = (cert, host, port) => AppConfig.current.environment != 'production'),
+        _ref = ref,
         super(const AsyncValue.loading());
+
+  Future<String?> _resolveSessionToken() async {
+    try {
+      final session = await _storageService.getSession();
+      if (session?.accessToken != null && session!.accessToken.isNotEmpty) {
+        return session.accessToken;
+      }
+    } catch (_) {}
+    if (_ref != null) {
+      try {
+        final authSession = _ref!.read(authStateProvider).session;
+        if (authSession?.accessToken != null && authSession!.accessToken.isNotEmpty) {
+          return authSession.accessToken;
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
 
   Future<void> fetchPreferences() async {
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) {
         state = AsyncValue.error('Unauthenticated', StackTrace.current);
         return;
@@ -330,8 +370,7 @@ class NotificationPreferencesNotifier extends StateNotifier<AsyncValue<Notificat
 
   Future<bool> savePreferences(NotificationPreferences preferences) async {
     try {
-      final session = await _storageService.getSession();
-      final sessionToken = session?.accessToken;
+      final sessionToken = await _resolveSessionToken();
       if (sessionToken == null) return false;
 
       final baseUrl = AppConfig.current.apiBaseUrl;
@@ -374,5 +413,8 @@ class NotificationPreferencesNotifier extends StateNotifier<AsyncValue<Notificat
 
 final notificationPreferencesProvider =
     StateNotifierProvider<NotificationPreferencesNotifier, AsyncValue<NotificationPreferences>>(
-  (ref) => NotificationPreferencesNotifier(),
+  (ref) => NotificationPreferencesNotifier(
+    storageService: ref.watch(secureStorageProvider),
+    ref: ref,
+  ),
 );
