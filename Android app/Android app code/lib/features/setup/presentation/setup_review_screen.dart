@@ -83,7 +83,6 @@ class SetupReviewScreen extends ConsumerWidget {
                           value: setup.storageFolderName.isNotEmpty
                               ? setup.storageFolderName
                               : 'Download Folder (Default)',
-                          subtitle: setup.storagePath,
                         ),
                         const Divider(height: AppSpacing.lg),
                         const _ReviewRow(
@@ -143,9 +142,8 @@ class SetupReviewScreen extends ConsumerWidget {
 class _ReviewRow extends StatelessWidget {
   final String label;
   final String value;
-  final String? subtitle;
 
-  const _ReviewRow({required this.label, required this.value, this.subtitle});
+  const _ReviewRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -160,27 +158,10 @@ class _ReviewRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                value,
-                textAlign: TextAlign.end,
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-              ),
-              if (subtitle != null && subtitle!.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  textAlign: TextAlign.end,
-                  style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ],
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
       ],

@@ -6,7 +6,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_header.dart';
-import '../../../core/widgets/app_text_field.dart';
 import '../application/setup_state.dart';
 import 'widgets/setup_stepper.dart';
 
@@ -70,17 +69,45 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
     }
   }
 
+  String _extractFolderName(String rawPath) {
+    var path = rawPath.trim();
+    while (path.endsWith('/') || path.endsWith('\\')) {
+      path = path.substring(0, path.length - 1);
+    }
+    if (path.contains('%2F') || path.contains('%2f')) {
+      try {
+        path = Uri.decodeComponent(path);
+      } catch (_) {}
+    }
+    if (path.contains(':')) {
+      final lastColon = path.lastIndexOf(':');
+      final afterColon = path.substring(lastColon + 1);
+      if (afterColon.isNotEmpty) {
+        path = afterColon;
+      }
+    }
+    while (path.endsWith('/') || path.endsWith('\\')) {
+      path = path.substring(0, path.length - 1);
+    }
+    final lastSlash = path.lastIndexOf('/');
+    final lastBackslash = path.lastIndexOf('\\');
+    final splitIdx = lastSlash > lastBackslash ? lastSlash : lastBackslash;
+    if (splitIdx != -1 && splitIdx < path.length - 1) {
+      final extracted = path.substring(splitIdx + 1).trim();
+      if (extracted.isNotEmpty) return extracted;
+    }
+    return path.isNotEmpty ? path : 'Custom Folder';
+  }
+
   Future<void> _handlePickCustomFolder() async {
     try {
       final service = ref.read(serverServiceProvider);
       final pickedPath = await service.pickStorageFolder();
       if (pickedPath != null && pickedPath.isNotEmpty && mounted) {
-        final folderName = pickedPath.contains('/')
-            ? pickedPath.substring(pickedPath.lastIndexOf('/') + 1)
-            : 'Custom Storage Folder';
+        final folderName = _extractFolderName(pickedPath);
         setState(() {
           _selectedPath = pickedPath;
-          _selectedFolderName = folderName.isNotEmpty ? folderName : 'Custom Folder';
+          _selectedFolderName = folderName;
           _customPathController.text = pickedPath;
           _isCustomMode = true;
         });
@@ -116,9 +143,7 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
     }
 
     final nameToSave = _isCustomMode
-        ? (pathToSave.contains('/')
-            ? pathToSave.substring(pathToSave.lastIndexOf('/') + 1)
-            : 'Custom Folder')
+        ? _extractFolderName(pathToSave)
         : _selectedFolderName;
 
     ref.read(setupStateProvider.notifier).setStorageLocation(
@@ -337,22 +362,70 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                           SecondaryButton(
-                            label: 'Browse System Folders & SD Card',
+                            label: _isCustomMode
+                                ? 'Choose Another Folder'
+                                : 'Browse System Folders & SD Card',
                             icon: Icons.folder_open_rounded,
                             onPressed: _handlePickCustomFolder,
                           ),
-                          if (_isCustomMode) ...[
+                          if (_isCustomMode && _selectedFolderName.isNotEmpty) ...[
                             const SizedBox(height: AppSpacing.md),
-                            AppTextField(
-                              label: 'Selected Custom Storage Path',
-                              controller: _customPathController,
-                              hintText: '/storage/emulated/0/MyFolder',
-                              prefixIcon: const Icon(Icons.edit_location_alt_outlined),
-                              onChanged: (val) {
-                                setState(() {
-                                  _selectedPath = val;
-                                });
-                              },
+                            Container(
+                              padding: const EdgeInsets.all(AppSpacing.md),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.35),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(AppSpacing.xs),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySubtle,
+                                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                    ),
+                                    child: const Icon(
+                                      Icons.folder_rounded,
+                                      color: AppColors.primary,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Selected Folder',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _selectedFolderName,
+                                          style: AppTypography.cardTitle.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          softWrap: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.check_circle,
+                                    color: AppColors.statusOnline,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ],
@@ -387,7 +460,7 @@ class _SetupStorageScreenState extends ConsumerState<SetupStorageScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'All files uploaded from the ZdexCloud File Manager on the web dashboard will be safely saved in this directory: $_selectedPath',
+                                  'All files uploaded from the ZdexCloud File Manager on the web dashboard will be safely saved in your chosen "$_selectedFolderName" folder.',
                                   style: AppTypography.caption,
                                 ),
                               ],

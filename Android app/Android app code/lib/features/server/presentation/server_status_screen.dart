@@ -807,9 +807,13 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
                           label: 'Upload Storage Location',
-                          value: setup.storagePath.isNotEmpty
-                              ? setup.storagePath
-                              : '/storage/emulated/0/Download',
+                          value: setup.storageFolderName.isNotEmpty
+                              ? setup.storageFolderName
+                              : (setup.storagePath.isNotEmpty
+                                  ? (setup.storagePath.contains('/')
+                                      ? setup.storagePath.substring(setup.storagePath.lastIndexOf('/') + 1)
+                                      : setup.storagePath)
+                                  : 'Download Folder (Default)'),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
