@@ -11,6 +11,7 @@ import '../../features/setup/presentation/setup_creating_screen.dart';
 import '../../features/setup/presentation/setup_device_screen.dart';
 import '../../features/setup/presentation/setup_failure_screen.dart';
 import '../../features/setup/presentation/setup_review_screen.dart';
+import '../../features/setup/presentation/setup_storage_screen.dart';
 import '../../features/setup/presentation/setup_success_screen.dart';
 import '../../features/notifications/screens/notification_center_screen.dart';
 import '../../features/notifications/screens/notification_preferences_screen.dart';
@@ -41,6 +42,7 @@ class AppRouter {
   static const String setupDeviceRoute = '/server/setup/device';
   static const String setupConfigRoute = '/server/setup/configuration';
   static const String setupCredentialsRoute = '/server/setup/credentials';
+  static const String setupStorageRoute = '/server/setup/storage';
   static const String setupReviewRoute = '/server/setup/review';
   static const String setupCreatingRoute = '/server/setup/creating';
   static const String setupSuccessRoute = '/server/setup/success';
@@ -102,6 +104,11 @@ class AppRouter {
       case setupCredentialsRoute:
         return MaterialPageRoute(
           builder: (_) => const SetupCredentialsScreen(),
+          settings: settings,
+        );
+      case setupStorageRoute:
+        return MaterialPageRoute(
+          builder: (_) => const SetupStorageScreen(),
           settings: settings,
         );
       case setupReviewRoute:

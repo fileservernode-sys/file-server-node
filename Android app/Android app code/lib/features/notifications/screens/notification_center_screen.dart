@@ -136,7 +136,7 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
                 style: AppTypography.cardTitle.copyWith(color: AppColors.error),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Text(
+              const Text(
                 'Your session has expired. Please sign in again to view your notifications.',
                 style: AppTypography.caption,
                 textAlign: TextAlign.center,

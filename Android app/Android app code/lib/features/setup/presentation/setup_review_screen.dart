@@ -34,8 +34,8 @@ class SetupReviewScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SetupStepper(
-                    currentStep: 3,
-                    totalSteps: 3,
+                    currentStep: 4,
+                    totalSteps: 4,
                     stepTitle: 'Review Configuration',
                   ),
                   const SizedBox(height: AppSpacing.xl),
@@ -77,6 +77,14 @@ class SetupReviewScreen extends ConsumerWidget {
                             value: setup.fileServerUsername.isNotEmpty
                                 ? setup.fileServerUsername
                                 : 'account_user'),
+                        const Divider(height: AppSpacing.lg),
+                        _ReviewRow(
+                          label: 'Upload Storage Folder',
+                          value: setup.storageFolderName.isNotEmpty
+                              ? setup.storageFolderName
+                              : 'Download Folder (Default)',
+                          subtitle: setup.storagePath,
+                        ),
                         const Divider(height: AppSpacing.lg),
                         const _ReviewRow(
                             label: 'Local Engine',
@@ -135,17 +143,46 @@ class SetupReviewScreen extends ConsumerWidget {
 class _ReviewRow extends StatelessWidget {
   final String label;
   final String value;
+  final String? subtitle;
 
-  const _ReviewRow({required this.label, required this.value});
+  const _ReviewRow({required this.label, required this.value, this.subtitle});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.bodySmall),
-        Text(value,
-            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Expanded(
+          flex: 2,
+          child: Text(label, style: AppTypography.bodySmall),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                textAlign: TextAlign.end,
+                style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+              ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  textAlign: TextAlign.end,
+                  style: AppTypography.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

@@ -2,9 +2,9 @@ import 'package:flutter/services.dart';
 
 /// Abstract Service Contract for Local HTTP File-Server Engine & Android System Readiness
 abstract class ServerService {
-  Future<Map<String, dynamic>> startServer({int port = 8080});
+  Future<Map<String, dynamic>> startServer({int port = 8080, String? storagePath});
   Future<Map<String, dynamic>> stopServer();
-  Future<Map<String, dynamic>> restartServer({int port = 8080});
+  Future<Map<String, dynamic>> restartServer({int port = 8080, String? storagePath});
   Future<Map<String, dynamic>> getServerStatus();
   Future<String> getLocalUrl();
   Future<bool> openUrl(String url);
@@ -19,6 +19,11 @@ abstract class ServerService {
   Future<String> getOsVersion();
   Future<Map<String, dynamic>> getStorageReadiness();
   Future<Map<String, dynamic>> getPowerReadiness();
+  Future<String> getDefaultStoragePath();
+  Future<List<Map<String, dynamic>>> getAvailableStorageLocations();
+  Future<String?> pickStorageFolder();
+  Future<bool> setStoragePath(String path);
+  Future<String> getStoragePath();
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine & RemoteNodeServerService
@@ -27,13 +32,15 @@ class MethodChannelServerService implements ServerService {
       MethodChannel('net.remotenode.fileserver/server_engine');
 
   @override
-  Future<Map<String, dynamic>> startServer({int port = 8080}) async {
+  Future<Map<String, dynamic>> startServer({int port = 8080, String? storagePath}) async {
     try {
-      final res = await _channel
-          .invokeMethod<Map<dynamic, dynamic>>('startServer', {'port': port});
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('startServer', {
+        'port': port,
+        if (storagePath != null) 'storagePath': storagePath,
+      });
       return res != null ? Map<String, dynamic>.from(res) : {'success': false};
     } catch (e) {
-      return const MockServerService().startServer(port: port);
+      return const MockServerService().startServer(port: port, storagePath: storagePath);
     }
   }
 
@@ -49,13 +56,15 @@ class MethodChannelServerService implements ServerService {
   }
 
   @override
-  Future<Map<String, dynamic>> restartServer({int port = 8080}) async {
+  Future<Map<String, dynamic>> restartServer({int port = 8080, String? storagePath}) async {
     try {
-      final res = await _channel
-          .invokeMethod<Map<dynamic, dynamic>>('restartServer', {'port': port});
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('restartServer', {
+        'port': port,
+        if (storagePath != null) 'storagePath': storagePath,
+      });
       return res != null ? Map<String, dynamic>.from(res) : {'success': false};
     } catch (e) {
-      return const MockServerService().restartServer(port: port);
+      return const MockServerService().restartServer(port: port, storagePath: storagePath);
     }
   }
 
@@ -219,25 +228,81 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().getPowerReadiness();
     }
   }
+
+  @override
+  Future<String> getDefaultStoragePath() async {
+    try {
+      final res = await _channel.invokeMethod<String>('getDefaultStoragePath');
+      return res ?? '/storage/emulated/0/Download';
+    } catch (e) {
+      return const MockServerService().getDefaultStoragePath();
+    }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableStorageLocations() async {
+    try {
+      final res = await _channel.invokeMethod<List<dynamic>>('getAvailableStorageLocations');
+      if (res != null) {
+        return res.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      }
+      return const MockServerService().getAvailableStorageLocations();
+    } catch (e) {
+      return const MockServerService().getAvailableStorageLocations();
+    }
+  }
+
+  @override
+  Future<String?> pickStorageFolder() async {
+    try {
+      final res = await _channel.invokeMethod<String?>('pickStorageFolder');
+      return res;
+    } catch (e) {
+      return const MockServerService().pickStorageFolder();
+    }
+  }
+
+  @override
+  Future<bool> setStoragePath(String path) async {
+    try {
+      final res = await _channel.invokeMethod<bool>('setStoragePath', {'path': path});
+      return res ?? true;
+    } catch (e) {
+      return const MockServerService().setStoragePath(path);
+    }
+  }
+
+  @override
+  Future<String> getStoragePath() async {
+    try {
+      final res = await _channel.invokeMethod<String>('getStoragePath');
+      return res ?? '/storage/emulated/0/Download';
+    } catch (e) {
+      return const MockServerService().getStoragePath();
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
 class MockServerService implements ServerService {
   final bool _initiallyRunning;
   final int _port;
+  static String _mockStoragePath = '/storage/emulated/0/Download';
 
   const MockServerService({bool initiallyRunning = false, int port = 8080})
       : _initiallyRunning = initiallyRunning,
         _port = port;
 
   @override
-  Future<Map<String, dynamic>> startServer({int port = 8080}) async {
+  Future<Map<String, dynamic>> startServer({int port = 8080, String? storagePath}) async {
+    if (storagePath != null) _mockStoragePath = storagePath;
     await Future.delayed(const Duration(milliseconds: 200));
     return {
       'success': true,
       'port': port,
       'localUrl': 'http://127.0.0.1:$port',
       'serviceRunning': true,
+      'storagePath': _mockStoragePath,
     };
   }
 
@@ -248,9 +313,9 @@ class MockServerService implements ServerService {
   }
 
   @override
-  Future<Map<String, dynamic>> restartServer({int port = 8080}) async {
+  Future<Map<String, dynamic>> restartServer({int port = 8080, String? storagePath}) async {
     await stopServer();
-    return startServer(port: port);
+    return startServer(port: port, storagePath: storagePath);
   }
 
   @override
@@ -338,5 +403,46 @@ class MockServerService implements ServerService {
       'isCharging': true,
       'batteryLevel': 100,
     };
+  }
+
+  @override
+  Future<String> getDefaultStoragePath() async {
+    return '/storage/emulated/0/Download';
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAvailableStorageLocations() async {
+    return [
+      {
+        'name': 'Download Folder (Default)',
+        'path': '/storage/emulated/0/Download',
+        'type': 'download',
+        'isDefault': true,
+        'exists': true,
+      },
+      {
+        'name': 'Documents Folder',
+        'path': '/storage/emulated/0/Documents',
+        'type': 'documents',
+        'isDefault': false,
+        'exists': true,
+      },
+    ];
+  }
+
+  @override
+  Future<String?> pickStorageFolder() async {
+    return '/storage/emulated/0/Download';
+  }
+
+  @override
+  Future<bool> setStoragePath(String path) async {
+    _mockStoragePath = path;
+    return true;
+  }
+
+  @override
+  Future<String> getStoragePath() async {
+    return _mockStoragePath;
   }
 }

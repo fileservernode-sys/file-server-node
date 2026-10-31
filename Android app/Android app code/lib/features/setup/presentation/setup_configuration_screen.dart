@@ -69,7 +69,7 @@ class _SetupConfigurationScreenState
                   children: [
                     const SetupStepper(
                       currentStep: 2,
-                      totalSteps: 3,
+                      totalSteps: 4,
                       stepTitle: 'Configure Server',
                     ),
                     const SizedBox(height: AppSpacing.xl),
@@ -138,7 +138,7 @@ class _SetupConfigurationScreenState
                                 description: _descriptionController.text.trim(),
                               );
                           Navigator.pushNamed(
-                              context, '/server/setup/review');
+                              context, '/server/setup/storage');
                         }
                       },
                     ),

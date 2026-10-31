@@ -497,7 +497,8 @@ class LocalServerEngine {
             "status" to if (isRunning) "ONLINE" else "STOPPED",
             "port" to activePort,
             "localUrl" to "http://$ip:$activePort",
-            "ipAddress" to ip
+            "ipAddress" to ip,
+            "storagePath" to (rootDirectory?.absolutePath ?: "")
         )
     }
 

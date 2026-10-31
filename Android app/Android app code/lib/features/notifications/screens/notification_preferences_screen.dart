@@ -117,7 +117,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
                 children: [
                   const Icon(Icons.error_outline, size: 48, color: AppColors.error),
                   const SizedBox(height: AppSpacing.sm),
-                  Text(
+                  const Text(
                     'Failed to load notification preferences',
                     style: AppTypography.cardTitle,
                     textAlign: TextAlign.center,
@@ -287,7 +287,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
             children: [
               const Text('Master Delivery Channels', style: AppTypography.cardTitle),
               const SizedBox(height: AppSpacing.xs),
-              Text(
+              const Text(
                 'Global toggles apply across all configurable notification categories.',
                 style: AppTypography.caption,
               ),

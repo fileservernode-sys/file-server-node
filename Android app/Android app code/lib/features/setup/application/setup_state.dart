@@ -36,6 +36,9 @@ class SetupState {
   final int maxServers;
   final int activeServersCount;
 
+  final String storagePath;
+  final String storageFolderName;
+
   const SetupState({
     this.deviceName = 'Android Device',
     this.serverName = '',
@@ -58,6 +61,8 @@ class SetupState {
     this.planName = 'Free Plan',
     this.maxServers = 1,
     this.activeServersCount = 1,
+    this.storagePath = '/storage/emulated/0/Download',
+    this.storageFolderName = 'Download Folder (Default)',
   });
 
   /// Authoritative server running condition: Local engine running AND remote tunnel connected
@@ -119,6 +124,8 @@ class SetupState {
     String? planName,
     int? maxServers,
     int? activeServersCount,
+    String? storagePath,
+    String? storageFolderName,
   }) {
     return SetupState(
       deviceName: deviceName ?? this.deviceName,
@@ -142,6 +149,8 @@ class SetupState {
       planName: planName ?? this.planName,
       maxServers: maxServers ?? this.maxServers,
       activeServersCount: activeServersCount ?? this.activeServersCount,
+      storagePath: storagePath ?? this.storagePath,
+      storageFolderName: storageFolderName ?? this.storageFolderName,
     );
   }
 }
@@ -243,6 +252,17 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     state = state.copyWith(
       fileServerUsername: username.trim(),
       fileServerPassword: password,
+      errorMessage: null,
+    );
+  }
+
+  void setStorageLocation({
+    required String path,
+    required String folderName,
+  }) {
+    state = state.copyWith(
+      storagePath: path.trim(),
+      storageFolderName: folderName.trim(),
       errorMessage: null,
     );
   }
@@ -450,7 +470,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
   Future<void> startServerNode() async {
     AppLogger.info('[ServerLifecycle] START SERVER NODE: Starting local HTTP engine and remote gateway transport...');
     final serverService = _ref.read(serverServiceProvider);
-    await serverService.startServer();
+    await serverService.startServer(storagePath: state.storagePath);
 
     var authSession = _ref.read(authStateProvider).session;
     if (authSession == null) {
@@ -619,7 +639,11 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         username: state.fileServerUsername,
         password: state.fileServerPassword,
       );
-      final startRes = await serverService.startServer(port: 8080);
+      await serverService.setStoragePath(state.storagePath);
+      final startRes = await serverService.startServer(
+        port: 8080,
+        storagePath: state.storagePath,
+      );
       final localUrl = startRes['localUrl'] as String? ?? 'http://127.0.0.1:8080';
 
       // -----------------------------------------------------------------------

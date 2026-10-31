@@ -533,6 +533,13 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         _StatusRow(
+                          label: 'Upload Storage Location',
+                          value: setup.storagePath.isNotEmpty
+                              ? setup.storagePath
+                              : '/storage/emulated/0/Download',
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _StatusRow(
                           label: 'Remote Relay Status',
                           value: setup.endpointStatus,
                         ),

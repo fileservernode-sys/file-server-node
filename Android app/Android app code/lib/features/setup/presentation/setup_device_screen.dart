@@ -196,7 +196,7 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                 children: [
                   const SetupStepper(
                     currentStep: 1,
-                    totalSteps: 3,
+                    totalSteps: 4,
                     stepTitle: 'Prepare Device',
                   ),
                   const SizedBox(height: AppSpacing.xl),

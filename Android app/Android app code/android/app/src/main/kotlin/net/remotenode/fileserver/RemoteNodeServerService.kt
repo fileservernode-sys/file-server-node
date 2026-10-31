@@ -13,6 +13,8 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import android.os.Environment
+import java.io.File
 
 /**
  * RemoteNode Native Android Persistent Foreground Service
@@ -32,6 +34,7 @@ class RemoteNodeServerService : Service() {
         const val ACTION_STOP_TUNNEL = "net.remotenode.fileserver.ACTION_STOP_TUNNEL"
 
         const val EXTRA_PORT = "extra_port"
+        const val EXTRA_STORAGE_PATH = "extra_storage_path"
         const val EXTRA_USERNAME = "extra_username"
         const val EXTRA_PASSWORD = "extra_password"
         const val EXTRA_DEVICE_ID = "extra_device_id"
@@ -44,6 +47,7 @@ class RemoteNodeServerService : Service() {
         private const val KEY_SERVER_ENABLED = "server_enabled"
         private const val KEY_TUNNEL_ENABLED = "tunnel_enabled"
         private const val KEY_PORT = "server_port"
+        private const val KEY_STORAGE_PATH = "storage_path"
         private const val KEY_ADMIN_USER = "admin_user"
         private const val KEY_ADMIN_PASS = "admin_pass"
         private const val KEY_DEVICE_ID = "tunnel_device_id"
@@ -143,6 +147,27 @@ class RemoteNodeServerService : Service() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putInt(KEY_PORT, validPort).apply()
         }
+
+        fun getPersistedStoragePath(context: Context): String {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val saved = prefs.getString(KEY_STORAGE_PATH, null)
+            if (!saved.isNullOrBlank()) {
+                val f = File(saved)
+                if (f.exists() || f.mkdirs()) {
+                    return f.absolutePath
+                }
+            }
+            val defaultDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (!defaultDownloads.exists()) {
+                defaultDownloads.mkdirs()
+            }
+            return defaultDownloads.absolutePath
+        }
+
+        fun persistStoragePath(context: Context, path: String) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_STORAGE_PATH, path).apply()
+        }
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -197,12 +222,13 @@ class RemoteNodeServerService : Service() {
             ACTION_START_SERVER -> {
                 android.util.Log.i("RemoteNodeServerService", "[SERVER_START_REQUESTED] action=ACTION_START_SERVER")
                 val port = intent.getIntExtra(EXTRA_PORT, getPersistedPort(this))
+                val customStoragePath = intent.getStringExtra(EXTRA_STORAGE_PATH)
                 val user = intent.getStringExtra(EXTRA_USERNAME)
                 val pass = intent.getStringExtra(EXTRA_PASSWORD)
                 if (user != null && pass != null) {
                     engine.setCredentials(user, pass)
                 }
-                handleStartServer(port)
+                handleStartServer(port, customStoragePath)
             }
             ACTION_STOP_SERVER -> {
                 android.util.Log.i("RemoteNodeServerService", "[SERVER_STOP_REQUESTED] action=ACTION_STOP_SERVER source=intent")
@@ -210,7 +236,8 @@ class RemoteNodeServerService : Service() {
             }
             ACTION_RESTART_SERVER -> {
                 val port = intent.getIntExtra(EXTRA_PORT, activePort)
-                handleRestartServer(port)
+                val customStoragePath = intent.getStringExtra(EXTRA_STORAGE_PATH)
+                handleRestartServer(port, customStoragePath)
             }
             ACTION_SET_CREDENTIALS -> {
                 val user = intent.getStringExtra(EXTRA_USERNAME)
@@ -276,7 +303,7 @@ class RemoteNodeServerService : Service() {
         notificationManager?.notify(NOTIFICATION_ID, notif)
     }
 
-    private fun handleStartServer(port: Int) {
+    private fun handleStartServer(port: Int, customStoragePath: String? = null) {
         synchronized(lifecycleLock) {
             try {
                 val validatedPort = if (port in 1024..65535) port else 8080
@@ -298,7 +325,13 @@ class RemoteNodeServerService : Service() {
 
                 acquireWakeLock()
 
-                val storageDir = filesDir.resolve("RemoteNodeFiles")
+                val storagePath = if (!customStoragePath.isNullOrBlank()) {
+                    persistStoragePath(this, customStoragePath)
+                    customStoragePath
+                } else {
+                    getPersistedStoragePath(this)
+                }
+                val storageDir = File(storagePath).apply { if (!exists()) mkdirs() }
                 val startResult = engine.start(validatedPort, storageDir, applicationContext)
 
                 if (startResult["success"] == true) {
@@ -375,10 +408,10 @@ class RemoteNodeServerService : Service() {
         }
     }
 
-    private fun handleRestartServer(port: Int) {
+    private fun handleRestartServer(port: Int, customStoragePath: String? = null) {
         synchronized(lifecycleLock) {
             handleStopServer()
-            handleStartServer(port)
+            handleStartServer(port, customStoragePath)
         }
     }
 

@@ -17,6 +17,9 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import net.remotenode.fileserver.security.AndroidSecureStorage
+import java.io.File
+import android.os.Environment
+import android.provider.DocumentsContract
 import java.util.Locale
 import java.util.UUID
 
@@ -32,7 +35,9 @@ class MainActivity : FlutterActivity() {
     private val NETWORK_EVENT_CHANNEL = "net.remotenode.fileserver/network_events"
     private val TUNNEL_EVENT_CHANNEL = "net.remotenode.fileserver/tunnel_events"
     private val REQUEST_POST_NOTIFICATIONS = 101
+    private val REQUEST_PICK_FOLDER = 102
     private var pendingNotificationPermissionResult: MethodChannel.Result? = null
+    private var pendingFolderPickerResult: MethodChannel.Result? = null
     private var networkEventSink: EventChannel.EventSink? = null
     private var tunnelEventSink: EventChannel.EventSink? = null
     private var tunnelListener: ((Map<String, Any?>) -> Unit)? = null
@@ -49,6 +54,50 @@ class MainActivity : FlutterActivity() {
             return
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == REQUEST_PICK_FOLDER) {
+            if (resultCode == RESULT_OK && data != null && data.data != null) {
+                val treeUri = data.data!!
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        treeUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
+                val resolvedPath = resolveTreeUriToPath(treeUri) ?: treeUri.toString()
+                pendingFolderPickerResult?.success(resolvedPath)
+            } else {
+                pendingFolderPickerResult?.success(null)
+            }
+            pendingFolderPickerResult = null
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    private fun resolveTreeUriToPath(treeUri: Uri): String? {
+        try {
+            val docId = DocumentsContract.getTreeDocumentId(treeUri)
+            val parts = docId.split(":")
+            if (parts.size >= 2) {
+                val volumeId = parts[0]
+                val subPath = parts[1]
+                if (volumeId.equals("primary", ignoreCase = true)) {
+                    val root = Environment.getExternalStorageDirectory().absolutePath
+                    val resolved = if (subPath.isNotEmpty()) "$root/$subPath" else root
+                    File(resolved).apply { if (!exists()) mkdirs() }
+                    return resolved
+                } else {
+                    val sdRoot = "/storage/$volumeId"
+                    val resolved = if (subPath.isNotEmpty()) "$sdRoot/$subPath" else sdRoot
+                    File(resolved).apply { if (!exists()) mkdirs() }
+                    return resolved
+                }
+            }
+        } catch (_: Exception) {}
+        return null
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -353,9 +402,13 @@ class MainActivity : FlutterActivity() {
                 }
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
+                    val storagePath = call.argument<String>("storagePath")
                     val intent = Intent(context, RemoteNodeServerService::class.java).apply {
                         action = RemoteNodeServerService.ACTION_START_SERVER
                         putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                        if (!storagePath.isNullOrBlank()) {
+                            putExtra(RemoteNodeServerService.EXTRA_STORAGE_PATH, storagePath)
+                        }
                     }
                     try {
                         ContextCompat.startForegroundService(context, intent)
@@ -398,9 +451,13 @@ class MainActivity : FlutterActivity() {
                 }
                 "restartServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
+                    val storagePath = call.argument<String>("storagePath")
                     val intent = Intent(context, RemoteNodeServerService::class.java).apply {
                         action = RemoteNodeServerService.ACTION_RESTART_SERVER
                         putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                        if (!storagePath.isNullOrBlank()) {
+                            putExtra(RemoteNodeServerService.EXTRA_STORAGE_PATH, storagePath)
+                        }
                     }
                     try {
                         ContextCompat.startForegroundService(context, intent)
@@ -415,6 +472,112 @@ class MainActivity : FlutterActivity() {
                     } catch (e: Exception) {
                         result.error("RESTART_SERVICE_FAILED", e.message, null)
                     }
+                }
+                "getDefaultStoragePath" -> {
+                    try {
+                        val defaultDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        if (!defaultDir.exists()) {
+                            defaultDir.mkdirs()
+                        }
+                        result.success(defaultDir.absolutePath)
+                    } catch (e: Exception) {
+                        result.success("/storage/emulated/0/Download")
+                    }
+                }
+                "getAvailableStorageLocations" -> {
+                    val locations = mutableListOf<Map<String, Any>>()
+                    try {
+                        val downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                        if (!downloadDir.exists()) downloadDir.mkdirs()
+                        locations.add(mapOf(
+                            "name" to "Download Folder (Default)",
+                            "path" to downloadDir.absolutePath,
+                            "type" to "download",
+                            "isDefault" to true,
+                            "exists" to downloadDir.exists()
+                        ))
+                    } catch (_: Exception) {}
+
+                    try {
+                        val documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+                        if (!documentsDir.exists()) documentsDir.mkdirs()
+                        locations.add(mapOf(
+                            "name" to "Documents Folder",
+                            "path" to documentsDir.absolutePath,
+                            "type" to "documents",
+                            "isDefault" to false,
+                            "exists" to documentsDir.exists()
+                        ))
+                    } catch (_: Exception) {}
+
+                    try {
+                        val dcimDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+                        if (dcimDir.exists()) {
+                            locations.add(mapOf(
+                                "name" to "DCIM / Photos Folder",
+                                "path" to dcimDir.absolutePath,
+                                "type" to "media",
+                                "isDefault" to false,
+                                "exists" to true
+                            ))
+                        }
+                    } catch (_: Exception) {}
+
+                    // Removable SD cards / USB storage detection
+                    try {
+                        val externalDirs = ContextCompat.getExternalFilesDirs(context, null)
+                        for (file in externalDirs) {
+                            if (file != null) {
+                                val isRemovable = Environment.isExternalStorageRemovable(file)
+                                val path = file.absolutePath
+                                if (isRemovable || !path.contains("emulated/0")) {
+                                    val rootIdx = path.indexOf("/Android/data")
+                                    val rootPath = if (rootIdx != -1) path.substring(0, rootIdx) else path
+                                    val volumeName = rootPath.substringAfterLast("/")
+                                    val exists = File(rootPath).exists()
+                                    locations.add(mapOf(
+                                        "name" to "SD Card / Drive ($volumeName)",
+                                        "path" to rootPath,
+                                        "type" to "sdcard",
+                                        "isDefault" to false,
+                                        "exists" to exists
+                                    ))
+                                }
+                            }
+                        }
+                    } catch (_: Exception) {}
+
+                    result.success(locations)
+                }
+                "pickStorageFolder" -> {
+                    try {
+                        pendingFolderPickerResult = result
+                        val pickIntent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                            addFlags(
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                                Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+                            )
+                        }
+                        startActivityForResult(pickIntent, REQUEST_PICK_FOLDER)
+                    } catch (e: Exception) {
+                        pendingFolderPickerResult = null
+                        result.error("PICK_FOLDER_ERROR", e.message, null)
+                    }
+                }
+                "setStoragePath" -> {
+                    val path = call.argument<String>("path")
+                    if (!path.isNullOrBlank()) {
+                        RemoteNodeServerService.persistStoragePath(context, path)
+                        result.success(true)
+                    } else {
+                        result.error("INVALID_ARGS", "Path cannot be empty", null)
+                    }
+                }
+                "getStoragePath" -> {
+                    val path = RemoteNodeServerService.getPersistedStoragePath(context)
+                    result.success(path)
                 }
                 "getServerStatus" -> {
                     val engineStatus = RemoteNodeServerService.engine.getStatus()
