@@ -239,49 +239,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(height: AppSpacing.xl),
 
                   // -----------------------------------------------------------
-                  // 4. Security & Session Section
-                  // -----------------------------------------------------------
-                  const Text('Security & Authentication',
-                      style: AppTypography.caption),
-                  const SizedBox(height: AppSpacing.xs),
-                  AppCard(
-                    child: Column(
-                      children: [
-                        _buildSettingTile(
-                          icon: Icons.lock_outline_rounded,
-                          title: 'Authentication Protocol',
-                          subtitle: 'Email + Password + 6-Digit OTP',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Multi-factor authentication active on account.'),
-                              ),
-                            );
-                          },
-                        ),
-                        const Divider(),
-                        _buildSettingTile(
-                          icon: Icons.shield_outlined,
-                          title: 'Registered Account Login',
-                          subtitle:
-                              'Account: ${setupState.fileServerUsername}',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'File Manager login uses your registered platform account email and password.'),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-
-                  // -----------------------------------------------------------
-                  // 5. Notifications & Communication
+                  // 4. Notifications & Communication
                   // -----------------------------------------------------------
                   const Text('Notifications & Communication',
                       style: AppTypography.caption),
@@ -364,13 +322,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           title: 'About ZdexCloud',
                           subtitle: 'Platform overview and architecture',
                           onTap: () => Navigator.pushNamed(context, '/about'),
-                        ),
-                        const Divider(),
-                        _buildSettingTile(
-                          icon: Icons.palette_outlined,
-                          title: 'Design System Showcase',
-                          subtitle: 'Visual component reference tokens',
-                          onTap: () => Navigator.pushNamed(context, '/showcase'),
                         ),
                       ],
                     ),
