@@ -284,12 +284,12 @@ export const CUSTOMER_ACTIVITY_TAXONOMY: Readonly<Record<CustomerActivityEventTy
     eventType: CustomerActivityEventType.AUTH_SIGN_IN_SUCCEEDED,
     category: CustomerActivityCategory.ACCOUNT_SECURITY,
     title: 'Signed In to Account',
-    descriptionTemplate: 'Signed in to your ZdexCloud account from {userAgentSummary} ({maskedIp}).',
+    descriptionTemplate: 'Signed in to your ZdexCloud account on {clientApplication} from {userAgentSummary} ({maskedIp}).',
     triggerAction: 'Customer completes password + 2FA email OTP sign-in flow and receives an active session.',
     sourceService: 'src/routes/auth.ts (POST /api/v1/auth/verify-otp) & src/notifications/producers/account_producer.ts',
     capabilityStatus: 'CONFIRMED_RECORDED',
     mappedAuditEvents: [{ auditEventType: 'LOGIN_ATTEMPT_SUCCESS' }],
-    allowedMetadataKeys: ['maskedIp', 'userAgentSummary', 'authMethod'],
+    allowedMetadataKeys: ['maskedIp', 'userAgentSummary', 'authMethod', 'clientApplication'],
     entityReferences: {},
     deduplication: {
       mode: 'NONE',
@@ -306,7 +306,7 @@ export const CUSTOMER_ACTIVITY_TAXONOMY: Readonly<Record<CustomerActivityEventTy
     sourceService: 'src/routes/auth.ts (POST /api/v1/auth/login)',
     capabilityStatus: 'CONFIRMED_RECORDED',
     mappedAuditEvents: [{ auditEventType: 'LOGIN_ATTEMPT_FAILED' }],
-    allowedMetadataKeys: ['maskedIp', 'userAgentSummary', 'reasonSummary', 'reasonLabel'],
+    allowedMetadataKeys: ['maskedIp', 'userAgentSummary', 'reasonSummary', 'reasonLabel', 'clientApplication'],
     entityReferences: {},
     deduplication: {
       mode: 'COOLDOWN_WINDOW',

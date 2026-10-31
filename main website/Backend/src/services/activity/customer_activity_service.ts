@@ -316,6 +316,11 @@ export function summarizeUserAgentForCustomerDisplay(rawUserAgent: string | null
     return 'Web Browser';
   }
 
+  // Detect Android Server Application / Flutter / Dart HTTP client
+  if (/Dart\/|dart:io|ServerApp|ZdexCloud-Server|ZdexCloud.*Android/i.test(ua)) {
+    return 'Android';
+  }
+
   // If already a short summary (e.g. "Chrome on Windows"), strip any HTML/control chars and keep bounded
   if (ua.length <= 60 && !ua.includes('Mozilla/') && !ua.includes('AppleWebKit/') && !ua.includes('curl/')) {
     const cleaned = ua
@@ -342,6 +347,20 @@ export function summarizeUserAgentForCustomerDisplay(rawUserAgent: string | null
   else if (/Linux/i.test(ua)) os = 'Linux';
 
   return os ? `${browser} on ${os}` : browser;
+}
+
+/**
+ * Resolves the user-facing application name ('Website Dashboard' vs 'Server Application').
+ */
+export function resolveClientApplicationName(
+  rawUserAgent?: string | null,
+  userAgentSummary?: string | null
+): string {
+  const combined = `${rawUserAgent || ''} ${userAgentSummary || ''}`;
+  if (/Dart\/|dart:io|ServerApp|ZdexCloud-Server|ZdexCloud.*Android|Server Application/i.test(combined)) {
+    return 'Server Application';
+  }
+  return 'Website Dashboard';
 }
 
 /**
@@ -392,7 +411,8 @@ export function renderCustomerActivityDescription(
     userAgentSummary: 'Web Browser',
     purposeLabel: 'account verification',
     effectiveDate: 'the end of your billing period',
-    gracePeriodEndsAt: 'the end of your grace period'
+    gracePeriodEndsAt: 'the end of your grace period',
+    clientApplication: 'Website Dashboard'
   };
 
   for (const [key, val] of Object.entries(sanitizedMetadata)) {
@@ -404,6 +424,15 @@ export function renderCustomerActivityDescription(
     } else if (typeof val === 'boolean') {
       values[key] = String(val);
     }
+  }
+
+  if (!sanitizedMetadata.clientApplication) {
+    if (values.userAgentSummary && /dart|server|android/i.test(values.userAgentSummary)) {
+      values.clientApplication = 'Server Application';
+    }
+  }
+  if (/dart\/|dart:io/i.test(values.userAgentSummary)) {
+    values.userAgentSummary = 'Android';
   }
 
   if (!sanitizedMetadata.planName && typeof sanitizedMetadata.planCode === 'string') {
@@ -585,12 +614,22 @@ export function serializeCustomerActivityEvent(row: any): SerializedCustomerActi
     rawMeta.userAgentSummary =
       summarizeUserAgentForCustomerDisplay(rawMeta.userAgentSummary) || 'Web Browser';
   }
+  if (!rawMeta.clientApplication) {
+    const isServerApp = (typeof rawMeta.userAgentSummary === 'string' && /dart|server|android/i.test(rawMeta.userAgentSummary))
+      || (typeof row.description === 'string' && /dart/i.test(row.description));
+    rawMeta.clientApplication = isServerApp ? 'Server Application' : 'Website Dashboard';
+  }
 
   const sanitizedMetadata = sanitizeCustomerActivityMetadata(eventType, rawMeta);
   const fallbackDescription = renderCustomerActivityDescription(spec, sanitizedMetadata);
 
   const title = sanitizeCustomerFacingActivityText(row.title, spec.title, 200);
-  const description = sanitizeCustomerFacingActivityText(row.description, fallbackDescription, 500);
+  let description = sanitizeCustomerFacingActivityText(row.description, fallbackDescription, 500);
+  if (eventType === CustomerActivityEventType.AUTH_SIGN_IN_SUCCEEDED && description.startsWith('Signed in to your ZdexCloud account')) {
+    if (!description.includes('Website Dashboard') && !description.includes('Server Application')) {
+      description = fallbackDescription;
+    }
+  }
 
   const rawSeverity = typeof row.severity === 'string' ? row.severity.trim().toUpperCase() : '';
   const severity: CustomerActivitySeverity =
@@ -727,6 +766,13 @@ export class CustomerActivityService {
         if (uaSummary) {
           enrichedRawMeta.userAgentSummary = uaSummary;
         }
+      }
+
+      if (!enrichedRawMeta.clientApplication) {
+        enrichedRawMeta.clientApplication = resolveClientApplicationName(
+          input.userAgent,
+          typeof enrichedRawMeta.userAgentSummary === 'string' ? enrichedRawMeta.userAgentSummary : undefined
+        );
       }
 
       if (

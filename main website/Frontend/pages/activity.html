@@ -891,7 +891,9 @@
       const PILL_ICONS = Object.freeze({
         SERVER: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect></svg>',
         FILE: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>',
-        INVOICE: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>'
+        INVOICE: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>',
+        DASHBOARD: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>',
+        APP: '<svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>'
       });
 
       const CATEGORY_META = {
@@ -1129,6 +1131,24 @@
           containerEl.appendChild(createMetaPillElement('Receipt Number', 'Receipt ' + receiptNumber, null));
         }
 
+        const rawApp = sanitizeDisplayString(meta.clientApplication || '', 60);
+        let clientApp = rawApp;
+        if (!clientApp) {
+          if (
+            (meta.userAgentSummary && /dart|server|android/i.test(meta.userAgentSummary)) ||
+            (item && item.description && /dart/i.test(item.description))
+          ) {
+            clientApp = 'Server Application';
+          } else if (item && String(item.eventType || '').startsWith('AUTH.')) {
+            clientApp = 'Website Dashboard';
+          }
+        }
+
+        if (clientApp) {
+          const appSvg = clientApp === 'Server Application' ? PILL_ICONS.APP : PILL_ICONS.DASHBOARD;
+          containerEl.appendChild(createMetaPillElement('Application', clientApp, appSvg));
+        }
+
         if (meta.maskedIp) {
           const safeIp = maskIpClientSide(meta.maskedIp);
           if (safeIp) {
@@ -1136,7 +1156,10 @@
           }
         }
 
-        const uaLabel = sanitizeDisplayString(meta.userAgentSummary || '', 60);
+        let uaLabel = sanitizeDisplayString(meta.userAgentSummary || '', 60);
+        if (/dart\/|dart:io/i.test(uaLabel)) {
+          uaLabel = 'Android';
+        }
         if (uaLabel) {
           containerEl.appendChild(createMetaPillElement('Client Environment', uaLabel, null));
         }
@@ -1190,7 +1213,19 @@
 
         const descEl = document.createElement('p');
         descEl.className = 'activity-event-desc';
-        descEl.textContent = sanitizeDisplayString(item.description, 500);
+        let descText = sanitizeDisplayString(item.description, 500);
+        const itemMeta = (item && item.metadata && typeof item.metadata === 'object') ? item.metadata : {};
+        if (item.eventType === 'AUTH.SIGN_IN_SUCCEEDED' || descText.startsWith('Signed in to your ZdexCloud account')) {
+          if (!descText.includes('Website Dashboard') && !descText.includes('Server Application')) {
+            const isServerApp = (itemMeta.userAgentSummary && /dart|server|android/i.test(itemMeta.userAgentSummary)) || /dart/i.test(descText);
+            const appName = isServerApp ? 'Server Application' : 'Website Dashboard';
+            let cleanUa = isServerApp ? 'Android' : (sanitizeDisplayString(itemMeta.userAgentSummary || '', 60) || 'Web Browser');
+            if (/dart\/|dart:io/i.test(cleanUa)) cleanUa = 'Android';
+            const ipPart = itemMeta.maskedIp ? (' (' + maskIpClientSide(itemMeta.maskedIp) + ')') : '';
+            descText = 'Signed in to your ZdexCloud account on ' + appName + ' from ' + cleanUa + ipPart + '.';
+          }
+        }
+        descEl.textContent = descText;
 
         const badgesRow = document.createElement('div');
         badgesRow.className = 'activity-badges-row';

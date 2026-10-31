@@ -314,13 +314,15 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       userAgentHeader,
       updatedUser.fullName || undefined
     ).catch(() => {});
+    const isServerApp = Boolean(userAgentHeader && /dart\/|dart:io|serverapp|zdexcloud.*android/i.test(userAgentHeader));
     await CustomerActivityService.recordEventSafe({
       userId: updatedUser.id,
       eventType: 'AUTH.SIGN_IN_SUCCEEDED',
       ipAddress: clientIp,
       userAgent: userAgentHeader,
       metadata: {
-        authMethod: regResult.valid ? 'REGISTRATION_OTP' : 'EMAIL_OTP_2FA'
+        authMethod: regResult.valid ? 'REGISTRATION_OTP' : 'EMAIL_OTP_2FA',
+        clientApplication: isServerApp ? 'Server Application' : 'Website Dashboard'
       }
     });
 
