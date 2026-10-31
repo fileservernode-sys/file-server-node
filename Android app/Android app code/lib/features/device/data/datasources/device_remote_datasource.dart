@@ -33,6 +33,7 @@ abstract class DeviceRemoteDataSource {
   Future<Map<String, dynamic>> deleteDevice({
     required String deviceId,
     required String sessionToken,
+    bool deleteFiles = false,
   });
 
   Future<Map<String, dynamic>> getBillingState({
@@ -181,11 +182,14 @@ class HttpDeviceRemoteDataSource implements DeviceRemoteDataSource {
   Future<Map<String, dynamic>> deleteDevice({
     required String deviceId,
     required String sessionToken,
+    bool deleteFiles = false,
   }) async {
     try {
-      final url = Uri.parse('$_baseUrl/devices/$deviceId');
+      final url = Uri.parse('$_baseUrl/devices/$deviceId?deleteFiles=$deleteFiles');
       final req = await _httpClient.deleteUrl(url);
       req.headers.set('authorization', 'Bearer $sessionToken');
+      req.headers.set('content-type', 'application/json');
+      req.write(jsonEncode({'deleteFiles': deleteFiles}));
 
       final res = await req.close().timeout(const Duration(seconds: 30));
       final body = await res.transform(utf8.decoder).join();
@@ -440,11 +444,12 @@ class MockDeviceRemoteDataSource implements DeviceRemoteDataSource {
   Future<Map<String, dynamic>> deleteDevice({
     required String deviceId,
     required String sessionToken,
+    bool deleteFiles = false,
   }) async {
     await Future.delayed(const Duration(milliseconds: 150));
     return {
       'success': true,
-      'data': {'message': 'Device deleted successfully'}
+      'data': {'message': 'Device deleted successfully', 'deleteFiles': deleteFiles}
     };
   }
 

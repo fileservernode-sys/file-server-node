@@ -926,6 +926,20 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       throw new ForbiddenError('You do not have permission to delete this server');
     }
 
+    const query = request.query as any;
+    const body = (request.body as any) || {};
+    const deleteFiles = query?.deleteFiles === 'true' || query?.deleteFiles === true || body?.deleteFiles === true;
+
+    // Purge uploaded files from host device over active gateway tunnel if requested
+    let filesPurged = false;
+    if (deleteFiles) {
+      try {
+        filesPurged = await defaultGatewayService.purgeDeviceFiles(device.id, 8000);
+      } catch {
+        filesPurged = false;
+      }
+    }
+
     // 1. Gateway & DNS Cleanups
     try {
       defaultGatewayService.evictDeviceSession(device.id, 'Server node deleted by user');
@@ -942,6 +956,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
     const serverIds = device.servers.map((s: { id: string }) => s.id);
     const targetDeviceId = device.id;
     const targetDeviceName = device.deviceName;
+    const clientIp = resolveClientIp(request);
+    const userAgent = (request.headers['user-agent'] as string) || 'unknown';
     
     await prisma.$transaction(async (tx) => {
       // Step A: Delete all ServerEndpoints (releasing and removing subdomains)
@@ -974,13 +990,26 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           userId: user.id,
           deviceId: null,
           eventType: 'SERVER_STOPPED',
-          metadata: { action: 'SERVER_DELETED', deviceId: targetDeviceId, deviceName: targetDeviceName }
+          metadata: {
+            action: 'SERVER_DELETED',
+            deviceId: targetDeviceId,
+            deviceName: targetDeviceName,
+            deleteFiles,
+            filesPurged,
+            fileAction: deleteFiles ? (filesPurged ? 'FILES_PURGED' : 'PURGE_FAILED_NODE_OFFLINE') : 'FILES_PRESERVED',
+            ipAddress: clientIp,
+            userAgent
+          }
         }
       });
     }, { maxWait: 15000, timeout: 30000 });
 
     const deletedServer = device.servers?.[0];
     const deletedHostname = deletedServer?.endpoints?.[0]?.hostname;
+    const fileStatusText = deleteFiles
+      ? (filesPurged ? 'Files permanently purged' : 'Purge requested (device offline)')
+      : 'Files preserved on device';
+
     await CustomerActivityService.recordEventSafe({
       userId: user.id,
       eventType: 'DEVICE.UNLINKED',
@@ -990,12 +1019,31 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       metadata: {
         deviceName: targetDeviceName,
         serverName: deletedServer?.serverName || targetDeviceName,
-        hostname: deletedHostname || undefined
+        hostname: deletedHostname || undefined,
+        deleteFiles,
+        filesPurged,
+        fileStatus: fileStatusText
       }
     });
 
+    await serverEventProducer.emitServerDeleted(
+      user.id,
+      targetDeviceId,
+      deletedServer?.id || targetDeviceId,
+      deletedServer?.serverName || targetDeviceName,
+      targetDeviceName,
+      deleteFiles,
+      filesPurged
+    );
+
     return reply.status(200).send(createSuccessResponse({
-      message: 'Server, allocated subdomain endpoint, and all associated node data successfully deleted.'
+      message: deleteFiles
+        ? (filesPurged
+            ? 'Server deleted and all uploaded files have been purged from your device.'
+            : 'Server deleted. Note: Host device was offline so files could not be purged automatically.')
+        : 'Server successfully deleted. All files were kept intact on your device.',
+      deleteFiles,
+      filesPurged
     }));
   };
 

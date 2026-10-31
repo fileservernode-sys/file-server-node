@@ -24,6 +24,7 @@ abstract class ServerService {
   Future<String?> pickStorageFolder();
   Future<bool> setStoragePath(String path);
   Future<String> getStoragePath();
+  Future<bool> purgeStorageFiles();
 }
 
 /// MethodChannel Platform Implementation targeting Android Kotlin LocalServerEngine & RemoteNodeServerService
@@ -281,6 +282,16 @@ class MethodChannelServerService implements ServerService {
       return const MockServerService().getStoragePath();
     }
   }
+
+  @override
+  Future<bool> purgeStorageFiles() async {
+    try {
+      final res = await _channel.invokeMethod<Map<dynamic, dynamic>>('purgeStorageFiles');
+      return res != null && res['success'] == true;
+    } catch (e) {
+      return const MockServerService().purgeStorageFiles();
+    }
+  }
 }
 
 /// Mock Server Service Implementation for Development & Unit Testing
@@ -444,5 +455,11 @@ class MockServerService implements ServerService {
   @override
   Future<String> getStoragePath() async {
     return _mockStoragePath;
+  }
+
+  @override
+  Future<bool> purgeStorageFiles() async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    return true;
   }
 }

@@ -178,7 +178,7 @@ final setupStateProvider =
   return SetupStateNotifier(ref);
 });
 
-/// Setup State Notifier — Executes End-to-End Real Subdomain & Server Lifecycle
+/// Setup State Notifier - Executes End-to-End Real Subdomain & Server Lifecycle
 class SetupStateNotifier extends StateNotifier<SetupState> {
   final Ref _ref;
   StreamSubscription<RemoteConnectionInfo>? _remoteStatusSubscription;
@@ -727,8 +727,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
 
   /// Deletes ONLY the active server node belonging to THIS physical phone installation (Batch 5).
   /// Verifies device.installationId == localInstallationId before calling deleteDevice.
-  /// After successful deletion, clears local state for THIS device without affecting other devices in the account.
-  Future<bool> deleteServer() async {
+  Future<bool> deleteServer({bool deleteFiles = false}) async {
     final authSession = _ref.read(authStateProvider).session;
     final sessionToken = authSession?.accessToken;
 
@@ -740,13 +739,21 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
     }
 
     try {
-      // 1. Stop local HTTP server engine on Android
+      final serverService = _ref.read(serverServiceProvider);
+
+      // 1. If requested, purge all uploaded files and folders from host device
+      if (deleteFiles) {
+        try {
+          await serverService.purgeStorageFiles();
+        } catch (_) {}
+      }
+
+      // 2. Stop local HTTP server engine on Android
       try {
-        final serverService = _ref.read(serverServiceProvider);
         await serverService.stopServer();
       } catch (_) {}
 
-      // 2. Disconnect remote transport
+      // 3. Disconnect remote transport
       try {
         final remoteService = _ref.read(remoteConnectionServiceProvider);
         final connId = state.connectionId ?? 'active-conn';
@@ -756,7 +763,7 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         );
       } catch (_) {}
 
-      // 3. Resolve device matching ONLY THIS physical phone installation
+      // 4. Resolve device matching ONLY THIS physical phone installation
       final deviceIdentityService = _ref.read(deviceIdentityServiceProvider);
       final localInstallationId = await deviceIdentityService.getInstallationId();
 
@@ -766,12 +773,12 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
         final targetDeviceId = currentDev['id'] as String?;
         final targetInstId = currentDev['installationId'] as String?;
 
-        // PART 9 — DELETE SAFETY: Verify device.installationId == localInstallationId
         if (targetInstId == localInstallationId && targetDeviceId != null && targetDeviceId.isNotEmpty) {
           final deviceDataSource = _ref.read(deviceRemoteDataSourceProvider);
           await deviceDataSource.deleteDevice(
             deviceId: targetDeviceId,
             sessionToken: sessionToken,
+            deleteFiles: deleteFiles,
           );
         }
       } else if (state.deviceId != null && state.deviceId!.isNotEmpty) {
@@ -781,11 +788,12 @@ class SetupStateNotifier extends StateNotifier<SetupState> {
           await deviceDataSource.deleteDevice(
             deviceId: state.deviceId!,
             sessionToken: sessionToken,
+            deleteFiles: deleteFiles,
           );
         } catch (_) {}
       }
 
-      // 4. PART 10 — STATE CLEANUP: Clean up device credential & reset setup state for THIS device only
+      // 4. PART 10 - STATE CLEANUP: Clean up device credential & reset setup state for THIS device only
       try {
         final secureStorage = _ref.read(secureStorageProvider);
         await secureStorage.delete(key: 'device_credential');

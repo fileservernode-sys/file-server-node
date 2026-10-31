@@ -229,6 +229,36 @@ class TemplateRegistry {
       defaultDeepLink: () => createDeepLink('server', 'https://zdexcloud.com/pages/dashboard', '/pages/dashboard')
     });
 
+    // SERVER_DELETED
+    this.registerTemplate({
+      type: NotificationType.SERVER_DELETED,
+      titleTemplate: () => 'Server Deleted',
+      bodyTemplate: (ctx) => {
+        const fileNote = ctx.deleteFiles
+          ? (ctx.filesPurged ? 'Uploaded files were permanently deleted.' : 'Files pending manual cleanup (device was offline).')
+          : 'Uploaded files were preserved on your device.';
+        return `Server "${ctx.serverName}" was deleted from device "${ctx.deviceName}". ${fileNote}`;
+      },
+      emailSubjectTemplate: (ctx) => `Server Deleted: ${ctx.serverName}`,
+      emailHtmlTemplate: (ctx) => {
+        const fileNote = ctx.deleteFiles
+          ? (ctx.filesPurged
+              ? '<p><strong>File Deletion:</strong> All uploaded files and folders have been purged from your host device.</p>'
+              : '<p><strong>File Deletion:</strong> Deletion was requested, but your device was offline during removal. Please verify your storage folder manually.</p>')
+          : '<p><strong>File Retention:</strong> All files and folders have been safely preserved on your device.</p>';
+        return `<h2>Server Removed</h2><p>Server "${ctx.serverName}" on device "${ctx.deviceName}" has been removed from your account.</p>${fileNote}`;
+      },
+      emailTextTemplate: (ctx) => {
+        const fileNote = ctx.deleteFiles
+          ? (ctx.filesPurged ? 'All uploaded files were purged from your device.' : 'Deletion requested, but device was offline.')
+          : 'All files were kept intact on your device.';
+        return `Server "${ctx.serverName}" on device "${ctx.deviceName}" was deleted. ${fileNote}`;
+      },
+      defaultChannels: [NotificationChannel.IN_APP, NotificationChannel.EMAIL],
+      defaultSeverity: NotificationSeverity.WARNING,
+      defaultDeepLink: () => createDeepLink('server', 'https://zdexcloud.com/pages/dashboard', '/pages/dashboard')
+    });
+
     // 11. SERVER_UNAVAILABLE
     this.registerTemplate({
       type: NotificationType.SERVER_UNAVAILABLE,

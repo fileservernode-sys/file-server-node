@@ -448,7 +448,7 @@ export const CUSTOMER_ACTIVITY_TAXONOMY: Readonly<Record<CustomerActivityEventTy
     eventType: CustomerActivityEventType.DEVICE_UNLINKED,
     category: CustomerActivityCategory.SERVERS_DEVICES,
     title: 'Server & Device Removed',
-    descriptionTemplate: 'Device "{deviceName}" and its personal file server were removed from your account.',
+    descriptionTemplate: 'Device "{deviceName}" and its personal file server were removed from your account ({fileStatus}).',
     triggerAction: 'Customer deletes a device/server node via DELETE /api/v1/devices/:deviceId or DELETE /api/v1/servers/:deviceId.',
     sourceService: 'src/routes/device.ts (DELETE /api/v1/devices/:deviceId, DELETE /api/v1/servers/:deviceId)',
     capabilityStatus: 'CONFIRMED_RECORDED',
@@ -458,7 +458,7 @@ export const CUSTOMER_ACTIVITY_TAXONOMY: Readonly<Record<CustomerActivityEventTy
         metadataActionDiscriminator: 'SERVER_DELETED'
       }
     ],
-    allowedMetadataKeys: ['deviceName', 'serverName', 'hostname'],
+    allowedMetadataKeys: ['deviceName', 'serverName', 'hostname', 'deleteFiles', 'filesPurged', 'fileStatus'],
     entityReferences: { deviceId: true, serverId: true },
     deduplication: {
       mode: 'NONE',

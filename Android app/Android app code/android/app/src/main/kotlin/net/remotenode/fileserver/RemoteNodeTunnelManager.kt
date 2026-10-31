@@ -1049,6 +1049,19 @@ object RemoteNodeTunnelManager {
                         val localRes = executeLocalHttpGet("/api/storage")
                         copyLocalResultToResponse(localRes, responseMsg)
                     }
+                    "PURGE_ALL_FILES" -> {
+                        val ctx = appContext
+                        val deletedCount = if (ctx != null) {
+                            RemoteNodeServerService.purgeStorageFolder(ctx)
+                        } else {
+                            RemoteNodeServerService.engine.purgeFiles()
+                        }
+                        responseMsg.put("success", true)
+                        responseMsg.put("data", JSONObject().apply {
+                            put("purged", true)
+                            put("deletedCount", deletedCount)
+                        })
+                    }
                     "RECENT" -> {
                         val localRes = executeLocalHttpGet("/api/files/recent")
                         copyLocalResultToResponse(localRes, responseMsg)

@@ -1,6 +1,6 @@
 /**
  * RemoteNode Canonical Notification Type Registry
- * Track 4 — Batch NT-1.1 Architecture
+ * Track 4 - Batch NT-1.1 Architecture
  */
 
 import { NotificationCategory } from './category.js';
@@ -20,6 +20,7 @@ export enum NotificationType {
   SERVER_CREATED = 'SERVER_CREATED',
   SERVER_STARTED = 'SERVER_STARTED',
   SERVER_STOPPED = 'SERVER_STOPPED',
+  SERVER_DELETED = 'SERVER_DELETED',
   SERVER_UNAVAILABLE = 'SERVER_UNAVAILABLE',
   SERVER_RECOVERED = 'SERVER_RECOVERED',
   GATEWAY_CONNECTED = 'GATEWAY_CONNECTED',
@@ -123,6 +124,12 @@ export const NOTIFICATION_TYPE_CATALOG: Record<NotificationType, NotificationTyp
   },
   [NotificationType.SERVER_STOPPED]: {
     type: NotificationType.SERVER_STOPPED,
+    category: NotificationCategory.DEVICE_SERVER,
+    defaultSeverity: NotificationSeverity.WARNING,
+    isSecurityCritical: false
+  },
+  [NotificationType.SERVER_DELETED]: {
+    type: NotificationType.SERVER_DELETED,
     category: NotificationCategory.DEVICE_SERVER,
     defaultSeverity: NotificationSeverity.WARNING,
     isSecurityCritical: false

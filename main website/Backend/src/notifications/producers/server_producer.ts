@@ -82,6 +82,39 @@ export class ServerEventProducer {
     }
   }
 
+  public async emitServerDeleted(
+    userId: string,
+    deviceId: string,
+    serverId: string,
+    serverName: string,
+    deviceName: string,
+    deleteFiles: boolean,
+    filesPurged: boolean
+  ): Promise<void> {
+    try {
+      await notificationService.dispatchEvent({
+        eventType: NotificationType.SERVER_DELETED,
+        userId,
+        deviceId,
+        serverId,
+        category: NotificationCategory.DEVICE_SERVER,
+        severity: deleteFiles ? NotificationSeverity.WARNING : NotificationSeverity.INFO,
+        metadata: {
+          serverName,
+          deviceName,
+          deleteFiles,
+          filesPurged,
+          fileStatus: deleteFiles
+            ? (filesPurged ? 'All uploaded files were purged from the host device.' : 'Host device was offline so files could not be purged automatically.')
+            : 'All files and folders were preserved on the host device.'
+        },
+        source: 'server-producer'
+      });
+    } catch (err) {
+      console.warn(`[ServerEventProducer] Non-blocking dispatch warning:`, err);
+    }
+  }
+
   public async emitServerUnavailable(
     userId: string,
     deviceId: string,

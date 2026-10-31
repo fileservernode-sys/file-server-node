@@ -168,6 +168,45 @@ class RemoteNodeServerService : Service() {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             prefs.edit().putString(KEY_STORAGE_PATH, path).apply()
         }
+
+        fun purgeStorageFolder(context: Context): Int {
+            return try {
+                val path = getPersistedStoragePath(context)
+                val dir = File(path)
+                var count = 0
+                if (dir.exists() && dir.isDirectory) {
+                    val files = dir.listFiles()
+                    if (files != null) {
+                        for (f in files) {
+                            if (f.isDirectory) {
+                                count += deleteDirectoryRecursively(f)
+                            } else {
+                                if (f.delete()) count++
+                            }
+                        }
+                    }
+                }
+                count
+            } catch (_: Exception) {
+                0
+            }
+        }
+
+        private fun deleteDirectoryRecursively(dir: File): Int {
+            var count = 0
+            val files = dir.listFiles()
+            if (files != null) {
+                for (f in files) {
+                    if (f.isDirectory) {
+                        count += deleteDirectoryRecursively(f)
+                    } else {
+                        if (f.delete()) count++
+                    }
+                }
+            }
+            if (dir.delete()) count++
+            return count
+        }
     }
 
     private var wakeLock: PowerManager.WakeLock? = null

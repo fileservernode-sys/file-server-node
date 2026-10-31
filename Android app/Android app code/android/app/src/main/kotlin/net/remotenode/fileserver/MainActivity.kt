@@ -449,6 +449,17 @@ class MainActivity : FlutterActivity() {
                     val res = RemoteNodeServerService.engine.stop()
                     result.success(res)
                 }
+                "purgeStorageFiles" -> {
+                    try {
+                        val count = RemoteNodeServerService.purgeStorageFolder(context)
+                        result.success(mapOf(
+                            "success" to true,
+                            "deletedCount" to count
+                        ))
+                    } catch (e: Exception) {
+                        result.error("PURGE_FAILED", e.message, null)
+                    }
+                }
                 "restartServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
                     val storagePath = call.argument<String>("storagePath")

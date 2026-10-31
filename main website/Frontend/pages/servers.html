@@ -1043,28 +1043,51 @@
 
   <!-- Delete Server Modal -->
   <div id="delete-server-modal" class="server-action-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display: none;">
-    <div class="modal-dialog-content">
+    <div class="modal-dialog-content" style="max-width: 480px;">
       <div class="modal-header">
         <div class="modal-header-icon" style="background: rgba(220, 38, 38, 0.1); color: #DC2626;" aria-hidden="true">
           <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </div>
         <div>
           <h3 id="delete-modal-title" class="modal-title" style="color: #991B1B;">Delete Server Node</h3>
-          <p class="modal-subtitle">Permanently unregister this node from your account.</p>
+          <p class="modal-subtitle">Choose whether to preserve or purge your uploaded files.</p>
         </div>
       </div>
-      <div style="margin-bottom: var(--space-lg); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--line-height-relaxed);">
-        <div style="background: #FEF2F2; border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-md); padding: var(--space-sm); margin-bottom: var(--space-sm);">
+      <div style="margin-bottom: var(--space-md); font-size: var(--font-size-xs); color: var(--color-text-secondary); line-height: var(--line-height-relaxed);">
+        <div style="background: #FEF2F2; border: 1px solid rgba(220, 38, 38, 0.2); border-radius: var(--radius-md); padding: var(--space-sm); margin-bottom: var(--space-md);">
           <div style="font-weight: 600; color: #991B1B; margin-bottom: 2px;" id="delete-target-name">Server Name</div>
           <div style="font-size: 11px; color: #B91C1C; font-family: var(--font-family-mono);" id="delete-target-id">ID: ...</div>
         </div>
-        <p>You are about to remove this server registration and release its allocated subdomain endpoint. This will disconnect active relay tunnels. Your personal files remain physically safe on your Android phone.</p>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: var(--space-md);">
+          <!-- Option 1: Keep files (Default) -->
+          <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 2px solid var(--color-brand-primary, #2563EB); border-radius: var(--radius-md, 8px); cursor: pointer; background: rgba(37, 99, 235, 0.04); transition: border-color 0.2s;" id="delete-opt-preserve-label">
+            <input type="radio" name="delete_file_choice" id="delete-opt-preserve" value="keep" checked style="margin-top: 3px; accent-color: var(--color-brand-primary, #2563EB);" onchange="updateDeleteModalUi()">
+            <div>
+              <div style="font-weight: 600; color: var(--color-text-primary, #0F172A); font-size: 13px; margin-bottom: 2px;">Keep files on phone (Delete Server Only)</div>
+              <div style="font-size: 11px; color: var(--color-text-secondary, #64748B); line-height: 1.4;">Unregister the server and release the web endpoint. All uploaded files, photos, videos, and folders remain safely stored on your device. (Recommended)</div>
+            </div>
+          </label>
+
+          <!-- Option 2: Delete files -->
+          <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px; border: 1px solid var(--color-border-subtle, #E2E8F0); border-radius: var(--radius-md, 8px); cursor: pointer; background: var(--color-bg-surface, #FFFFFF); transition: border-color 0.2s;" id="delete-opt-purge-label">
+            <input type="radio" name="delete_file_choice" id="delete-opt-purge" value="delete" style="margin-top: 3px; accent-color: #DC2626;" onchange="updateDeleteModalUi()">
+            <div>
+              <div style="font-weight: 600; color: #DC2626; font-size: 13px; margin-bottom: 2px;">Delete uploaded files & server</div>
+              <div style="font-size: 11px; color: var(--color-text-secondary, #64748B); line-height: 1.4;">Unregister the server AND permanently purge all files, videos, and folders uploaded to your host device storage folder. This cannot be undone.</div>
+            </div>
+          </label>
+        </div>
+
+        <div id="delete-purge-warning" style="display: none; background: #FFF1F2; border: 1px solid #FECDD3; border-radius: var(--radius-sm, 6px); padding: 8px 12px; font-size: 11px; color: #9F1239; margin-bottom: var(--space-sm);">
+          <strong>Notice:</strong> The host phone must be connected to the gateway to automatically purge files remotely. If offline, the server registration will still be removed from your account.
+        </div>
       </div>
       <input type="hidden" id="delete-target-id-input">
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary btn-sm" onclick="closeAllActionModals()">Cancel</button>
         <button type="button" id="btn-confirm-delete" class="btn btn-sm" style="background: #DC2626; color: #FFFFFF; border: 1px solid #DC2626;" onclick="handleDeleteConfirm()">
-          <span class="btn-text">Delete Server</span>
+          <span class="btn-text">Delete Server (Keep Files)</span>
         </button>
       </div>
     </div>
@@ -1875,6 +1898,32 @@
     }
 
     // 3. Delete Actions
+    function updateDeleteModalUi() {
+      const isPurge = document.getElementById('delete-opt-purge')?.checked;
+      const preserveLabel = document.getElementById('delete-opt-preserve-label');
+      const purgeLabel = document.getElementById('delete-opt-purge-label');
+      const warningBox = document.getElementById('delete-purge-warning');
+      const confirmBtn = document.getElementById('btn-confirm-delete');
+
+      if (preserveLabel && purgeLabel) {
+        if (isPurge) {
+          purgeLabel.style.borderColor = '#DC2626';
+          purgeLabel.style.background = '#FEF2F2';
+          preserveLabel.style.borderColor = 'var(--color-border-subtle, #E2E8F0)';
+          preserveLabel.style.background = 'var(--color-bg-surface, #FFFFFF)';
+          if (warningBox) warningBox.style.display = 'block';
+          if (confirmBtn) confirmBtn.querySelector('.btn-text').textContent = 'Delete Server & Purge Files';
+        } else {
+          preserveLabel.style.borderColor = 'var(--color-brand-primary, #2563EB)';
+          preserveLabel.style.background = 'rgba(37, 99, 235, 0.04)';
+          purgeLabel.style.borderColor = 'var(--color-border-subtle, #E2E8F0)';
+          purgeLabel.style.background = 'var(--color-bg-surface, #FFFFFF)';
+          if (warningBox) warningBox.style.display = 'none';
+          if (confirmBtn) confirmBtn.querySelector('.btn-text').textContent = 'Delete Server (Keep Files)';
+        }
+      }
+    }
+
     function openDeleteModal(deviceId, serverName, serverId) {
       closeAllDropdowns();
       const modal = document.getElementById('delete-server-modal');
@@ -1887,6 +1936,10 @@
       if (targetNameEl) targetNameEl.textContent = serverName;
       if (targetIdEl) targetIdEl.textContent = `ID: ${serverId}`;
 
+      const preserveRadio = document.getElementById('delete-opt-preserve');
+      if (preserveRadio) preserveRadio.checked = true;
+      updateDeleteModalUi();
+
       backdrop.style.display = 'block';
       modal.style.display = 'block';
     }
@@ -1895,20 +1948,22 @@
       if (isActionSubmitting) return;
       const deviceId = document.getElementById('delete-target-id-input')?.value;
       const btn = document.getElementById('btn-confirm-delete');
+      const deleteFiles = document.getElementById('delete-opt-purge')?.checked === true;
 
       if (!deviceId) return;
 
       isActionSubmitting = true;
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span><span>Deleting...</span>';
+        btn.innerHTML = '<span class="spinner" style="width: 14px; height: 14px; border-width: 2px;"></span><span>Processing...</span>';
       }
 
       try {
-        const res = await apiRequest(`/devices/${encodeURIComponent(deviceId)}`, 'DELETE');
+        const res = await apiRequest(`/devices/${encodeURIComponent(deviceId)}?deleteFiles=${deleteFiles}`, 'DELETE', { deleteFiles });
         if (res.ok && res.data && res.data.success) {
           closeAllActionModals();
-          showToast('Server deleted successfully');
+          const successMsg = res.data.data?.message || (deleteFiles ? 'Server deleted and uploaded files purged.' : 'Server deleted successfully. Files preserved.');
+          showToast(successMsg);
           loadUserServers(false);
           BillingState.refreshBillingState().catch(() => {});
         } else {
@@ -1921,7 +1976,7 @@
         isActionSubmitting = false;
         if (btn) {
           btn.disabled = false;
-          btn.innerHTML = '<span class="btn-text">Delete Server</span>';
+          updateDeleteModalUi();
         }
       }
     }

@@ -315,6 +315,62 @@ export class GatewayService {
   }
 
   /**
+   * Purge all uploaded files from the device via its active tunnel connection.
+   * Returns true if the device acknowledged file purge, or false if device is offline or timed out.
+   */
+  public async purgeDeviceFiles(deviceId: string, timeoutMs: number = 8000): Promise<boolean> {
+    const connId = this.deviceToConnectionMap.get(deviceId);
+    if (!connId || !this.activeConnections.has(connId)) {
+      return false;
+    }
+    const conn = this.activeConnections.get(connId)!;
+    if (conn.socket.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+
+    const requestId = `purge_${crypto.randomUUID()}`;
+    const fileRequestMsg: HandshakeMessage = {
+      type: 'FILE_REQUEST',
+      requestId,
+      connectionId: connId,
+      sessionId: conn.sessionId,
+      operation: 'PURGE_ALL_FILES',
+      path: '/'
+    };
+
+    try {
+      const responsePromise = new Promise<any>((resolve) => {
+        const timer = setTimeout(() => {
+          if (this.pendingRequests.has(requestId)) {
+            this.pendingRequests.delete(requestId);
+            resolve({ success: false, error: 'TIMEOUT' });
+          }
+        }, timeoutMs);
+
+        this.pendingRequests.set(requestId, {
+          requestId,
+          connectionId: connId,
+          sessionId: conn.sessionId,
+          sessionEpoch: conn.sessionEpoch,
+          operation: 'PURGE_ALL_FILES',
+          httpResolver: (resp) => {
+            clearTimeout(timer);
+            resolve(resp);
+          },
+          createdAt: Date.now(),
+          timer
+        });
+      });
+
+      conn.socket.send(JSON.stringify(fileRequestMsg));
+      const res = await responsePromise;
+      return !!(res && (res.success === true || res.data?.success === true));
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Fast stale socket eviction & session replacement handler.
    * Ensures superseded session resources (pending requests, active transfers) are cleanly terminated
    * without mutating or deleting mappings belonging to the authoritative replacement session.
@@ -488,6 +544,7 @@ export class GatewayService {
         // Map HTTP route to operation
         let operation = 'HEALTH';
         if (pathname === '/api/storage') operation = 'STORAGE';
+        else if (pathname === '/api/storage/purge' && req.method === 'POST') operation = 'PURGE_ALL_FILES';
         else if (pathname === '/api/files/recent') operation = 'RECENT';
         else if (pathname === '/api/files' && req.method === 'GET') operation = 'LIST';
         else if (pathname === '/api/folders' && req.method === 'POST') operation = 'CREATE_FOLDER';

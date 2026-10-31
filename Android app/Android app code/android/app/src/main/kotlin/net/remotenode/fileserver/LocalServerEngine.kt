@@ -400,6 +400,7 @@ class LocalServerEngine {
 
             // Storage Statistics & Intelligence endpoint
             newServer.createContext("/api/storage", StorageHandler(this, sandboxDir))
+            newServer.createContext("/api/storage/purge", PurgeStorageHandler(this))
 
             // Recent Files endpoint
             newServer.createContext("/api/files/recent", RecentFilesHandler(this, sandboxDir))
@@ -468,6 +469,47 @@ class LocalServerEngine {
     fun restart(port: Int = 8080, baseStorageDir: File? = null, context: Any? = null): Map<String, Any> {
         stop()
         return start(port, baseStorageDir ?: rootDirectory, context ?: androidContext)
+    }
+
+    fun purgeFiles(): Int {
+        val dir = rootDirectory ?: run {
+            if (androidContext is android.content.Context) {
+                File(RemoteNodeServerService.getPersistedStoragePath(androidContext as android.content.Context))
+            } else {
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            }
+        }
+        if (!dir.exists() || !dir.isDirectory) return 0
+        var deletedCount = 0
+        try {
+            val contents = dir.listFiles() ?: return 0
+            for (file in contents) {
+                if (file.isDirectory) {
+                    deletedCount += deleteDirectoryRecursively(file)
+                } else {
+                    if (file.delete()) {
+                        deletedCount++
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return deletedCount
+    }
+
+    private fun deleteDirectoryRecursively(dir: File): Int {
+        var count = 0
+        val files = dir.listFiles()
+        if (files != null) {
+            for (f in files) {
+                if (f.isDirectory) {
+                    count += deleteDirectoryRecursively(f)
+                } else {
+                    if (f.delete()) count++
+                }
+            }
+        }
+        if (dir.delete()) count++
+        return count
     }
 
     fun getDeviceIpAddress(): String {
@@ -765,7 +807,32 @@ class LocalServerEngine {
     }
 
     /**
-     * Recent Files Handler — returns files sorted by lastModified descending
+     * Purge Storage Handler - deletes all files and directories in server storage folder
+     */
+    private class PurgeStorageHandler(private val engine: LocalServerEngine) : HttpHandler {
+        override fun handle(exchange: HttpExchange) {
+            if (exchange.requestMethod != "POST") {
+                sendJsonResponse(exchange, 405, """{"success":false,"error":{"code":"METHOD_NOT_ALLOWED","message":"Method not allowed"}}""")
+                return
+            }
+
+            val token = extractToken(exchange)
+            if (!engine.isSessionValid(token)) {
+                sendJsonResponse(exchange, 401, """{"success":false,"error":{"code":"UNAUTHORIZED","message":"File-server authentication required."}}""")
+                return
+            }
+
+            try {
+                val deletedCount = engine.purgeFiles()
+                sendJsonResponse(exchange, 200, """{"success":true,"message":"Storage files successfully purged","deletedCount":$deletedCount}""")
+            } catch (e: Exception) {
+                sendJsonResponse(exchange, 500, """{"success":false,"error":{"code":"PURGE_FAILED","message":"${e.message}"}}""")
+            }
+        }
+    }
+
+    /**
+     * Recent Files Handler - returns files sorted by lastModified descending
      */
     private class RecentFilesHandler(private val engine: LocalServerEngine, private val rootDir: File) : HttpHandler {
         override fun handle(exchange: HttpExchange) {

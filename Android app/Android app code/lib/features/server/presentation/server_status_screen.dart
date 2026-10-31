@@ -11,7 +11,7 @@ import '../../../core/widgets/app_header.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../setup/application/setup_state.dart';
 
-/// Server Status Detail Screen — Displays local HTTP file server engine state, public subdomain endpoint, and control triggers
+/// Server Status Detail Screen - Displays local HTTP file server engine state, public subdomain endpoint, and control triggers
 class ServerStatusScreen extends ConsumerStatefulWidget {
   final DeviceServerStatus mockStatus;
 
@@ -199,57 +199,203 @@ class _ServerStatusScreenState extends ConsumerState<ServerStatusScreen> {
   }
 
   Future<void> _handleDeleteServer() async {
+    bool deleteFiles = false;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded,
-                color: AppColors.statusError, size: 24),
-            SizedBox(width: AppSpacing.xs),
-            Flexible(
-              child: Text('Delete Server Node?',
-                  style: AppTypography.cardTitle,
-                  overflow: TextOverflow.ellipsis),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded,
+                  color: AppColors.statusError, size: 24),
+              SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text('Delete Server Node',
+                    style: AppTypography.cardTitle,
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose whether to preserve or purge your uploaded files when deleting this server node:',
+                  style: AppTypography.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.md),
+
+                // Option 1: Keep files on phone (Default)
+                InkWell(
+                  onTap: () {
+                    setDialogState(() => deleteFiles = false);
+                  },
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: !deleteFiles
+                          ? AppColors.primary.withValues(alpha: 0.06)
+                          : AppColors.background,
+                      border: Border.all(
+                        color: !deleteFiles
+                            ? AppColors.primary
+                            : AppColors.borderSubtle,
+                        width: !deleteFiles ? 2 : 1,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2, right: AppSpacing.xs),
+                          child: Icon(
+                            !deleteFiles
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: !deleteFiles
+                                ? AppColors.primary
+                                : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Keep files on phone (Delete Server Only)',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Unregister server and release web endpoint. All uploaded files, photos, videos, and folders remain safely stored on this phone. (Recommended)',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Option 2: Delete files & server
+                InkWell(
+                  onTap: () {
+                    setDialogState(() => deleteFiles = true);
+                  },
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  child: Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: deleteFiles
+                          ? AppColors.statusError.withValues(alpha: 0.06)
+                          : AppColors.background,
+                      border: Border.all(
+                        color: deleteFiles
+                            ? AppColors.statusError
+                            : AppColors.borderSubtle,
+                        width: deleteFiles ? 2 : 1,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2, right: AppSpacing.xs),
+                          child: Icon(
+                            deleteFiles
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: deleteFiles
+                                ? AppColors.statusError
+                                : AppColors.textMuted,
+                            size: 20,
+                          ),
+                        ),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Delete uploaded files & server',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.statusError,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                'Permanently purge all files, videos, and folders in the server storage folder, unregister server, and release the endpoint. This cannot be undone.',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel',
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.statusError,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(deleteFiles
+                  ? 'Delete & Purge Files'
+                  : 'Delete Server (Keep Files)'),
             ),
           ],
         ),
-        content: const Text(
-          'Are you sure you want to permanently delete this file server?\n\n'
-          'This will stop the local server engine, remove your allocated subdomain, '
-          'and delete all server records from the database. Your physical files remain safe on this phone.',
-          style: AppTypography.bodySmall,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusError,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete Server'),
-          ),
-        ],
       ),
     );
 
     if (confirmed != true) return;
 
     setState(() => _isLoading = true);
-    await ref.read(setupStateProvider.notifier).deleteServer();
+    await ref
+        .read(setupStateProvider.notifier)
+        .deleteServer(deleteFiles: deleteFiles);
     if (mounted) {
       setState(() => _isLoading = false);
       Navigator.of(context).pop();
