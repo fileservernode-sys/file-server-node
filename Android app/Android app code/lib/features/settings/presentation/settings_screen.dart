@@ -13,11 +13,24 @@ import '../../auth/application/auth_state.dart';
 import '../../setup/application/setup_state.dart';
 
 /// Settings Screen — Commercial-Grade SaaS Infrastructure & Account Control Center
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(setupStateProvider.notifier).syncWithBackend();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final setupState = ref.watch(setupStateProvider);
 
@@ -167,9 +180,15 @@ class SettingsScreen extends ConsumerWidget {
                           isMonospace: true,
                         ),
                         const SizedBox(height: AppSpacing.xs),
-                        const _InfoRow(
+                        _InfoRow(
+                          label: 'Plan Tier',
+                          value: setupState.planName,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _InfoRow(
                           label: 'Server Capacity',
-                          value: '1 / 5 Slots Used',
+                          value:
+                              '${setupState.activeServersCount} / ${setupState.maxServers} ${setupState.maxServers == 1 ? "Slot" : "Slots"} Used',
                         ),
                         const SizedBox(height: AppSpacing.md),
                         const Divider(),

@@ -81,11 +81,11 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
           }
           const chKey = rec.channel.toLowerCase();
           if (chKey === 'push') {
-            if (rec.targetAddress || rec.status === 'DELIVERED') {
+            if (rec.status === 'DELIVERED') {
+              deliveryMap[rec.notificationId].push = 'DELIVERED';
+            } else if (rec.targetAddress && (rec.status === 'FAILED' || rec.status === 'QUEUED')) {
               deliveryMap[rec.notificationId].push = rec.status;
-              if (rec.status === 'FAILED' || rec.status === 'QUEUED') {
-                deliveryMap[rec.notificationId].retryable = true;
-              }
+              deliveryMap[rec.notificationId].retryable = true;
             }
           } else if (chKey === 'email') {
             deliveryMap[rec.notificationId].email = rec.status;

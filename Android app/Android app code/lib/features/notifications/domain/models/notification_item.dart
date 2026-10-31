@@ -17,9 +17,14 @@ class NotificationDeliveryStatus {
     if (json == null) {
       return const NotificationDeliveryStatus();
     }
+    final rawPush = json['push'] as String?;
+    final cleanPush = (rawPush != null && rawPush.toUpperCase() != 'PERMANENTLY_FAILED')
+        ? rawPush
+        : null;
+
     return NotificationDeliveryStatus(
       inApp: json['inApp'] as String? ?? 'DELIVERED',
-      push: json['push'] as String?,
+      push: cleanPush,
       email: json['email'] as String?,
       retryable: json['retryable'] as bool? ?? false,
     );

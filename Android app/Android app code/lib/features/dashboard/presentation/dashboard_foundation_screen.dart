@@ -62,7 +62,7 @@ class DashboardFoundationScreen extends StatelessWidget {
                           border: Border.all(color: AppColors.borderSubtle),
                         ),
                         child: Text(
-                          '1 / 5 Server Slots',
+                          '${setup.activeServersCount} / ${setup.maxServers} Server ${setup.maxServers == 1 ? "Slot" : "Slots"}',
                           style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),

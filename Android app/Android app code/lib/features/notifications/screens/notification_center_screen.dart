@@ -252,147 +252,215 @@ class _NotificationCenterScreenState extends ConsumerState<NotificationCenterScr
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: AppCard(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _buildSeverityBadge(item.severity),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  item.category,
-                  style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
-                ),
-                const Spacer(),
-                if (isUnread)
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        onTap: (item.deepLinkUri != null && item.deepLinkUri!.isNotEmpty)
+            ? () {
+                final target = NotificationRouter.parsePayload({
+                  'deepLink': item.deepLinkUri,
+                  'serverId': item.serverId,
+                });
+                _handleTargetNavigation(target);
+              }
+            : null,
+        child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _buildSeverityBadge(item.severity),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    item.category,
+                    style: AppTypography.caption.copyWith(color: AppColors.textSecondary),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              item.title,
-              style: AppTypography.cardTitle.copyWith(
-                fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
+                  const Spacer(),
+                  if (isUnread)
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.body,
-              style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            _buildDeliveryBadges(item.deliveryStatus),
-            const SizedBox(height: AppSpacing.xs),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (item.deliveryStatus.retryable)
-                  TextButton.icon(
-                    onPressed: isRetrying
-                        ? null
-                        : () async {
-                            final res = await notifier.retryDelivery(item.id);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(res['message'] as String? ?? 'Redelivery requested'),
-                                  backgroundColor: res['success'] == true ? AppColors.success : AppColors.error,
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          },
-                    icon: isRetrying
-                        ? const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh, size: 14),
-                    label: Text(
-                      isRetrying ? 'Retrying...' : 'Retry Delivery',
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                  ),
-                if (item.deepLinkUri != null && item.deepLinkUri!.isNotEmpty)
-                  TextButton(
-                    onPressed: () {
-                      final target = NotificationRouter.parsePayload({
-                        'deepLink': item.deepLinkUri,
-                        'serverId': item.serverId,
-                      });
-                      _handleTargetNavigation(target);
-                    },
-                    child: const Text('Open Target', style: TextStyle(fontSize: 12)),
-                  ),
-                if (isUnread)
-                  IconButton(
-                    icon: const Icon(Icons.mark_email_read_outlined, size: 18, color: AppColors.primary),
-                    tooltip: 'Mark as read',
-                    onPressed: () => notifier.markAsRead(item.id),
-                  ),
-                IconButton(
-                  icon: const Icon(Icons.archive_outlined, size: 18, color: AppColors.textSecondary),
-                  tooltip: 'Archive',
-                  onPressed: () => notifier.markAsArchived(item.id),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                item.title,
+                style: AppTypography.cardTitle.copyWith(
+                  fontWeight: isUnread ? FontWeight.bold : FontWeight.w600,
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item.body,
+                style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              _buildDeliveryBadges(item.deliveryStatus),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (item.deliveryStatus.retryable) ...[
+                    TextButton.icon(
+                      onPressed: isRetrying
+                          ? null
+                          : () async {
+                              final res = await notifier.retryDelivery(item.id);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(res['message'] as String? ?? 'Redelivery requested'),
+                                    backgroundColor: res['success'] == true ? AppColors.success : AppColors.error,
+                                    duration: const Duration(seconds: 3),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: isRetrying
+                          ? const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh, size: 14),
+                      label: Text(
+                        isRetrying ? 'Retrying...' : 'Retry Delivery',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
+                  if (isUnread)
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        minimumSize: const Size(0, 30),
+                        side: const BorderSide(color: AppColors.borderSubtle),
+                      ),
+                      icon: const Icon(Icons.check, size: 14, color: AppColors.primary),
+                      label: const Text(
+                        'Mark as Read',
+                        style: TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () => notifier.markAsRead(item.id),
+                    )
+                  else
+                    const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, size: 14, color: AppColors.success),
+                        SizedBox(width: 4),
+                        Text(
+                          'Read',
+                          style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(width: AppSpacing.xs),
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined, size: 18, color: AppColors.textSecondary),
+                    tooltip: 'Archive',
+                    onPressed: () => notifier.markAsArchived(item.id),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildDeliveryBadges(NotificationDeliveryStatus ds) {
+    final badges = <Widget>[
+      _buildBadge(
+        'In-App Available',
+        const Color(0xFFF1F5F9),
+        const Color(0xFF475569),
+        const Color(0xFFCBD5E1),
+      ),
+    ];
+
+    if (ds.push != null) {
+      final pStatus = ds.push!.toUpperCase();
+      if (pStatus == 'DELIVERED') {
+        badges.add(
+          _buildBadge(
+            'Push: Delivered',
+            const Color(0xFFECFDF5),
+            const Color(0xFF065F46),
+            const Color(0xFFA7F3D0),
+          ),
+        );
+      } else if (pStatus == 'FAILED' || pStatus == 'QUEUED' || pStatus == 'PENDING') {
+        badges.add(
+          _buildBadge(
+            'Push: ${pStatus == 'QUEUED' ? 'Pending' : 'Failed'}',
+            const Color(0xFFFFFBEB),
+            const Color(0xFF92400E),
+            const Color(0xFFFDE68A),
+          ),
+        );
+      }
+      // Never render PERMANENTLY_FAILED, matching website behavior
+    }
+
+    if (ds.email != null) {
+      final eStatus = ds.email!.toUpperCase();
+      if (eStatus == 'DELIVERED' || eStatus == 'SENT') {
+        badges.add(
+          _buildBadge(
+            'Email: Sent',
+            const Color(0xFFECFDF5),
+            const Color(0xFF065F46),
+            const Color(0xFFA7F3D0),
+          ),
+        );
+      } else if (eStatus == 'FAILED' || eStatus == 'QUEUED') {
+        badges.add(
+          _buildBadge(
+            'Email: ${eStatus == 'QUEUED' ? 'Pending' : 'Delayed'}',
+            const Color(0xFFFFFBEB),
+            const Color(0xFF92400E),
+            const Color(0xFFFDE68A),
+          ),
+        );
+      } else if (eStatus == 'PERMANENTLY_FAILED') {
+        badges.add(
+          _buildBadge(
+            'Email: Bounced',
+            const Color(0xFFFEF2F2),
+            const Color(0xFF991B1B),
+            const Color(0xFFFECACA),
+          ),
+        );
+      }
+    }
+
     return Wrap(
       spacing: 6,
       runSpacing: 4,
-      children: [
-        _buildStatusBadge('IN-APP', ds.inApp),
-        if (ds.push != null) _buildStatusBadge('PUSH', ds.push!),
-        if (ds.email != null) _buildStatusBadge('EMAIL', ds.email!),
-      ],
+      children: badges,
     );
   }
 
-  Widget _buildStatusBadge(String channel, String status) {
-    Color bg;
-    Color fg;
-    final st = status.toUpperCase();
-
-    if (st == 'DELIVERED') {
-      bg = const Color(0xFFD1FAE5);
-      fg = const Color(0xFF065F46);
-    } else if (st == 'FAILED') {
-      bg = const Color(0xFFFEE2E2);
-      fg = const Color(0xFF991B1B);
-    } else if (st == 'PENDING' || st == 'QUEUED') {
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFF92400E);
-    } else {
-      bg = const Color(0xFFF3F4F6);
-      fg = const Color(0xFF4B5563);
-    }
-
+  Widget _buildBadge(String label, Color bg, Color fg, Color border) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: border),
       ),
       child: Text(
-        '$channel: $st',
-        style: TextStyle(color: fg, fontSize: 9.5, fontWeight: FontWeight.w600),
+        label,
+        style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w600),
       ),
     );
   }
