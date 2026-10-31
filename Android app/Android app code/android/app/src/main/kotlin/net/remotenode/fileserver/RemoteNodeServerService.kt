@@ -1,19 +1,24 @@
 package net.remotenode.fileserver
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Environment
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import android.os.Environment
 import java.io.File
 
 /**
@@ -32,6 +37,9 @@ class RemoteNodeServerService : Service() {
         const val ACTION_SET_CREDENTIALS = "net.remotenode.fileserver.ACTION_SET_CREDENTIALS"
         const val ACTION_START_TUNNEL = "net.remotenode.fileserver.ACTION_START_TUNNEL"
         const val ACTION_STOP_TUNNEL = "net.remotenode.fileserver.ACTION_STOP_TUNNEL"
+        const val ACTION_KEEPALIVE_PULSE = "net.remotenode.fileserver.ACTION_KEEPALIVE_PULSE"
+
+        private const val KEEPALIVE_INTERVAL_MS = 25000L
 
         const val EXTRA_PORT = "extra_port"
         const val EXTRA_STORAGE_PATH = "extra_storage_path"
@@ -210,6 +218,8 @@ class RemoteNodeServerService : Service() {
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
+    private var systemEventReceiver: BroadcastReceiver? = null
     private val lifecycleLock = Any()
 
     private val tunnelListener: (Map<String, Any?>) -> Unit = { event ->
@@ -227,6 +237,7 @@ class RemoteNodeServerService : Service() {
         val initialNotif = buildNotification("Initializing ZdexCloud background service...")
         promoteToForeground(initialNotif)
 
+        registerSystemEventReceiver()
         NetworkWatcher.start(this)
         RemoteNodeTunnelManager.addListener(tunnelListener)
     }
@@ -235,12 +246,27 @@ class RemoteNodeServerService : Service() {
         // Handle OS process recreation where intent is null
         if (intent == null) {
             val desired = getDesiredServerEnabled(this)
-            if (desired) {
+            val tunnelDesired = getDesiredTunnelEnabled(this)
+            if (desired || tunnelDesired) {
+                acquireWakeLock()
+                acquireWifiLock()
+                scheduleNextKeepAliveAlarm()
                 val port = getPersistedPort(this)
-                if (!isServiceRunning) {
+                if (desired && !isServiceRunning) {
                     handleStartServer(port)
                 } else {
                     updateNotification()
+                }
+                if (tunnelDesired) {
+                    val tunnelConfig = getPersistedTunnelConfig(this)
+                    val devId = tunnelConfig["deviceId"]
+                    val token = tunnelConfig["sessionToken"]
+                    val apiBase = tunnelConfig["apiBaseUrl"]
+                    val gatewayWs = tunnelConfig["gatewayWsUrl"]
+                    val cred = tunnelConfig["deviceCredential"]
+                    if (!devId.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty() && (!token.isNullOrEmpty() || !cred.isNullOrEmpty())) {
+                        RemoteNodeTunnelManager.startTunnel(this, devId, token ?: "", apiBase, gatewayWs, cred)
+                    }
                 }
                 return START_STICKY
             } else {
@@ -284,6 +310,9 @@ class RemoteNodeServerService : Service() {
                 engine.setCredentials(user, pass)
             }
             ACTION_START_TUNNEL -> {
+                acquireWakeLock()
+                acquireWifiLock()
+                scheduleNextKeepAliveAlarm()
                 val devId = intent.getStringExtra(EXTRA_DEVICE_ID)
                 val token = intent.getStringExtra(EXTRA_SESSION_TOKEN)
                 val apiBase = intent.getStringExtra(EXTRA_API_BASE_URL)
@@ -299,7 +328,22 @@ class RemoteNodeServerService : Service() {
                 android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_TUNNEL source=intent")
                 setDesiredTunnelEnabled(this, false)
                 RemoteNodeTunnelManager.stopTunnel()
+                if (!getDesiredServerEnabled(this)) {
+                    cancelKeepAliveAlarm()
+                    releaseWifiLock()
+                    releaseWakeLock()
+                }
                 updateNotification()
+            }
+            ACTION_KEEPALIVE_PULSE -> {
+                if (isServiceRunning || getDesiredTunnelEnabled(this)) {
+                    acquireWakeLock()
+                    acquireWifiLock()
+                    RemoteNodeTunnelManager.checkAndPulseKeepalive()
+                    scheduleNextKeepAliveAlarm()
+                } else {
+                    cancelKeepAliveAlarm()
+                }
             }
         }
 
@@ -363,6 +407,8 @@ class RemoteNodeServerService : Service() {
                 promoteToForeground(startingNotif)
 
                 acquireWakeLock()
+                acquireWifiLock()
+                scheduleNextKeepAliveAlarm()
 
                 val storagePath = if (!customStoragePath.isNullOrBlank()) {
                     persistStoragePath(this, customStoragePath)
@@ -394,6 +440,8 @@ class RemoteNodeServerService : Service() {
                 } else {
                     isServiceRunning = false
                     currentServerState = "START_FAILED"
+                    cancelKeepAliveAlarm()
+                    releaseWifiLock()
                     releaseWakeLock()
                     val errNotif = buildNotification("Failed to start file server on port $validatedPort")
                     val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -402,6 +450,8 @@ class RemoteNodeServerService : Service() {
             } catch (e: Exception) {
                 isServiceRunning = false
                 currentServerState = "ERROR"
+                cancelKeepAliveAlarm()
+                releaseWifiLock()
                 releaseWakeLock()
                 val tunnelConfig = getPersistedTunnelConfig(this)
                 AndroidErrorTelemetry.reportError(
@@ -432,6 +482,8 @@ class RemoteNodeServerService : Service() {
                 currentServerState = "STOPPED"
                 engine.stop()
                 RemoteNodeTunnelManager.stopTunnel()
+                cancelKeepAliveAlarm()
+                releaseWifiLock()
                 releaseWakeLock()
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -460,7 +512,14 @@ class RemoteNodeServerService : Service() {
                 this,
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)
@@ -477,7 +536,9 @@ class RemoteNodeServerService : Service() {
                 setReferenceCounted(false)
             }
         }
-        wakeLock?.acquire(24 * 60 * 60 * 1000L) // 24 hours continuous execution safety renewal
+        try {
+            wakeLock?.acquire(24 * 60 * 60 * 1000L) // 24 hours continuous execution safety renewal
+        } catch (_: Exception) {}
     }
 
     private fun releaseWakeLock() {
@@ -487,6 +548,120 @@ class RemoteNodeServerService : Service() {
             }
         } catch (_: Exception) {}
         wakeLock = null
+    }
+
+    private fun acquireWifiLock() {
+        if (wifiLock == null) {
+            val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as? WifiManager
+            val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                WifiManager.WIFI_MODE_FULL_HIGH_PERF
+            } else {
+                @Suppress("DEPRECATION")
+                WifiManager.WIFI_MODE_FULL
+            }
+            wifiLock = wifiManager?.createWifiLock(mode, "net.remotenode:wifi_lock")?.apply {
+                setReferenceCounted(false)
+            }
+        }
+        try {
+            if (wifiLock?.isHeld != true) {
+                wifiLock?.acquire()
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun releaseWifiLock() {
+        try {
+            if (wifiLock?.isHeld == true) {
+                wifiLock?.release()
+            }
+        } catch (_: Exception) {}
+        wifiLock = null
+    }
+
+    private fun scheduleNextKeepAliveAlarm() {
+        if (!isServiceRunning && !getDesiredTunnelEnabled(this)) return
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            val intent = Intent(this, RemoteNodeServerService::class.java).apply {
+                action = ACTION_KEEPALIVE_PULSE
+            }
+            val pendingIntent = PendingIntent.getService(
+                this,
+                9002,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val triggerAt = SystemClock.elapsedRealtime() + KEEPALIVE_INTERVAL_MS
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent)
+            } else {
+                alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAt, pendingIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("RemoteNodeServerService", "Failed to schedule keepalive alarm: ${e.message}")
+        }
+    }
+
+    private fun cancelKeepAliveAlarm() {
+        try {
+            val alarmManager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            val intent = Intent(this, RemoteNodeServerService::class.java).apply {
+                action = ACTION_KEEPALIVE_PULSE
+            }
+            val pendingIntent = PendingIntent.getService(
+                this,
+                9002,
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )
+            if (pendingIntent != null) {
+                alarmManager.cancel(pendingIntent)
+                pendingIntent.cancel()
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun registerSystemEventReceiver() {
+        if (systemEventReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val action = intent?.action ?: return
+                when (action) {
+                    Intent.ACTION_SCREEN_ON,
+                    Intent.ACTION_USER_PRESENT,
+                    Intent.ACTION_POWER_CONNECTED -> {
+                        android.util.Log.i("RemoteNodeServerService", "[SYSTEM_EVENT] action=$action. Restoring locks and pulsing keepalive.")
+                        if (isServiceRunning || getDesiredTunnelEnabled(this@RemoteNodeServerService)) {
+                            acquireWakeLock()
+                            acquireWifiLock()
+                            RemoteNodeTunnelManager.triggerImmediateRecovery()
+                            scheduleNextKeepAliveAlarm()
+                        }
+                    }
+                }
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+            addAction(Intent.ACTION_POWER_CONNECTED)
+        }
+        try {
+            registerReceiver(receiver, filter)
+            systemEventReceiver = receiver
+        } catch (e: Exception) {
+            android.util.Log.w("RemoteNodeServerService", "Failed to register system event receiver: ${e.message}")
+        }
+    }
+
+    private fun unregisterSystemEventReceiver() {
+        try {
+            if (systemEventReceiver != null) {
+                unregisterReceiver(systemEventReceiver)
+                systemEventReceiver = null
+            }
+        } catch (_: Exception) {}
     }
 
     private fun createNotificationChannel() {
@@ -525,21 +700,30 @@ class RemoteNodeServerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("ZdexCloud")
             .setContentText(statusText)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(openAppPendingIntent)
             .addAction(0, "Open App", openAppPendingIntent)
             .addAction(0, "Stop Server", stopPendingIntent)
-            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+        }
+
+        return builder.build()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         RemoteNodeTunnelManager.removeListener(tunnelListener)
+        unregisterSystemEventReceiver()
+        cancelKeepAliveAlarm()
+        releaseWifiLock()
         releaseWakeLock()
         if (isServiceRunning) {
             try {

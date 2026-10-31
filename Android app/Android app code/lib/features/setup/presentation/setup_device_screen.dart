@@ -11,7 +11,7 @@ import 'widgets/setup_stepper.dart';
 
 enum ReadinessStatus { ready, recommended, required, blocked, checking }
 
-/// Step 1 — Device Preparation & Dynamic Readiness Checklist Screen
+/// Step 1 - Device Preparation & Dynamic Readiness Checklist Screen
 class SetupDeviceScreen extends ConsumerStatefulWidget {
   const SetupDeviceScreen({super.key});
 
@@ -154,6 +154,59 @@ class _SetupDeviceScreenState extends ConsumerState<SetupDeviceScreen>
                 }
               },
               child: const Text('Allow Notifications'),
+            ),
+          ],
+        ),
+      );
+    } else if (!_isBatteryOptimizationIgnored) {
+      // Show battery optimization guidance dialog
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.battery_alert_rounded, color: AppColors.statusConnecting, size: 24),
+              SizedBox(width: AppSpacing.xs),
+              Flexible(
+                child: Text('Always-On Server Battery Mode',
+                    style: AppTypography.cardTitle,
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ),
+          content: const Text(
+            'To keep your server online and reachable 24/7 when the phone screen is off, Android requires battery optimization set to Unrestricted. Otherwise, the phone may sleep and disconnect.',
+            style: AppTypography.bodySmall,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, '/server/setup/configuration');
+              },
+              child: const Text('Continue Anyway', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await _handleConfigureBattery();
+                if (mounted) {
+                  Navigator.pushNamed(context, '/server/setup/configuration');
+                }
+              },
+              child: const Text('Configure Battery'),
             ),
           ],
         ),

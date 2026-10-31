@@ -1014,6 +1014,69 @@ object RemoteNodeTunnelManager {
         activeWebSocket = null
     }
 
+    /**
+     * Keepalive pulse invoked by AlarmManager or dynamic receivers to survive Doze mode and screen-off sleep.
+     */
+    fun checkAndPulseKeepalive() {
+        if (isExplicitlyStopped || isPermanentAuthFailure) return
+
+        val currentGen = connectionGeneration.get()
+        val now = android.os.SystemClock.elapsedRealtime()
+
+        if (currentState == STATE_CONNECTED) {
+            val elapsedSincePong = if (lastPongElapsedRealtime > 0) now - lastPongElapsedRealtime else 0L
+            if (missedPings >= 3 || (lastPongElapsedRealtime > 0 && elapsedSincePong > 40000L)) {
+                Log.w(TAG, "[KEEPALIVE_PULSE_STALE_SOCKET] missedPings=$missedPings elapsedPongMs=$elapsedSincePong. Triggering reconnect.")
+                closeActiveWebSocket()
+                triggerReconnect(immediate = true)
+                return
+            }
+
+            try {
+                val pingMsg = JSONObject().apply { put("type", "PING") }
+                val sent = activeWebSocket?.send(pingMsg.toString()) ?: false
+                if (sent) {
+                    missedPings++
+                    Log.d(TAG, "[KEEPALIVE_PULSE_PING_SENT] gen=$currentGen missedPings=$missedPings")
+                } else {
+                    Log.w(TAG, "[KEEPALIVE_PULSE_SEND_FAILED] WebSocket send returned false. Reconnecting...")
+                    closeActiveWebSocket()
+                    triggerReconnect(immediate = true)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "[KEEPALIVE_PULSE_EXCEPTION] ${e.message}. Reconnecting...")
+                closeActiveWebSocket()
+                triggerReconnect(immediate = true)
+            }
+            return
+        }
+
+        // Auto-heal if disconnected while tunnel is supposed to be active
+        val ctx = appContext
+        if (ctx != null && !isConnectingOrReconnecting) {
+            val networkInfo = NetworkWatcher.getCurrentNetworkInfo(ctx)
+            val hasInternet = networkInfo["hasInternet"] as? Boolean ?: false
+            val isValidated = networkInfo["isValidated"] as? Boolean ?: false
+            if (hasInternet && isValidated) {
+                Log.i(TAG, "[KEEPALIVE_PULSE_HEAL] State=$currentState Network=Validated. Triggering reconnect.")
+                triggerReconnect(immediate = true)
+            }
+        }
+    }
+
+    /**
+     * Bypasses backoff and triggers immediate reconnection or pulse on screen on or power connected.
+     */
+    fun triggerImmediateRecovery() {
+        if (isExplicitlyStopped || isPermanentAuthFailure) return
+        Log.i(TAG, "[IMMEDIATE_RECOVERY_TRIGGERED] state=$currentState")
+        if (currentState != STATE_CONNECTED) {
+            triggerReconnect(immediate = true)
+        } else {
+            checkAndPulseKeepalive()
+        }
+    }
+
     private fun handleInboundFileRequest(webSocket: WebSocket, req: JSONObject) {
         workerExecutor.execute {
             val requestId = req.optString("requestId")
