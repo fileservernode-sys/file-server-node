@@ -44,4 +44,7 @@ db_backup_*/
 # Local prompt notes
 prompt_*.txt
 
+# Local Android APK staging directory
+Android App APK/
+
 

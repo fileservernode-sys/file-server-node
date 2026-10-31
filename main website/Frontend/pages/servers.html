@@ -872,7 +872,11 @@
             </h2>
             <p class="text-secondary text-sm" style="margin: 0;">Android storage nodes paired to this platform account.</p>
           </div>
-          <div style="display: flex; align-items: center; gap: var(--space-sm);">
+          <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+            <a href="/downloads/zdexcloud-latest.apk" download="zdexcloud-latest.apk" class="btn btn-outline btn-sm" id="btn-header-install-app" title="Download official Android server APK" style="min-height: 36px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Install App</span>
+            </a>
             <span id="refresh-indicator" class="text-xs text-muted" style="font-family: var(--font-family-mono);">Auto-refreshes device status</span>
             <button id="btn-manual-refresh" class="btn btn-ghost btn-sm" style="font-size: var(--font-size-caption);" title="Refresh servers">
               <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
@@ -1380,7 +1384,7 @@
                       <span class="server-empty-step-num">1</span>
                       <span class="server-empty-step-title">Install App</span>
                     </div>
-                    <p class="server-empty-step-desc">Install the ZdexCloud app on your spare or everyday Android phone.</p>
+                    <p class="server-empty-step-desc">Download and install the official ZdexCloud APK using the button below.</p>
                   </div>
                   <div class="server-empty-step-card">
                     <div class="server-empty-step-header">
@@ -1398,9 +1402,13 @@
                   </div>
                 </div>
                 <div class="server-empty-actions">
-                  <a href="get-started.html" class="btn btn-primary btn-md" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+                  <a href="/downloads/zdexcloud-latest.apk" download="zdexcloud-latest.apk" class="btn btn-primary btn-md" id="btn-install-server-app" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
+                    <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Install Server App (Download APK)</span>
+                  </a>
+                  <a href="get-started.html" class="btn btn-secondary btn-md" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
                     <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 12 8"></polygon></svg>
-                    <span>Set Up Your Android Phone</span>
+                    <span>Setup Guide</span>
                   </a>
                   <a href="documentation.html" class="btn btn-secondary btn-md" style="min-height: 44px; display: inline-flex; align-items: center; gap: 8px;">
                     <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
@@ -1630,7 +1638,13 @@
                 <p class="text-xs text-secondary" style="max-width: 240px; margin-bottom: var(--space-md); line-height: var(--line-height-relaxed);">
                   You have ${availableSlots} available slot${availableSlots > 1 ? 's' : ''} on your current plan.
                 </p>
-                <a href="get-started.html" class="btn btn-secondary btn-sm" style="min-height: 38px;">Pair New Node</a>
+                <div style="display: flex; gap: var(--space-xs); flex-direction: column; width: 100%; max-width: 220px;">
+                  <a href="/downloads/zdexcloud-latest.apk" download="zdexcloud-latest.apk" class="btn btn-primary btn-sm" style="min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Download Server APK</span>
+                  </a>
+                  <a href="get-started.html" class="btn btn-secondary btn-sm" style="min-height: 38px; display: inline-flex; align-items: center; justify-content: center;">Pairing Guide</a>
+                </div>
               </div>
             `;
           }

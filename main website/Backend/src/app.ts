@@ -14,6 +14,9 @@ import { checkDatabaseReadiness } from './config/database.js';
 import { RequestContextStore } from './observability/request_context.js';
 
 
+import { extractCustomerToken, resolveCustomerSession } from './middleware/customer-auth.js';
+
+
 const MIME_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -27,7 +30,8 @@ const MIME_TYPES: Record<string, string> = {
   '.ico': 'image/x-icon',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf'
+  '.ttf': 'font/ttf',
+  '.apk': 'application/vnd.android.package-archive'
 };
 
 function getWebDir(): string {
@@ -201,6 +205,58 @@ export async function buildApp(): Promise<FastifyInstance> {
       urlPath.startsWith('/api/download')
     ) {
       return defaultGatewayService.handleFastifyStorageRequest(request, reply);
+    }
+
+    // Protected APK / App Download Route
+    // Access strictly restricted to authenticated customers with an active platform session
+    if (urlPath.startsWith('/downloads/') || urlPath === '/api/v1/download/app' || urlPath.endsWith('.apk')) {
+      const authCtx = extractCustomerToken(request);
+      if (!authCtx.token) {
+        const acceptsHtml = String(request.headers.accept || '').includes('text/html');
+        if (acceptsHtml) {
+          return reply.redirect('/pages/get-started.html?auth=required&target=download');
+        }
+        return reply.status(401).send(createErrorResponse('UNAUTHORIZED', 'Authentication required to download the ZdexCloud application', request.id));
+      }
+
+      const session = await resolveCustomerSession(authCtx.token);
+      if (!session || !session.user) {
+        const acceptsHtml = String(request.headers.accept || '').includes('text/html');
+        if (acceptsHtml) {
+          return reply.redirect('/pages/login.html?session=expired&target=download');
+        }
+        return reply.status(401).send(createErrorResponse('UNAUTHORIZED', 'Session expired. Please log in to download the application.', request.id));
+      }
+
+      // Candidate file paths for the compiled release APK
+      const candidatePaths = [
+        path.resolve(getFrontendDir(), 'downloads/zdexcloud-latest.apk'),
+        path.resolve(process.cwd(), 'main website/Frontend/downloads/zdexcloud-latest.apk'),
+        path.resolve(process.cwd(), 'Frontend/downloads/zdexcloud-latest.apk'),
+        path.resolve(process.cwd(), '../Frontend/downloads/zdexcloud-latest.apk'),
+        path.resolve(process.cwd(), 'Android App APK/app-release.apk'),
+        path.resolve(process.cwd(), '../Android App APK/app-release.apk')
+      ];
+
+      let apkFile: string | null = null;
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+          apkFile = p;
+          break;
+        }
+      }
+
+      if (!apkFile) {
+        return reply.status(404).send(createErrorResponse('NOT_FOUND', 'Application package temporarily unavailable', request.id));
+      }
+
+      const stat = fs.statSync(apkFile);
+      reply.header('Content-Type', 'application/vnd.android.package-archive');
+      reply.header('Content-Disposition', 'attachment; filename="zdexcloud-latest.apk"');
+      reply.header('Content-Length', stat.size);
+      reply.header('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+      reply.header('Pragma', 'no-cache');
+      return reply.send(fs.createReadStream(apkFile));
     }
 
     const hostHeader = (request.headers.host || '').split(':')[0].toLowerCase();
