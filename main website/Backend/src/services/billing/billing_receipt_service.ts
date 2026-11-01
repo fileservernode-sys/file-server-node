@@ -965,6 +965,86 @@ export class BillingReceiptService {
   }
 
   /**
+   * Maps a BillingReceipt entity to an InvoiceDocumentModel so it can be rendered into vector PDF.
+   */
+  public static mapReceiptToDocumentModel(receipt: BillingReceiptWithRelations): any {
+    const issuedDate = receipt.issuedAt ? new Date(receipt.issuedAt) : new Date();
+    const startYear = issuedDate.getFullYear();
+    const fy = `${startYear}-${startYear + 1}`;
+    const subtotal = receipt.subtotalMinorUnits || receipt.amountPaidMinorUnits || 0;
+    const tax = receipt.taxMinorUnits || 0;
+    const total = receipt.totalMinorUnits || receipt.amountPaidMinorUnits || 0;
+    const paid = receipt.amountPaidMinorUnits || total;
+
+    return {
+      id: receipt.id,
+      invoiceNumber: receipt.receiptNumber,
+      seriesPrefix: 'REC',
+      financialYear: fy,
+      sequenceNumber: 1,
+      type: 'TAX_INVOICE',
+      status: 'ISSUED',
+      settlementStatus: 'PAID',
+      issuedAt: issuedDate,
+      paidAt: receipt.chargedAt ? new Date(receipt.chargedAt) : issuedDate,
+      voidedAt: null,
+      periodStart: receipt.periodStart ? new Date(receipt.periodStart) : null,
+      periodEnd: receipt.periodEnd ? new Date(receipt.periodEnd) : null,
+      planCode: (receipt as any).planCode || 'pro_monthly',
+      planName: receipt.planName || 'Plan Subscription',
+      billingInterval: String(receipt.billingInterval || 'MONTHLY'),
+      priceVersion: 1,
+      currency: receipt.currency || 'INR',
+      subtotalMinorUnits: subtotal,
+      discountMinorUnits: receipt.discountMinorUnits || 0,
+      taxMinorUnits: tax,
+      totalMinorUnits: total,
+      amountPaidMinorUnits: paid,
+      amountDueMinorUnits: 0,
+      customerName: receipt.customerName || null,
+      customerEmail: receipt.customerEmail || '',
+      customerCompanyName: (receipt as any).customerCompanyName || null,
+      customerTaxId: (receipt as any).customerTaxId || null,
+      billingAddress: (receipt as any).billingAddress || null,
+      billingCountry: (receipt as any).billingCountry || 'IN',
+      sellerName: receipt.merchantName || 'ZdexCloud Inc.',
+      sellerAddress: receipt.merchantAddress || '',
+      sellerSupportEmail: receipt.merchantSupportEmail || 'support@zdexcloud.com',
+      sellerTaxId: (receipt as any).merchantGstin || (receipt as any).sellerTaxId || null,
+      sellerJurisdiction: 'Gujarat',
+      hsnSacCode: '998313',
+      taxJurisdiction: (receipt as any).billingCountry || 'IN',
+      taxType: 'GST',
+      taxRateBasisPoints: 1800,
+      isInclusive: true,
+      taxBreakdown: {
+        cgstMinorUnits: Math.round(tax / 2),
+        sgstMinorUnits: Math.round(tax / 2),
+        cgstRateBasisPoints: 900,
+        sgstRateBasisPoints: 900
+      },
+      lineItems: [
+        {
+          description: `ZdexCloud ${receipt.planName || 'Pro'} Subscription`,
+          sacCode: '998313',
+          quantity: 1,
+          unitPriceMinorUnits: subtotal,
+          taxableAmountMinorUnits: subtotal,
+          taxAmountMinorUnits: tax,
+          totalMinorUnits: total,
+          currency: String(receipt.currency || 'INR')
+        }
+      ],
+      contentHash: (receipt as any).contentHash || null,
+      documentTitle: receipt.documentTitle || 'Payment Receipt & Tax Invoice',
+      documentVersion: receipt.documentVersion || 1,
+      voidReason: null,
+      supersededByInvoiceId: null,
+      correctionReason: null
+    };
+  }
+
+  /**
    * Helper to emit idempotent in-app notifications without throwing.
    */
   private static async emitNotification(opts: {

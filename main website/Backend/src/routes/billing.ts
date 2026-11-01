@@ -523,14 +523,24 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
 
   /**
    * GET /api/v1/billing/receipts/:id/download
-   * Returns rendered HTML document as a downloadable file attachment.
+   * Returns rendered PDF document as a downloadable file attachment (or HTML if format=html requested).
    */
   const downloadReceiptHandler = async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await getAuthUser(request);
     const { id } = request.params as { id: string };
+    const format = (request.query as any)?.format;
 
     const receipt = await BillingReceiptService.getReceipt(user.id, id);
-    const html = BillingReceiptService.renderReceiptHtml(receipt);
+
+    if (format === 'html') {
+      const html = BillingReceiptService.renderReceiptHtml(receipt);
+      reply.header('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.html"`);
+      reply.type('text/html; charset=utf-8');
+      return reply.send(html);
+    }
+
+    const docModel = BillingReceiptService.mapReceiptToDocumentModel(receipt);
+    const pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(docModel);
 
     try {
       await prisma.auditEvent.create({
@@ -558,9 +568,13 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
       }
     });
 
-    reply.header('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.html"`);
-    reply.type('text/html; charset=utf-8');
-    return reply.send(html);
+    reply.header('Content-Disposition', `attachment; filename="receipt-${receipt.receiptNumber}.pdf"`);
+    reply.header('Content-Type', 'application/pdf');
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('Cache-Control', 'private, no-store, must-revalidate');
+    reply.header('Pragma', 'no-cache');
+    reply.header('Expires', '0');
+    return reply.send(pdfBuffer);
   };
 
   app.get('/billing/receipts/:id/download', downloadReceiptHandler);
@@ -638,21 +652,41 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     const user = await getAuthUser(request);
     const { id } = request.params as { id: string };
 
-    // 2. Authoritative retrieval with IDOR protection (returns 404 for missing or non-owned invoice)
-    const invoice = await BillingInvoiceService.getInvoiceById(id, user.id, false);
-
-    // 3. Lifecycle check: Never allow downloading unissued DRAFT invoices to customers
-    if (invoice.status === BillingInvoiceStatus.DRAFT) {
-      throw new NotFoundError(`BillingInvoice ${id} not found`);
-    }
-
-    // 4. Generate PDF buffer strictly from persisted snapshot
+    // 2. Authoritative retrieval with IDOR protection
     let pdfBuffer: Buffer;
+    let safeFilename = `invoice-${id}.pdf`;
+
     try {
-      pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
-    } catch (err: any) {
-      request.log.error({ err, invoiceId: invoice.id, userId: user.id }, 'Failed to generate invoice PDF');
-      throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+      const invoice = await BillingInvoiceService.getInvoiceById(id, user.id, false);
+      if (invoice && invoice.status !== BillingInvoiceStatus.DRAFT) {
+        pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
+        const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
+        safeFilename = rawFilename.replace(/[\r\n]/g, '');
+      } else {
+        throw new NotFoundError(`BillingInvoice ${id} not found`);
+      }
+    } catch {
+      // Robust Fallback: Check if id is a payment ID or receipt ID
+      let receipt: any = null;
+      try {
+        receipt = await BillingReceiptService.getReceipt(user.id, id);
+      } catch {}
+      if (!receipt) {
+        try {
+          receipt = await BillingReceiptService.getReceiptByPayment(user.id, id);
+        } catch {}
+      }
+      if (!receipt) {
+        throw new NotFoundError(`Invoice or receipt ${id} not found`);
+      }
+      try {
+        const docModel = BillingReceiptService.mapReceiptToDocumentModel(receipt);
+        pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(docModel);
+        safeFilename = `receipt-${receipt.receiptNumber}.pdf`;
+      } catch (err: any) {
+        request.log.error({ err, receiptId: receipt.id, userId: user.id }, 'Failed to generate receipt PDF');
+        throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+      }
     }
 
     // 5. Audit event logging (non-blocking) following receipt download pattern
@@ -662,8 +696,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
           userId: user.id,
           eventType: 'BILLING_INVOICE_DOWNLOAD_REQUESTED' as any,
           metadata: {
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber
+            id,
+            filename: safeFilename
           }
         }
       });
@@ -674,19 +708,15 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     await CustomerActivityService.recordEventSafe({
       userId: user.id,
       eventType: 'BILLING.INVOICE_DOWNLOADED',
-      invoiceId: invoice.id,
-      paymentId: invoice.paymentId || null,
-      subscriptionId: invoice.subscriptionId || null,
+      invoiceId: id,
+      paymentId: null,
+      subscriptionId: null,
       metadata: {
-        invoiceNumber: invoice.invoiceNumber
+        filename: safeFilename
       }
     });
 
     // 6. Safe HTTP Headers & Response
-    const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
-    // Prevent CR/LF header injection
-    const safeFilename = rawFilename.replace(/[\r\n]/g, '');
-
     reply.header('Content-Disposition', `attachment; filename="${safeFilename}"`);
     reply.header('Content-Type', 'application/pdf');
     reply.header('X-Content-Type-Options', 'nosniff');
@@ -739,18 +769,33 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     const { id } = request.params as { id: string };
 
     // 2. Authoritative retrieval with IDOR protection
-    const invoice = await BillingInvoiceService.getInvoiceByPaymentId(id, user.id, false);
-    if (!invoice || invoice.status === BillingInvoiceStatus.DRAFT) {
-      throw new NotFoundError(`Invoice for payment ${id} not found`);
-    }
-
-    // 3. Generate PDF buffer strictly from persisted snapshot
     let pdfBuffer: Buffer;
-    try {
-      pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
-    } catch (err: any) {
-      request.log.error({ err, invoiceId: invoice.id, paymentId: id, userId: user.id }, 'Failed to generate invoice PDF for payment');
-      throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+    let safeFilename = `invoice-payment-${id}.pdf`;
+
+    const invoice = await BillingInvoiceService.getInvoiceByPaymentId(id, user.id, false);
+    if (invoice && invoice.status !== BillingInvoiceStatus.DRAFT) {
+      try {
+        pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(invoice);
+        const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
+        safeFilename = rawFilename.replace(/[\r\n]/g, '');
+      } catch (err: any) {
+        request.log.error({ err, invoiceId: invoice.id, paymentId: id, userId: user.id }, 'Failed to generate invoice PDF for payment');
+        throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+      }
+    } else {
+      // Robust Fallback: If statutory invoice has not been issued or is deferred, serve payment receipt PDF
+      const receipt = await BillingReceiptService.getReceiptByPayment(user.id, id);
+      if (!receipt) {
+        throw new NotFoundError(`Invoice or receipt for payment ${id} not found`);
+      }
+      try {
+        const docModel = BillingReceiptService.mapReceiptToDocumentModel(receipt);
+        pdfBuffer = await BillingInvoiceDocumentService.generateInvoicePdf(docModel);
+        safeFilename = `receipt-${receipt.receiptNumber}.pdf`;
+      } catch (err: any) {
+        request.log.error({ err, receiptId: receipt.id, paymentId: id, userId: user.id }, 'Failed to generate receipt PDF for payment');
+        throw new AppError('Unable to generate invoice document. Please try again later.', 500);
+      }
     }
 
     // 4. Audit event logging (non-blocking)
@@ -760,9 +805,8 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
           userId: user.id,
           eventType: 'BILLING_INVOICE_DOWNLOAD_REQUESTED' as any,
           metadata: {
-            invoiceId: invoice.id,
-            invoiceNumber: invoice.invoiceNumber,
-            paymentId: id
+            paymentId: id,
+            filename: safeFilename
           }
         }
       });
@@ -773,18 +817,15 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
     await CustomerActivityService.recordEventSafe({
       userId: user.id,
       eventType: 'BILLING.INVOICE_DOWNLOADED',
-      invoiceId: invoice.id,
-      paymentId: invoice.paymentId || id,
-      subscriptionId: invoice.subscriptionId || null,
+      invoiceId: id,
+      paymentId: id,
+      subscriptionId: null,
       metadata: {
-        invoiceNumber: invoice.invoiceNumber
+        filename: safeFilename
       }
     });
 
     // 5. Safe HTTP Headers & Response
-    const rawFilename = BillingInvoiceDocumentService.sanitizeFilename(invoice.invoiceNumber);
-    const safeFilename = rawFilename.replace(/[\r\n]/g, '');
-
     reply.header('Content-Disposition', `attachment; filename="${safeFilename}"`);
     reply.header('Content-Type', 'application/pdf');
     reply.header('X-Content-Type-Options', 'nosniff');

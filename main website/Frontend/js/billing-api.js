@@ -483,12 +483,19 @@
           return { ok: false, status: res.status, error: { code: 'DOWNLOAD_FAILED', message: 'Failed to download receipt.' } };
         }
 
+        const disposition = res.headers.get('content-disposition') || '';
+        let filename = 'receipt-' + receiptId + '.pdf';
+        const match = disposition.match(/filename=["']?([^"';]+)["']?/i);
+        if (match && match[1]) {
+          filename = match[1].trim();
+        }
+
         const blob = await res.blob();
         if (typeof window !== 'undefined' && typeof document !== 'undefined') {
           const downloadUrl = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = downloadUrl;
-          a.download = 'receipt-' + receiptId + '.html';
+          a.download = filename;
           document.body.appendChild(a);
           a.click();
           a.remove();
