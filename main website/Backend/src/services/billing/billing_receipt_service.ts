@@ -38,6 +38,7 @@ export type BillingReceiptWithRelations = BillingReceipt & {
   subscription?: any;
   planChange?: any;
   refunds?: any[];
+  user?: any;
 };
 
 export class BillingReceiptService {
@@ -360,7 +361,12 @@ export class BillingReceiptService {
           }
         },
         subscription: true,
-        planChange: true
+        planChange: true,
+        user: {
+          include: {
+            billingState: true
+          }
+        }
       }
     });
 
@@ -382,7 +388,12 @@ export class BillingReceiptService {
             }
           },
           subscription: true,
-          planChange: true
+          planChange: true,
+          user: {
+            include: {
+              billingState: true
+            }
+          }
         }
       });
     }
@@ -438,7 +449,12 @@ export class BillingReceiptService {
           }
         },
         subscription: true,
-        planChange: true
+        planChange: true,
+        user: {
+          include: {
+            billingState: true
+          }
+        }
       }
     });
 
@@ -517,6 +533,31 @@ export class BillingReceiptService {
       receipt.periodStart && receipt.periodEnd
         ? `${this.formatDate(receipt.periodStart)} – ${this.formatDate(receipt.periodEnd)}`
         : chargedDateStr;
+
+    // Resolve Full Billing Address (from receipt snapshot or linked user billing state)
+    let addr: any = receipt.billingAddress;
+    if (typeof addr === 'string') {
+      try {
+        addr = JSON.parse(addr);
+      } catch {
+        addr = null;
+      }
+    }
+    const bs = (receipt as any).user?.billingState;
+    const customerCompanyName = (receipt as any).customerCompanyName || bs?.companyName || null;
+    const customerTaxId = (receipt as any).customerTaxId || bs?.taxId || null;
+    const addrLine1 = addr?.addressLine1 || addr?.line1 || bs?.billingAddress1 || '';
+    const addrLine2 = addr?.addressLine2 || addr?.line2 || bs?.billingAddress2 || '';
+    const city = addr?.city || bs?.billingCity || '';
+    const state = addr?.state || bs?.billingState || '';
+    const postalCode = addr?.postalCode || addr?.zip || bs?.billingPostalCode || '';
+    const country = addr?.country || receipt.billingCountry || bs?.billingCountry || 'IN';
+
+    const cityStateZipParts: string[] = [];
+    if (city) cityStateZipParts.push(city);
+    if (state) cityStateZipParts.push(state);
+    if (postalCode) cityStateZipParts.push(postalCode);
+    const cityStateZip = cityStateZipParts.join(', ');
 
     // Refund calculations
     const refunds = receipt.payment?.refunds || [];
@@ -627,6 +668,7 @@ export class BillingReceiptService {
       -webkit-font-smoothing: antialiased;
     }
     .receipt-container {
+      position: relative;
       max-width: 720px;
       margin: 0 auto;
       background: var(--color-surface);
@@ -634,6 +676,27 @@ export class BillingReceiptService {
       border: 1px solid var(--color-border);
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
       padding: 48px;
+      overflow: hidden;
+    }
+    .watermark-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 78px;
+      font-weight: 800;
+      color: rgba(15, 23, 42, 0.035);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+    }
+    .receipt-content {
+      position: relative;
+      z-index: 1;
     }
     .header-row {
       display: flex;
@@ -845,6 +908,11 @@ export class BillingReceiptService {
         padding: 0;
         max-width: 100%;
       }
+      .watermark-bg {
+        color: rgba(0, 0, 0, 0.04) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
     @media (max-width: 600px) {
       .receipt-container {
@@ -869,31 +937,40 @@ export class BillingReceiptService {
 </head>
 <body>
   <div class="receipt-container">
-    <header class="header-row">
-      <div class="brand">
-        ${zdexLogoSvg}
-      </div>
-      <div class="doc-meta">
-        <div class="doc-title">${escape(receipt.documentTitle)}</div>
-        <div class="receipt-num">${escape(receipt.receiptNumber)}</div>
-        <div class="doc-date">Issued on: ${escape(issueDateStr)}</div>
-      </div>
-    </header>
+    <div class="watermark-bg" aria-hidden="true">ZdexCloud</div>
+    <div class="receipt-content">
+      <header class="header-row">
+        <div class="brand">
+          ${zdexLogoSvg}
+        </div>
+        <div class="doc-meta">
+          <div class="doc-title">${escape(receipt.documentTitle)}</div>
+          <div class="receipt-num">${escape(receipt.receiptNumber)}</div>
+          <div class="doc-date">Issued on: ${escape(issueDateStr)}</div>
+        </div>
+      </header>
 
-    <div class="details-grid">
-      <div class="billed-to">
-        <div class="section-label">Billed To</div>
-        <div class="party-name">${escape(receipt.customerName || 'ZdexCloud Customer')}</div>
-        <div class="party-sub">${escape(receipt.customerEmail)}</div>
-        <div class="party-sub">Country: ${escape(receipt.billingCountry || 'IN')}</div>
+      <div class="details-grid">
+        <div class="billed-to">
+          <div class="section-label">Billed To</div>
+          <div class="party-name">${escape(receipt.customerName || 'ZdexCloud Customer')}</div>
+          ${customerCompanyName ? `<div class="party-sub" style="font-weight: 600; color: var(--color-text-main);">${escape(customerCompanyName)}</div>` : ''}
+          <div class="party-sub">${escape(receipt.customerEmail)}</div>
+          ${addrLine1 ? `<div class="party-sub">${escape(addrLine1)}</div>` : ''}
+          ${addrLine2 ? `<div class="party-sub">${escape(addrLine2)}</div>` : ''}
+          ${cityStateZip ? `<div class="party-sub">${escape(cityStateZip)}</div>` : ''}
+          <div class="party-sub">Country: ${escape(country)}</div>
+          ${customerTaxId ? `<div class="party-sub" style="margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--color-primary);">GSTIN/Tax ID: ${escape(customerTaxId)}</div>` : ''}
+        </div>
+        <div class="merchant-info">
+          <div class="section-label">Service Provider</div>
+          <div class="party-name">${escape(receipt.merchantName)}</div>
+          ${receipt.merchantAddress ? `<div class="party-sub">${escape(receipt.merchantAddress)}</div>` : ''}
+          <div class="party-sub">Support: ${escape(receipt.merchantSupportEmail)}</div>
+          <div class="party-sub">Personal Android Cloud Platform</div>
+          ${(receipt as any).merchantGstin || (receipt as any).merchantTaxId ? `<div class="party-sub" style="margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--color-primary);">GSTIN: ${escape((receipt as any).merchantGstin || (receipt as any).merchantTaxId)}</div>` : ''}
+        </div>
       </div>
-      <div class="merchant-info">
-        <div class="section-label">Service Provider</div>
-        <div class="party-name">${escape(receipt.merchantName)}</div>
-        <div class="party-sub">Support: ${escape(receipt.merchantSupportEmail)}</div>
-        <div class="party-sub">Personal Android Cloud Platform</div>
-      </div>
-    </div>
 
     <table class="charges-table">
       <thead>
@@ -959,6 +1036,7 @@ export class BillingReceiptService {
       <p>This document is generated from ZdexCloud's authoritative billing records.</p>
       <p>If you have any questions or require support, please contact <a href="mailto:${escape(receipt.merchantSupportEmail)}">${escape(receipt.merchantSupportEmail)}</a>.</p>
     </footer>
+    </div>
   </div>
 </body>
 </html>`;
@@ -975,6 +1053,27 @@ export class BillingReceiptService {
     const tax = receipt.taxMinorUnits || 0;
     const total = receipt.totalMinorUnits || receipt.amountPaidMinorUnits || 0;
     const paid = receipt.amountPaidMinorUnits || total;
+
+    let addr: any = receipt.billingAddress;
+    if (typeof addr === 'string') {
+      try {
+        addr = JSON.parse(addr);
+      } catch {
+        addr = null;
+      }
+    }
+    const bs = (receipt as any).user?.billingState;
+    const resolvedAddress = addr || (bs ? {
+      addressLine1: bs.billingAddress1 || null,
+      addressLine2: bs.billingAddress2 || null,
+      city: bs.billingCity || null,
+      state: bs.billingState || null,
+      postalCode: bs.billingPostalCode || null,
+      country: bs.billingCountry || null
+    } : null);
+
+    const customerCompanyName = (receipt as any).customerCompanyName || bs?.companyName || null;
+    const customerTaxId = (receipt as any).customerTaxId || bs?.taxId || null;
 
     return {
       id: receipt.id,
@@ -1003,10 +1102,10 @@ export class BillingReceiptService {
       amountDueMinorUnits: 0,
       customerName: receipt.customerName || null,
       customerEmail: receipt.customerEmail || '',
-      customerCompanyName: (receipt as any).customerCompanyName || null,
-      customerTaxId: (receipt as any).customerTaxId || null,
-      billingAddress: (receipt as any).billingAddress || null,
-      billingCountry: (receipt as any).billingCountry || 'IN',
+      customerCompanyName,
+      customerTaxId,
+      billingAddress: resolvedAddress,
+      billingCountry: resolvedAddress?.country || (receipt as any).billingCountry || bs?.billingCountry || 'IN',
       sellerName: receipt.merchantName || 'ZdexCloud Inc.',
       sellerAddress: receipt.merchantAddress || '',
       sellerSupportEmail: receipt.merchantSupportEmail || 'support@zdexcloud.com',

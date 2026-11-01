@@ -464,6 +464,7 @@ export class BillingInvoiceDocumentService {
       -webkit-font-smoothing: antialiased;
     }
     .invoice-card {
+      position: relative;
       max-width: 760px;
       margin: 0 auto;
       background: var(--color-surface);
@@ -471,6 +472,27 @@ export class BillingInvoiceDocumentService {
       border: 1px solid var(--color-border);
       box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
       padding: 44px;
+      overflow: hidden;
+    }
+    .watermark-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 80px;
+      font-weight: 800;
+      color: rgba(15, 23, 42, 0.035);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      pointer-events: none;
+      user-select: none;
+      z-index: 0;
+      white-space: nowrap;
+      font-family: var(--font-sans);
+    }
+    .invoice-content {
+      position: relative;
+      z-index: 1;
     }
     .header-row {
       display: flex;
@@ -608,13 +630,16 @@ export class BillingInvoiceDocumentService {
     @media print {
       body { background: #FFFFFF; padding: 0; }
       .invoice-card { border: none; box-shadow: none; padding: 20px 0; max-width: 100%; }
+      .watermark-bg { color: rgba(0, 0, 0, 0.04) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       @page { margin: 15mm; }
     }
   </style>
 </head>
 <body>
   <div class="invoice-card">
-    <div class="header-row">
+    <div class="watermark-bg" aria-hidden="true">ZdexCloud</div>
+    <div class="invoice-content">
+      <div class="header-row">
       <div class="brand-box">${zdexLogoSvg}</div>
       <div class="doc-meta">
         <div class="doc-title">${escape(doc.documentTitle)}</div>
@@ -714,6 +739,7 @@ export class BillingInvoiceDocumentService {
       <div>Canonical Data Hash: <span class="hash-val">${escape(doc.contentHash || 'N/A')}</span></div>
       <div>Document Version: ${doc.documentVersion} | Invoice No: ${escape(doc.invoiceNumber)}</div>
     </div>
+    </div>
   </div>
 </body>
 </html>`;
@@ -787,6 +813,16 @@ export class BillingInvoiceDocumentService {
     // Vector drawing stream
     const streamParts: string[] = [];
 
+    // Background Watermark: ZdexCloud
+    streamParts.push('q');
+    streamParts.push('0.94 0.95 0.97 rg');
+    streamParts.push('BT');
+    streamParts.push('/F2 58 Tf');
+    streamParts.push('0.866 0.5 -0.5 0.866 110 320 Tm');
+    streamParts.push('(ZDEXCLOUD) Tj');
+    streamParts.push('ET');
+    streamParts.push('Q');
+
     // Header Title and Brand
     streamParts.push('BT /F2 18 Tf 40 780 Td (ZDEXCLOUD CONTROL PLANE) Tj ET');
     streamParts.push('BT /F2 16 Tf 420 780 Td (' + sanitizeText(doc.documentTitle.toUpperCase(), 30) + ') Tj ET');
@@ -827,20 +863,40 @@ export class BillingInvoiceDocumentService {
     streamParts.push(`BT /F1 9 Tf 40 ${addrY - 52} Td (State: ${sanitizeText(doc.sellerJurisdiction || 'Gujarat', 20)} | Email: ${sanitizeText(doc.sellerSupportEmail, 35)}) Tj ET`);
 
     streamParts.push(`BT /F2 11 Tf 300 ${addrY} Td (RECIPIENT / BILLED TO:) Tj ET`);
-    streamParts.push(`BT /F2 10 Tf 300 ${addrY - 16} Td (${sanitizeText(doc.customerName || doc.customerEmail, 40)}) Tj ET`);
+    let custY = addrY - 14;
+    streamParts.push(`BT /F2 10 Tf 300 ${custY} Td (${sanitizeText(doc.customerName || doc.customerEmail, 40)}) Tj ET`);
     if (doc.customerCompanyName) {
-      streamParts.push(`BT /F1 9 Tf 300 ${addrY - 28} Td (${sanitizeText(doc.customerCompanyName, 45)}) Tj ET`);
+      custY -= 12;
+      streamParts.push(`BT /F1 9 Tf 300 ${custY} Td (${sanitizeText(doc.customerCompanyName, 45)}) Tj ET`);
+    }
+    if (doc.billingAddress?.addressLine1) {
+      custY -= 12;
+      streamParts.push(`BT /F1 9 Tf 300 ${custY} Td (${sanitizeText(doc.billingAddress.addressLine1, 45)}) Tj ET`);
+    }
+    if (doc.billingAddress?.addressLine2) {
+      custY -= 12;
+      streamParts.push(`BT /F1 9 Tf 300 ${custY} Td (${sanitizeText(doc.billingAddress.addressLine2, 45)}) Tj ET`);
     }
     const custCity = doc.billingAddress?.city ? `${doc.billingAddress.city}, ` : '';
     const custState = doc.billingAddress?.state || '';
     const custPin = doc.billingAddress?.postalCode ? ` - ${doc.billingAddress.postalCode}` : '';
-    streamParts.push(`BT /F1 9 Tf 300 ${addrY - 40} Td (${sanitizeText(custCity + custState + custPin, 50)}) Tj ET`);
+    const cityStatePin = (custCity + custState + custPin).trim();
+    if (cityStatePin) {
+      custY -= 12;
+      streamParts.push(`BT /F1 9 Tf 300 ${custY} Td (${sanitizeText(cityStatePin, 50)}) Tj ET`);
+    }
+    const custCountry = doc.billingAddress?.country || doc.billingCountry;
+    if (custCountry) {
+      custY -= 12;
+      streamParts.push(`BT /F1 9 Tf 300 ${custY} Td (Country: ${sanitizeText(custCountry, 30)}) Tj ET`);
+    }
     if (doc.customerTaxId) {
-      streamParts.push(`BT /F2 9 Tf 300 ${addrY - 52} Td (GSTIN/Tax ID: ${sanitizeText(doc.customerTaxId, 25)}) Tj ET`);
+      custY -= 12;
+      streamParts.push(`BT /F2 9 Tf 300 ${custY} Td (GSTIN/Tax ID: ${sanitizeText(doc.customerTaxId, 25)}) Tj ET`);
     }
 
-    // Line Items Table Header
-    const tableTop = addrY - 80;
+    // Line Items Table Header (positioned safely below addresses)
+    const tableTop = Math.min(addrY - 80, custY - 18);
     streamParts.push(`0.95 0.96 0.98 rg 40 ${tableTop} 515 20 re f`);
     streamParts.push(`0.85 0.88 0.92 RG 1 w 40 ${tableTop} 515 20 re S`);
     streamParts.push(`0 0 0 rg`);
