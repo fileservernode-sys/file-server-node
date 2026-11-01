@@ -130,6 +130,44 @@ object NetworkWatcher {
 
                 override fun onLost(network: Network) {
                     val netId = network.toString()
+
+                    // Check if another network interface is already active and validated (e.g. Wi-Fi <-> Cellular handover)
+                    val cm = connectivityManager
+                    val activeNet = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && cm != null) {
+                        try { cm.activeNetwork } catch (_: Exception) { null }
+                    } else null
+
+                    if (cm != null && activeNet != null && activeNet != network) {
+                        try {
+                            val activeCaps = cm.getNetworkCapabilities(activeNet)
+                            val activeHasInternet = activeCaps?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ?: false
+                            val activeValidated = isNetworkValidated(activeCaps)
+                            if (activeHasInternet && activeValidated) {
+                                val activeTransport = resolveTransport(activeCaps)
+                                val activeNetId = activeNet.toString()
+                                val transportChanged = lastTransport != activeTransport
+                                lastNetworkId = activeNetId
+                                lastTransport = activeTransport
+                                lastValidated = true
+                                lastHasInternet = true
+                                lastCaptivePortal = false
+
+                                emitEvent(mapOf(
+                                    "type" to "AVAILABLE",
+                                    "networkId" to activeNetId,
+                                    "transport" to activeTransport,
+                                    "hasInternet" to true,
+                                    "isValidated" to true,
+                                    "isCaptivePortal" to false,
+                                    "transportChanged" to transportChanged,
+                                    "validationChanged" to false,
+                                    "timestamp" to System.currentTimeMillis()
+                                ))
+                                return
+                            }
+                        } catch (_: Exception) {}
+                    }
+
                     if (lastNetworkId == netId) {
                         lastNetworkId = null
                         lastTransport = "NONE"

@@ -353,8 +353,13 @@ class RemoteNodeServerService : Service() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         val desired = getDesiredServerEnabled(this)
-        android.util.Log.i("RemoteNodeServerService", "[ON_TASK_REMOVED] serverDesired=$desired isRunning=$isServiceRunning activePort=$activePort")
-        if (desired) {
+        val tunnelDesired = getDesiredTunnelEnabled(this)
+        android.util.Log.i("RemoteNodeServerService", "[ON_TASK_REMOVED] serverDesired=$desired tunnelDesired=$tunnelDesired isRunning=$isServiceRunning activePort=$activePort")
+        if (desired || tunnelDesired) {
+            acquireWakeLock()
+            acquireWifiLock()
+            RemoteNodeTunnelManager.checkAndPulseKeepalive()
+            scheduleNextKeepAliveAlarm()
             updateNotification()
         }
     }
@@ -639,11 +644,21 @@ class RemoteNodeServerService : Service() {
                             scheduleNextKeepAliveAlarm()
                         }
                     }
+                    Intent.ACTION_SCREEN_OFF -> {
+                        android.util.Log.i("RemoteNodeServerService", "[SYSTEM_EVENT] action=ACTION_SCREEN_OFF. Preserving locks and pulsing keepalive before sleep.")
+                        if (isServiceRunning || getDesiredTunnelEnabled(this@RemoteNodeServerService)) {
+                            acquireWakeLock()
+                            acquireWifiLock()
+                            RemoteNodeTunnelManager.checkAndPulseKeepalive()
+                            scheduleNextKeepAliveAlarm()
+                        }
+                    }
                 }
             }
         }
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_USER_PRESENT)
             addAction(Intent.ACTION_POWER_CONNECTED)
         }

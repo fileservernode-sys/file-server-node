@@ -95,7 +95,7 @@ object RemoteNodeTunnelManager {
     private var supervisorFuture: ScheduledFuture<*>? = null
 
     private var okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .pingInterval(15, TimeUnit.SECONDS)
+        .pingInterval(10, TimeUnit.SECONDS)
         .connectTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS) // Keep-alive socket
@@ -467,7 +467,26 @@ object RemoteNodeTunnelManager {
 
         // If no validated internet or trapped behind captive portal
         if (!hasInternet || !isValidated || isCaptivePortal) {
-            if (currentState == STATE_CONNECTED || currentState == STATE_CONNECTING || currentState == STATE_AUTHENTICATING) {
+            if (currentState == STATE_CONNECTED) {
+                // Handover grace period: verify after 4 seconds before severing active socket
+                scheduler.schedule({
+                    val ctx = appContext
+                    if (ctx != null && currentState == STATE_CONNECTED) {
+                        val currentNet = NetworkWatcher.getCurrentNetworkInfo(ctx)
+                        val stillHasInternet = currentNet["hasInternet"] as? Boolean ?: false
+                        val stillValidated = currentNet["isValidated"] as? Boolean ?: false
+                        if (!stillHasInternet || !stillValidated) {
+                            Log.w(TAG, "[NETWORK_GRACE_EXPIRED] Internet still unavailable. Closing tunnel.")
+                            closeActiveWebSocket()
+                            stopPingTimer()
+                            emitState(STATE_NETWORK_UNAVAILABLE, "Validated Internet connectivity lost ($transport)")
+                        } else {
+                            Log.i(TAG, "[NETWORK_GRACE_RECOVERED] Connectivity restored during grace period.")
+                        }
+                    }
+                }, 4, TimeUnit.SECONDS)
+                return
+            } else if (currentState == STATE_CONNECTING || currentState == STATE_AUTHENTICATING) {
                 closeActiveWebSocket()
                 stopPingTimer()
                 emitState(STATE_NETWORK_UNAVAILABLE, "Validated Internet connectivity lost ($transport)")
@@ -1053,7 +1072,7 @@ object RemoteNodeTunnelManager {
 
         // Auto-heal if disconnected while tunnel is supposed to be active
         val ctx = appContext
-        if (ctx != null && !isConnectingOrReconnecting) {
+        if (ctx != null && !isConnectingOrReconnecting && currentState != STATE_CONNECTING && currentState != STATE_AUTHENTICATING) {
             val networkInfo = NetworkWatcher.getCurrentNetworkInfo(ctx)
             val hasInternet = networkInfo["hasInternet"] as? Boolean ?: false
             val isValidated = networkInfo["isValidated"] as? Boolean ?: false
@@ -1070,6 +1089,10 @@ object RemoteNodeTunnelManager {
     fun triggerImmediateRecovery() {
         if (isExplicitlyStopped || isPermanentAuthFailure) return
         Log.i(TAG, "[IMMEDIATE_RECOVERY_TRIGGERED] state=$currentState")
+        if (currentState == STATE_CONNECTING || currentState == STATE_AUTHENTICATING || isConnectingOrReconnecting) {
+            Log.i(TAG, "[IMMEDIATE_RECOVERY_IGNORED] Connection handshake already in flight: state=$currentState")
+            return
+        }
         if (currentState != STATE_CONNECTED) {
             triggerReconnect(immediate = true)
         } else {

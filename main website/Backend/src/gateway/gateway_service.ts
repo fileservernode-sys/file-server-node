@@ -1404,6 +1404,15 @@ export class GatewayService {
       }
     });
 
+    socket.on('pong', () => {
+      if (authenticatedConnectionId && authenticatedSessionId && this.activeConnections.has(authenticatedConnectionId)) {
+        const conn = this.activeConnections.get(authenticatedConnectionId)!;
+        if (conn.sessionId === authenticatedSessionId && conn.isAuthoritative && !conn.isEvicted && !conn.isClosed) {
+          conn.lastHeartbeatAt = new Date();
+        }
+      }
+    });
+
     socket.on('close', async () => {
       clearTimeout(authTimeoutTimer);
       if (authenticatedConnectionId && authenticatedSessionId) {
@@ -1635,12 +1644,18 @@ export class GatewayService {
     if (this.wss) return;
 
     this.httpServer = httpServer;
+    httpServer.headersTimeout = 0;
+    httpServer.requestTimeout = 0;
+    httpServer.keepAliveTimeout = 120000;
+
     this.wss = new WebSocketServer({
       server: httpServer,
       maxPayload: this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES
     });
 
     this.wss.on('connection', (socket: WebSocket, req: http.IncomingMessage) => {
+      req.socket.setTimeout(0);
+      req.socket.setKeepAlive(true, 15000);
       const remoteIp = req.socket.remoteAddress || '127.0.0.1';
       this.handleSocketConnection(socket, remoteIp);
     });
