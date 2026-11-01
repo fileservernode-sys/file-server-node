@@ -168,11 +168,27 @@
       margin-bottom: var(--space-md);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 6px;
       background: var(--color-bg-secondary);
-      padding: 4px 8px;
+      padding: 6px 10px;
       border-radius: var(--radius-sm);
       border: 1px solid var(--color-border-subtle);
+      flex-wrap: wrap;
+    }
+    .active-since-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      font-family: var(--font-family-mono);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+    .active-since-badge strong {
+      color: var(--color-text-primary);
+      font-weight: 600;
     }
     .server-card-storage-box {
       background: var(--color-bg-secondary);
@@ -1151,6 +1167,8 @@
     let currentServerCount = 0;
     let autoRefreshTimer = null;
     let serverFetchSequence = 0;
+    let currentDevicesList = [];
+    const serverStorageCache = new Map();
 
     function startAutoRefresh() {
       if (autoRefreshTimer) {
@@ -1324,6 +1342,39 @@
       return `Last active ${diffDays}d ago`;
     }
 
+    function formatBytes(bytes, decimals = 1) {
+      if (!bytes || isNaN(bytes) || bytes <= 0) return '0 B';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function formatActiveSince(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      if (diffMs < 0) return 'Just started';
+
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHours = Math.floor(diffMin / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+      let durationStr = '';
+      if (diffSec < 60) durationStr = 'just now';
+      else if (diffMin < 60) durationStr = `${diffMin}m ago`;
+      else if (diffHours < 24) durationStr = `${diffHours}h ${diffMin % 60}m ago`;
+      else durationStr = `${diffDays}d ${diffHours % 24}h ago`;
+
+      return `${timeStr} (${durationStr})`;
+    }
+
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, match => ({
@@ -1376,6 +1427,7 @@
         }
 
         const devices = res.data.data?.devices || [];
+        currentDevicesList = devices;
         currentServerCount = devices.length;
 
         const onlineCount = devices.filter(d => (d.remoteStatus === 'ONLINE' || d.server?.remoteStatus === 'ONLINE')).length;
@@ -1517,12 +1569,24 @@
               gatewayText = 'Gateway: Inactive (Server Stopped)';
             }
 
+            // Active session since time
+            const activeSinceRaw = server?.startedAt || device.startedAt || device.connection?.connectedAt || device.connectedAt;
+            const activeSinceText = (isOnline && activeSinceRaw) ? formatActiveSince(activeSinceRaw) : '';
+
             // Status reason context
-            const reasonLabel = resolveStatusContext(device.statusReason || server?.statusReason);
+            const effectiveReason = device.statusReason || server?.statusReason || (isOnline ? 'authenticated_live_session' : null);
+            const reasonLabel = resolveStatusContext(effectiveReason);
             const statusContextHtml = reasonLabel ? `
               <div class="server-card-status-context">
-                <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                <span>${escapeHtml(reasonLabel)}</span>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary); flex-shrink: 0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  <span style="font-weight: 500;">${escapeHtml(reasonLabel)}</span>
+                </div>
+                ${activeSinceText ? `
+                  <span class="active-since-badge" title="Active live session established at ${escapeHtml(new Date(activeSinceRaw).toLocaleString())}">
+                    Active since: <strong>${escapeHtml(activeSinceText)}</strong>
+                  </span>
+                ` : ''}
               </div>
             ` : '';
 
@@ -1637,7 +1701,7 @@
                   ${statusContextHtml}
 
                   <!-- 4. Host Storage Presentation Box -->
-                  <div class="server-card-storage-box">
+                  <div class="server-card-storage-box" id="storage-box-${escapeHtml(serverId)}">
                     <div class="storage-box-header">
                       <div class="storage-box-title">
                         <svg class="icon icon-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-brand-primary);">
@@ -1646,12 +1710,16 @@
                         </svg>
                         <span>Host Storage</span>
                       </div>
-                      <span class="storage-box-status">${escapeHtml(storageStatusText)}</span>
+                      <span class="storage-box-status" id="storage-status-${escapeHtml(serverId)}">${escapeHtml(storageStatusText)}</span>
+                    </div>
+
+                    <div class="storage-bar-track-sm" id="storage-track-${escapeHtml(serverId)}" style="${isOnline ? '' : 'opacity: 0.35;'}">
+                      <div class="storage-bar-fill-sm" id="storage-fill-${escapeHtml(serverId)}" style="width: 0%;"></div>
                     </div>
 
                     <div class="storage-box-detail">
-                      <span>${escapeHtml(storageDetailText)}</span>
-                      <span title="Last recorded activity">${escapeHtml(lastActiveTimestamp)}</span>
+                      <span id="storage-detail-${escapeHtml(serverId)}">${escapeHtml(storageDetailText)}</span>
+                      <span id="storage-meta-${escapeHtml(serverId)}" title="Last recorded activity">${escapeHtml(lastActiveTimestamp)}</span>
                     </div>
                   </div>
                 </div>
@@ -1689,6 +1757,7 @@
 
           if (grid) {
             grid.innerHTML = cardsHtml + addServerPrompt;
+            fetchServerStorageStats(devices);
           }
         }
       } catch (err) {
@@ -1703,6 +1772,83 @@
         }
       } finally {
         isFetchingServers = false;
+      }
+    }
+
+    async function fetchServerStorageStats(devices) {
+      if (!devices || !devices.length) return;
+      for (const device of devices) {
+        const server = device.server;
+        const serverId = server?.id || device.id;
+        const effectiveRemoteStatus = device.remoteStatus || server?.remoteStatus;
+        const isOnline = effectiveRemoteStatus === 'ONLINE' && device.isRemoteAvailable !== false;
+
+        const fillEl = document.getElementById(`storage-fill-${serverId}`);
+        const statusEl = document.getElementById(`storage-status-${serverId}`);
+        const detailEl = document.getElementById(`storage-detail-${serverId}`);
+        const metaEl = document.getElementById(`storage-meta-${serverId}`);
+
+        if (!isOnline) {
+          if (fillEl) fillEl.style.width = '0%';
+          continue;
+        }
+
+        const cached = serverStorageCache.get(serverId);
+        if (cached && (Date.now() - cached.timestamp < 30000)) {
+          applyStorageData(serverId, cached.data);
+          continue;
+        }
+
+        if (detailEl && !detailEl.dataset.loaded) {
+          detailEl.textContent = 'Measuring host storage...';
+        }
+
+        try {
+          const res = await apiRequest(`/file-manager/${encodeURIComponent(serverId)}/storage`, 'GET');
+          if (res && res.ok && res.data && res.data.success && res.data.data) {
+            serverStorageCache.set(serverId, { data: res.data.data, timestamp: Date.now() });
+            applyStorageData(serverId, res.data.data);
+          } else {
+            if (detailEl && !detailEl.dataset.loaded) {
+              detailEl.textContent = 'Physically hosted on Android phone';
+            }
+          }
+        } catch (e) {
+          if (detailEl && !detailEl.dataset.loaded) {
+            detailEl.textContent = 'Physically hosted on Android phone';
+          }
+        }
+      }
+    }
+
+    function applyStorageData(serverId, sData) {
+      const fillEl = document.getElementById(`storage-fill-${serverId}`);
+      const statusEl = document.getElementById(`storage-status-${serverId}`);
+      const detailEl = document.getElementById(`storage-detail-${serverId}`);
+      const metaEl = document.getElementById(`storage-meta-${serverId}`);
+
+      const total = sData.totalBytes || 0;
+      const used = sData.usedBytes || (total - (sData.freeBytes || 0));
+      const free = sData.freeBytes || (total - used);
+      const pct = sData.usagePercentage !== undefined 
+        ? sData.usagePercentage 
+        : (total > 0 ? Math.round((used / total) * 100) : 0);
+
+      if (fillEl) {
+        fillEl.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+        if (pct >= 90) fillEl.style.backgroundColor = '#DC2626';
+        else if (pct >= 75) fillEl.style.backgroundColor = '#D97706';
+        else fillEl.style.backgroundColor = 'var(--color-brand-primary)';
+      }
+      if (statusEl) {
+        statusEl.textContent = `${pct}% Used`;
+      }
+      if (detailEl) {
+        detailEl.dataset.loaded = 'true';
+        detailEl.innerHTML = `<strong>${formatBytes(used)}</strong> of <strong>${formatBytes(total)}</strong> (${formatBytes(free)} free)`;
+      }
+      if (metaEl) {
+        metaEl.textContent = 'Storage Synced';
       }
     }
 
@@ -1833,6 +1979,19 @@
       }
       if (newName.length > 64) {
         if (errEl) errEl.textContent = 'Server name must be 64 characters or fewer.';
+        return;
+      }
+
+      // Client-side uniqueness validation across account servers
+      const duplicateExists = (currentDevicesList || []).some(d => {
+        const s = d.server;
+        const sId = s?.id || d.id;
+        const sName = (s?.serverName || d.deviceName || '').trim().toLowerCase();
+        return sId !== serverId && sName === newName.toLowerCase();
+      });
+
+      if (duplicateExists) {
+        if (errEl) errEl.textContent = `A server named "${newName}" already exists on your account. Each server must have a unique name.`;
         return;
       }
 

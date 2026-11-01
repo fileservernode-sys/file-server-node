@@ -163,6 +163,39 @@ describe('Phase 5.3 — Customer Server Actions Test Suite (Stop, Rename, Delete
     assert.strictEqual(resLong.statusCode, 400);
   });
 
+  test('TEST 2B — Unique server name per account: Duplicate server name is rejected with 409 Conflict', async () => {
+    // Create second server for User A
+    const devA2 = await prisma.device.create({
+      data: {
+        userId: userIdA,
+        deviceName: 'Device A2',
+        platform: 'Android',
+        installationId: 'inst_a2_' + Date.now(),
+        status: 'ONLINE'
+      }
+    });
+    const srvA2 = await prisma.serverInstance.create({
+      data: {
+        deviceId: devA2.id,
+        serverName: 'Second Server A',
+        status: 'RUNNING'
+      }
+    });
+
+    // Attempt to rename srvA2 to 'Office Storage Node A' (which serverIdA already has)
+    const resDuplicate = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/servers/${srvA2.id}`,
+      headers: { authorization: `Bearer ${userTokenA}` },
+      payload: { serverName: 'Office Storage Node A' }
+    });
+
+    assert.strictEqual(resDuplicate.statusCode, 409);
+    const body = JSON.parse(resDuplicate.payload);
+    assert.strictEqual(body.success, false);
+    assert.strictEqual(body.error.code, 'DUPLICATE_SERVER_NAME');
+  });
+
   test('TEST 3 — Cross-Account Rename Protection: User A cannot rename User B server', async () => {
     const res = await app.inject({
       method: 'PATCH',

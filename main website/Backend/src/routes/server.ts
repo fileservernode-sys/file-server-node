@@ -9,6 +9,7 @@ import { ConnectionStateMachine } from '../services/connection_state_machine.js'
 import { getAuthUser } from '../middleware/customer-auth.js';
 import { expensiveCustomerRateLimitConfig, customerStandardRateLimitConfig } from '../middleware/rate_limit_presets.js';
 import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
+import { resolveUniqueServerName, checkServerNameConflict } from '../utils/server_naming.js';
 
 const createServerSchema = z.object({
   deviceId: z.string().min(1)
@@ -81,10 +82,12 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         throw new ConflictError(`Your account has reached the maximum limit of ${entitlements.maxServers} active servers.`, 'MAX_SERVERS_REACHED');
       }
 
-      // 4. Create new ServerInstance
+      // 4. Create new ServerInstance with guaranteed unique name for this account
+      const uniqueName = await resolveUniqueServerName(tx, user.id, device.deviceName);
       return await tx.serverInstance.create({
         data: {
           deviceId,
+          serverName: uniqueName,
           status: 'STOPPED'
         }
       });
@@ -246,10 +249,19 @@ export async function serverRoutes(app: FastifyInstance): Promise<void> {
         throw new ForbiddenError('You do not have permission to rename this server');
       }
 
+      const trimmedName = serverName.trim();
+      const hasConflict = await checkServerNameConflict(prisma, user.id, trimmedName, serverInstance.id);
+      if (hasConflict) {
+        throw new ConflictError(
+          `A server named "${trimmedName}" already exists on your account. Each server must have a unique name.`,
+          'DUPLICATE_SERVER_NAME'
+        );
+      }
+
       const previousName = serverInstance.serverName;
       const updated = await prisma.serverInstance.update({
         where: { id: serverInstance.id },
-        data: { serverName }
+        data: { serverName: trimmedName }
       });
 
       await prisma.auditEvent.create({

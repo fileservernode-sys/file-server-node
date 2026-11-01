@@ -14,6 +14,7 @@ import { deviceEventProducer } from '../notifications/producers/device_producer.
 import { serverEventProducer } from '../notifications/producers/server_producer.js';
 import { resolveClientIp } from '../utils/ip.js';
 import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
+import { resolveUniqueServerName } from '../utils/server_naming.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -108,10 +109,16 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
 
         if (existingServer) {
           // Idempotent update for existing server on this device
+          const uniqueServerName = await resolveUniqueServerName(
+            tx,
+            user.id,
+            serverName || existingServer.serverName || deviceName,
+            existingServer.id
+          );
           await tx.serverInstance.update({
             where: { id: existingServer.id },
             data: {
-              serverName: serverName || existingServer.serverName || deviceName,
+              serverName: uniqueServerName,
               adminUsername: adminUsername || existingServer.adminUsername,
               status: 'RUNNING',
               ...(adminPasswordHash ? { adminPasswordHash } : {})
@@ -127,10 +134,16 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             throw new ConflictError(`Your account has reached the maximum limit of ${entitlements.maxServers} active servers.`, 'MAX_SERVERS_REACHED');
           }
 
+          const uniqueServerName = await resolveUniqueServerName(
+            tx,
+            user.id,
+            serverName || deviceName
+          );
+
           await tx.serverInstance.create({
             data: {
               deviceId: device.id,
-              serverName: serverName || deviceName,
+              serverName: uniqueServerName,
               adminUsername: adminUsername,
               adminPasswordHash: adminPasswordHash,
               status: 'RUNNING'
@@ -165,10 +178,16 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           }
         });
 
+        const uniqueServerName = await resolveUniqueServerName(
+          tx,
+          user.id,
+          serverName || deviceName
+        );
+
         await tx.serverInstance.create({
           data: {
             deviceId: newDevice.id,
-            serverName: serverName || deviceName,
+            serverName: uniqueServerName,
             adminUsername: adminUsername,
             adminPasswordHash: adminPasswordHash,
             status: 'RUNNING'
@@ -748,7 +767,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           isRemoteAvailable: derivedStatus.isRemoteAvailable,
           livenessValid: derivedStatus.livenessValid,
           effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || d.lastSeenAt?.toISOString() || null,
-          lastSeenAt: d.lastSeenAt?.toISOString(),
+          startedAt: activeServer?.startedAt?.toISOString() || activeConn?.connectedAt?.toISOString() || null,
+          connectedAt: activeConn?.connectedAt?.toISOString() || null,
           server: activeServer ? {
             id: activeServer.id,
             serverName: activeServer.serverName || d.deviceName,
@@ -759,7 +779,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             isRemoteAvailable: derivedStatus.isRemoteAvailable,
             effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || activeServer.lastHeartbeatAt?.toISOString() || null,
             localServerUrl: 'http://127.0.0.1:8080',
-            startedAt: activeServer.startedAt?.toISOString(),
+            startedAt: activeServer.startedAt?.toISOString() || activeConn?.connectedAt?.toISOString() || null,
             endpoint: activeEndpoint ? {
               id: activeEndpoint.id,
               hostname: activeEndpoint.hostname,
@@ -774,6 +794,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             statusReason: derivedStatus.statusReason,
             remoteEndpoint: activeConn.remoteEndpoint,
             gatewayHost: activeConn.gatewayNode?.hostname ?? null,
+            connectedAt: activeConn.connectedAt?.toISOString() || null,
             lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()
           } : null
         };
@@ -853,6 +874,8 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         livenessValid: derivedStatus.livenessValid,
         effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || device.lastSeenAt?.toISOString() || null,
         lastSeenAt: device.lastSeenAt?.toISOString(),
+        startedAt: activeServer?.startedAt?.toISOString() || activeConn?.connectedAt?.toISOString() || null,
+        connectedAt: activeConn?.connectedAt?.toISOString() || null,
         server: activeServer ? {
           id: activeServer.id,
           serverName: activeServer.serverName || device.deviceName,
@@ -863,7 +886,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           isRemoteAvailable: derivedStatus.isRemoteAvailable,
           effectiveLastSeenAt: derivedStatus.effectiveLastSeenAt || activeServer.lastHeartbeatAt?.toISOString() || null,
           localServerUrl: 'http://127.0.0.1:8080',
-          startedAt: activeServer.startedAt?.toISOString(),
+          startedAt: activeServer.startedAt?.toISOString() || activeConn?.connectedAt?.toISOString() || null,
           endpoint: activeEndpoint ? {
             id: activeEndpoint.id,
             hostname: activeEndpoint.hostname,
@@ -878,6 +901,7 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
           statusReason: derivedStatus.statusReason,
           remoteEndpoint: activeConn.remoteEndpoint,
           gatewayHost: activeConn.gatewayNode?.hostname ?? null,
+          connectedAt: activeConn.connectedAt?.toISOString() || null,
           lastHeartbeatAt: activeConn.lastHeartbeatAt?.toISOString()
         } : null
       }

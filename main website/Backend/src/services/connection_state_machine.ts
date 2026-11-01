@@ -374,10 +374,21 @@ export class ConnectionStateMachine {
           data: { status: DeviceStatus.ONLINE, lastSeenAt: now }
         });
 
-        await db.serverInstance.updateMany({
-          where: { deviceId },
-          data: { status: ServerInstanceStatus.RUNNING, startedAt: now, lastHeartbeatAt: now }
+        // Preserve existing startedAt if server was already RUNNING so session duration is accurate
+        const servers = await db.serverInstance.findMany({
+          where: { deviceId }
         });
+        for (const s of servers) {
+          const keepStartedAt = (s.status === ServerInstanceStatus.RUNNING && s.startedAt) ? s.startedAt : now;
+          await db.serverInstance.update({
+            where: { id: s.id },
+            data: {
+              status: ServerInstanceStatus.RUNNING,
+              startedAt: keepStartedAt,
+              lastHeartbeatAt: now
+            }
+          });
+        }
 
         const endpoints = await db.serverEndpoint.findMany({
           where: { serverInstance: { deviceId } }
