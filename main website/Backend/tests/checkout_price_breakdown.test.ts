@@ -204,7 +204,7 @@ describe('ZC-BILLING-4.2 Checkout Price Breakdown Test Suite', () => {
   });
 
   describe('2. India (IN) Authoritative Breakdown Calculations', () => {
-    test('2.1 PRO_MONTHLY in India resolves ₹49 (4900 paise) with tax included and 0 savings', async () => {
+    test('2.1 PRO_MONTHLY in India resolves ₹49 (4900 paise) base price with exclusive 18% GST and gateway fee', async () => {
       const breakdown = await RazorpayCheckoutService.getPriceBreakdown(testUserIn.id, 'PRO_MONTHLY');
 
       assert.strictEqual(breakdown.planCode, 'PRO_MONTHLY');
@@ -216,18 +216,19 @@ describe('ZC-BILLING-4.2 Checkout Price Breakdown Test Suite', () => {
       assert.strictEqual(breakdown.formattedAmount, '₹49');
       assert.strictEqual(breakdown.priceVersion, 1);
       assert.strictEqual(breakdown.savings, null);
-      assert.strictEqual(breakdown.tax.included, true);
-      assert.strictEqual(breakdown.tax.formattedAmount, 'Included in price');
-      assert.strictEqual(breakdown.fees.amountMinorUnits, 0);
-      assert.strictEqual(breakdown.fees.formattedAmount, '₹0');
-      assert.strictEqual(breakdown.totalMinorUnits, 4900);
-      assert.strictEqual(breakdown.formattedTotal, '₹49');
+      assert.strictEqual(breakdown.tax.included, false);
+      assert.strictEqual(breakdown.tax.amountMinorUnits, 882);
+      assert.strictEqual(breakdown.tax.formattedAmount, '+₹8.82');
+      assert.strictEqual(breakdown.fees.amountMinorUnits, 116);
+      assert.strictEqual(breakdown.fees.formattedAmount, '+₹1.16');
+      assert.strictEqual(breakdown.totalMinorUnits, 5898);
+      assert.strictEqual(breakdown.formattedTotal, '₹58.98');
       assert.strictEqual(breakdown.renewal.interval, BillingInterval.MONTHLY);
-      assert.strictEqual(breakdown.renewal.formattedAmount, '₹49');
-      assert.strictEqual(breakdown.renewal.notice, 'Renews monthly at ₹49/month until cancelled');
+      assert.strictEqual(breakdown.renewal.formattedAmount, '₹58.98');
+      assert.strictEqual(breakdown.renewal.notice, 'Renews monthly at ₹58.98/month until cancelled');
     });
 
-    test('2.2 PRO_YEARLY in India resolves ₹500 (50000 paise) with ₹88 savings (~15%) and tax included', async () => {
+    test('2.2 PRO_YEARLY in India resolves ₹500 (50000 paise) base price with ₹88 savings (~15%), exclusive 18% GST and gateway fee', async () => {
       const breakdown = await RazorpayCheckoutService.getPriceBreakdown(testUserIn.id, 'PRO_YEARLY');
 
       assert.strictEqual(breakdown.planCode, 'PRO_YEARLY');
@@ -246,15 +247,16 @@ describe('ZC-BILLING-4.2 Checkout Price Breakdown Test Suite', () => {
       assert.strictEqual(breakdown.savings.annualizedMonthlyMinorUnits, 58800);
       assert.strictEqual(breakdown.savings.formattedAnnualizedMonthly, '₹588');
 
-      assert.strictEqual(breakdown.tax.included, true);
-      assert.strictEqual(breakdown.tax.formattedAmount, 'Included in price');
-      assert.strictEqual(breakdown.fees.amountMinorUnits, 0);
-      assert.strictEqual(breakdown.fees.formattedAmount, '₹0');
-      assert.strictEqual(breakdown.totalMinorUnits, 50000);
-      assert.strictEqual(breakdown.formattedTotal, '₹500');
+      assert.strictEqual(breakdown.tax.included, false);
+      assert.strictEqual(breakdown.tax.amountMinorUnits, 9000);
+      assert.strictEqual(breakdown.tax.formattedAmount, '+₹90');
+      assert.strictEqual(breakdown.fees.amountMinorUnits, 1180);
+      assert.strictEqual(breakdown.fees.formattedAmount, '+₹11.80');
+      assert.strictEqual(breakdown.totalMinorUnits, 60180);
+      assert.strictEqual(breakdown.formattedTotal, '₹601.80');
       assert.strictEqual(breakdown.renewal.interval, BillingInterval.YEARLY);
-      assert.strictEqual(breakdown.renewal.formattedAmount, '₹500');
-      assert.strictEqual(breakdown.renewal.notice, 'Renews annually at ₹500/year until cancelled');
+      assert.strictEqual(breakdown.renewal.formattedAmount, '₹601.80');
+      assert.strictEqual(breakdown.renewal.notice, 'Renews annually at ₹601.80/year until cancelled');
     });
   });
 
@@ -395,8 +397,11 @@ describe('ZC-BILLING-4.2 Checkout Price Breakdown Test Suite', () => {
       assert.strictEqual(json.data.amountMinorUnits, 50000);
       assert.strictEqual(json.data.formattedAmount, '₹500');
       assert.strictEqual(json.data.savings.formattedAmount, '₹88');
-      assert.strictEqual(json.data.tax.included, true);
-      assert.strictEqual(json.data.tax.formattedAmount, 'Included in price');
+      assert.strictEqual(json.data.tax.included, false);
+      assert.strictEqual(json.data.tax.formattedAmount, '+₹90');
+      assert.strictEqual(json.data.fees.formattedAmount, '+₹11.80');
+      assert.strictEqual(json.data.totalMinorUnits, 60180);
+      assert.strictEqual(json.data.formattedTotal, '₹601.80');
     });
 
     test('5.5 Authenticated US user retrieves valid price breakdown for PRO_YEARLY', async () => {

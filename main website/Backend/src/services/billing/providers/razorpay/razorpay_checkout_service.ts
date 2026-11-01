@@ -52,12 +52,15 @@ export interface VerifyCheckoutPaymentResult {
 
 export interface CheckoutPriceBreakdownTax {
   included: boolean;
+  ratePercentage?: number;
+  amountMinorUnits?: number;
   formattedAmount: string;
 }
 
 export interface CheckoutPriceBreakdownFees {
   amountMinorUnits: number;
   formattedAmount: string;
+  description?: string;
 }
 
 export interface CheckoutPriceBreakdownSavings {
@@ -242,22 +245,49 @@ export class RazorpayCheckoutService {
       }
     }
 
-    // 5. Tax Breakdown
+    // 5. Tax Breakdown (18% GST added on top of base plan price for India)
     const isIndia = authoritativeCurrency === CurrencyCode.INR || billingState.billingCountry === 'IN';
-    const tax: CheckoutPriceBreakdownTax = {
-      included: isIndia,
-      formattedAmount: isIndia ? 'Included in price' : 'Calculated at checkout'
-    };
+    let taxAmountMinorUnits = 0;
+    let feeAmountMinorUnits = 0;
 
-    // 6. Zero Processing/Gateway Fees Charged to Customer
-    const fees: CheckoutPriceBreakdownFees = {
-      amountMinorUnits: 0,
-      formattedAmount: PriceFormatter.format(0, authoritativeCurrency)
-    };
+    let tax: CheckoutPriceBreakdownTax;
+    let fees: CheckoutPriceBreakdownFees;
 
-    // 7. Total Payable Amount
-    const totalMinorUnits = amountMinorUnits;
-    const formattedTotal = formattedAmount;
+    if (isIndia) {
+      taxAmountMinorUnits = Math.round((amountMinorUnits * 1800) / 10000); // 18.00% GST
+      const baseFeeMinorUnits = Math.round((amountMinorUnits * 200) / 10000); // 2.0% Razorpay transaction fee
+      const feeTaxMinorUnits = Math.round((baseFeeMinorUnits * 1800) / 10000); // 18% GST on fee
+      feeAmountMinorUnits = baseFeeMinorUnits + feeTaxMinorUnits;
+
+      tax = {
+        included: false,
+        ratePercentage: 18,
+        amountMinorUnits: taxAmountMinorUnits,
+        formattedAmount: `+${PriceFormatter.format(taxAmountMinorUnits, authoritativeCurrency)}`
+      };
+
+      fees = {
+        amountMinorUnits: feeAmountMinorUnits,
+        formattedAmount: `+${PriceFormatter.format(feeAmountMinorUnits, authoritativeCurrency)}`,
+        description: 'Razorpay fee (2% + 18% GST)'
+      };
+    } else {
+      tax = {
+        included: false,
+        ratePercentage: 0,
+        amountMinorUnits: 0,
+        formattedAmount: 'Calculated at checkout'
+      };
+
+      fees = {
+        amountMinorUnits: 0,
+        formattedAmount: PriceFormatter.format(0, authoritativeCurrency)
+      };
+    }
+
+    // 7. Total Payable Amount (Base Price + 18% GST + Payment Gateway Fee)
+    const totalMinorUnits = amountMinorUnits + taxAmountMinorUnits + feeAmountMinorUnits;
+    const formattedTotal = PriceFormatter.format(totalMinorUnits, authoritativeCurrency);
 
     // 8. Renewal Terms
     const isYearly = plan.interval === BillingInterval.YEARLY;
@@ -405,6 +435,18 @@ export class RazorpayCheckoutService {
         );
       }
 
+      // Calculate tax and gateway commission added on top of base plan price
+      const isIndia = authoritativeCurrency === CurrencyCode.INR || billingState.billingCountry === 'IN';
+      let taxUnits = 0;
+      let feeUnits = 0;
+      if (isIndia) {
+        taxUnits = Math.round((planPrice.amountMinorUnits * 1800) / 10000); // 18.00% GST
+        const baseFee = Math.round((planPrice.amountMinorUnits * 200) / 10000); // 2.0% Razorpay fee
+        const feeGst = Math.round((baseFee * 1800) / 10000); // 18% GST on Razorpay fee
+        feeUnits = baseFee + feeGst;
+      }
+      const totalChargedMinorUnits = planPrice.amountMinorUnits + taxUnits + feeUnits;
+
       // 5. Resolve Verified Provider Plan Mapping
       const environment = options?.environment || RazorpayPlanCatalogService.resolvePaymentEnvironment();
 
@@ -443,14 +485,15 @@ export class RazorpayCheckoutService {
         options?.logger?.info(
           `[RazorpayCheckout] Reusing pending checkout session ${existingPending.providerSubscriptionId} for user ${user.id}`
         );
+        const sessionAmount = existingPending.amountMinorUnits || totalChargedMinorUnits;
         return {
           keyId: rzpConfig.keyId,
           subscriptionId: existingPending.providerSubscriptionId,
           planCode: plan.code,
           interval: plan.interval,
           currency: planPrice.currency,
-          amountMinorUnits: planPrice.amountMinorUnits,
-          formattedAmount: PriceFormatter.format(planPrice.amountMinorUnits, planPrice.currency),
+          amountMinorUnits: sessionAmount,
+          formattedAmount: PriceFormatter.format(sessionAmount, planPrice.currency),
           billingCountry: billingState.billingCountry
         };
       }
@@ -518,7 +561,7 @@ export class RazorpayCheckoutService {
           status: BillingStatus.CREATED,
           billingInterval: plan.interval,
           currency: planPrice.currency,
-          amountMinorUnits: planPrice.amountMinorUnits,
+          amountMinorUnits: totalChargedMinorUnits,
           priceVersion: planPrice.version,
           currentPeriodStart: now,
           currentPeriodEnd,
@@ -538,14 +581,14 @@ export class RazorpayCheckoutService {
             providerSubscriptionId: createdSubId,
             planCode: plan.code,
             currency: planPrice.currency,
-            amountMinorUnits: planPrice.amountMinorUnits,
+            amountMinorUnits: totalChargedMinorUnits,
             priceVersion: planPrice.version,
             environment
           }
         }
       });
 
-      const formattedCheckoutAmount = PriceFormatter.format(planPrice.amountMinorUnits, planPrice.currency);
+      const formattedCheckoutAmount = PriceFormatter.format(totalChargedMinorUnits, planPrice.currency);
       await CustomerActivityService.recordEventSafe({
         userId: user.id,
         eventType: 'BILLING.SUBSCRIPTION_CHECKOUT_STARTED',
@@ -556,7 +599,7 @@ export class RazorpayCheckoutService {
           planName: plan.name,
           billingInterval: plan.interval,
           currency: planPrice.currency,
-          amountMinorUnits: planPrice.amountMinorUnits,
+          amountMinorUnits: totalChargedMinorUnits,
           formattedAmount: formattedCheckoutAmount
         }
       });
@@ -568,8 +611,8 @@ export class RazorpayCheckoutService {
         planCode: plan.code,
         interval: plan.interval,
         currency: planPrice.currency,
-        amountMinorUnits: planPrice.amountMinorUnits,
-        formattedAmount: PriceFormatter.format(planPrice.amountMinorUnits, planPrice.currency),
+        amountMinorUnits: totalChargedMinorUnits,
+        formattedAmount: formattedCheckoutAmount,
         billingCountry: billingState.billingCountry
       };
     });

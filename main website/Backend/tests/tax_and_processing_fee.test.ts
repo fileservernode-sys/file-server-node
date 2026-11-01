@@ -236,7 +236,7 @@ describe('Billing Phase 6.5-Corrective — Tax Authority, GSTIN & Provider Fee S
       assert.equal(activeConfig.taxType, TaxType.GST);
       assert.equal(activeConfig.rateBasisPoints, 1800);
       assert.equal(activeConfig.authority, 'IN_GST_SCHEDULE_SERVICES_18_PCT');
-      assert.equal(activeConfig.isInclusive, true);
+      assert.equal(activeConfig.isInclusive, false);
     });
 
     it('2. Tax engine does not hard-code 18% and respects updated/custom registered tax configurations', () => {
@@ -294,34 +294,34 @@ describe('Billing Phase 6.5-Corrective — Tax Authority, GSTIN & Provider Fee S
       const first = await TaxCalculationService.recordPaymentTax(testPaymentIndia.id);
       const second = await TaxCalculationService.recordPaymentTax(testPaymentIndia.id);
       assert.equal(first.id, second.id);
-      assert.equal(first.taxAmountMinorUnits, 747);
-      assert.equal(first.taxableAmountMinorUnits, 4153);
+      assert.equal(first.taxAmountMinorUnits, 882);
+      assert.equal(first.taxableAmountMinorUnits, 4900);
     });
 
-    it('6. ₹49 configured 18% inclusive tax remains ₹49 gross (4900 minor units)', () => {
+    it('6. ₹49 configured 18% exclusive tax adds 18% GST (882 minor units) on top', () => {
       const result = TaxCalculationService.calculateTax({
         grossAmountMinorUnits: 4900,
         currency: CurrencyCode.INR,
         billingCountry: 'IN'
       });
 
-      assert.equal(result.grossAmountMinorUnits, 4900);
-      assert.equal(result.taxAmountMinorUnits, 747);
-      assert.equal(result.taxableAmountMinorUnits, 4153);
-      assert.equal(result.taxableAmountMinorUnits + result.taxAmountMinorUnits, 4900);
+      assert.equal(result.taxableAmountMinorUnits, 4900);
+      assert.equal(result.taxAmountMinorUnits, 882);
+      assert.equal(result.grossAmountMinorUnits, 5782);
+      assert.equal(result.taxableAmountMinorUnits + result.taxAmountMinorUnits, 5782);
     });
 
-    it('7. ₹500 configured 18% inclusive tax remains ₹500 gross (50000 minor units)', () => {
+    it('7. ₹500 configured 18% exclusive tax adds 18% GST (9000 minor units) on top', () => {
       const result = TaxCalculationService.calculateTax({
         grossAmountMinorUnits: 50000,
         currency: CurrencyCode.INR,
         billingCountry: 'IN'
       });
 
-      assert.equal(result.grossAmountMinorUnits, 50000);
-      assert.equal(result.taxAmountMinorUnits, 7627);
-      assert.equal(result.taxableAmountMinorUnits, 42373);
-      assert.equal(result.taxableAmountMinorUnits + result.taxAmountMinorUnits, 50000);
+      assert.equal(result.taxableAmountMinorUnits, 50000);
+      assert.equal(result.taxAmountMinorUnits, 9000);
+      assert.equal(result.grossAmountMinorUnits, 59000);
+      assert.equal(result.taxableAmountMinorUnits + result.taxAmountMinorUnits, 59000);
     });
 
     it('8. USD configured no-tax catalog prices remain unchanged (99 cents / 999 cents)', () => {
@@ -445,7 +445,7 @@ describe('Billing Phase 6.5-Corrective — Tax Authority, GSTIN & Provider Fee S
         where: { paymentId: testPaymentIndia.id }
       });
       assert.ok(taxRecord);
-      assert.equal(taxRecord.taxAmountMinorUnits, 747);
+      assert.equal(taxRecord.taxAmountMinorUnits, 882);
     });
 
     it('17. Provider settlement ID is persisted upon reconciliation', async () => {

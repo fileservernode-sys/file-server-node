@@ -835,12 +835,12 @@
           <span id="breakdown-savings-amount" style="font-size: var(--font-size-xs); color: #059669; font-weight: 700;">Save ₹88/year (~15% off)</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Estimated Tax:</span>
-          <span id="breakdown-tax" style="font-size: var(--font-size-sm); color: var(--color-text-muted);">Included in price</span>
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Estimated Tax (18% GST):</span>
+          <span id="breakdown-tax" style="font-size: var(--font-size-sm); color: var(--color-text-primary); font-weight: 500;">+₹0</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Processing Fee:</span>
-          <span id="breakdown-fee" style="font-size: var(--font-size-sm); color: #059669; font-weight: 600;">Free</span>
+          <span style="font-size: var(--font-size-sm); color: var(--color-text-secondary);">Payment Gateway Fee (Razorpay):</span>
+          <span id="breakdown-fee" style="font-size: var(--font-size-sm); color: var(--color-text-primary); font-weight: 500;">+₹0</span>
         </div>
       </div>
 
@@ -1204,8 +1204,8 @@
           }
         }
 
-        if (taxEl) taxEl.textContent = breakdown.tax?.formattedAmount || 'Included in price';
-        if (feeEl) feeEl.textContent = breakdown.fees?.formattedAmount ? `${breakdown.fees.formattedAmount} (Free)` : 'Free';
+        if (taxEl) taxEl.textContent = breakdown.tax?.formattedAmount || '+₹0';
+        if (feeEl) feeEl.textContent = breakdown.fees?.formattedAmount || '+₹0';
         if (totalEl) totalEl.textContent = breakdown.formattedTotal;
         if (renewalNoticeEl) renewalNoticeEl.textContent = breakdown.renewal?.notice || `Renews at ${breakdown.formattedTotal}. Cancel anytime in dashboard.`;
 

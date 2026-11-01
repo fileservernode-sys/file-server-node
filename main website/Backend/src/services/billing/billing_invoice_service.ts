@@ -451,7 +451,8 @@ export class BillingInvoiceService {
         },
         subscription: {
           include: {
-            plan: true
+            plan: true,
+            planPrice: true
           }
         },
         planChange: {
@@ -577,16 +578,17 @@ export class BillingInvoiceService {
       }
     }
 
-    // 7. Authoritative Statutory Tax Calculation
+    // 7. Authoritative Statutory Tax Calculation (Base plan price + 18% GST)
+    const baseTaxableAmount = payment.subscription?.planPrice?.amountMinorUnits || payment.amountMinorUnits;
     const taxCalc: StatutoryTaxCalculationResult = TaxCalculationService.calculateStatutoryInvoiceTax({
-      grossAmountMinorUnits: payment.amountMinorUnits,
+      grossAmountMinorUnits: baseTaxableAmount,
       currency: payment.currency,
       customerCountry: billingCountry,
       customerStateCode,
       supplierCountry: sellerConfig.country,
       supplierStateCode: sellerConfig.stateCode,
       sacCode: sellerConfig.sacCode,
-      isExclusive: false,
+      isExclusive: true,
       isExportApproved: sellerConfig.exportInvoicingApproved,
       exportLutArn: sellerConfig.exportLutArn,
       atDate: payment.chargedAt || payment.createdAt

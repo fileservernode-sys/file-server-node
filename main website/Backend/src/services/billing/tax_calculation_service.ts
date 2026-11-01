@@ -97,7 +97,7 @@ export class TaxConfigurationRegistry {
       jurisdiction: 'IN',
       taxType: TaxType.GST,
       rateBasisPoints: 1800, // 18.00% GST
-      isInclusive: true,
+      isInclusive: false,
       currency: CurrencyCode.INR,
       version: 1,
       isActive: true,
@@ -297,7 +297,7 @@ export class TaxCalculationService {
       supplierCountry,
       supplierStateCode,
       sacCode,
-      isExclusive = false,
+      isExclusive = true,
       isExportApproved = false,
       exportLutArn = null
     } = params;
@@ -467,6 +467,11 @@ export class TaxCalculationService {
           include: {
             billingState: true
           }
+        },
+        subscription: {
+          include: {
+            planPrice: true
+          }
         }
       }
     });
@@ -476,11 +481,12 @@ export class TaxCalculationService {
     }
 
     const billingCountry = options?.billingCountry || payment.user?.billingState?.billingCountry || 'IN';
+    const baseTaxableAmount = payment.subscription?.planPrice?.amountMinorUnits || payment.amountMinorUnits;
 
     let calculation: TaxCalculationResult;
     try {
       calculation = this.calculateTax({
-        grossAmountMinorUnits: payment.amountMinorUnits,
+        grossAmountMinorUnits: baseTaxableAmount,
         currency: payment.currency,
         billingCountry,
         atDate: payment.chargedAt || payment.createdAt

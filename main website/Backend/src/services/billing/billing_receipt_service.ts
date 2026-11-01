@@ -158,13 +158,9 @@ export class BillingReceiptService {
 
     const amountMinorUnits = payment.amountMinorUnits;
     const taxMinorUnits = paymentTax ? paymentTax.taxAmountMinorUnits : 0;
-    const subtotalMinorUnits = paymentTax && paymentTax.isInclusive
-      ? paymentTax.taxableAmountMinorUnits
-      : (paymentTax && !paymentTax.isInclusive ? paymentTax.taxableAmountMinorUnits : amountMinorUnits);
+    const subtotalMinorUnits = paymentTax ? paymentTax.taxableAmountMinorUnits : amountMinorUnits;
     const discountMinorUnits = 0;
-    const totalMinorUnits = paymentTax && !paymentTax.isInclusive
-      ? paymentTax.grossAmountMinorUnits
-      : amountMinorUnits;
+    const totalMinorUnits = Math.max(amountMinorUnits, subtotalMinorUnits + taxMinorUnits);
     const amountPaidMinorUnits = amountMinorUnits;
 
     // Metadata snapshots for upgrade proration or custom line items
@@ -526,6 +522,8 @@ export class BillingReceiptService {
     const formattedDiscount = this.formatAmount(receipt.discountMinorUnits, receipt.currency);
     const formattedTax = this.formatAmount(receipt.taxMinorUnits, receipt.currency);
     const formattedTotal = this.formatAmount(receipt.totalMinorUnits, receipt.currency);
+    const feeMinorUnits = Math.max(0, receipt.totalMinorUnits - receipt.subtotalMinorUnits - receipt.taxMinorUnits);
+    const formattedFee = feeMinorUnits > 0 ? this.formatAmount(feeMinorUnits, receipt.currency) : '';
 
     const issueDateStr = this.formatDate(receipt.issuedAt);
     const chargedDateStr = this.formatDate(receipt.chargedAt);
@@ -1005,9 +1003,14 @@ export class BillingReceiptService {
         <span style="font-family: var(--font-mono); font-weight: 500;">-${formattedDiscount}</span>
       </div>` : ''}
       <div class="summary-row">
-        <span>Tax</span>
+        <span>Tax (18% GST)</span>
         <span style="font-family: var(--font-mono);">${formattedTax}</span>
       </div>
+      ${feeMinorUnits > 0 ? `
+      <div class="summary-row">
+        <span>Payment Gateway Fee</span>
+        <span style="font-family: var(--font-mono);">${formattedFee}</span>
+      </div>` : ''}
       <div class="summary-row total-row">
         <span>Total</span>
         <span style="font-family: var(--font-mono);">${formattedTotal}</span>
@@ -1115,7 +1118,7 @@ export class BillingReceiptService {
       taxJurisdiction: (receipt as any).billingCountry || 'IN',
       taxType: 'GST',
       taxRateBasisPoints: 1800,
-      isInclusive: true,
+      isInclusive: false,
       taxBreakdown: {
         cgstMinorUnits: Math.round(tax / 2),
         sgstMinorUnits: Math.round(tax / 2),

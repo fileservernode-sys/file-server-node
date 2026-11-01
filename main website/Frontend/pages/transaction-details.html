@@ -618,7 +618,7 @@
           </div>
           <div class="tx-banner-amount-row">
             <span class="tx-amount-large" id="banner-amount">₹0.00</span>
-            <span class="tx-amount-badge" id="banner-currency-note">Taxes Included</span>
+            <span class="tx-amount-badge" id="banner-currency-note">Total Settled</span>
           </div>
         </div>
 
@@ -732,8 +732,12 @@
                   <span class="tx-kv-val tx-kv-mono" id="tx-val-subtotal"></span>
                 </div>
                 <div class="tx-kv-row">
-                  <span class="tx-kv-label">Taxes &amp; Fees (Included)</span>
+                  <span class="tx-kv-label" id="tx-label-tax">Tax (18% GST)</span>
                   <span class="tx-kv-val tx-kv-mono" id="tx-val-tax"></span>
+                </div>
+                <div class="tx-kv-row" id="row-fee" style="display: none;">
+                  <span class="tx-kv-label">Payment Gateway Fee (Razorpay)</span>
+                  <span class="tx-kv-val tx-kv-mono" id="tx-val-fee"></span>
                 </div>
                 <div class="tx-kv-row" id="row-discount" style="display: none;">
                   <span class="tx-kv-label">Discount Applied</span>
@@ -1289,9 +1293,21 @@
       const subtotal = tx.subtotalMinorUnits !== undefined ? tx.subtotalMinorUnits : totalAmount;
       const taxAmount = tx.taxMinorUnits || 0;
       const discount = tx.discountMinorUnits || 0;
+      const fee = Math.max(0, totalAmount - subtotal - taxAmount);
 
       document.getElementById('tx-val-subtotal').textContent = formatAmount(subtotal, currency);
       document.getElementById('tx-val-tax').textContent = formatAmount(taxAmount, currency);
+
+      const feeRow = document.getElementById('row-fee');
+      const feeVal = document.getElementById('tx-val-fee');
+      if (feeRow && feeVal) {
+        if (fee > 0) {
+          feeRow.style.display = 'flex';
+          feeVal.textContent = formatAmount(fee, currency);
+        } else {
+          feeRow.style.display = 'none';
+        }
+      }
 
       if (discount > 0) {
         const discRow = document.getElementById('row-discount');
