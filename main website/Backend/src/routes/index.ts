@@ -27,6 +27,7 @@ import { adminDevicesRoutes } from './admin/devices.js';
 import { adminServersRoutes } from './admin/servers.js';
 import { adminNotificationsRoutes } from './admin/notifications.js';
 import { emailWebhookRoutes } from './email-webhooks.js';
+import { youmPanelRoutes } from './youm_panel.js';
 import { pushTokenRoutes, preferenceRoutes, notificationRoutes } from '../notifications/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
 
@@ -69,6 +70,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(storefrontRoutes);
   await app.register(contactRoutes);
   await app.register(emailWebhookRoutes);
+  await app.register(youmPanelRoutes);
   await app.register(pushTokenRoutes);
   await app.register(preferenceRoutes);
   await app.register(notificationRoutes);
