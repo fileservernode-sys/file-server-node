@@ -20,6 +20,19 @@ const analyticsQuerySchema = z.object({
   interval: z.enum(['hour', 'day', 'month']).optional()
 });
 
+const usersQuerySchema = z.object({
+  search: z.string().optional(),
+  plan: z.enum(['all', 'free', 'pro_monthly', 'pro_yearly']).optional(),
+  expiration: z.enum(['all', 'active', 'expiring_soon', 'expired', 'free']).optional(),
+  hasServers: z.enum(['all', 'yes', 'no', 'online']).optional(),
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(200).optional().default(50)
+});
+
+const userIdParamSchema = z.object({
+  id: z.string().min(1)
+});
+
 /**
  * Extracts and validates the Youm Panel bearer token from request headers.
  */
@@ -173,6 +186,55 @@ export async function youmPanelRoutes(app: FastifyInstance): Promise<void> {
     } catch (err: any) {
       request.log.error({ err }, 'Failed to compute Youm Panel analytics');
       return reply.status(500).send(createErrorResponse('ANALYTICS_ERROR', 'Failed to calculate system analytics metrics'));
+    }
+  });
+
+  /**
+   * GET /api/v1/youm-panel/users
+   * Returns comprehensive user accounts directory with:
+   * - Plan details, pricing, subscription intervals
+   * - Plan expiration calculation (exact days left)
+   * - Servers details (status, active since, host device specs, endpoints)
+   * - Filters by plan, expiration, server presence, search, and pagination
+   */
+  app.get('/youm-panel/users', async (request: FastifyRequest, reply: FastifyReply) => {
+    const isValid = await extractAndValidateYoumToken(request, reply);
+    if (!isValid) return;
+
+    const queryResult = usersQuerySchema.safeParse(request.query);
+    const filters = queryResult.success ? queryResult.data : {};
+
+    try {
+      const directory = await YoumPanelService.getUsersDirectory(filters);
+      return reply.send(createSuccessResponse(directory));
+    } catch (err: any) {
+      request.log.error({ err }, 'Failed to retrieve Youm Panel users directory');
+      return reply.status(500).send(createErrorResponse('DIRECTORY_ERROR', 'Failed to retrieve users directory'));
+    }
+  });
+
+  /**
+   * GET /api/v1/youm-panel/users/:id
+   * Returns deep user intelligence record:
+   * Profile, full subscription lifecycle, all devices & hardware specs,
+   * all servers with real-time tunnel state & endpoints, invoices, and payments.
+   */
+  app.get('/youm-panel/users/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    const isValid = await extractAndValidateYoumToken(request, reply);
+    if (!isValid) return;
+
+    const paramResult = userIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', 'Invalid user ID'));
+    }
+
+    try {
+      const userDetails = await YoumPanelService.getUserDetails(paramResult.data.id);
+      return reply.send(createSuccessResponse(userDetails));
+    } catch (err: any) {
+      const statusCode = err.statusCode || 500;
+      const code = err.code || 'USER_DETAILS_ERROR';
+      return reply.status(statusCode).send(createErrorResponse(code, err.message));
     }
   });
 }

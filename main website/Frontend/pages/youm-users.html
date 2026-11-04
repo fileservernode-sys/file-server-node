@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+  <title>Youm Panel | Users &amp; Servers Intelligence</title>
+  <link rel="icon" type="image/x-icon" href="../favicon.ico">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/base.css">
+  <link rel="stylesheet" href="../css/components.css">
+
+  <style>
+    :root {
+      --yp-bg: #090D16;
+      --yp-surface: #111827;
+      --yp-surface-alt: #1F2937;
+      --yp-border: #374151;
+      --yp-border-light: rgba(255, 255, 255, 0.1);
+      --yp-text: #F9FAFB;
+      --yp-text-muted: #9CA3AF;
+      --yp-primary: #38BDF8;
+      --yp-primary-dark: #0284C7;
+      --yp-accent: #6366F1;
+      --yp-success: #10B981;
+      --yp-warning: #F59E0B;
+      --yp-danger: #EF4444;
+      --yp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--yp-bg);
+      color: var(--yp-text);
+      font-family: var(--yp-font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Master Header */
+    .yp-header {
+      background: rgba(17, 24, 39, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--yp-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .yp-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .yp-brand-badge {
+      background: linear-gradient(135deg, #0284C7, #6366F1);
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .yp-brand-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .yp-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .yp-nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--yp-text-muted);
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .yp-nav-item:hover {
+      color: white;
+      background: var(--yp-surface-alt);
+    }
+    .yp-nav-item.active {
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .yp-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .yp-admin-badge {
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(56, 189, 248, 0.1);
+      color: #38BDF8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 0.3rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    @media (min-width: 768px) {
+      .yp-admin-badge {
+        display: inline-flex;
+      }
+    }
+
+    .yp-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .yp-btn-primary { background: #0284C7; color: white; }
+    .yp-btn-primary:hover { background: #0369A1; }
+    .yp-btn-outline { background: transparent; color: var(--yp-text-muted); border-color: var(--yp-border); }
+    .yp-btn-outline:hover { background: var(--yp-surface-alt); color: var(--yp-text); border-color: #4B5563; }
+
+    /* Auth Guard Container */
+    #yp-auth-view {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .yp-auth-card {
+      background: var(--yp-surface);
+      border: 1px solid var(--yp-border);
+      border-radius: 16px;
+      padding: 2.25rem 2rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .yp-auth-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(2, 132, 199, 0.15);
+      border: 1px solid rgba(2, 132, 199, 0.3);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #38BDF8;
+      margin-bottom: 1.25rem;
+    }
+    .yp-auth-title { font-size: 1.35rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.35rem; }
+    .yp-auth-desc { font-size: 0.875rem; color: var(--yp-text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+    .yp-form-group { margin-bottom: 1.25rem; }
+    .yp-label { display: block; font-size: 0.8rem; font-weight: 600; color: #D1D5DB; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .yp-input { width: 100%; background: #090D16; border: 1px solid var(--yp-border); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; outline: none; }
+    .yp-input:focus { border-color: #38BDF8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
+    .yp-otp-group { display: flex; gap: 0.5rem; justify-content: space-between; margin-bottom: 1.25rem; }
+    .yp-otp-digit { width: 48px; height: 54px; text-align: center; font-size: 1.5rem; font-weight: 700; font-family: monospace; background: #090D16; border: 1px solid var(--yp-border); border-radius: 8px; color: #38BDF8; outline: none; }
+    .yp-otp-digit:focus { border-color: #38BDF8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3); }
+    .yp-alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; display: none; line-height: 1.4; }
+    .yp-alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; }
+    .yp-alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6EE7B7; }
+
+    /* Main Dashboard View */
+    #yp-users-view {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1500px;
+      width: 100%;
+      margin: 0 auto;
+      display: none;
+    }
+
+    /* Top Summary Badges Ribbon */
+    .yp-summary-ribbon {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (min-width: 640px) {
+      .yp-summary-ribbon { grid-template-columns: repeat(4, 1fr); }
+    }
+    @media (min-width: 1024px) {
+      .yp-summary-ribbon { grid-template-columns: repeat(7, 1fr); }
+    }
+
+    .yp-sum-card {
+      background: var(--yp-surface);
+      border: 1px solid var(--yp-border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .yp-sum-label { font-size: 0.7rem; font-weight: 600; color: var(--yp-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
+    .yp-sum-val { font-size: 1.35rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; }
+
+    /* Filters & Search Toolbar */
+    .yp-toolbar {
+      background: var(--yp-surface);
+      border: 1px solid var(--yp-border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    @media (min-width: 768px) {
+      .yp-toolbar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .yp-search-box {
+      position: relative;
+      flex: 1;
+      max-width: 450px;
+    }
+    .yp-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6B7280;
+      pointer-events: none;
+    }
+    .yp-search-input {
+      width: 100%;
+      background: #090D16;
+      border: 1px solid var(--yp-border);
+      color: white;
+      padding: 0.6rem 1rem 0.6rem 2.4rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    .yp-search-input:focus { border-color: #38BDF8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25); }
+
+    .yp-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .yp-select {
+      background: #090D16;
+      border: 1px solid var(--yp-border);
+      color: #E2E8F0;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.825rem;
+      outline: none;
+      cursor: pointer;
+    }
+    .yp-select:focus { border-color: #38BDF8; }
+
+    /* Users Table Card */
+    .yp-card {
+      background: var(--yp-surface);
+      border: 1px solid var(--yp-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .yp-table-container {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .yp-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    .yp-table th {
+      background: #090D16;
+      color: #9CA3AF;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--yp-border);
+      white-space: nowrap;
+    }
+
+    .yp-table td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+      color: #D1D5DB;
+      vertical-align: middle;
+    }
+
+    .yp-table tr:hover td {
+      background: rgba(31, 41, 55, 0.35);
+    }
+
+    /* Badges & Pills */
+    .yp-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.725rem;
+      font-weight: 600;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .yp-pill-success { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .yp-pill-warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .yp-pill-danger  { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .yp-pill-info    { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .yp-pill-indigo  { background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    .yp-pill-purple  { background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .yp-pill-slate   { background: #1E293B; color: #94A3B8; border: 1px solid #334155; }
+
+    /* Days Left Special Badges */
+    .yp-days-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+    }
+    .yp-days-active   { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .yp-days-expiring { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .yp-days-expired  { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .yp-days-free     { background: #1E293B; color: #94A3B8; border: 1px solid #334155; }
+
+    .yp-user-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .yp-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .yp-user-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .yp-user-email {
+      font-weight: 600;
+      color: #FFFFFF;
+      font-size: 0.875rem;
+    }
+    .yp-user-sub {
+      font-size: 0.725rem;
+      color: var(--yp-text-muted);
+    }
+
+    .yp-server-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #090D16;
+      border: 1px solid var(--yp-border);
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin: 0.15rem 0.25rem 0.15rem 0;
+      color: #CBD5E1;
+    }
+    .yp-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .yp-dot-running { background: #10B981; box-shadow: 0 0 6px #10B981; }
+    .yp-dot-stopped { background: #6B7280; }
+    .yp-dot-error   { background: #EF4444; }
+
+    /* Pagination Bar */
+    .yp-pagination {
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--yp-border);
+      background: #090D16;
+      font-size: 0.825rem;
+      color: var(--yp-text-muted);
+    }
+
+    /* Modal / Drawer */
+    .yp-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .yp-drawer {
+      background: var(--yp-surface);
+      border-left: 1px solid var(--yp-border);
+      width: 100%;
+      max-width: 680px;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: -10px 0 25px rgba(0, 0, 0, 0.6);
+      animation: slideIn 0.25s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .yp-drawer-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--yp-border);
+      padding-bottom: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .yp-drawer-title { font-size: 1.2rem; font-weight: 700; color: #FFFFFF; }
+    .yp-drawer-close { background: none; border: none; color: #9CA3AF; cursor: pointer; font-size: 1.5rem; line-height: 1; }
+    .yp-drawer-close:hover { color: white; }
+
+    .yp-drawer-section {
+      background: #090D16;
+      border: 1px solid var(--yp-border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .yp-sec-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #9CA3AF;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .yp-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    .yp-prop-box {
+      background: var(--yp-surface);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 0.75rem;
+    }
+    .yp-prop-name { font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .yp-prop-val  { font-size: 0.9rem; font-weight: 600; color: #F3F4F6; word-break: break-all; }
+
+    .yp-empty { padding: 3rem 1rem; text-align: center; color: #6B7280; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Master Top Navigation -->
+  <header class="yp-header">
+    <div class="yp-brand">
+      <span class="yp-brand-badge">Youm Panel</span>
+      <h1 class="yp-brand-title">Users Directory</h1>
+    </div>
+
+    <!-- Center Navigation Links -->
+    <nav class="yp-nav-links" id="yp-nav-links" style="display:none;">
+      <a href="youm-panel.html" class="yp-nav-item">📊 System Analytics</a>
+      <a href="youm-users.html" class="yp-nav-item active">👥 Users &amp; Servers</a>
+    </nav>
+
+    <div class="yp-header-actions">
+      <span class="yp-admin-badge" id="yp-user-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        fileservernode@gmail.com
+      </span>
+      <button type="button" class="yp-btn yp-btn-outline" id="yp-refresh-btn" style="display:none;" onclick="loadUsers()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+        Refresh
+      </button>
+      <button type="button" class="yp-btn yp-btn-outline" id="yp-logout-btn" style="display:none;" onclick="handleLogout()">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <!-- UNAUTHENTICATED AUTH VIEW -->
+  <main id="yp-auth-view">
+    <div class="yp-auth-card">
+      <div class="yp-auth-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+      </div>
+
+      <h2 class="yp-auth-title">Youm Panel</h2>
+      <p class="yp-auth-desc">Master administration console. Authentication is restricted strictly to the verified administrator email.</p>
+
+      <div class="yp-alert yp-alert-error" id="yp-auth-error"></div>
+      <div class="yp-alert yp-alert-success" id="yp-auth-success"></div>
+
+      <!-- Step 1: Request Code -->
+      <form id="yp-request-form" onsubmit="handleRequestOtp(event)">
+        <div class="yp-form-group">
+          <label class="yp-label" for="yp-email-input">Authorized Administrator Email</label>
+          <input type="email" id="yp-email-input" class="yp-input" value="fileservernode@gmail.com" required readonly style="background:#131B2E; color:#93C5FD; border-color:#1E3A8A; cursor:not-allowed;">
+        </div>
+
+        <button type="submit" class="yp-btn yp-btn-primary" id="yp-send-otp-btn" style="width: 100%; padding: 0.75rem;">
+          Send Access Passcode
+        </button>
+      </form>
+
+      <!-- Step 2: Verify Code -->
+      <form id="yp-verify-form" onsubmit="handleVerifyOtp(event)" style="display: none;">
+        <div class="yp-form-group">
+          <label class="yp-label">Enter 6-Digit Passcode</label>
+          <p style="font-size:0.75rem; color:#9CA3AF; margin-bottom:0.75rem;">A one-time passcode was dispatched to <strong style="color:#E2E8F0;">fileservernode@gmail.com</strong>.</p>
+          <div class="yp-otp-group">
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required autofocus>
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+            <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
+          </div>
+        </div>
+
+        <button type="submit" class="yp-btn yp-btn-primary" id="yp-verify-btn" style="width: 100%; padding: 0.75rem; margin-bottom: 0.75rem;">
+          Verify &amp; Enter Dashboard
+        </button>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #9CA3AF;">
+          <span id="yp-resend-countdown">Cooldown: 30s</span>
+          <button type="button" class="yp-btn-outline" id="yp-resend-btn" disabled onclick="handleResendOtp()" style="background:none; border:none; color:#38BDF8; cursor:pointer; font-size:0.75rem;">
+            Resend Code
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <!-- AUTHENTICATED USERS DIRECTORY VIEW -->
+  <main id="yp-users-view">
+    <!-- Summary Ribbon -->
+    <section class="yp-summary-ribbon">
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Total Accounts</span>
+        <span class="yp-sum-val" id="sum-total-users">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Pro Monthly</span>
+        <span class="yp-sum-val" style="color:#38BDF8;" id="sum-pro-monthly">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Pro Yearly</span>
+        <span class="yp-sum-val" style="color:#C084FC;" id="sum-pro-yearly">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Free Tier</span>
+        <span class="yp-sum-val" style="color:#94A3B8;" id="sum-free">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Expiring Soon (≤7d)</span>
+        <span class="yp-sum-val" style="color:#FBBF24;" id="sum-expiring-soon">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Total Servers</span>
+        <span class="yp-sum-val" style="color:#818CF8;" id="sum-total-servers">-</span>
+      </div>
+      <div class="yp-sum-card">
+        <span class="yp-sum-label">Live Online Servers</span>
+        <span class="yp-sum-val" style="color:#34D399;" id="sum-online-servers">-</span>
+      </div>
+    </section>
+
+    <!-- Search & Filters Toolbar -->
+    <section class="yp-toolbar">
+      <div class="yp-search-box">
+        <svg class="yp-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="yp-search-input" class="yp-search-input" placeholder="Search email, name, server name, or device..." oninput="handleSearchDebounced()">
+      </div>
+
+      <div class="yp-filter-row">
+        <!-- Plan Filter -->
+        <select id="filter-plan" class="yp-select" onchange="loadUsers()">
+          <option value="all">All Plans</option>
+          <option value="pro_monthly">Pro Monthly</option>
+          <option value="pro_yearly">Pro Yearly</option>
+          <option value="free">Free Tier</option>
+        </select>
+
+        <!-- Expiration Filter -->
+        <select id="filter-expiration" class="yp-select" onchange="loadUsers()">
+          <option value="all">All Expirations</option>
+          <option value="expiring_soon">Expiring Soon (≤ 7 Days)</option>
+          <option value="active">Active (&gt; 7 Days)</option>
+          <option value="expired">Expired Plans</option>
+          <option value="free">Lifetime Free</option>
+        </select>
+
+        <!-- Servers Filter -->
+        <select id="filter-servers" class="yp-select" onchange="loadUsers()">
+          <option value="all">All Users</option>
+          <option value="yes">Has Servers</option>
+          <option value="online">Online Servers Only</option>
+          <option value="no">No Servers</option>
+        </select>
+
+        <button type="button" class="yp-btn yp-btn-outline" onclick="resetFilters()">Reset</button>
+      </div>
+    </section>
+
+    <!-- Users Master Table -->
+    <section class="yp-card">
+      <div class="yp-table-container">
+        <table class="yp-table">
+          <thead>
+            <tr>
+              <th>User Account</th>
+              <th>Created Date</th>
+              <th>Current Plan</th>
+              <th>Expiration &amp; Days Left</th>
+              <th>Servers &amp; Nodes</th>
+              <th>Hardware</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="yp-users-table-body">
+            <tr><td colspan="7" class="yp-empty">Loading user accounts and server details...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div class="yp-pagination">
+        <span id="yp-page-info">Showing 0 of 0 accounts</span>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="yp-btn yp-btn-outline" id="btn-prev-page" disabled onclick="changePage(-1)">Previous</button>
+          <button type="button" class="yp-btn yp-btn-outline" id="btn-next-page" disabled onclick="changePage(1)">Next</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- DEEP DIVE USER DRAWER / MODAL -->
+  <div class="yp-modal-backdrop" id="yp-detail-modal" onclick="closeDrawerOnBackdrop(event)">
+    <div class="yp-drawer" id="yp-drawer-content">
+      <div class="yp-drawer-header">
+        <div>
+          <span class="yp-pill yp-pill-info" id="drw-plan-pill" style="margin-bottom:0.4rem;">Plan</span>
+          <h2 class="yp-drawer-title" id="drw-email">User Details</h2>
+          <span style="font-size:0.75rem; color:#9CA3AF; font-family:monospace;" id="drw-user-id">ID: -</span>
+        </div>
+        <button type="button" class="yp-drawer-close" onclick="closeUserDrawer()">&times;</button>
+      </div>
+
+      <!-- 1. Account Profile -->
+      <div class="yp-drawer-section">
+        <div class="yp-sec-title">Account Profile</div>
+        <div class="yp-grid-2">
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Full Name</div>
+            <div class="yp-prop-val" id="drw-name">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Status / Verified</div>
+            <div class="yp-prop-val" id="drw-verified">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Account Created</div>
+            <div class="yp-prop-val" id="drw-created">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Last Updated</div>
+            <div class="yp-prop-val" id="drw-updated">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Plan & Expiration Intelligence -->
+      <div class="yp-drawer-section">
+        <div class="yp-sec-title">
+          <span>Plan &amp; Expiration Intelligence</span>
+          <span id="drw-days-badge" class="yp-days-chip yp-days-active">-</span>
+        </div>
+        <div class="yp-grid-2" style="margin-bottom:0.75rem;">
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Plan Tier &amp; Interval</div>
+            <div class="yp-prop-val" id="drw-plan-name">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Recurring Price</div>
+            <div class="yp-prop-val" id="drw-plan-price">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Period Start Date</div>
+            <div class="yp-prop-val" id="drw-period-start">-</div>
+          </div>
+          <div class="yp-prop-box">
+            <div class="yp-prop-name">Plan Expiration Date</div>
+            <div class="yp-prop-val" id="drw-period-end">-</div>
+          </div>
+        </div>
+        <div class="yp-prop-box" style="margin-bottom:0.75rem;">
+          <div class="yp-prop-name">Renewal Status &amp; Provider</div>
+          <div class="yp-prop-val" id="drw-renewal">-</div>
+        </div>
+      </div>
+
+      <!-- 3. Servers & Real-Time Tunnel Details -->
+      <div class="yp-drawer-section">
+        <div class="yp-sec-title">
+          <span>Registered Servers (<span id="drw-server-count">0</span>)</span>
+        </div>
+        <div id="drw-servers-list">
+          <!-- Server Items Rendered Dynamically -->
+        </div>
+      </div>
+
+      <!-- 4. Registered Devices & Hardware -->
+      <div class="yp-drawer-section">
+        <div class="yp-sec-title">
+          <span>Registered Android Hardware (<span id="drw-device-count">0</span>)</span>
+        </div>
+        <div id="drw-devices-list">
+          <!-- Device Items Rendered Dynamically -->
+        </div>
+      </div>
+
+      <!-- 5. Invoices & Billing History -->
+      <div class="yp-drawer-section">
+        <div class="yp-sec-title">
+          <span>Recent Invoices &amp; Transactions</span>
+        </div>
+        <div id="drw-invoices-list">
+          <!-- Invoices Rendered Dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer style="border-top: 1px solid var(--yp-border); background: var(--yp-surface); padding: 1rem 1.5rem; text-align: center; font-size: 0.75rem; color: #6B7280; margin-top: auto;">
+    Youm Panel &bull; Master Administration &bull; fileservernode@gmail.com &bull; ZdexCloud Control Plane
+  </footer>
+
+  <script src="../js/config.js"></script>
+  <script>
+    'use strict';
+
+    let currentPage = 1;
+    const PAGE_LIMIT = 50;
+    let searchDebounceTimeout = null;
+    let currentUsersData = [];
+    let resendTimer = null;
+
+    const API_BASE = (window.CONFIG && window.CONFIG.API_BASE_URL)
+      ? window.CONFIG.API_BASE_URL
+      : (window.location.origin.includes('localhost') ? 'http://localhost:4000/api/v1' : '/api/v1');
+
+    const STORAGE_KEY = 'youm_master_token';
+
+    function getMasterToken() {
+      return localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+    }
+    function setMasterToken(token) {
+      sessionStorage.setItem(STORAGE_KEY, token);
+      localStorage.setItem(STORAGE_KEY, token);
+    }
+    function clearMasterToken() {
+      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      initOtpInputs();
+      const token = getMasterToken();
+      if (token) {
+        const isValid = await verifyCurrentSession(token);
+        if (isValid) {
+          showDashboard();
+          await loadUsers();
+          return;
+        }
+      }
+      showAuth();
+    });
+
+    function initOtpInputs() {
+      const inputs = document.querySelectorAll('.yp-otp-digit');
+      inputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.replace(/[^0-9]/g, '');
+          e.target.value = val;
+          if (val && index < inputs.length - 1) inputs[index + 1].focus();
+          if (index === inputs.length - 1 && val) {
+            document.getElementById('yp-verify-form').dispatchEvent(new Event('submit'));
+          }
+        });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !e.target.value && index > 0) inputs[index - 1].focus();
+        });
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+          if (paste.length >= 6) {
+            inputs.forEach((inp, i) => { inp.value = paste[i] || ''; });
+            document.getElementById('yp-verify-form').dispatchEvent(new Event('submit'));
+          }
+        });
+      });
+    }
+
+    async function verifyCurrentSession(token) {
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        return data.success && data.data && data.data.authenticated;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    function showAuth() {
+      document.getElementById('yp-auth-view').style.display = 'flex';
+      document.getElementById('yp-users-view').style.display = 'none';
+      document.getElementById('yp-nav-links').style.display = 'none';
+      document.getElementById('yp-logout-btn').style.display = 'none';
+      document.getElementById('yp-refresh-btn').style.display = 'none';
+    }
+
+    function showDashboard() {
+      document.getElementById('yp-auth-view').style.display = 'none';
+      document.getElementById('yp-users-view').style.display = 'block';
+      document.getElementById('yp-nav-links').style.display = 'inline-flex';
+      document.getElementById('yp-logout-btn').style.display = 'inline-flex';
+      document.getElementById('yp-refresh-btn').style.display = 'inline-flex';
+    }
+
+    function showAlert(type, message) {
+      const errEl = document.getElementById('yp-auth-error');
+      const succEl = document.getElementById('yp-auth-success');
+      errEl.style.display = 'none';
+      succEl.style.display = 'none';
+
+      if (type === 'error') {
+        errEl.textContent = message;
+        errEl.style.display = 'block';
+      } else {
+        succEl.textContent = message;
+        succEl.style.display = 'block';
+      }
+    }
+
+    async function handleRequestOtp(e) {
+      e.preventDefault();
+      const email = document.getElementById('yp-email-input').value.trim();
+      const btn = document.getElementById('yp-send-otp-btn');
+      btn.disabled = true;
+      btn.textContent = 'Sending Passcode...';
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert('success', 'Passcode sent! Check your inbox for fileservernode@gmail.com.');
+          document.getElementById('yp-request-form').style.display = 'none';
+          document.getElementById('yp-verify-form').style.display = 'block';
+          startResendCountdown(data.data.cooldownSeconds || 30);
+          document.querySelector('.yp-otp-digit').focus();
+        } else {
+          showAlert('error', data.error?.message || 'Failed to send passcode');
+        }
+      } catch (err) {
+        showAlert('error', 'Network error communicating with server');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Access Passcode';
+      }
+    }
+
+    async function handleVerifyOtp(e) {
+      e.preventDefault();
+      const digits = Array.from(document.querySelectorAll('.yp-otp-digit')).map(i => i.value).join('');
+      if (digits.length !== 6) {
+        showAlert('error', 'Please enter all 6 digits of your verification code');
+        return;
+      }
+      const email = 'fileservernode@gmail.com';
+      const btn = document.getElementById('yp-verify-btn');
+      btn.disabled = true;
+      btn.textContent = 'Verifying Passcode...';
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/auth/verify-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code: digits })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMasterToken(data.data.token);
+          showDashboard();
+          await loadUsers();
+        } else {
+          showAlert('error', data.error?.message || 'Invalid passcode. Please try again.');
+        }
+      } catch (err) {
+        showAlert('error', 'Authentication connection error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Verify & Enter Dashboard';
+      }
+    }
+
+    function startResendCountdown(seconds) {
+      clearInterval(resendTimer);
+      let remaining = seconds;
+      const label = document.getElementById('yp-resend-countdown');
+      const btn = document.getElementById('yp-resend-btn');
+      btn.disabled = true;
+
+      resendTimer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(resendTimer);
+          label.textContent = 'Ready';
+          btn.disabled = false;
+        } else {
+          label.textContent = `Cooldown: ${remaining}s`;
+        }
+      }, 1000);
+    }
+
+    async function handleResendOtp() {
+      const email = 'fileservernode@gmail.com';
+      const btn = document.getElementById('yp-resend-btn');
+      btn.disabled = true;
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/auth/request-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert('success', 'New passcode sent!');
+          startResendCountdown(data.data.cooldownSeconds || 30);
+        } else {
+          showAlert('error', data.error?.message || 'Failed to resend code');
+        }
+      } catch (err) {
+        showAlert('error', 'Error requesting code');
+      }
+    }
+
+    async function handleLogout() {
+      const token = getMasterToken();
+      if (token) {
+        await fetch(`${API_BASE}/youm-panel/auth/logout`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => {});
+      }
+      clearMasterToken();
+      showAuth();
+      document.getElementById('yp-request-form').style.display = 'block';
+      document.getElementById('yp-verify-form').style.display = 'none';
+      showAlert('success', 'Logged out successfully');
+    }
+
+    // Load Users Data
+    async function loadUsers() {
+      const token = getMasterToken();
+      if (!token) return;
+
+      const search = document.getElementById('yp-search-input').value.trim();
+      const plan = document.getElementById('filter-plan').value;
+      const expiration = document.getElementById('filter-expiration').value;
+      const hasServers = document.getElementById('filter-servers').value;
+
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: PAGE_LIMIT
+      });
+      if (search) params.append('search', search);
+      if (plan && plan !== 'all') params.append('plan', plan);
+      if (expiration && expiration !== 'all') params.append('expiration', expiration);
+      if (hasServers && hasServers !== 'all') params.append('hasServers', hasServers);
+
+      const tableBody = document.getElementById('yp-users-table-body');
+      tableBody.innerHTML = '<tr><td colspan="7" class="yp-empty">Refreshing user records...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/users?${params.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          handleLogout();
+          return;
+        }
+
+        const json = await res.json();
+        if (json.success && json.data) {
+          renderSummary(json.data.summary);
+          renderUsersTable(json.data.users);
+          renderPagination(json.data.pagination);
+          currentUsersData = json.data.users;
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="yp-empty" style="color:#EF4444;">Failed to load user directory</td></tr>';
+      }
+    }
+
+    function renderSummary(s) {
+      document.getElementById('sum-total-users').textContent = Number(s.totalUsers).toLocaleString();
+      document.getElementById('sum-pro-monthly').textContent = Number(s.totalProMonthly).toLocaleString();
+      document.getElementById('sum-pro-yearly').textContent = Number(s.totalProYearly).toLocaleString();
+      document.getElementById('sum-free').textContent = Number(s.totalFree).toLocaleString();
+      document.getElementById('sum-expiring-soon').textContent = Number(s.expiringSoonCount).toLocaleString();
+      document.getElementById('sum-total-servers').textContent = Number(s.totalServersAcrossAll).toLocaleString();
+      document.getElementById('sum-online-servers').textContent = Number(s.onlineServersAcrossAll).toLocaleString();
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('yp-users-table-body');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="yp-empty">No accounts match the selected filters</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const initials = (u.fullName || u.email).substring(0, 2).toUpperCase();
+
+        // Plan Badge
+        let planBadgeClass = 'yp-pill-slate';
+        if (u.plan.planCode === 'PRO_YEARLY') planBadgeClass = 'yp-pill-purple';
+        else if (u.plan.planCode === 'PRO_MONTHLY') planBadgeClass = 'yp-pill-info';
+
+        // Days Left Chip
+        let daysChipClass = 'yp-days-free';
+        if (u.plan.expirationStatus === 'ACTIVE') daysChipClass = 'yp-days-active';
+        else if (u.plan.expirationStatus === 'EXPIRING_SOON') daysChipClass = 'yp-days-expiring';
+        else if (u.plan.expirationStatus === 'EXPIRED') daysChipClass = 'yp-days-expired';
+
+        // Server Chips
+        let serversHtml = '<span style="color:#6B7280; font-size:0.75rem;">No servers</span>';
+        if (u.servers.length > 0) {
+          serversHtml = u.servers.map(s => {
+            const dotClass = s.status === 'RUNNING' ? 'yp-dot-running' : (s.status === 'ERROR' ? 'yp-dot-error' : 'yp-dot-stopped');
+            return `<span class="yp-server-chip" title="Server: ${escapeHtml(s.serverName)} (${s.status})">
+              <span class="yp-status-dot ${dotClass}"></span>
+              ${escapeHtml(s.serverName)}
+            </span>`;
+          }).join('');
+        }
+
+        // Hardware info
+        let hardwareHtml = '<span style="color:#6B7280; font-size:0.75rem;">None</span>';
+        if (u.devices.length > 0) {
+          const d = u.devices[0];
+          hardwareHtml = `<span style="font-weight:500; color:#E2E8F0;">${escapeHtml(d.deviceName)}</span>` +
+            (d.osVersion ? `<br><span style="font-size:0.7rem; color:#9CA3AF;">${escapeHtml(d.osVersion)}</span>` : '');
+        }
+
+        return `
+          <tr>
+            <td>
+              <div class="yp-user-cell">
+                <div class="yp-avatar">${initials}</div>
+                <div class="yp-user-meta">
+                  <span class="yp-user-email">${escapeHtml(u.email)}</span>
+                  <span class="yp-user-sub">${escapeHtml(u.fullName || 'No name')} &bull; ID: ${escapeHtml(u.id.substring(0, 8))}...</span>
+                  <span>${u.emailVerified ? '<span class="yp-pill yp-pill-success" style="font-size:0.65rem; padding:0.1rem 0.35rem;">Verified</span>' : '<span class="yp-pill yp-pill-warning" style="font-size:0.65rem; padding:0.1rem 0.35rem;">Unverified</span>'}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight:500; color:#F3F4F6;">${formatDateOnly(u.createdAt)}</div>
+              <div style="font-size:0.75rem; color:#9CA3AF;">${escapeHtml(u.createdAgoFormatted)}</div>
+            </td>
+            <td>
+              <div><span class="yp-pill ${planBadgeClass}">${escapeHtml(u.plan.planName)}</span></div>
+              <div style="font-size:0.75rem; color:#9CA3AF; margin-top:0.25rem;">${escapeHtml(u.plan.amountFormatted)}</div>
+            </td>
+            <td>
+              <div><span class="yp-days-chip ${daysChipClass}">${escapeHtml(u.plan.expirationLabel)}</span></div>
+              <div style="font-size:0.75rem; color:#9CA3AF; margin-top:0.25rem;">
+                ${u.plan.currentPeriodEnd ? 'Expires: ' + formatDateOnly(u.plan.currentPeriodEnd) : 'No expiration date'}
+              </div>
+            </td>
+            <td>
+              <div style="margin-bottom:0.25rem;">
+                <span class="yp-pill ${u.onlineServersCount > 0 ? 'yp-pill-success' : 'yp-pill-slate'}">
+                  ${u.totalServersCount} ${u.totalServersCount === 1 ? 'Server' : 'Servers'} (${u.onlineServersCount} Live)
+                </span>
+              </div>
+              <div style="max-width:280px;">${serversHtml}</div>
+            </td>
+            <td>${hardwareHtml}</td>
+            <td>
+              <button type="button" class="yp-btn yp-btn-primary" onclick="openUserDetails('${escapeHtml(u.id)}')">
+                View Details
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderPagination(p) {
+      document.getElementById('yp-page-info').textContent =
+        `Showing page ${p.page} of ${p.totalPages} (${p.totalCount} total accounts)`;
+      document.getElementById('btn-prev-page').disabled = p.page <= 1;
+      document.getElementById('btn-next-page').disabled = p.page >= p.totalPages;
+    }
+
+    function changePage(delta) {
+      currentPage = Math.max(1, currentPage + delta);
+      loadUsers();
+    }
+
+    function handleSearchDebounced() {
+      clearTimeout(searchDebounceTimeout);
+      searchDebounceTimeout = setTimeout(() => {
+        currentPage = 1;
+        loadUsers();
+      }, 350);
+    }
+
+    function resetFilters() {
+      document.getElementById('yp-search-input').value = '';
+      document.getElementById('filter-plan').value = 'all';
+      document.getElementById('filter-expiration').value = 'all';
+      document.getElementById('filter-servers').value = 'all';
+      currentPage = 1;
+      loadUsers();
+    }
+
+    // Deep Dive Drawer View
+    async function openUserDetails(userId) {
+      const token = getMasterToken();
+      if (!token) return;
+
+      const modal = document.getElementById('yp-detail-modal');
+      modal.style.display = 'flex';
+
+      document.getElementById('drw-email').textContent = 'Loading intelligence...';
+      document.getElementById('drw-user-id').textContent = `ID: ${userId}`;
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/users/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success && json.data) {
+          populateDrawer(json.data);
+        }
+      } catch (err) {
+        document.getElementById('drw-email').textContent = 'Error loading user data';
+      }
+    }
+
+    function populateDrawer(u) {
+      document.getElementById('drw-email').textContent = u.email;
+      document.getElementById('drw-user-id').textContent = `User ID: ${u.id}`;
+      document.getElementById('drw-plan-pill').textContent = u.plan.planName;
+
+      document.getElementById('drw-name').textContent = u.fullName || 'Not provided';
+      document.getElementById('drw-verified').innerHTML = u.emailVerified
+        ? '<span class="yp-pill yp-pill-success">Verified</span>'
+        : '<span class="yp-pill yp-pill-warning">Pending</span>';
+      document.getElementById('drw-created').textContent = `${formatDateTime(u.createdAt)} (${u.createdAgoFormatted})`;
+      document.getElementById('drw-updated').textContent = formatDateTime(u.updatedAt);
+
+      // Plan & Days left
+      const daysBadge = document.getElementById('drw-days-badge');
+      daysBadge.textContent = u.plan.expirationLabel;
+      daysBadge.className = 'yp-days-chip ' + (
+        u.plan.expirationStatus === 'ACTIVE' ? 'yp-days-active' :
+        (u.plan.expirationStatus === 'EXPIRING_SOON' ? 'yp-days-expiring' :
+        (u.plan.expirationStatus === 'EXPIRED' ? 'yp-days-expired' : 'yp-days-free'))
+      );
+
+      document.getElementById('drw-plan-name').textContent = `${u.plan.planName} (${u.plan.billingInterval})`;
+      document.getElementById('drw-plan-price').textContent = u.plan.amountFormatted;
+      document.getElementById('drw-period-start').textContent = u.plan.currentPeriodStart ? formatDateTime(u.plan.currentPeriodStart) : 'None';
+      document.getElementById('drw-period-end').textContent = u.plan.currentPeriodEnd ? formatDateTime(u.plan.currentPeriodEnd) : 'No Expiration (Lifetime Free)';
+      document.getElementById('drw-renewal').innerHTML = `${u.plan.cancelAtPeriodEnd ? '<span style="color:#F87171;">Cancels at period end</span>' : '<span style="color:#34D399;">Auto-renews</span>'} &bull; Provider: ${escapeHtml(u.plan.provider)}`;
+
+      // Servers
+      document.getElementById('drw-server-count').textContent = u.servers.length;
+      const sList = document.getElementById('drw-servers-list');
+      if (u.servers.length === 0) {
+        sList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No registered servers on this account.</p>';
+      } else {
+        sList.innerHTML = u.servers.map(s => `
+          <div style="background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:8px; padding:1rem; margin-bottom:0.75rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+              <strong style="color:#FFFFFF; font-size:0.95rem;">${escapeHtml(s.serverName)}</strong>
+              <span class="yp-pill ${s.status === 'RUNNING' ? 'yp-pill-success' : 'yp-pill-slate'}">${escapeHtml(s.status)}</span>
+            </div>
+            <div class="yp-grid-2" style="font-size:0.75rem;">
+              <div><span style="color:#9CA3AF;">Active Session:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.activeSinceFormatted)}</strong></div>
+              <div><span style="color:#9CA3AF;">Host Device:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.deviceName)} (${escapeHtml(s.devicePlatform)})</strong></div>
+              <div><span style="color:#9CA3AF;">Remote Endpoint:</span> ${s.endpointUrl ? `<a href="${s.endpointUrl}" target="_blank" style="color:#38BDF8; font-family:monospace;">${escapeHtml(s.endpointHostname)}</a>` : '<span style="color:#6B7280;">None</span>'}</div>
+              <div><span style="color:#9CA3AF;">Device Status:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.deviceStatus)}</strong></div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Devices
+      document.getElementById('drw-device-count').textContent = u.devices.length;
+      const dList = document.getElementById('drw-devices-list');
+      if (u.devices.length === 0) {
+        dList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No hardware nodes connected.</p>';
+      } else {
+        dList.innerHTML = u.devices.map(d => `
+          <div style="background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; margin-bottom:0.6rem; font-size:0.8rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <strong style="color:#FFFFFF;">${escapeHtml(d.deviceName)}</strong>
+              <span class="yp-pill ${d.status === 'ONLINE' ? 'yp-pill-success' : 'yp-pill-slate'}">${escapeHtml(d.status)}</span>
+            </div>
+            <div style="color:#9CA3AF; font-size:0.725rem; margin-top:0.25rem;">
+              Platform: ${escapeHtml(d.platform)} &bull; OS: ${escapeHtml(d.osVersion || '-')} &bull; App Version: ${escapeHtml(d.appVersion || '-')}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Invoices
+      const iList = document.getElementById('drw-invoices-list');
+      if (!u.invoices || u.invoices.length === 0) {
+        iList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No billing records or invoices yet.</p>';
+      } else {
+        iList.innerHTML = u.invoices.map(inv => `
+          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:6px; padding:0.65rem 0.85rem; margin-bottom:0.5rem; font-size:0.775rem;">
+            <div>
+              <strong style="color:#FFFFFF;">${escapeHtml(inv.invoiceNumber)}</strong> &bull; ${escapeHtml(inv.planName)}
+              <div style="color:#9CA3AF; font-size:0.7rem;">${formatDateOnly(inv.issuedAt)}</div>
+            </div>
+            <div style="text-align:right;">
+              <strong style="color:#38BDF8;">${inv.currency === 'USD' ? '$' : '₹'}${(inv.totalMinorUnits / 100).toFixed(2)}</strong>
+              <div><span class="yp-pill yp-pill-success" style="font-size:0.65rem; padding:0.1rem 0.35rem;">${escapeHtml(inv.status)}</span></div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function closeUserDrawer() {
+      document.getElementById('yp-detail-modal').style.display = 'none';
+    }
+
+    function closeDrawerOnBackdrop(e) {
+      if (e.target.id === 'yp-detail-modal') {
+        closeUserDrawer();
+      }
+    }
+
+    function formatDateOnly(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '-';
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>

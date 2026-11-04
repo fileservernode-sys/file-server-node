@@ -116,6 +116,35 @@
       50% { opacity: 0.4; transform: scale(0.85); }
     }
 
+    .yp-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .yp-nav-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--yp-text-muted);
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+    .yp-nav-item:hover {
+      color: white;
+      background: var(--yp-surface-alt);
+    }
+    .yp-nav-item.active {
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
     .yp-header-actions {
       display: flex;
       align-items: center;
@@ -618,6 +647,12 @@
       </h1>
     </div>
 
+    <!-- Navigation Links -->
+    <nav class="yp-nav-links" id="yp-nav-links" style="display:none;">
+      <a href="youm-panel.html" class="yp-nav-item active">📊 System Analytics</a>
+      <a href="youm-users.html" class="yp-nav-item">👥 Users &amp; Servers</a>
+    </nav>
+
     <div class="yp-header-actions">
       <span class="yp-admin-badge" id="yp-user-badge">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
@@ -1046,6 +1081,8 @@
     function showAuth() {
       document.getElementById('yp-auth-view').style.display = 'flex';
       document.getElementById('yp-dashboard-view').style.display = 'none';
+      const navLinks = document.getElementById('yp-nav-links');
+      if (navLinks) navLinks.style.display = 'none';
       document.getElementById('yp-logout-btn').style.display = 'none';
       document.getElementById('yp-refresh-btn').style.display = 'none';
     }
@@ -1053,6 +1090,8 @@
     function showDashboard() {
       document.getElementById('yp-auth-view').style.display = 'none';
       document.getElementById('yp-dashboard-view').style.display = 'block';
+      const navLinks = document.getElementById('yp-nav-links');
+      if (navLinks) navLinks.style.display = 'inline-flex';
       document.getElementById('yp-logout-btn').style.display = 'inline-flex';
       document.getElementById('yp-refresh-btn').style.display = 'inline-flex';
     }

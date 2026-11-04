@@ -13,6 +13,93 @@ export const YOUM_PANEL_AUTHORIZED_EMAIL = 'fileservernode@gmail.com';
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
 const OTP_RESEND_COOLDOWN_MS = 30 * 1000; // 30 seconds
 
+export interface YoumServerDetail {
+  id: string;
+  serverName: string;
+  status: string;
+  startedAt: string | null;
+  activeSinceFormatted: string;
+  lastHeartbeatAt: string | null;
+  createdAt: string;
+  deviceId: string;
+  deviceName: string;
+  devicePlatform: string;
+  deviceOsVersion: string | null;
+  deviceAppVersion: string | null;
+  deviceStatus: string;
+  deviceLastSeenAt: string | null;
+  endpointUrl: string | null;
+  endpointHostname: string | null;
+}
+
+export interface YoumDeviceDetail {
+  id: string;
+  deviceName: string;
+  platform: string;
+  osVersion: string | null;
+  appVersion: string | null;
+  status: string;
+  lastSeenAt: string | null;
+  createdAt: string;
+  serversCount: number;
+}
+
+export interface YoumPlanDetail {
+  planCode: string;
+  planName: string;
+  billingInterval: string;
+  status: string;
+  amountFormatted: string;
+  currency: string;
+  amountMinorUnits: number;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  daysLeft: number | null;
+  expirationLabel: string;
+  expirationStatus: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'FREE';
+  cancelAtPeriodEnd: boolean;
+  provider: string;
+  providerSubscriptionId: string | null;
+}
+
+export interface YoumUserRecord {
+  id: string;
+  email: string;
+  fullName: string | null;
+  status: string;
+  emailVerified: boolean;
+  createdAt: string;
+  createdAgoFormatted: string;
+  updatedAt: string;
+  plan: YoumPlanDetail;
+  servers: YoumServerDetail[];
+  devices: YoumDeviceDetail[];
+  totalServersCount: number;
+  onlineServersCount: number;
+  totalDevicesCount: number;
+  invoicesCount: number;
+}
+
+export interface YoumUsersDirectoryResponse {
+  summary: {
+    totalUsers: number;
+    totalProMonthly: number;
+    totalProYearly: number;
+    totalFree: number;
+    expiringSoonCount: number;
+    expiredCount: number;
+    totalServersAcrossAll: number;
+    onlineServersAcrossAll: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+  };
+  users: YoumUserRecord[];
+}
+
 export interface YoumAnalyticsTimeSeriesPoint {
   key: string;
   label: string;
@@ -656,6 +743,428 @@ export class YoumPanelService {
         servers: recentServers,
         emails: recentEmails
       }
+    };
+  }
+
+  /**
+   * Retrieves all users records with complete details:
+   * - Plan information, pricing, start and end dates
+   * - Expiration calculation: exact days left on their plan
+   * - Full server details (status, startedAt, endpoint/subdomain, host device specs)
+   * - Full device details
+   * - Search, filter by plan/expiration/servers, and pagination
+   */
+  public static async getUsersDirectory(filters: {
+    search?: string;
+    plan?: string;
+    expiration?: string;
+    hasServers?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<YoumUsersDirectoryResponse> {
+    const now = new Date();
+    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Global summary counts across entire platform
+    const [
+      totalUsers,
+      totalProMonthly,
+      totalProYearly,
+      totalServersAcrossAll,
+      onlineServersAcrossAll,
+      expiringSoonCount,
+      expiredCount
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.subscription.count({ where: { status: 'ACTIVE', billingInterval: 'MONTHLY' } }),
+      prisma.subscription.count({ where: { status: 'ACTIVE', billingInterval: 'YEARLY' } }),
+      prisma.serverInstance.count(),
+      prisma.serverInstance.count({ where: { status: 'RUNNING' } }),
+      prisma.subscription.count({
+        where: {
+          status: 'ACTIVE',
+          currentPeriodEnd: { gte: now, lte: in7Days }
+        }
+      }),
+      prisma.subscription.count({
+        where: {
+          currentPeriodEnd: { lt: now },
+          status: { in: ['ACTIVE', 'PAST_DUE', 'EXPIRED'] }
+        }
+      })
+    ]);
+
+    const totalFree = Math.max(0, totalUsers - (totalProMonthly + totalProYearly));
+
+    // Construct filter where clause
+    const where: any = {};
+
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.trim();
+      where.OR = [
+        { email: { contains: q } },
+        { fullName: { contains: q } },
+        { id: { contains: q } },
+        { devices: { some: { deviceName: { contains: q } } } },
+        { devices: { some: { servers: { some: { serverName: { contains: q } } } } } }
+      ];
+    }
+
+    if (filters.plan === 'pro_monthly') {
+      where.subscriptions = {
+        some: { status: 'ACTIVE', billingInterval: 'MONTHLY' }
+      };
+    } else if (filters.plan === 'pro_yearly') {
+      where.subscriptions = {
+        some: { status: 'ACTIVE', billingInterval: 'YEARLY' }
+      };
+    } else if (filters.plan === 'free') {
+      where.subscriptions = {
+        none: { status: 'ACTIVE' }
+      };
+    }
+
+    if (filters.expiration === 'expiring_soon') {
+      where.subscriptions = {
+        some: { status: 'ACTIVE', currentPeriodEnd: { gte: now, lte: in7Days } }
+      };
+    } else if (filters.expiration === 'active') {
+      where.subscriptions = {
+        some: { status: 'ACTIVE', currentPeriodEnd: { gt: in7Days } }
+      };
+    } else if (filters.expiration === 'expired') {
+      where.subscriptions = {
+        some: { currentPeriodEnd: { lt: now } }
+      };
+    } else if (filters.expiration === 'free') {
+      where.subscriptions = {
+        none: { status: 'ACTIVE' }
+      };
+    }
+
+    if (filters.hasServers === 'yes') {
+      where.devices = { some: { servers: { some: {} } } };
+    } else if (filters.hasServers === 'no') {
+      where.devices = { every: { servers: { none: {} } } };
+    } else if (filters.hasServers === 'online') {
+      where.devices = { some: { servers: { some: { status: 'RUNNING' } } } };
+    }
+
+    const page = Math.max(1, Number(filters.page) || 1);
+    const limit = Math.min(200, Math.max(1, Number(filters.limit) || 50));
+    const skip = (page - 1) * limit;
+
+    const [totalCount, usersRaw] = await Promise.all([
+      prisma.user.count({ where }),
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          subscriptions: {
+            orderBy: { createdAt: 'desc' },
+            take: 3,
+            include: {
+              plan: true,
+              planPrice: true
+            }
+          },
+          devices: {
+            orderBy: { createdAt: 'desc' },
+            include: {
+              servers: {
+                orderBy: { createdAt: 'desc' },
+                include: {
+                  endpoints: true
+                }
+              }
+            }
+          },
+          invoices: {
+            select: { id: true }
+          }
+        }
+      })
+    ]);
+
+    const users: YoumUserRecord[] = usersRaw.map(u => YoumPanelService.mapUserToRecord(u, now));
+
+    return {
+      summary: {
+        totalUsers,
+        totalProMonthly,
+        totalProYearly,
+        totalFree,
+        expiringSoonCount,
+        expiredCount,
+        totalServersAcrossAll,
+        onlineServersAcrossAll
+      },
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit) || 1
+      },
+      users
+    };
+  }
+
+  /**
+   * Retrieves single user complete intelligence dossier:
+   * Profile, full subscription lifecycle, all devices & hardware specs,
+   * all servers with real-time tunnel state & endpoints, invoices, and payments.
+   */
+  public static async getUserDetails(userId: string): Promise<any> {
+    const now = new Date();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            plan: true,
+            planPrice: true
+          }
+        },
+        devices: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            servers: {
+              orderBy: { createdAt: 'desc' },
+              include: {
+                endpoints: true
+              }
+            }
+          }
+        },
+        invoices: {
+          orderBy: { issuedAt: 'desc' },
+          take: 20
+        },
+        payments: {
+          orderBy: { chargedAt: 'desc' },
+          take: 20
+        }
+      }
+    });
+
+    if (!user) {
+      const err = new Error(`User with ID ${userId} was not found.`);
+      (err as any).statusCode = 404;
+      (err as any).code = 'NOT_FOUND';
+      throw err;
+    }
+
+    const mapped = YoumPanelService.mapUserToRecord(user, now);
+
+    return {
+      ...mapped,
+      subscriptionHistory: user.subscriptions.map(s => ({
+        id: s.id,
+        planCode: s.plan.code,
+        planName: s.plan.name,
+        status: s.status,
+        billingInterval: s.billingInterval,
+        currency: s.currency,
+        amountMinorUnits: s.amountMinorUnits,
+        currentPeriodStart: s.currentPeriodStart.toISOString(),
+        currentPeriodEnd: s.currentPeriodEnd.toISOString(),
+        cancelAtPeriodEnd: s.cancelAtPeriodEnd,
+        cancelledAt: s.cancelledAt?.toISOString() || null,
+        provider: s.provider,
+        providerSubscriptionId: s.providerSubscriptionId,
+        createdAt: s.createdAt.toISOString()
+      })),
+      invoices: user.invoices.map(inv => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        planName: inv.planName,
+        billingInterval: inv.billingInterval,
+        currency: inv.currency,
+        totalMinorUnits: inv.totalMinorUnits,
+        status: inv.status,
+        issuedAt: inv.issuedAt.toISOString(),
+        paidAt: inv.paidAt?.toISOString() || null
+      })),
+      payments: user.payments.map(p => ({
+        id: p.id,
+        providerPaymentId: p.providerPaymentId,
+        providerSubscriptionId: p.providerSubscriptionId,
+        currency: p.currency,
+        amountMinorUnits: p.amountMinorUnits,
+        status: p.status,
+        chargedAt: p.chargedAt.toISOString(),
+        createdAt: p.createdAt.toISOString()
+      }))
+    };
+  }
+
+  /**
+   * Internal mapper to build consistent YoumUserRecord with plan, days left, and server metrics.
+   */
+  private static mapUserToRecord(user: any, now: Date): YoumUserRecord {
+    // 1. Resolve Plan & Expiration
+    let planInfo: YoumPlanDetail = {
+      planCode: 'FREE',
+      planName: 'Free',
+      billingInterval: 'FREE',
+      status: 'ACTIVE',
+      amountFormatted: '₹0',
+      currency: 'INR',
+      amountMinorUnits: 0,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      daysLeft: null,
+      expirationLabel: 'Lifetime Free',
+      expirationStatus: 'FREE',
+      cancelAtPeriodEnd: false,
+      provider: 'SYSTEM',
+      providerSubscriptionId: null
+    };
+
+    const activeSub = (user.subscriptions || []).find((s: any) => s.status === 'ACTIVE') || (user.subscriptions || [])[0];
+
+    if (activeSub && activeSub.plan?.code !== 'FREE') {
+      const periodEnd = new Date(activeSub.currentPeriodEnd);
+      const diffMs = periodEnd.getTime() - now.getTime();
+      const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+      let expStatus: 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'FREE' = 'ACTIVE';
+      let expLabel = '';
+
+      if (daysLeft < 0) {
+        expStatus = 'EXPIRED';
+        expLabel = `Expired ${Math.abs(daysLeft)}d ago`;
+      } else if (daysLeft === 0) {
+        expStatus = 'EXPIRING_SOON';
+        expLabel = 'Expires today';
+      } else if (daysLeft <= 7) {
+        expStatus = 'EXPIRING_SOON';
+        expLabel = `${daysLeft} days left`;
+      } else {
+        expStatus = 'ACTIVE';
+        expLabel = `${daysLeft} days left`;
+      }
+
+      const sym = activeSub.currency === 'USD' ? '$' : '₹';
+      const intvLabel = activeSub.billingInterval === 'YEARLY' ? 'yr' : 'mo';
+      const amountFormatted = `${sym}${(activeSub.amountMinorUnits / 100).toFixed(0)}/${intvLabel}`;
+
+      planInfo = {
+        planCode: activeSub.plan.code,
+        planName: activeSub.plan.name || (activeSub.billingInterval === 'YEARLY' ? 'Pro Yearly' : 'Pro Monthly'),
+        billingInterval: activeSub.billingInterval,
+        status: activeSub.status,
+        amountFormatted,
+        currency: activeSub.currency,
+        amountMinorUnits: activeSub.amountMinorUnits,
+        currentPeriodStart: activeSub.currentPeriodStart ? new Date(activeSub.currentPeriodStart).toISOString() : null,
+        currentPeriodEnd: periodEnd.toISOString(),
+        daysLeft,
+        expirationLabel: expLabel,
+        expirationStatus: expStatus,
+        cancelAtPeriodEnd: Boolean(activeSub.cancelAtPeriodEnd),
+        provider: activeSub.provider,
+        providerSubscriptionId: activeSub.providerSubscriptionId || null
+      };
+    }
+
+    // 2. Resolve Servers & Devices
+    const servers: YoumServerDetail[] = [];
+    const devices: YoumDeviceDetail[] = [];
+    let onlineServersCount = 0;
+
+    for (const d of (user.devices || [])) {
+      devices.push({
+        id: d.id,
+        deviceName: d.deviceName,
+        platform: d.platform,
+        osVersion: d.osVersion,
+        appVersion: d.appVersion,
+        status: d.status,
+        lastSeenAt: d.lastSeenAt ? new Date(d.lastSeenAt).toISOString() : null,
+        createdAt: new Date(d.createdAt).toISOString(),
+        serversCount: (d.servers || []).length
+      });
+
+      for (const s of (d.servers || [])) {
+        if (s.status === 'RUNNING') {
+          onlineServersCount++;
+        }
+
+        const activeEp = (s.endpoints || []).find((ep: any) => ep.status === 'ACTIVE') || (s.endpoints || [])[0];
+
+        // Format active since
+        let activeSinceFormatted = 'Inactive';
+        if (s.startedAt) {
+          const start = new Date(s.startedAt);
+          const diffSec = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000));
+          const diffHr = Math.floor(diffSec / 3600);
+          const diffMin = Math.floor((diffSec % 3600) / 60);
+          activeSinceFormatted = diffHr > 0 ? `${diffHr}h ${diffMin}m` : `${diffMin}m`;
+        }
+
+        servers.push({
+          id: s.id,
+          serverName: s.serverName || d.deviceName,
+          status: s.status,
+          startedAt: s.startedAt ? new Date(s.startedAt).toISOString() : null,
+          activeSinceFormatted,
+          lastHeartbeatAt: s.lastHeartbeatAt ? new Date(s.lastHeartbeatAt).toISOString() : null,
+          createdAt: new Date(s.createdAt).toISOString(),
+          deviceId: d.id,
+          deviceName: d.deviceName,
+          devicePlatform: d.platform,
+          deviceOsVersion: d.osVersion,
+          deviceAppVersion: d.appVersion,
+          deviceStatus: d.status,
+          deviceLastSeenAt: d.lastSeenAt ? new Date(d.lastSeenAt).toISOString() : null,
+          endpointUrl: activeEp ? `https://${activeEp.hostname}` : null,
+          endpointHostname: activeEp?.hostname || null
+        });
+      }
+    }
+
+    // 3. Format created relative time
+    const createdDate = new Date(user.createdAt);
+    const diffSec = Math.floor((now.getTime() - createdDate.getTime()) / 1000);
+    let createdAgo = 'Just now';
+    if (diffSec >= 60) {
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) {
+        createdAgo = `${diffMin}m ago`;
+      } else {
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) {
+          createdAgo = `${diffHr}h ago`;
+        } else {
+          const diffDays = Math.floor(diffHr / 24);
+          if (diffDays === 1) createdAgo = 'Yesterday';
+          else if (diffDays < 30) createdAgo = `${diffDays}d ago`;
+          else if (diffDays < 365) createdAgo = `${Math.floor(diffDays / 30)}mo ago`;
+          else createdAgo = `${Math.floor(diffDays / 365)}y ago`;
+        }
+      }
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName || null,
+      status: user.status,
+      emailVerified: Boolean(user.emailVerified),
+      createdAt: createdDate.toISOString(),
+      createdAgoFormatted: createdAgo,
+      updatedAt: new Date(user.updatedAt).toISOString(),
+      plan: planInfo,
+      servers,
+      devices,
+      totalServersCount: servers.length,
+      onlineServersCount,
+      totalDevicesCount: devices.length,
+      invoicesCount: (user.invoices || []).length
     };
   }
 }

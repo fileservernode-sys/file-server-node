@@ -225,7 +225,111 @@ describe('Youm Panel - Master Administrative & Analytics Control Plane', () => {
     assert.ok(bodyMonthly.data.timeSeries.length >= 12);
   });
 
-  test('TEST 9: Logout revokes master session token', async () => {
+  test('TEST 9: Accessing users directory without token returns 401 Unauthorized', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/youm-panel/users'
+    });
+
+    assert.strictEqual(res.statusCode, 401);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, false);
+    assert.strictEqual(body.error.code, 'UNAUTHORIZED');
+  });
+
+  test('TEST 10: Accessing users directory with valid token returns users, plan details, expiration days, and server specs', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/youm-panel/users?page=1&limit=20',
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+
+    const data = body.data;
+    assert.ok('summary' in data);
+    assert.strictEqual(typeof data.summary.totalUsers, 'number');
+    assert.strictEqual(typeof data.summary.totalProMonthly, 'number');
+    assert.strictEqual(typeof data.summary.totalProYearly, 'number');
+    assert.strictEqual(typeof data.summary.totalFree, 'number');
+    assert.strictEqual(typeof data.summary.totalServersAcrossAll, 'number');
+    assert.strictEqual(typeof data.summary.onlineServersAcrossAll, 'number');
+
+    assert.ok('pagination' in data);
+    assert.strictEqual(data.pagination.page, 1);
+    assert.ok(data.pagination.totalCount >= 1);
+
+    assert.ok(Array.isArray(data.users));
+    assert.ok(data.users.length >= 1);
+
+    const firstUser = data.users[0];
+    assert.ok('id' in firstUser);
+    assert.ok('email' in firstUser);
+    assert.ok('createdAt' in firstUser);
+    assert.ok('createdAgoFormatted' in firstUser);
+
+    // Plan & expiration fields
+    assert.ok('plan' in firstUser);
+    assert.ok('planCode' in firstUser.plan);
+    assert.ok('expirationLabel' in firstUser.plan);
+    assert.ok('expirationStatus' in firstUser.plan);
+    assert.ok('amountFormatted' in firstUser.plan);
+
+    // Servers & devices fields
+    assert.ok(Array.isArray(firstUser.servers));
+    assert.ok(Array.isArray(firstUser.devices));
+    assert.strictEqual(typeof firstUser.totalServersCount, 'number');
+    assert.strictEqual(typeof firstUser.onlineServersCount, 'number');
+  });
+
+  test('TEST 11: Filtering users directory by search query returns matched subset', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/youm-panel/users?search=${encodeURIComponent(YOUM_PANEL_AUTHORIZED_EMAIL)}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+    assert.ok(body.data.users.some((u: any) => u.email === YOUM_PANEL_AUTHORIZED_EMAIL));
+  });
+
+  test('TEST 12: Retrieving deep user details via /users/:id returns complete dossier', async () => {
+    // Get master user ID
+    const masterUser = await prisma.user.findUnique({
+      where: { email: YOUM_PANEL_AUTHORIZED_EMAIL }
+    });
+    assert.ok(masterUser);
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/api/v1/youm-panel/users/${masterUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.id, masterUser.id);
+    assert.strictEqual(body.data.email, YOUM_PANEL_AUTHORIZED_EMAIL);
+    assert.ok('plan' in body.data);
+    assert.ok('servers' in body.data);
+    assert.ok('devices' in body.data);
+    assert.ok('subscriptionHistory' in body.data);
+    assert.ok('invoices' in body.data);
+    assert.ok('payments' in body.data);
+  });
+
+  test('TEST 13: Logout revokes master session token', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/youm-panel/auth/logout',
