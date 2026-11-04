@@ -528,6 +528,110 @@
     .yp-prop-val  { font-size: 0.9rem; font-weight: 600; color: #F3F4F6; word-break: break-all; }
 
     .yp-empty { padding: 3rem 1rem; text-align: center; color: #6B7280; font-size: 0.875rem; }
+
+    /* Danger Button */
+    .yp-btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .yp-btn-danger:hover {
+      background: #DC2626;
+      color: white;
+      border-color: #DC2626;
+    }
+    .yp-btn-danger[disabled] {
+      opacity: 0.35;
+      cursor: not-allowed;
+      background: rgba(239, 68, 68, 0.08);
+      color: #9CA3AF;
+      border-color: #374151;
+    }
+
+    /* Centered Dialog Modals */
+    .yp-dialog-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(5px);
+      z-index: 250;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .yp-dialog-box {
+      background: var(--yp-surface);
+      border: 1px solid var(--yp-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .yp-dialog-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--yp-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .yp-dialog-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .yp-dialog-close {
+      background: none;
+      border: none;
+      color: #9CA3AF;
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .yp-dialog-close:hover { color: white; }
+    .yp-dialog-body {
+      padding: 1.5rem;
+    }
+    .yp-dialog-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--yp-border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: #090D16;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+    .yp-date-pill {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      background: #111827;
+      color: #93C5FD;
+      border: 1px solid #1E3A8A;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .yp-date-pill:hover {
+      background: #1E3A8A;
+      color: #FFFFFF;
+    }
   </style>
 </head>
 <body>
@@ -717,6 +821,146 @@
     </section>
   </main>
 
+  <!-- EDIT USER MODAL -->
+  <div class="yp-dialog-backdrop" id="yp-edit-modal" onclick="closeEditModalOnBackdrop(event)">
+    <div class="yp-dialog-box">
+      <div class="yp-dialog-header">
+        <h3 class="yp-dialog-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          Edit User Profile &amp; Plan
+        </h3>
+        <button type="button" class="yp-dialog-close" onclick="closeEditModal()">&times;</button>
+      </div>
+
+      <form id="yp-edit-form" onsubmit="handleEditSubmit(event)">
+        <input type="hidden" id="edit-user-id">
+        <div class="yp-dialog-body">
+          <div class="yp-alert yp-alert-error" id="edit-modal-error"></div>
+          <div class="yp-alert yp-alert-success" id="edit-modal-success"></div>
+
+          <div class="yp-form-group">
+            <label class="yp-label" for="edit-email">Email Address</label>
+            <input type="email" id="edit-email" class="yp-input" required>
+            <span id="edit-master-hint" style="display:none; font-size:0.72rem; color:#F59E0B; margin-top:0.25rem;">
+              Master administrator email is protected and cannot be altered.
+            </span>
+          </div>
+
+          <div class="yp-form-group">
+            <label class="yp-label" for="edit-name">Full Name</label>
+            <input type="text" id="edit-name" class="yp-input" placeholder="e.g. John Doe">
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+            <div class="yp-form-group">
+              <label class="yp-label" for="edit-status">Account Status</label>
+              <select id="edit-status" class="yp-select" style="width:100%;">
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="PENDING_VERIFICATION">PENDING VERIFICATION</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+              </select>
+            </div>
+
+            <div class="yp-form-group">
+              <label class="yp-label" for="edit-verified">Email Verification</label>
+              <select id="edit-verified" class="yp-select" style="width:100%;">
+                <option value="true">Verified (Active)</option>
+                <option value="false">Unverified</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Plan & Expiration Settings -->
+          <div style="background:#090D16; border:1px solid var(--yp-border); border-radius:10px; padding:1rem; margin-top:0.5rem; margin-bottom:1.25rem;">
+            <div style="font-size:0.75rem; font-weight:700; color:#38BDF8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.75rem;">
+              Plan Subscription &amp; Expiration Override
+            </div>
+
+            <div class="yp-form-group">
+              <label class="yp-label" for="edit-plan">Plan Tier</label>
+              <select id="edit-plan" class="yp-select" style="width:100%;" onchange="handlePlanChangeInModal()">
+                <option value="FREE">Free Tier (Lifetime)</option>
+                <option value="PRO_MONTHLY">Pro Monthly (₹499/mo)</option>
+                <option value="PRO_YEARLY">Pro Yearly (₹4,999/yr)</option>
+              </select>
+            </div>
+
+            <div class="yp-form-group" style="margin-bottom:0.5rem;">
+              <label class="yp-label" for="edit-expiration">Custom Plan Expiration Date</label>
+              <input type="date" id="edit-expiration" class="yp-input">
+            </div>
+
+            <!-- Quick Date Adjuster Pills -->
+            <div style="display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center; margin-top:0.5rem;">
+              <span style="font-size:0.7rem; color:#9CA3AF;">Quick Extend:</span>
+              <button type="button" class="yp-date-pill" onclick="adjustModalDate(30)">+30 Days</button>
+              <button type="button" class="yp-date-pill" onclick="adjustModalDate(60)">+60 Days</button>
+              <button type="button" class="yp-date-pill" onclick="adjustModalDate(90)">+90 Days</button>
+              <button type="button" class="yp-date-pill" onclick="adjustModalDate(365)">+1 Year</button>
+              <button type="button" class="yp-date-pill" onclick="clearModalDate()" style="color:#F87171; border-color:#7F1D1D;">Lifetime Free</button>
+            </div>
+          </div>
+
+          <div class="yp-form-group" style="margin-bottom:0;">
+            <label class="yp-label" for="edit-password">Reset Password (Optional)</label>
+            <input type="password" id="edit-password" class="yp-input" placeholder="Leave blank to keep current password">
+            <span style="font-size:0.7rem; color:#9CA3AF; margin-top:0.2rem; display:block;">
+              Provide a new password (min 6 chars) to force reset the user password.
+            </span>
+          </div>
+        </div>
+
+        <div class="yp-dialog-footer">
+          <button type="button" class="yp-btn yp-btn-outline" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="yp-btn yp-btn-primary" id="btn-save-user">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DELETE USER CONFIRMATION MODAL -->
+  <div class="yp-dialog-backdrop" id="yp-delete-modal" onclick="closeDeleteModalOnBackdrop(event)">
+    <div class="yp-dialog-box" style="max-width:480px; border-color:rgba(239, 68, 68, 0.4);">
+      <div class="yp-dialog-header" style="border-bottom-color:rgba(239, 68, 68, 0.2);">
+        <h3 class="yp-dialog-title" style="color:#F87171;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Delete User Account
+        </h3>
+        <button type="button" class="yp-dialog-close" onclick="closeDeleteModal()">&times;</button>
+      </div>
+
+      <div class="yp-dialog-body">
+        <input type="hidden" id="delete-user-id">
+        <div class="yp-alert yp-alert-error" id="delete-modal-error"></div>
+
+        <p style="font-size:0.95rem; color:#F3F4F6; margin-bottom:1rem; line-height:1.5;">
+          Are you sure you want to permanently delete user <strong id="delete-user-email" style="color:#38BDF8;"></strong>?
+        </p>
+
+        <div id="delete-master-warning" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; padding:0.85rem; margin-bottom:1rem; color:#FCA5A5; font-size:0.825rem;">
+          <strong>Protected Account:</strong> This is the master administrator account (<strong style="color:white;">fileservernode@gmail.com</strong>). It cannot be deleted.
+        </div>
+
+        <div style="background:#090D16; border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; font-size:0.775rem; color:#9CA3AF; line-height:1.6;">
+          <span style="font-weight:700; color:#EF4444; text-transform:uppercase; display:block; margin-bottom:0.25rem;">Permanent Cascading Destruction:</span>
+          &bull; All active servers &amp; reverse tunnels will be terminated immediately.<br>
+          &bull; All connected Android hardware nodes will be unregistered.<br>
+          &bull; All subscriptions, payment records &amp; invoices will be purged.<br>
+          &bull; Active sessions, OTP codes &amp; audit records will be removed.
+        </div>
+      </div>
+
+      <div class="yp-dialog-footer">
+        <button type="button" class="yp-btn yp-btn-outline" onclick="closeDeleteModal()">Cancel</button>
+        <button type="button" class="yp-btn yp-btn-danger" id="btn-confirm-delete" onclick="handleConfirmDelete()">
+          Permanently Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- DEEP DIVE USER DRAWER / MODAL -->
   <div class="yp-modal-backdrop" id="yp-detail-modal" onclick="closeDrawerOnBackdrop(event)">
     <div class="yp-drawer" id="yp-drawer-content">
@@ -727,6 +971,18 @@
           <span style="font-size:0.75rem; color:#9CA3AF; font-family:monospace;" id="drw-user-id">ID: -</span>
         </div>
         <button type="button" class="yp-drawer-close" onclick="closeUserDrawer()">&times;</button>
+      </div>
+
+      <!-- Action Toolbar inside Drawer -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem;">
+        <button type="button" class="yp-btn yp-btn-primary" style="flex:1;" id="drw-btn-edit" onclick="openEditModalFromDrawer()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          Edit User Profile &amp; Plan
+        </button>
+        <button type="button" class="yp-btn yp-btn-danger" id="drw-btn-delete" onclick="openDeleteModalFromDrawer()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          Delete User
+        </button>
       </div>
 
       <!-- 1. Account Profile -->
@@ -826,6 +1082,7 @@
     const PAGE_LIMIT = 50;
     let searchDebounceTimeout = null;
     let currentUsersData = [];
+    let currentDrawerUser = null;
     let resendTimer = null;
 
     const API_BASE = (window.CONFIG && window.CONFIG.API_BASE_URL)
@@ -1180,9 +1437,17 @@
             </td>
             <td>${hardwareHtml}</td>
             <td>
-              <button type="button" class="yp-btn yp-btn-primary" onclick="openUserDetails('${escapeHtml(u.id)}')">
-                View Details
-              </button>
+              <div style="display:flex; gap:0.35rem; align-items:center;">
+                <button type="button" class="yp-btn yp-btn-outline" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="View Details" onclick="openUserDetails('${escapeHtml(u.id)}')">
+                  View
+                </button>
+                <button type="button" class="yp-btn yp-btn-primary" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Edit User &amp; Plan" onclick="openEditUserModal('${escapeHtml(u.id)}')">
+                  Edit
+                </button>
+                <button type="button" class="yp-btn yp-btn-danger" style="padding:0.35rem 0.65rem; font-size:0.75rem;" title="Delete User Account" onclick="openDeleteUserModal('${escapeHtml(u.id)}', '${escapeHtml(u.email)}')">
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -1243,9 +1508,19 @@
     }
 
     function populateDrawer(u) {
+      currentDrawerUser = u;
       document.getElementById('drw-email').textContent = u.email;
       document.getElementById('drw-user-id').textContent = `User ID: ${u.id}`;
       document.getElementById('drw-plan-pill').textContent = u.plan.planName;
+
+      const drwDelBtn = document.getElementById('drw-btn-delete');
+      if (u.email.toLowerCase() === 'fileservernode@gmail.com') {
+        drwDelBtn.disabled = true;
+        drwDelBtn.title = 'Master administrator account cannot be deleted';
+      } else {
+        drwDelBtn.disabled = false;
+        drwDelBtn.title = 'Delete user account';
+      }
 
       document.getElementById('drw-name').textContent = u.fullName || 'Not provided';
       document.getElementById('drw-verified').innerHTML = u.emailVerified
@@ -1332,11 +1607,271 @@
 
     function closeUserDrawer() {
       document.getElementById('yp-detail-modal').style.display = 'none';
+      currentDrawerUser = null;
     }
 
     function closeDrawerOnBackdrop(e) {
       if (e.target.id === 'yp-detail-modal') {
         closeUserDrawer();
+      }
+    }
+
+    function openEditModalFromDrawer() {
+      if (currentDrawerUser) {
+        openEditUserModal(currentDrawerUser.id);
+      }
+    }
+
+    function openDeleteModalFromDrawer() {
+      if (currentDrawerUser) {
+        openDeleteUserModal(currentDrawerUser.id, currentDrawerUser.email);
+      }
+    }
+
+    async function openEditUserModal(userId) {
+      const token = getMasterToken();
+      if (!token) return;
+
+      const modal = document.getElementById('yp-edit-modal');
+      modal.style.display = 'flex';
+      document.getElementById('edit-modal-error').style.display = 'none';
+      document.getElementById('edit-modal-success').style.display = 'none';
+
+      let u = currentUsersData.find(x => x.id === userId);
+      if (!u || !u.plan) {
+        try {
+          const res = await fetch(`${API_BASE}/youm-panel/users/${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const json = await res.json();
+          if (json.success && json.data) {
+            u = json.data;
+          }
+        } catch (err) {}
+      }
+
+      if (!u) {
+        alert('User account record could not be loaded');
+        closeEditModal();
+        return;
+      }
+
+      document.getElementById('edit-user-id').value = u.id;
+      const emailInput = document.getElementById('edit-email');
+      emailInput.value = u.email;
+      const masterHint = document.getElementById('edit-master-hint');
+
+      if (u.email.toLowerCase() === 'fileservernode@gmail.com') {
+        emailInput.readOnly = true;
+        emailInput.style.opacity = '0.75';
+        masterHint.style.display = 'block';
+      } else {
+        emailInput.readOnly = false;
+        emailInput.style.opacity = '1';
+        masterHint.style.display = 'none';
+      }
+
+      document.getElementById('edit-name').value = u.fullName || '';
+      document.getElementById('edit-status').value = u.status || 'ACTIVE';
+      document.getElementById('edit-verified').value = u.emailVerified ? 'true' : 'false';
+
+      // Plan code
+      const planCode = (u.plan && u.plan.planCode) ? u.plan.planCode : 'FREE';
+      document.getElementById('edit-plan').value = planCode;
+
+      // Plan Expiration Date (format YYYY-MM-DD for <input type="date">)
+      const expInput = document.getElementById('edit-expiration');
+      if (u.plan && u.plan.currentPeriodEnd) {
+        const d = new Date(u.plan.currentPeriodEnd);
+        if (!isNaN(d.getTime())) {
+          expInput.value = d.toISOString().split('T')[0];
+        } else {
+          expInput.value = '';
+        }
+      } else {
+        expInput.value = '';
+      }
+
+      document.getElementById('edit-password').value = '';
+    }
+
+    function closeEditModal() {
+      document.getElementById('yp-edit-modal').style.display = 'none';
+    }
+
+    function closeEditModalOnBackdrop(e) {
+      if (e.target.id === 'yp-edit-modal') {
+        closeEditModal();
+      }
+    }
+
+    function adjustModalDate(days) {
+      const expInput = document.getElementById('edit-expiration');
+      let baseDate = new Date();
+      if (expInput.value) {
+        const existing = new Date(expInput.value);
+        if (!isNaN(existing.getTime()) && existing.getTime() > baseDate.getTime()) {
+          baseDate = existing;
+        }
+      }
+      const nextDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+      expInput.value = nextDate.toISOString().split('T')[0];
+    }
+
+    function clearModalDate() {
+      document.getElementById('edit-expiration').value = '';
+    }
+
+    function handlePlanChangeInModal() {
+      const plan = document.getElementById('edit-plan').value;
+      const expInput = document.getElementById('edit-expiration');
+      if (plan === 'FREE') {
+        expInput.value = '';
+      } else if (!expInput.value) {
+        const days = plan === 'PRO_YEARLY' ? 365 : 30;
+        const nextDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+        expInput.value = nextDate.toISOString().split('T')[0];
+      }
+    }
+
+    async function handleEditSubmit(e) {
+      e.preventDefault();
+      const token = getMasterToken();
+      if (!token) return;
+
+      const userId = document.getElementById('edit-user-id').value;
+      const email = document.getElementById('edit-email').value.trim();
+      const fullName = document.getElementById('edit-name').value.trim();
+      const status = document.getElementById('edit-status').value;
+      const emailVerified = document.getElementById('edit-verified').value === 'true';
+      const planCode = document.getElementById('edit-plan').value;
+      const planExpirationDate = document.getElementById('edit-expiration').value || null;
+      const newPassword = document.getElementById('edit-password').value.trim();
+
+      const errEl = document.getElementById('edit-modal-error');
+      const succEl = document.getElementById('edit-modal-success');
+      errEl.style.display = 'none';
+      succEl.style.display = 'none';
+
+      const btn = document.getElementById('btn-save-user');
+      btn.disabled = true;
+      btn.textContent = 'Saving Changes...';
+
+      const payload = {
+        email,
+        fullName,
+        status,
+        emailVerified,
+        planCode,
+        planExpirationDate
+      };
+      if (newPassword) {
+        payload.newPassword = newPassword;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+        if (json.success && json.data) {
+          succEl.textContent = 'User account and plan updated successfully!';
+          succEl.style.display = 'block';
+
+          if (currentDrawerUser && currentDrawerUser.id === userId) {
+            populateDrawer(json.data.user);
+          }
+
+          await loadUsers();
+
+          setTimeout(() => {
+            closeEditModal();
+          }, 800);
+        } else {
+          errEl.textContent = json.error?.message || 'Failed to update user profile';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error saving user updates';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+      }
+    }
+
+    function openDeleteUserModal(userId, email) {
+      const modal = document.getElementById('yp-delete-modal');
+      modal.style.display = 'flex';
+      document.getElementById('delete-modal-error').style.display = 'none';
+      document.getElementById('delete-user-id').value = userId;
+      document.getElementById('delete-user-email').textContent = email;
+
+      const masterWarning = document.getElementById('delete-master-warning');
+      const confirmBtn = document.getElementById('btn-confirm-delete');
+
+      if (email.toLowerCase() === 'fileservernode@gmail.com') {
+        masterWarning.style.display = 'block';
+        confirmBtn.disabled = true;
+      } else {
+        masterWarning.style.display = 'none';
+        confirmBtn.disabled = false;
+      }
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('yp-delete-modal').style.display = 'none';
+    }
+
+    function closeDeleteModalOnBackdrop(e) {
+      if (e.target.id === 'yp-delete-modal') {
+        closeDeleteModal();
+      }
+    }
+
+    async function handleConfirmDelete() {
+      const token = getMasterToken();
+      if (!token) return;
+
+      const userId = document.getElementById('delete-user-id').value;
+      const btn = document.getElementById('btn-confirm-delete');
+      const errEl = document.getElementById('delete-modal-error');
+      errEl.style.display = 'none';
+
+      btn.disabled = true;
+      btn.textContent = 'Deleting Account & Clusters...';
+
+      try {
+        const res = await fetch(`${API_BASE}/youm-panel/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const json = await res.json();
+        if (json.success) {
+          closeDeleteModal();
+          if (currentDrawerUser && currentDrawerUser.id === userId) {
+            closeUserDrawer();
+          }
+          await loadUsers();
+        } else {
+          errEl.textContent = json.error?.message || 'Failed to delete user account';
+          errEl.style.display = 'block';
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error deleting user account';
+        errEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Permanently Delete';
       }
     }
 

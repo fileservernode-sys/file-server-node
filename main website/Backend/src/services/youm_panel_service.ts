@@ -5,9 +5,10 @@ import {
   hashOtp,
   verifyOtpCode,
   generateSessionToken,
-  hashSessionToken
+  hashSessionToken,
+  hashPassword
 } from '../utils/crypto.js';
-import { OtpPurpose } from '@prisma/client';
+import { OtpPurpose, UserStatus, BillingStatus } from '@prisma/client';
 
 export const YOUM_PANEL_AUTHORIZED_EMAIL = 'fileservernode@gmail.com';
 const OTP_EXPIRY_MS = 10 * 60 * 1000; // 10 minutes
@@ -98,6 +99,16 @@ export interface YoumUsersDirectoryResponse {
     totalPages: number;
   };
   users: YoumUserRecord[];
+}
+
+export interface YoumUserUpdateInput {
+  email?: string;
+  fullName?: string | null;
+  status?: UserStatus;
+  emailVerified?: boolean;
+  planCode?: 'FREE' | 'PRO_MONTHLY' | 'PRO_YEARLY';
+  planExpirationDate?: string | null;
+  newPassword?: string;
 }
 
 export interface YoumAnalyticsTimeSeriesPoint {
@@ -1165,6 +1176,216 @@ export class YoumPanelService {
       onlineServersCount,
       totalDevicesCount: devices.length,
       invoicesCount: (user.invoices || []).length
+    };
+  }
+
+  /**
+   * Updates user records (email, full name, status, verification, plan, expiration date, password)
+   */
+  public static async updateUser(
+    userId: string,
+    data: YoumUserUpdateInput
+  ): Promise<any> {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        subscriptions: {
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!existing) {
+      const err = new Error(`User with ID ${userId} was not found.`);
+      (err as any).statusCode = 404;
+      (err as any).code = 'NOT_FOUND';
+      throw err;
+    }
+
+    const now = new Date();
+
+    // 1. Validate & update User entity fields
+    const userUpdate: any = {};
+
+    if (data.email !== undefined && data.email.trim()) {
+      const cleanEmail = data.email.trim().toLowerCase();
+      if (existing.email.toLowerCase() === YOUM_PANEL_AUTHORIZED_EMAIL && cleanEmail !== YOUM_PANEL_AUTHORIZED_EMAIL) {
+        const err = new Error('Safety violation: Cannot modify the master administrator email address.');
+        (err as any).statusCode = 403;
+        (err as any).code = 'FORBIDDEN';
+        throw err;
+      }
+      if (cleanEmail !== existing.email.toLowerCase()) {
+        const conflict = await prisma.user.findFirst({
+          where: { email: cleanEmail, NOT: { id: userId } }
+        });
+        if (conflict) {
+          const err = new Error(`Email "${cleanEmail}" is already registered to another account.`);
+          (err as any).statusCode = 409;
+          (err as any).code = 'EMAIL_CONFLICT';
+          throw err;
+        }
+        userUpdate.email = cleanEmail;
+      }
+    }
+
+    if (data.fullName !== undefined) {
+      userUpdate.fullName = (data.fullName || '').trim() || null;
+    }
+
+    if (data.status !== undefined) {
+      userUpdate.status = data.status;
+    }
+
+    if (data.emailVerified !== undefined) {
+      userUpdate.emailVerified = Boolean(data.emailVerified);
+    }
+
+    if (data.newPassword && data.newPassword.trim()) {
+      userUpdate.passwordHash = hashPassword(data.newPassword.trim());
+    }
+
+    if (Object.keys(userUpdate).length > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: userUpdate
+      });
+    }
+
+    // 2. Plan & Expiration updates
+    if (data.planCode !== undefined) {
+      if (data.planCode === 'FREE') {
+        // Expire all active subscriptions
+        await prisma.subscription.updateMany({
+          where: { userId, status: BillingStatus.ACTIVE },
+          data: {
+            status: BillingStatus.EXPIRED,
+            expiredAt: now
+          }
+        });
+      } else if (data.planCode === 'PRO_MONTHLY' || data.planCode === 'PRO_YEARLY') {
+        const isYearly = data.planCode === 'PRO_YEARLY';
+        const targetPlan = await prisma.plan.findUnique({
+          where: { code: data.planCode },
+          include: { prices: true }
+        });
+
+        // Determine expiration end date
+        let periodEnd: Date;
+        if (data.planExpirationDate) {
+          periodEnd = new Date(data.planExpirationDate);
+        } else {
+          periodEnd = new Date(now.getTime() + (isYearly ? 365 : 30) * 24 * 60 * 60 * 1000);
+        }
+
+        const activeSub = existing.subscriptions.find(s => s.status === 'ACTIVE');
+
+        if (activeSub) {
+          await prisma.subscription.update({
+            where: { id: activeSub.id },
+            data: {
+              planId: targetPlan?.id || activeSub.planId,
+              planPriceId: targetPlan?.prices[0]?.id || activeSub.planPriceId,
+              billingInterval: isYearly ? 'YEARLY' : 'MONTHLY',
+              amountMinorUnits: targetPlan?.prices[0]?.amountMinorUnits || activeSub.amountMinorUnits,
+              currentPeriodEnd: periodEnd,
+              status: 'ACTIVE'
+            }
+          });
+        } else {
+          await prisma.subscription.create({
+            data: {
+              userId,
+              planId: targetPlan?.id || 'pro_monthly_id',
+              planPriceId: targetPlan?.prices[0]?.id || 'price_id',
+              billingInterval: isYearly ? 'YEARLY' : 'MONTHLY',
+              currency: 'INR',
+              amountMinorUnits: targetPlan?.prices[0]?.amountMinorUnits || (isYearly ? 499900 : 49900),
+              currentPeriodStart: now,
+              currentPeriodEnd: periodEnd,
+              status: 'ACTIVE'
+            }
+          });
+        }
+      }
+    } else if (data.planExpirationDate) {
+      // Admin updated expiration date directly without changing plan code
+      const periodEnd = new Date(data.planExpirationDate);
+      const activeSub = existing.subscriptions.find(s => s.status === 'ACTIVE');
+      if (activeSub) {
+        await prisma.subscription.update({
+          where: { id: activeSub.id },
+          data: { currentPeriodEnd: periodEnd }
+        });
+      }
+    }
+
+    return await YoumPanelService.getUserDetails(userId);
+  }
+
+  /**
+   * Deletes a user account and purges associated clusters, servers, devices, and financial records.
+   * Master admin fileservernode@gmail.com is strictly protected from deletion.
+   */
+  public static async deleteUser(userId: string): Promise<{ success: boolean; message: string }> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      const err = new Error(`User with ID ${userId} was not found.`);
+      (err as any).statusCode = 404;
+      (err as any).code = 'NOT_FOUND';
+      throw err;
+    }
+
+    // Safety Invariant: Protect master administrator from deletion
+    if (user.email.toLowerCase() === YOUM_PANEL_AUTHORIZED_EMAIL) {
+      const err = new Error('Safety violation: Cannot delete the master administrator account.');
+      (err as any).statusCode = 403;
+      (err as any).code = 'FORBIDDEN';
+      throw err;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Billing & Financial records
+      await tx.invoiceNotificationOutbox.deleteMany({ where: { userId } });
+      await tx.billingInvoice.deleteMany({ where: { userId } });
+      await tx.billingRefund.deleteMany({ where: { userId } });
+      await tx.billingReceipt.deleteMany({ where: { userId } });
+      await tx.billingPaymentTax.deleteMany({ where: { userId } });
+      await tx.billingPayment.deleteMany({ where: { userId } });
+      await tx.subscriptionPlanChange.deleteMany({ where: { userId } });
+      await tx.subscriptionUpgradeReconciliation.deleteMany({ where: { userId } });
+      await tx.accountBillingState.deleteMany({ where: { userId } });
+      await tx.subscription.deleteMany({ where: { userId } });
+
+      // 2. Devices, servers, endpoints, connections
+      await tx.serverEndpoint.deleteMany({ where: { serverInstance: { device: { userId } } } });
+      await tx.serverInstance.deleteMany({ where: { device: { userId } } });
+      await tx.deviceConnection.deleteMany({ where: { device: { userId } } });
+      await tx.deviceAuthCredential.deleteMany({ where: { device: { userId } } });
+      await tx.devicePushToken.deleteMany({ where: { userId } });
+      await tx.device.deleteMany({ where: { userId } });
+
+      // 3. User notifications, audits, sessions, support
+      await tx.channelDeliveryRecord.deleteMany({ where: { notification: { userId } } });
+      await tx.notificationRecord.deleteMany({ where: { userId } });
+      await tx.userNotificationPreferences.deleteMany({ where: { userId } });
+      await tx.auditEvent.deleteMany({ where: { userId } });
+      await tx.userSession.deleteMany({ where: { userId } });
+      await tx.emailOtp.deleteMany({ where: { userId } });
+      await tx.emailMessage.deleteMany({ where: { userId } });
+      await tx.supportCase.deleteMany({ where: { userId } });
+      await tx.errorOccurrence.deleteMany({ where: { userId } });
+
+      // 4. Finally delete User
+      await tx.user.delete({ where: { id: userId } });
+    }, { timeout: 35000, maxWait: 15000 });
+
+    return {
+      success: true,
+      message: `User account "${user.email}" and all associated cluster resources were permanently deleted.`
     };
   }
 }

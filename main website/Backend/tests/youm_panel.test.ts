@@ -329,7 +329,151 @@ describe('Youm Panel - Master Administrative & Analytics Control Plane', () => {
     assert.ok('payments' in body.data);
   });
 
-  test('TEST 13: Logout revokes master session token', async () => {
+  test('TEST 14: Master admin can edit user profile, status, plan, and expiration date', async () => {
+    // 1. Create a transient test user
+    const dummyEmail = `youm_edit_target_${Date.now()}@example.com`;
+    const dummyUser = await prisma.user.create({
+      data: {
+        email: dummyEmail,
+        fullName: 'Initial Name',
+        passwordHash: 'dummy_hash',
+        status: 'PENDING_VERIFICATION',
+        emailVerified: false
+      }
+    });
+
+    const targetExpiration = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    // 2. Perform admin update via PUT /api/v1/youm-panel/users/:id
+    const res = await app.inject({
+      method: 'PUT',
+      url: `/api/v1/youm-panel/users/${dummyUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      },
+      payload: {
+        fullName: 'Edited Target Name',
+        status: 'ACTIVE',
+        emailVerified: true,
+        planCode: 'PRO_YEARLY',
+        planExpirationDate: targetExpiration
+      }
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+    assert.strictEqual(body.data.user.id, dummyUser.id);
+    assert.strictEqual(body.data.user.fullName, 'Edited Target Name');
+    assert.strictEqual(body.data.user.status, 'ACTIVE');
+    assert.strictEqual(body.data.user.emailVerified, true);
+    assert.strictEqual(body.data.user.plan.planCode, 'PRO_YEARLY');
+    assert.ok(body.data.user.plan.daysLeft >= 59);
+
+    // Clean up dummy user if still present
+    await prisma.subscription.deleteMany({ where: { userId: dummyUser.id } });
+    await prisma.user.delete({ where: { id: dummyUser.id } });
+  });
+
+  test('TEST 15: Safety check blocks modifying or deleting master admin fileservernode@gmail.com', async () => {
+    const masterUser = await prisma.user.findUnique({
+      where: { email: YOUM_PANEL_AUTHORIZED_EMAIL }
+    });
+    assert.ok(masterUser);
+
+    // 1. Attempt to change master email
+    const resEditEmail = await app.inject({
+      method: 'PUT',
+      url: `/api/v1/youm-panel/users/${masterUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      },
+      payload: {
+        email: 'hijacked_master@example.com'
+      }
+    });
+    assert.strictEqual(resEditEmail.statusCode, 403);
+    const editErr = JSON.parse(resEditEmail.body);
+    assert.strictEqual(editErr.success, false);
+    assert.strictEqual(editErr.error.code, 'FORBIDDEN');
+
+    // 2. Attempt to delete master user
+    const resDelete = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/youm-panel/users/${masterUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+    assert.strictEqual(resDelete.statusCode, 403);
+    const delErr = JSON.parse(resDelete.body);
+    assert.strictEqual(delErr.success, false);
+    assert.strictEqual(delErr.error.code, 'FORBIDDEN');
+  });
+
+  test('TEST 16: Master admin can permanently delete a user and cascade their cluster resources', async () => {
+    // 1. Create a dummy user with server and device
+    const delEmail = `youm_delete_target_${Date.now()}@example.com`;
+    const targetUser = await prisma.user.create({
+      data: {
+        email: delEmail,
+        fullName: 'To Be Deleted',
+        passwordHash: 'dummy_hash',
+        status: 'ACTIVE',
+        emailVerified: true
+      }
+    });
+
+    const testDevice = await prisma.device.create({
+      data: {
+        userId: targetUser.id,
+        deviceName: 'Test Pixel 8 Pro',
+        installationId: `inst_${Date.now()}`,
+        platform: 'Android',
+        osVersion: 'Android 14',
+        appVersion: '1.0.0'
+      }
+    });
+
+    await prisma.serverInstance.create({
+      data: {
+        deviceId: testDevice.id,
+        serverName: `del-server-${Date.now()}`,
+        status: 'STOPPED'
+      }
+    });
+
+    // 2. Call DELETE /api/v1/youm-panel/users/:id
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/youm-panel/users/${targetUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+
+    assert.strictEqual(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.strictEqual(body.success, true);
+
+    // 3. Verify user is removed from database
+    const userInDb = await prisma.user.findUnique({
+      where: { id: targetUser.id }
+    });
+    assert.strictEqual(userInDb, null);
+
+    // 4. Verify GET /users/:id returns 404
+    const resCheck = await app.inject({
+      method: 'GET',
+      url: `/api/v1/youm-panel/users/${targetUser.id}`,
+      headers: {
+        Authorization: `Bearer ${masterToken}`
+      }
+    });
+    assert.strictEqual(resCheck.statusCode, 404);
+  });
+
+  test('TEST 17: Logout revokes master session token', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/youm-panel/auth/logout',

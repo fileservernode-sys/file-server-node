@@ -33,6 +33,16 @@ const userIdParamSchema = z.object({
   id: z.string().min(1)
 });
 
+const updateUserSchema = z.object({
+  email: z.string().email().optional(),
+  fullName: z.string().nullable().optional(),
+  status: z.enum(['ACTIVE', 'PENDING_VERIFICATION', 'SUSPENDED']).optional(),
+  emailVerified: z.boolean().optional(),
+  planCode: z.enum(['FREE', 'PRO_MONTHLY', 'PRO_YEARLY']).optional(),
+  planExpirationDate: z.string().nullable().optional(),
+  newPassword: z.string().min(6).optional()
+});
+
 /**
  * Extracts and validates the Youm Panel bearer token from request headers.
  */
@@ -234,6 +244,61 @@ export async function youmPanelRoutes(app: FastifyInstance): Promise<void> {
     } catch (err: any) {
       const statusCode = err.statusCode || 500;
       const code = err.code || 'USER_DETAILS_ERROR';
+      return reply.status(statusCode).send(createErrorResponse(code, err.message));
+    }
+  });
+
+  /**
+   * PUT /api/v1/youm-panel/users/:id
+   * Updates user records (email, full name, status, verification, plan, expiration date, password)
+   */
+  app.put('/youm-panel/users/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    const isValid = await extractAndValidateYoumToken(request, reply);
+    if (!isValid) return;
+
+    const paramResult = userIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', 'Invalid user ID'));
+    }
+
+    const bodyResult = updateUserSchema.safeParse(request.body);
+    if (!bodyResult.success) {
+      return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', 'Invalid update parameters'));
+    }
+
+    try {
+      const updated = await YoumPanelService.updateUser(paramResult.data.id, bodyResult.data as any);
+      return reply.send(createSuccessResponse({
+        user: updated,
+        message: 'User details updated successfully.'
+      }));
+    } catch (err: any) {
+      const statusCode = err.statusCode || 500;
+      const code = err.code || 'USER_UPDATE_ERROR';
+      return reply.status(statusCode).send(createErrorResponse(code, err.message));
+    }
+  });
+
+  /**
+   * DELETE /api/v1/youm-panel/users/:id
+   * Deletes a user account and purges associated clusters, servers, devices, and records.
+   * Safety invariant: master admin fileservernode@gmail.com cannot be deleted.
+   */
+  app.delete('/youm-panel/users/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+    const isValid = await extractAndValidateYoumToken(request, reply);
+    if (!isValid) return;
+
+    const paramResult = userIdParamSchema.safeParse(request.params);
+    if (!paramResult.success) {
+      return reply.status(400).send(createErrorResponse('VALIDATION_ERROR', 'Invalid user ID'));
+    }
+
+    try {
+      const result = await YoumPanelService.deleteUser(paramResult.data.id);
+      return reply.send(createSuccessResponse(result));
+    } catch (err: any) {
+      const statusCode = err.statusCode || 500;
+      const code = err.code || 'USER_DELETE_ERROR';
       return reply.status(statusCode).send(createErrorResponse(code, err.message));
     }
   });
