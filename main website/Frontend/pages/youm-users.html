@@ -12,20 +12,36 @@
 
   <style>
     :root {
-      --yp-bg: #090D16;
-      --yp-surface: #111827;
-      --yp-surface-alt: #1F2937;
-      --yp-border: #374151;
-      --yp-border-light: rgba(255, 255, 255, 0.1);
-      --yp-text: #F9FAFB;
-      --yp-text-muted: #9CA3AF;
-      --yp-primary: #38BDF8;
-      --yp-primary-dark: #0284C7;
-      --yp-accent: #6366F1;
-      --yp-success: #10B981;
-      --yp-warning: #F59E0B;
-      --yp-danger: #EF4444;
-      --yp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --yp-bg: #F8FAFC;
+      --yp-surface: #FFFFFF;
+      --yp-surface-alt: #F1F5F9;
+      --yp-border: #E2E8F0;
+      --yp-border-hover: #CBD5E1;
+      --yp-text: #0F172A;
+      --yp-text-secondary: #334155;
+      --yp-text-muted: #64748B;
+      --yp-text-subtle: #94A3B8;
+      --yp-primary: #2563EB;
+      --yp-primary-hover: #1D4ED8;
+      --yp-primary-dark: #1E40AF;
+      --yp-primary-soft: #EFF6FF;
+      --yp-primary-border: #BFDBFE;
+      --yp-accent: #4F46E5;
+      --yp-success: #059669;
+      --yp-success-soft: #ECFDF5;
+      --yp-success-border: #A7F3D0;
+      --yp-warning: #D97706;
+      --yp-warning-soft: #FFFBEB;
+      --yp-warning-border: #FDE68A;
+      --yp-danger: #DC2626;
+      --yp-danger-soft: #FEF2F2;
+      --yp-danger-border: #FECACA;
+      --yp-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --yp-font-mono: 'JetBrains Mono', monospace;
+      --yp-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+      --yp-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+      --yp-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+      --yp-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
     }
 
     * {
@@ -47,7 +63,7 @@
 
     /* Top Master Header */
     .yp-header {
-      background: rgba(17, 24, 39, 0.85);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--yp-border);
       position: sticky;
@@ -59,6 +75,7 @@
       justify-content: space-between;
       gap: 1rem;
       flex-wrap: wrap;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
     }
 
     .yp-brand {
@@ -70,21 +87,22 @@
     }
 
     .yp-brand-badge {
-      background: linear-gradient(135deg, #0284C7, #6366F1);
-      color: white;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF;
       font-size: 0.75rem;
       font-weight: 800;
-      padding: 0.25rem 0.6rem;
+      padding: 0.25rem 0.65rem;
       border-radius: 6px;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
     }
 
     .yp-brand-title {
       font-size: 1.15rem;
       font-weight: 700;
       letter-spacing: -0.3px;
-      color: #FFFFFF;
+      color: #0F172A;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -99,7 +117,7 @@
     .yp-nav-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       font-size: 0.825rem;
       font-weight: 600;
       padding: 0.45rem 0.85rem;
@@ -110,13 +128,14 @@
       transition: all 0.15s ease;
     }
     .yp-nav-item:hover {
-      color: white;
+      color: #0F172A;
       background: var(--yp-surface-alt);
     }
     .yp-nav-item.active {
-      color: #38BDF8;
-      background: rgba(56, 189, 248, 0.12);
-      border-color: rgba(56, 189, 248, 0.3);
+      color: #2563EB;
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      font-weight: 700;
     }
 
     .yp-header-actions {
@@ -129,13 +148,13 @@
       display: none;
       align-items: center;
       gap: 0.4rem;
-      background: rgba(56, 189, 248, 0.1);
-      color: #38BDF8;
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      background: #EFF6FF;
+      color: #2563EB;
+      border: 1px solid #BFDBFE;
       padding: 0.3rem 0.75rem;
       border-radius: 999px;
       font-size: 0.75rem;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     @media (min-width: 768px) {
@@ -157,11 +176,27 @@
       cursor: pointer;
       transition: all 0.15s ease;
       white-space: nowrap;
+      font-family: inherit;
     }
-    .yp-btn-primary { background: #0284C7; color: white; }
-    .yp-btn-primary:hover { background: #0369A1; }
-    .yp-btn-outline { background: transparent; color: var(--yp-text-muted); border-color: var(--yp-border); }
-    .yp-btn-outline:hover { background: var(--yp-surface-alt); color: var(--yp-text); border-color: #4B5563; }
+    .yp-btn-primary {
+      background: #2563EB;
+      color: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+    }
+    .yp-btn-primary:hover {
+      background: #1D4ED8;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+    }
+    .yp-btn-outline {
+      background: #FFFFFF;
+      color: #334155;
+      border: 1px solid #CBD5E1;
+    }
+    .yp-btn-outline:hover {
+      background: #F8FAFC;
+      color: #0F172A;
+      border-color: #94A3B8;
+    }
 
     /* Auth Guard Container */
     #yp-auth-view {
@@ -179,32 +214,56 @@
       padding: 2.25rem 2rem;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--yp-shadow-xl);
     }
     .yp-auth-icon {
       width: 48px;
       height: 48px;
-      background: rgba(2, 132, 199, 0.15);
-      border: 1px solid rgba(2, 132, 199, 0.3);
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #38BDF8;
+      color: #2563EB;
       margin-bottom: 1.25rem;
     }
-    .yp-auth-title { font-size: 1.35rem; font-weight: 700; color: #FFFFFF; margin-bottom: 0.35rem; }
+    .yp-auth-title { font-size: 1.35rem; font-weight: 700; color: #0F172A; margin-bottom: 0.35rem; }
     .yp-auth-desc { font-size: 0.875rem; color: var(--yp-text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
     .yp-form-group { margin-bottom: 1.25rem; }
-    .yp-label { display: block; font-size: 0.8rem; font-weight: 600; color: #D1D5DB; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .yp-input { width: 100%; background: #090D16; border: 1px solid var(--yp-border); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; outline: none; }
-    .yp-input:focus { border-color: #38BDF8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
+    .yp-label { display: block; font-size: 0.8rem; font-weight: 600; color: #475569; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .yp-input {
+      width: 100%;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    .yp-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
     .yp-otp-group { display: flex; gap: 0.5rem; justify-content: space-between; margin-bottom: 1.25rem; }
-    .yp-otp-digit { width: 48px; height: 54px; text-align: center; font-size: 1.5rem; font-weight: 700; font-family: monospace; background: #090D16; border: 1px solid var(--yp-border); border-radius: 8px; color: #38BDF8; outline: none; }
-    .yp-otp-digit:focus { border-color: #38BDF8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3); }
+    .yp-otp-digit {
+      width: 48px;
+      height: 54px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      border-radius: 8px;
+      color: #2563EB;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .yp-otp-digit:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
     .yp-alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.825rem; margin-bottom: 1rem; display: none; line-height: 1.4; }
-    .yp-alert-error { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #FCA5A5; }
-    .yp-alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #6EE7B7; }
+    .yp-alert-error { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; }
+    .yp-alert-success { background: #ECFDF5; border: 1px solid #A7F3D0; color: #047857; }
 
     /* Main Dashboard View */
     #yp-users-view {
@@ -238,9 +297,15 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
+      box-shadow: var(--yp-shadow-sm);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .yp-sum-card:hover {
+      border-color: var(--yp-primary-border);
+      box-shadow: var(--yp-shadow-md);
     }
     .yp-sum-label { font-size: 0.7rem; font-weight: 600; color: var(--yp-text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem; }
-    .yp-sum-val { font-size: 1.35rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.3px; }
+    .yp-sum-val { font-size: 1.35rem; font-weight: 800; color: #0F172A; letter-spacing: -0.3px; }
 
     /* Filters & Search Toolbar */
     .yp-toolbar {
@@ -252,6 +317,7 @@
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      box-shadow: var(--yp-shadow-sm);
     }
     @media (min-width: 768px) {
       .yp-toolbar {
@@ -271,20 +337,22 @@
       left: 12px;
       top: 50%;
       transform: translateY(-50%);
-      color: #6B7280;
+      color: #94A3B8;
       pointer-events: none;
     }
     .yp-search-input {
       width: 100%;
-      background: #090D16;
-      border: 1px solid var(--yp-border);
-      color: white;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
       padding: 0.6rem 1rem 0.6rem 2.4rem;
       border-radius: 8px;
       font-size: 0.875rem;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
     }
-    .yp-search-input:focus { border-color: #38BDF8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25); }
+    .yp-search-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 
     .yp-filter-row {
       display: flex;
@@ -294,16 +362,18 @@
     }
 
     .yp-select {
-      background: #090D16;
-      border: 1px solid var(--yp-border);
-      color: #E2E8F0;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
       padding: 0.55rem 0.85rem;
       border-radius: 8px;
       font-size: 0.825rem;
       outline: none;
       cursor: pointer;
+      transition: border-color 0.15s;
+      font-family: inherit;
     }
-    .yp-select:focus { border-color: #38BDF8; }
+    .yp-select:focus { border-color: #2563EB; }
 
     /* Users Table Card */
     .yp-card {
@@ -311,6 +381,7 @@
       border: 1px solid var(--yp-border);
       border-radius: 12px;
       overflow: hidden;
+      box-shadow: var(--yp-shadow-sm);
     }
 
     .yp-table-container {
@@ -326,9 +397,9 @@
     }
 
     .yp-table th {
-      background: #090D16;
-      color: #9CA3AF;
-      font-weight: 600;
+      background: #F8FAFC;
+      color: #475569;
+      font-weight: 700;
       text-transform: uppercase;
       font-size: 0.7rem;
       letter-spacing: 0.5px;
@@ -339,13 +410,13 @@
 
     .yp-table td {
       padding: 1rem;
-      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
-      color: #D1D5DB;
+      border-bottom: 1px solid #F1F5F9;
+      color: var(--yp-text-secondary);
       vertical-align: middle;
     }
 
     .yp-table tr:hover td {
-      background: rgba(31, 41, 55, 0.35);
+      background: #F8FAFC;
     }
 
     /* Badges & Pills */
@@ -359,13 +430,13 @@
       border-radius: 6px;
       white-space: nowrap;
     }
-    .yp-pill-success { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .yp-pill-warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .yp-pill-danger  { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .yp-pill-info    { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border: 1px solid rgba(56, 189, 248, 0.3); }
-    .yp-pill-indigo  { background: rgba(99, 102, 241, 0.15); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); }
-    .yp-pill-purple  { background: rgba(168, 85, 247, 0.15); color: #C084FC; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .yp-pill-slate   { background: #1E293B; color: #94A3B8; border: 1px solid #334155; }
+    .yp-pill-success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    .yp-pill-warning { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+    .yp-pill-danger  { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+    .yp-pill-info    { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+    .yp-pill-indigo  { background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; }
+    .yp-pill-purple  { background: #FAF5FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+    .yp-pill-slate   { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
 
     /* Days Left Special Badges */
     .yp-days-chip {
@@ -377,10 +448,10 @@
       padding: 0.25rem 0.6rem;
       border-radius: 6px;
     }
-    .yp-days-active   { background: rgba(16, 185, 129, 0.15); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .yp-days-expiring { background: rgba(245, 158, 11, 0.15); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .yp-days-expired  { background: rgba(239, 68, 68, 0.15); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .yp-days-free     { background: #1E293B; color: #94A3B8; border: 1px solid #334155; }
+    .yp-days-active   { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    .yp-days-expiring { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+    .yp-days-expired  { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+    .yp-days-free     { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
 
     .yp-user-cell {
       display: flex;
@@ -391,14 +462,15 @@
       width: 36px;
       height: 36px;
       border-radius: 8px;
-      background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      color: white;
+      color: #FFFFFF;
       font-size: 0.85rem;
       flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
     }
     .yp-user-meta {
       display: flex;
@@ -406,8 +478,8 @@
       gap: 0.15rem;
     }
     .yp-user-email {
-      font-weight: 600;
-      color: #FFFFFF;
+      font-weight: 700;
+      color: #0F172A;
       font-size: 0.875rem;
     }
     .yp-user-sub {
@@ -419,13 +491,13 @@
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
-      background: #090D16;
+      background: #F8FAFC;
       border: 1px solid var(--yp-border);
       padding: 0.2rem 0.45rem;
       border-radius: 4px;
       font-size: 0.75rem;
       margin: 0.15rem 0.25rem 0.15rem 0;
-      color: #CBD5E1;
+      color: #334155;
     }
     .yp-status-dot {
       width: 6px;
@@ -433,7 +505,7 @@
       border-radius: 50%;
     }
     .yp-dot-running { background: #10B981; box-shadow: 0 0 6px #10B981; }
-    .yp-dot-stopped { background: #6B7280; }
+    .yp-dot-stopped { background: #94A3B8; }
     .yp-dot-error   { background: #EF4444; }
 
     /* Pagination Bar */
@@ -443,7 +515,7 @@
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid var(--yp-border);
-      background: #090D16;
+      background: #F8FAFC;
       font-size: 0.825rem;
       color: var(--yp-text-muted);
     }
@@ -455,7 +527,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(15, 23, 42, 0.45);
       backdrop-filter: blur(4px);
       z-index: 100;
       display: none;
@@ -473,7 +545,7 @@
       padding: 1.75rem;
       display: flex;
       flex-direction: column;
-      box-shadow: -10px 0 25px rgba(0, 0, 0, 0.6);
+      box-shadow: -10px 0 30px rgba(15, 23, 42, 0.12);
       animation: slideIn 0.25s ease-out;
     }
 
@@ -490,12 +562,12 @@
       padding-bottom: 1.25rem;
       margin-bottom: 1.5rem;
     }
-    .yp-drawer-title { font-size: 1.2rem; font-weight: 700; color: #FFFFFF; }
-    .yp-drawer-close { background: none; border: none; color: #9CA3AF; cursor: pointer; font-size: 1.5rem; line-height: 1; }
-    .yp-drawer-close:hover { color: white; }
+    .yp-drawer-title { font-size: 1.2rem; font-weight: 700; color: #0F172A; }
+    .yp-drawer-close { background: none; border: none; color: #64748B; cursor: pointer; font-size: 1.5rem; line-height: 1; }
+    .yp-drawer-close:hover { color: #0F172A; }
 
     .yp-drawer-section {
-      background: #090D16;
+      background: #F8FAFC;
       border: 1px solid var(--yp-border);
       border-radius: 10px;
       padding: 1.25rem;
@@ -504,7 +576,7 @@
     .yp-sec-title {
       font-size: 0.8rem;
       font-weight: 700;
-      color: #9CA3AF;
+      color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 0.85rem;
@@ -520,32 +592,32 @@
     }
     .yp-prop-box {
       background: var(--yp-surface);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--yp-border);
       border-radius: 8px;
       padding: 0.75rem;
     }
-    .yp-prop-name { font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; margin-bottom: 0.2rem; }
-    .yp-prop-val  { font-size: 0.9rem; font-weight: 600; color: #F3F4F6; word-break: break-all; }
+    .yp-prop-name { font-size: 0.7rem; color: #64748B; text-transform: uppercase; margin-bottom: 0.2rem; }
+    .yp-prop-val  { font-size: 0.9rem; font-weight: 600; color: #0F172A; word-break: break-all; }
 
-    .yp-empty { padding: 3rem 1rem; text-align: center; color: #6B7280; font-size: 0.875rem; }
+    .yp-empty { padding: 3rem 1rem; text-align: center; color: #94A3B8; font-size: 0.875rem; }
 
     /* Danger Button */
     .yp-btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: #F87171;
-      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FECACA;
     }
     .yp-btn-danger:hover {
       background: #DC2626;
-      color: white;
+      color: #FFFFFF;
       border-color: #DC2626;
     }
     .yp-btn-danger[disabled] {
       opacity: 0.35;
       cursor: not-allowed;
-      background: rgba(239, 68, 68, 0.08);
-      color: #9CA3AF;
-      border-color: #374151;
+      background: #FEF2F2;
+      color: #94A3B8;
+      border-color: #E2E8F0;
     }
 
     /* Centered Dialog Modals */
@@ -555,8 +627,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.78);
-      backdrop-filter: blur(5px);
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
       z-index: 250;
       display: none;
       align-items: center;
@@ -571,7 +643,7 @@
       max-width: 580px;
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+      box-shadow: var(--yp-shadow-xl);
       animation: popIn 0.2s ease-out;
     }
     @keyframes popIn {
@@ -588,7 +660,7 @@
     .yp-dialog-title {
       font-size: 1.15rem;
       font-weight: 700;
-      color: #FFFFFF;
+      color: #0F172A;
       margin: 0;
       display: flex;
       align-items: center;
@@ -597,12 +669,12 @@
     .yp-dialog-close {
       background: none;
       border: none;
-      color: #9CA3AF;
+      color: #64748B;
       cursor: pointer;
       font-size: 1.5rem;
       line-height: 1;
     }
-    .yp-dialog-close:hover { color: white; }
+    .yp-dialog-close:hover { color: #0F172A; }
     .yp-dialog-body {
       padding: 1.5rem;
     }
@@ -613,7 +685,7 @@
       align-items: center;
       justify-content: flex-end;
       gap: 0.75rem;
-      background: #090D16;
+      background: #F8FAFC;
       border-bottom-left-radius: 16px;
       border-bottom-right-radius: 16px;
     }
@@ -622,15 +694,17 @@
       font-weight: 600;
       padding: 0.25rem 0.55rem;
       border-radius: 6px;
-      background: #111827;
-      color: #93C5FD;
-      border: 1px solid #1E3A8A;
+      background: #EFF6FF;
+      color: #2563EB;
+      border: 1px solid #BFDBFE;
       cursor: pointer;
       transition: all 0.15s ease;
+      font-family: inherit;
     }
     .yp-date-pill:hover {
-      background: #1E3A8A;
+      background: #2563EB;
       color: #FFFFFF;
+      border-color: #2563EB;
     }
   </style>
 </head>
@@ -645,8 +719,14 @@
 
     <!-- Center Navigation Links -->
     <nav class="yp-nav-links" id="yp-nav-links" style="display:none;">
-      <a href="youm-panel.html" class="yp-nav-item">📊 System Analytics</a>
-      <a href="youm-users.html" class="yp-nav-item active">👥 Users &amp; Servers</a>
+      <a href="youm-panel.html" class="yp-nav-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-6 6"></path></svg>
+        System Analytics
+      </a>
+      <a href="youm-users.html" class="yp-nav-item active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Users &amp; Servers
+      </a>
     </nav>
 
     <div class="yp-header-actions">
@@ -681,7 +761,7 @@
       <form id="yp-request-form" onsubmit="handleRequestOtp(event)">
         <div class="yp-form-group">
           <label class="yp-label" for="yp-email-input">Authorized Administrator Email</label>
-          <input type="email" id="yp-email-input" class="yp-input" value="fileservernode@gmail.com" required readonly style="background:#131B2E; color:#93C5FD; border-color:#1E3A8A; cursor:not-allowed;">
+          <input type="email" id="yp-email-input" class="yp-input" value="fileservernode@gmail.com" required readonly style="background:#F8FAFC; color:#2563EB; border-color:#BFDBFE; cursor:not-allowed; font-weight:600;">
         </div>
 
         <button type="submit" class="yp-btn yp-btn-primary" id="yp-send-otp-btn" style="width: 100%; padding: 0.75rem;">
@@ -693,7 +773,7 @@
       <form id="yp-verify-form" onsubmit="handleVerifyOtp(event)" style="display: none;">
         <div class="yp-form-group">
           <label class="yp-label">Enter 6-Digit Passcode</label>
-          <p style="font-size:0.75rem; color:#9CA3AF; margin-bottom:0.75rem;">A one-time passcode was dispatched to <strong style="color:#E2E8F0;">fileservernode@gmail.com</strong>.</p>
+          <p style="font-size:0.75rem; color:#64748B; margin-bottom:0.75rem;">A one-time passcode was dispatched to <strong style="color:#0F172A;">fileservernode@gmail.com</strong>.</p>
           <div class="yp-otp-group">
             <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required autofocus>
             <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
@@ -708,9 +788,9 @@
           Verify &amp; Enter Dashboard
         </button>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #9CA3AF;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748B;">
           <span id="yp-resend-countdown">Cooldown: 30s</span>
-          <button type="button" class="yp-btn-outline" id="yp-resend-btn" disabled onclick="handleResendOtp()" style="background:none; border:none; color:#38BDF8; cursor:pointer; font-size:0.75rem;">
+          <button type="button" class="yp-btn-outline" id="yp-resend-btn" disabled onclick="handleResendOtp()" style="background:none; border:none; color:#2563EB; cursor:pointer; font-size:0.75rem; font-weight:600;">
             Resend Code
           </button>
         </div>
@@ -728,27 +808,27 @@
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Pro Monthly</span>
-        <span class="yp-sum-val" style="color:#38BDF8;" id="sum-pro-monthly">-</span>
+        <span class="yp-sum-val" style="color:#2563EB;" id="sum-pro-monthly">-</span>
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Pro Yearly</span>
-        <span class="yp-sum-val" style="color:#C084FC;" id="sum-pro-yearly">-</span>
+        <span class="yp-sum-val" style="color:#7C3AED;" id="sum-pro-yearly">-</span>
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Free Tier</span>
-        <span class="yp-sum-val" style="color:#94A3B8;" id="sum-free">-</span>
+        <span class="yp-sum-val" style="color:#475569;" id="sum-free">-</span>
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Expiring Soon (≤7d)</span>
-        <span class="yp-sum-val" style="color:#FBBF24;" id="sum-expiring-soon">-</span>
+        <span class="yp-sum-val" style="color:#D97706;" id="sum-expiring-soon">-</span>
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Total Servers</span>
-        <span class="yp-sum-val" style="color:#818CF8;" id="sum-total-servers">-</span>
+        <span class="yp-sum-val" style="color:#4F46E5;" id="sum-total-servers">-</span>
       </div>
       <div class="yp-sum-card">
         <span class="yp-sum-label">Live Online Servers</span>
-        <span class="yp-sum-val" style="color:#34D399;" id="sum-online-servers">-</span>
+        <span class="yp-sum-val" style="color:#059669;" id="sum-online-servers">-</span>
       </div>
     </section>
 
@@ -826,7 +906,7 @@
     <div class="yp-dialog-box">
       <div class="yp-dialog-header">
         <h3 class="yp-dialog-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
           Edit User Profile &amp; Plan
         </h3>
         <button type="button" class="yp-dialog-close" onclick="closeEditModal()">&times;</button>
@@ -841,7 +921,7 @@
           <div class="yp-form-group">
             <label class="yp-label" for="edit-email">Email Address</label>
             <input type="email" id="edit-email" class="yp-input" required>
-            <span id="edit-master-hint" style="display:none; font-size:0.72rem; color:#F59E0B; margin-top:0.25rem;">
+            <span id="edit-master-hint" style="display:none; font-size:0.72rem; color:#D97706; margin-top:0.25rem;">
               Master administrator email is protected and cannot be altered.
             </span>
           </div>
@@ -871,8 +951,8 @@
           </div>
 
           <!-- Plan & Expiration Settings -->
-          <div style="background:#090D16; border:1px solid var(--yp-border); border-radius:10px; padding:1rem; margin-top:0.5rem; margin-bottom:1.25rem;">
-            <div style="font-size:0.75rem; font-weight:700; color:#38BDF8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.75rem;">
+          <div style="background:#F8FAFC; border:1px solid var(--yp-border); border-radius:10px; padding:1rem; margin-top:0.5rem; margin-bottom:1.25rem;">
+            <div style="font-size:0.75rem; font-weight:700; color:#2563EB; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.75rem;">
               Plan Subscription &amp; Expiration Override
             </div>
 
@@ -892,19 +972,19 @@
 
             <!-- Quick Date Adjuster Pills -->
             <div style="display:flex; flex-wrap:wrap; gap:0.35rem; align-items:center; margin-top:0.5rem;">
-              <span style="font-size:0.7rem; color:#9CA3AF;">Quick Extend:</span>
+              <span style="font-size:0.7rem; color:#64748B;">Quick Extend:</span>
               <button type="button" class="yp-date-pill" onclick="adjustModalDate(30)">+30 Days</button>
               <button type="button" class="yp-date-pill" onclick="adjustModalDate(60)">+60 Days</button>
               <button type="button" class="yp-date-pill" onclick="adjustModalDate(90)">+90 Days</button>
               <button type="button" class="yp-date-pill" onclick="adjustModalDate(365)">+1 Year</button>
-              <button type="button" class="yp-date-pill" onclick="clearModalDate()" style="color:#F87171; border-color:#7F1D1D;">Lifetime Free</button>
+              <button type="button" class="yp-date-pill" onclick="clearModalDate()" style="color:#DC2626; border-color:#FECACA; background:#FEF2F2;">Lifetime Free</button>
             </div>
           </div>
 
           <div class="yp-form-group" style="margin-bottom:0;">
             <label class="yp-label" for="edit-password">Reset Password (Optional)</label>
             <input type="password" id="edit-password" class="yp-input" placeholder="Leave blank to keep current password">
-            <span style="font-size:0.7rem; color:#9CA3AF; margin-top:0.2rem; display:block;">
+            <span style="font-size:0.7rem; color:#64748B; margin-top:0.2rem; display:block;">
               Provide a new password (min 6 chars) to force reset the user password.
             </span>
           </div>
@@ -922,10 +1002,10 @@
 
   <!-- DELETE USER CONFIRMATION MODAL -->
   <div class="yp-dialog-backdrop" id="yp-delete-modal" onclick="closeDeleteModalOnBackdrop(event)">
-    <div class="yp-dialog-box" style="max-width:480px; border-color:rgba(239, 68, 68, 0.4);">
-      <div class="yp-dialog-header" style="border-bottom-color:rgba(239, 68, 68, 0.2);">
-        <h3 class="yp-dialog-title" style="color:#F87171;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+    <div class="yp-dialog-box" style="max-width:480px; border-color:#FECACA;">
+      <div class="yp-dialog-header" style="border-bottom-color:#FEE2E2;">
+        <h3 class="yp-dialog-title" style="color:#DC2626;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
           Delete User Account
         </h3>
         <button type="button" class="yp-dialog-close" onclick="closeDeleteModal()">&times;</button>
@@ -935,16 +1015,16 @@
         <input type="hidden" id="delete-user-id">
         <div class="yp-alert yp-alert-error" id="delete-modal-error"></div>
 
-        <p style="font-size:0.95rem; color:#F3F4F6; margin-bottom:1rem; line-height:1.5;">
-          Are you sure you want to permanently delete user <strong id="delete-user-email" style="color:#38BDF8;"></strong>?
+        <p style="font-size:0.95rem; color:#0F172A; margin-bottom:1rem; line-height:1.5;">
+          Are you sure you want to permanently delete user <strong id="delete-user-email" style="color:#2563EB;"></strong>?
         </p>
 
-        <div id="delete-master-warning" style="display:none; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); border-radius:8px; padding:0.85rem; margin-bottom:1rem; color:#FCA5A5; font-size:0.825rem;">
-          <strong>Protected Account:</strong> This is the master administrator account (<strong style="color:white;">fileservernode@gmail.com</strong>). It cannot be deleted.
+        <div id="delete-master-warning" style="display:none; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:0.85rem; margin-bottom:1rem; color:#991B1B; font-size:0.825rem;">
+          <strong>Protected Account:</strong> This is the master administrator account (<strong style="color:#0F172A;">fileservernode@gmail.com</strong>). It cannot be deleted.
         </div>
 
-        <div style="background:#090D16; border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; font-size:0.775rem; color:#9CA3AF; line-height:1.6;">
-          <span style="font-weight:700; color:#EF4444; text-transform:uppercase; display:block; margin-bottom:0.25rem;">Permanent Cascading Destruction:</span>
+        <div style="background:#F8FAFC; border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; font-size:0.775rem; color:#64748B; line-height:1.6;">
+          <span style="font-weight:700; color:#DC2626; text-transform:uppercase; display:block; margin-bottom:0.25rem;">Permanent Cascading Destruction:</span>
           &bull; All active servers &amp; reverse tunnels will be terminated immediately.<br>
           &bull; All connected Android hardware nodes will be unregistered.<br>
           &bull; All subscriptions, payment records &amp; invoices will be purged.<br>
@@ -1070,7 +1150,7 @@
     </div>
   </div>
 
-  <footer style="border-top: 1px solid var(--yp-border); background: var(--yp-surface); padding: 1rem 1.5rem; text-align: center; font-size: 0.75rem; color: #6B7280; margin-top: auto;">
+  <footer class="yp-footer" style="border-top: 1px solid var(--yp-border); background: var(--yp-surface); padding: 1rem 1.5rem; text-align: center; font-size: 0.75rem; color: var(--yp-text-muted); margin-top: auto;">
     Youm Panel &bull; Master Administration &bull; fileservernode@gmail.com &bull; ZdexCloud Control Plane
   </footer>
 
@@ -1397,8 +1477,8 @@
         let hardwareHtml = '<span style="color:#6B7280; font-size:0.75rem;">None</span>';
         if (u.devices.length > 0) {
           const d = u.devices[0];
-          hardwareHtml = `<span style="font-weight:500; color:#E2E8F0;">${escapeHtml(d.deviceName)}</span>` +
-            (d.osVersion ? `<br><span style="font-size:0.7rem; color:#9CA3AF;">${escapeHtml(d.osVersion)}</span>` : '');
+          hardwareHtml = `<span style="font-weight:600; color:#0F172A;">${escapeHtml(d.deviceName)}</span>` +
+            (d.osVersion ? `<br><span style="font-size:0.7rem; color:#64748B;">${escapeHtml(d.osVersion)}</span>` : '');
         }
 
         return `
@@ -1414,16 +1494,16 @@
               </div>
             </td>
             <td>
-              <div style="font-weight:500; color:#F3F4F6;">${formatDateOnly(u.createdAt)}</div>
-              <div style="font-size:0.75rem; color:#9CA3AF;">${escapeHtml(u.createdAgoFormatted)}</div>
+              <div style="font-weight:600; color:#0F172A;">${formatDateOnly(u.createdAt)}</div>
+              <div style="font-size:0.75rem; color:#64748B;">${escapeHtml(u.createdAgoFormatted)}</div>
             </td>
             <td>
               <div><span class="yp-pill ${planBadgeClass}">${escapeHtml(u.plan.planName)}</span></div>
-              <div style="font-size:0.75rem; color:#9CA3AF; margin-top:0.25rem;">${escapeHtml(u.plan.amountFormatted)}</div>
+              <div style="font-size:0.75rem; color:#64748B; margin-top:0.25rem;">${escapeHtml(u.plan.amountFormatted)}</div>
             </td>
             <td>
               <div><span class="yp-days-chip ${daysChipClass}">${escapeHtml(u.plan.expirationLabel)}</span></div>
-              <div style="font-size:0.75rem; color:#9CA3AF; margin-top:0.25rem;">
+              <div style="font-size:0.75rem; color:#64748B; margin-top:0.25rem;">
                 ${u.plan.currentPeriodEnd ? 'Expires: ' + formatDateOnly(u.plan.currentPeriodEnd) : 'No expiration date'}
               </div>
             </td>
@@ -1542,25 +1622,25 @@
       document.getElementById('drw-plan-price').textContent = u.plan.amountFormatted;
       document.getElementById('drw-period-start').textContent = u.plan.currentPeriodStart ? formatDateTime(u.plan.currentPeriodStart) : 'None';
       document.getElementById('drw-period-end').textContent = u.plan.currentPeriodEnd ? formatDateTime(u.plan.currentPeriodEnd) : 'No Expiration (Lifetime Free)';
-      document.getElementById('drw-renewal').innerHTML = `${u.plan.cancelAtPeriodEnd ? '<span style="color:#F87171;">Cancels at period end</span>' : '<span style="color:#34D399;">Auto-renews</span>'} &bull; Provider: ${escapeHtml(u.plan.provider)}`;
+      document.getElementById('drw-renewal').innerHTML = `${u.plan.cancelAtPeriodEnd ? '<span style="color:#DC2626;">Cancels at period end</span>' : '<span style="color:#059669;">Auto-renews</span>'} &bull; Provider: ${escapeHtml(u.plan.provider)}`;
 
       // Servers
       document.getElementById('drw-server-count').textContent = u.servers.length;
       const sList = document.getElementById('drw-servers-list');
       if (u.servers.length === 0) {
-        sList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No registered servers on this account.</p>';
+        sList.innerHTML = '<p style="color:#64748B; font-size:0.8rem;">No registered servers on this account.</p>';
       } else {
         sList.innerHTML = u.servers.map(s => `
-          <div style="background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:8px; padding:1rem; margin-bottom:0.75rem;">
+          <div style="background:#FFFFFF; border:1px solid var(--yp-border); border-radius:8px; padding:1rem; margin-bottom:0.75rem; box-shadow:var(--yp-shadow-sm);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-              <strong style="color:#FFFFFF; font-size:0.95rem;">${escapeHtml(s.serverName)}</strong>
+              <strong style="color:#0F172A; font-size:0.95rem;">${escapeHtml(s.serverName)}</strong>
               <span class="yp-pill ${s.status === 'RUNNING' ? 'yp-pill-success' : 'yp-pill-slate'}">${escapeHtml(s.status)}</span>
             </div>
             <div class="yp-grid-2" style="font-size:0.75rem;">
-              <div><span style="color:#9CA3AF;">Active Session:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.activeSinceFormatted)}</strong></div>
-              <div><span style="color:#9CA3AF;">Host Device:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.deviceName)} (${escapeHtml(s.devicePlatform)})</strong></div>
-              <div><span style="color:#9CA3AF;">Remote Endpoint:</span> ${s.endpointUrl ? `<a href="${s.endpointUrl}" target="_blank" style="color:#38BDF8; font-family:monospace;">${escapeHtml(s.endpointHostname)}</a>` : '<span style="color:#6B7280;">None</span>'}</div>
-              <div><span style="color:#9CA3AF;">Device Status:</span> <strong style="color:#E2E8F0;">${escapeHtml(s.deviceStatus)}</strong></div>
+              <div><span style="color:#64748B;">Active Session:</span> <strong style="color:#334155;">${escapeHtml(s.activeSinceFormatted)}</strong></div>
+              <div><span style="color:#64748B;">Host Device:</span> <strong style="color:#334155;">${escapeHtml(s.deviceName)} (${escapeHtml(s.devicePlatform)})</strong></div>
+              <div><span style="color:#64748B;">Remote Endpoint:</span> ${s.endpointUrl ? `<a href="${s.endpointUrl}" target="_blank" style="color:#2563EB; font-family:var(--yp-font-mono); font-weight:600;">${escapeHtml(s.endpointHostname)}</a>` : '<span style="color:#94A3B8;">None</span>'}</div>
+              <div><span style="color:#64748B;">Device Status:</span> <strong style="color:#334155;">${escapeHtml(s.deviceStatus)}</strong></div>
             </div>
           </div>
         `).join('');
@@ -1570,15 +1650,15 @@
       document.getElementById('drw-device-count').textContent = u.devices.length;
       const dList = document.getElementById('drw-devices-list');
       if (u.devices.length === 0) {
-        dList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No hardware nodes connected.</p>';
+        dList.innerHTML = '<p style="color:#64748B; font-size:0.8rem;">No hardware nodes connected.</p>';
       } else {
         dList.innerHTML = u.devices.map(d => `
-          <div style="background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; margin-bottom:0.6rem; font-size:0.8rem;">
+          <div style="background:#FFFFFF; border:1px solid var(--yp-border); border-radius:8px; padding:0.85rem; margin-bottom:0.6rem; font-size:0.8rem; box-shadow:var(--yp-shadow-sm);">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-              <strong style="color:#FFFFFF;">${escapeHtml(d.deviceName)}</strong>
+              <strong style="color:#0F172A;">${escapeHtml(d.deviceName)}</strong>
               <span class="yp-pill ${d.status === 'ONLINE' ? 'yp-pill-success' : 'yp-pill-slate'}">${escapeHtml(d.status)}</span>
             </div>
-            <div style="color:#9CA3AF; font-size:0.725rem; margin-top:0.25rem;">
+            <div style="color:#64748B; font-size:0.725rem; margin-top:0.25rem;">
               Platform: ${escapeHtml(d.platform)} &bull; OS: ${escapeHtml(d.osVersion || '-')} &bull; App Version: ${escapeHtml(d.appVersion || '-')}
             </div>
           </div>
@@ -1588,16 +1668,16 @@
       // Invoices
       const iList = document.getElementById('drw-invoices-list');
       if (!u.invoices || u.invoices.length === 0) {
-        iList.innerHTML = '<p style="color:#6B7280; font-size:0.8rem;">No billing records or invoices yet.</p>';
+        iList.innerHTML = '<p style="color:#64748B; font-size:0.8rem;">No billing records or invoices yet.</p>';
       } else {
         iList.innerHTML = u.invoices.map(inv => `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:var(--yp-surface); border:1px solid var(--yp-border); border-radius:6px; padding:0.65rem 0.85rem; margin-bottom:0.5rem; font-size:0.775rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; background:#FFFFFF; border:1px solid var(--yp-border); border-radius:6px; padding:0.65rem 0.85rem; margin-bottom:0.5rem; font-size:0.775rem; box-shadow:var(--yp-shadow-sm);">
             <div>
-              <strong style="color:#FFFFFF;">${escapeHtml(inv.invoiceNumber)}</strong> &bull; ${escapeHtml(inv.planName)}
-              <div style="color:#9CA3AF; font-size:0.7rem;">${formatDateOnly(inv.issuedAt)}</div>
+              <strong style="color:#0F172A;">${escapeHtml(inv.invoiceNumber)}</strong> &bull; ${escapeHtml(inv.planName)}
+              <div style="color:#64748B; font-size:0.7rem;">${formatDateOnly(inv.issuedAt)}</div>
             </div>
             <div style="text-align:right;">
-              <strong style="color:#38BDF8;">${inv.currency === 'USD' ? '$' : '₹'}${(inv.totalMinorUnits / 100).toFixed(2)}</strong>
+              <strong style="color:#2563EB; font-weight:700;">${inv.currency === 'USD' ? '$' : '₹'}${(inv.totalMinorUnits / 100).toFixed(2)}</strong>
               <div><span class="yp-pill yp-pill-success" style="font-size:0.65rem; padding:0.1rem 0.35rem;">${escapeHtml(inv.status)}</span></div>
             </div>
           </div>

@@ -12,20 +12,36 @@
 
   <style>
     :root {
-      --yp-bg: #090D16;
-      --yp-surface: #111827;
-      --yp-surface-alt: #1F2937;
-      --yp-border: #374151;
-      --yp-border-light: rgba(255, 255, 255, 0.1);
-      --yp-text: #F9FAFB;
-      --yp-text-muted: #9CA3AF;
-      --yp-primary: #38BDF8;
-      --yp-primary-dark: #0284C7;
-      --yp-accent: #6366F1;
-      --yp-success: #10B981;
-      --yp-warning: #F59E0B;
-      --yp-danger: #EF4444;
-      --yp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --yp-bg: #F8FAFC;
+      --yp-surface: #FFFFFF;
+      --yp-surface-alt: #F1F5F9;
+      --yp-border: #E2E8F0;
+      --yp-border-hover: #CBD5E1;
+      --yp-text: #0F172A;
+      --yp-text-secondary: #334155;
+      --yp-text-muted: #64748B;
+      --yp-text-subtle: #94A3B8;
+      --yp-primary: #2563EB;
+      --yp-primary-hover: #1D4ED8;
+      --yp-primary-dark: #1E40AF;
+      --yp-primary-soft: #EFF6FF;
+      --yp-primary-border: #BFDBFE;
+      --yp-accent: #4F46E5;
+      --yp-success: #059669;
+      --yp-success-soft: #ECFDF5;
+      --yp-success-border: #A7F3D0;
+      --yp-warning: #D97706;
+      --yp-warning-soft: #FFFBEB;
+      --yp-warning-border: #FDE68A;
+      --yp-danger: #DC2626;
+      --yp-danger-soft: #FEF2F2;
+      --yp-danger-border: #FECACA;
+      --yp-font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --yp-font-mono: 'JetBrains Mono', monospace;
+      --yp-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+      --yp-shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+      --yp-shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+      --yp-shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
     }
 
     * {
@@ -47,7 +63,7 @@
 
     /* Top Master Header */
     .yp-header {
-      background: rgba(17, 24, 39, 0.85);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--yp-border);
       position: sticky;
@@ -58,6 +74,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 1rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
     }
 
     .yp-brand {
@@ -69,21 +86,22 @@
     }
 
     .yp-brand-badge {
-      background: linear-gradient(135deg, #0284C7, #6366F1);
-      color: white;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF;
       font-size: 0.75rem;
       font-weight: 800;
-      padding: 0.25rem 0.6rem;
+      padding: 0.25rem 0.65rem;
       border-radius: 6px;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
     }
 
     .yp-brand-title {
       font-size: 1.15rem;
       font-weight: 700;
       letter-spacing: -0.3px;
-      color: #FFFFFF;
+      color: #0F172A;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -95,11 +113,11 @@
       gap: 0.4rem;
       font-size: 0.7rem;
       font-weight: 600;
-      background: rgba(16, 185, 129, 0.15);
-      color: #34D399;
+      background: #ECFDF5;
+      color: #059669;
       padding: 0.2rem 0.55rem;
       border-radius: 999px;
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      border: 1px solid #A7F3D0;
     }
 
     .yp-live-dot {
@@ -107,7 +125,7 @@
       height: 6px;
       border-radius: 50%;
       background: #10B981;
-      box-shadow: 0 0 8px #10B981;
+      box-shadow: 0 0 6px #10B981;
       animation: ypPulse 2s infinite;
     }
 
@@ -125,7 +143,7 @@
     .yp-nav-item {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       font-size: 0.825rem;
       font-weight: 600;
       padding: 0.45rem 0.85rem;
@@ -136,13 +154,14 @@
       transition: all 0.15s ease;
     }
     .yp-nav-item:hover {
-      color: white;
+      color: #0F172A;
       background: var(--yp-surface-alt);
     }
     .yp-nav-item.active {
-      color: #38BDF8;
-      background: rgba(56, 189, 248, 0.12);
-      border-color: rgba(56, 189, 248, 0.3);
+      color: #2563EB;
+      background: #EFF6FF;
+      border-color: #BFDBFE;
+      font-weight: 700;
     }
 
     .yp-header-actions {
@@ -155,13 +174,13 @@
       display: none;
       align-items: center;
       gap: 0.4rem;
-      background: rgba(56, 189, 248, 0.1);
-      color: #38BDF8;
-      border: 1px solid rgba(56, 189, 248, 0.25);
+      background: #EFF6FF;
+      color: #2563EB;
+      border: 1px solid #BFDBFE;
       padding: 0.3rem 0.75rem;
       border-radius: 999px;
       font-size: 0.75rem;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     @media (min-width: 640px) {
@@ -183,25 +202,28 @@
       cursor: pointer;
       transition: all 0.15s ease;
       white-space: nowrap;
+      font-family: inherit;
     }
 
     .yp-btn-primary {
-      background: #0284C7;
-      color: white;
+      background: #2563EB;
+      color: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
     }
     .yp-btn-primary:hover {
-      background: #0369A1;
+      background: #1D4ED8;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
     }
 
     .yp-btn-outline {
-      background: transparent;
-      color: var(--yp-text-muted);
-      border-color: var(--yp-border);
+      background: #FFFFFF;
+      color: #334155;
+      border: 1px solid #CBD5E1;
     }
     .yp-btn-outline:hover {
-      background: var(--yp-surface-alt);
-      color: var(--yp-text);
-      border-color: #4B5563;
+      background: #F8FAFC;
+      color: #0F172A;
+      border-color: #94A3B8;
     }
 
     /* Auth Guard Container */
@@ -220,26 +242,26 @@
       padding: 2.25rem 2rem;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--yp-shadow-xl);
     }
 
     .yp-auth-icon {
       width: 48px;
       height: 48px;
-      background: rgba(2, 132, 199, 0.15);
-      border: 1px solid rgba(2, 132, 199, 0.3);
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #38BDF8;
+      color: #2563EB;
       margin-bottom: 1.25rem;
     }
 
     .yp-auth-title {
       font-size: 1.35rem;
       font-weight: 700;
-      color: #FFFFFF;
+      color: #0F172A;
       margin-bottom: 0.35rem;
     }
 
@@ -258,7 +280,7 @@
       display: block;
       font-size: 0.8rem;
       font-weight: 600;
-      color: #D1D5DB;
+      color: #475569;
       margin-bottom: 0.4rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -266,19 +288,20 @@
 
     .yp-input {
       width: 100%;
-      background: #090D16;
-      border: 1px solid var(--yp-border);
-      color: white;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
       padding: 0.75rem 1rem;
       border-radius: 8px;
       font-size: 0.95rem;
       outline: none;
-      transition: border-color 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
     }
 
     .yp-input:focus {
-      border-color: #38BDF8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .yp-otp-group {
@@ -294,17 +317,18 @@
       text-align: center;
       font-size: 1.5rem;
       font-weight: 700;
-      font-family: monospace;
-      background: #090D16;
-      border: 1px solid var(--yp-border);
+      font-family: 'JetBrains Mono', monospace;
+      background: #FFFFFF;
+      border: 1px solid #CBD5E1;
       border-radius: 8px;
-      color: #38BDF8;
+      color: #2563EB;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
 
     .yp-otp-digit:focus {
-      border-color: #38BDF8;
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.3);
+      border-color: #2563EB;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .yp-alert {
@@ -316,14 +340,14 @@
       line-height: 1.4;
     }
     .yp-alert-error {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #FCA5A5;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #B91C1C;
     }
     .yp-alert-success {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #6EE7B7;
+      background: #ECFDF5;
+      border: 1px solid #A7F3D0;
+      color: #047857;
     }
 
     /* Dashboard Layout */
@@ -347,6 +371,7 @@
       border-radius: 12px;
       padding: 1rem 1.25rem;
       margin-bottom: 1.5rem;
+      box-shadow: var(--yp-shadow-sm);
     }
 
     .yp-filter-group {
@@ -357,31 +382,33 @@
     }
 
     .yp-filter-btn {
-      background: var(--yp-surface-alt);
+      background: var(--yp-surface);
       border: 1px solid var(--yp-border);
-      color: var(--yp-text-muted);
+      color: var(--yp-text-secondary);
       padding: 0.4rem 0.8rem;
       border-radius: 6px;
       font-size: 0.8rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
+      font-family: inherit;
     }
     .yp-filter-btn:hover {
-      color: white;
-      border-color: #6B7280;
+      color: #0F172A;
+      border-color: var(--yp-border-hover);
+      background: var(--yp-surface-alt);
     }
     .yp-filter-btn.active {
-      background: #0284C7;
-      color: white;
-      border-color: #0284C7;
-      box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
+      background: #2563EB;
+      color: #FFFFFF;
+      border-color: #2563EB;
+      box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
     }
 
     .yp-filter-label {
       font-size: 0.75rem;
       font-weight: 600;
-      color: #9CA3AF;
+      color: var(--yp-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-right: 0.35rem;
@@ -413,10 +440,12 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.15s, border-color 0.15s;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      box-shadow: var(--yp-shadow-sm);
     }
     .yp-kpi-card:hover {
-      border-color: #4B5563;
+      border-color: var(--yp-primary-border);
+      box-shadow: var(--yp-shadow-md);
       transform: translateY(-2px);
     }
 
@@ -436,26 +465,25 @@
     }
 
     .yp-kpi-icon {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
     }
 
     .yp-kpi-val {
       font-size: 1.85rem;
       font-weight: 800;
-      color: #FFFFFF;
+      color: #0F172A;
       letter-spacing: -0.5px;
       margin-bottom: 0.25rem;
     }
 
     .yp-kpi-subtext {
       font-size: 0.75rem;
-      color: #9CA3AF;
+      color: var(--yp-text-muted);
       display: flex;
       align-items: center;
       gap: 0.35rem;
@@ -464,13 +492,15 @@
     .yp-badge-pill {
       font-size: 0.7rem;
       font-weight: 600;
-      padding: 0.15rem 0.45rem;
+      padding: 0.15rem 0.5rem;
       border-radius: 4px;
+      white-space: nowrap;
     }
-    .yp-badge-success { background: rgba(16, 185, 129, 0.15); color: #34D399; }
-    .yp-badge-warning { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
-    .yp-badge-info    { background: rgba(56, 189, 248, 0.15); color: #38BDF8; }
-    .yp-badge-indigo  { background: rgba(99, 102, 241, 0.15); color: #818CF8; }
+    .yp-badge-success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    .yp-badge-warning { background: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
+    .yp-badge-info    { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+    .yp-badge-indigo  { background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; }
+    .yp-badge-slate   { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
 
     /* Visual Charts & Breakdowns */
     .yp-charts-row {
@@ -490,6 +520,7 @@
       border: 1px solid var(--yp-border);
       border-radius: 12px;
       padding: 1.25rem;
+      box-shadow: var(--yp-shadow-sm);
     }
 
     .yp-panel-header {
@@ -504,7 +535,7 @@
     .yp-panel-title {
       font-size: 0.95rem;
       font-weight: 700;
-      color: #FFFFFF;
+      color: #0F172A;
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -530,15 +561,16 @@
       display: flex;
       justify-content: space-between;
       font-size: 0.8rem;
-      color: #D1D5DB;
+      color: var(--yp-text-secondary);
       margin-bottom: 0.35rem;
     }
     .yp-bar-track {
-      background: #090D16;
+      background: #F1F5F9;
       height: 8px;
       border-radius: 999px;
       overflow: hidden;
       display: flex;
+      border: 1px solid #E2E8F0;
     }
     .yp-bar-fill {
       height: 100%;
@@ -566,14 +598,16 @@
       cursor: pointer;
       white-space: nowrap;
       transition: all 0.15s ease;
+      font-family: inherit;
     }
     .yp-tab-btn:hover {
-      color: white;
+      color: #0F172A;
       background: var(--yp-surface-alt);
     }
     .yp-tab-btn.active {
-      background: var(--yp-surface-alt);
-      color: #38BDF8;
+      background: #EFF6FF;
+      color: #2563EB;
+      font-weight: 700;
     }
 
     .yp-table-wrapper {
@@ -590,9 +624,9 @@
     }
 
     .yp-table th {
-      background: #090D16;
-      color: #9CA3AF;
-      font-weight: 600;
+      background: #F8FAFC;
+      color: #475569;
+      font-weight: 700;
       text-transform: uppercase;
       font-size: 0.7rem;
       letter-spacing: 0.5px;
@@ -603,8 +637,8 @@
 
     .yp-table td {
       padding: 0.75rem 1rem;
-      border-bottom: 1px solid rgba(55, 65, 81, 0.5);
-      color: #D1D5DB;
+      border-bottom: 1px solid #F1F5F9;
+      color: var(--yp-text-secondary);
       white-space: nowrap;
     }
 
@@ -613,13 +647,13 @@
     }
 
     .yp-table tr:hover td {
-      background: rgba(31, 41, 55, 0.4);
+      background: #F8FAFC;
     }
 
     .yp-empty {
       padding: 3rem 1rem;
       text-align: center;
-      color: #6B7280;
+      color: #94A3B8;
       font-size: 0.875rem;
     }
 
@@ -630,7 +664,7 @@
       padding: 1rem 1.5rem;
       text-align: center;
       font-size: 0.75rem;
-      color: #6B7280;
+      color: var(--yp-text-muted);
       margin-top: auto;
     }
   </style>
@@ -649,8 +683,14 @@
 
     <!-- Navigation Links -->
     <nav class="yp-nav-links" id="yp-nav-links" style="display:none;">
-      <a href="youm-panel.html" class="yp-nav-item active">📊 System Analytics</a>
-      <a href="youm-users.html" class="yp-nav-item">👥 Users &amp; Servers</a>
+      <a href="youm-panel.html" class="yp-nav-item active">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-6 6"></path></svg>
+        System Analytics
+      </a>
+      <a href="youm-users.html" class="yp-nav-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Users &amp; Servers
+      </a>
     </nav>
 
     <div class="yp-header-actions">
@@ -685,7 +725,7 @@
       <form id="yp-request-form" onsubmit="handleRequestOtp(event)">
         <div class="yp-form-group">
           <label class="yp-label" for="yp-email-input">Authorized Administrator Email</label>
-          <input type="email" id="yp-email-input" class="yp-input" value="fileservernode@gmail.com" required readonly style="background:#131B2E; color:#93C5FD; border-color:#1E3A8A; cursor:not-allowed;">
+          <input type="email" id="yp-email-input" class="yp-input" value="fileservernode@gmail.com" required readonly style="background:#F8FAFC; color:#2563EB; border-color:#BFDBFE; cursor:not-allowed; font-weight:600;">
         </div>
 
         <button type="submit" class="yp-btn yp-btn-primary" id="yp-send-otp-btn" style="width: 100%; padding: 0.75rem;">
@@ -697,7 +737,7 @@
       <form id="yp-verify-form" onsubmit="handleVerifyOtp(event)" style="display: none;">
         <div class="yp-form-group">
           <label class="yp-label">Enter 6-Digit Passcode</label>
-          <p style="font-size:0.75rem; color:#9CA3AF; margin-bottom:0.75rem;">A one-time passcode was dispatched to <strong style="color:#E2E8F0;">fileservernode@gmail.com</strong>.</p>
+          <p style="font-size:0.75rem; color:#64748B; margin-bottom:0.75rem;">A one-time passcode was dispatched to <strong style="color:#0F172A;">fileservernode@gmail.com</strong>.</p>
           <div class="yp-otp-group">
             <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required autofocus>
             <input type="text" class="yp-otp-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" required>
@@ -712,9 +752,9 @@
           Verify &amp; Enter Dashboard
         </button>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #9CA3AF;">
+        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748B;">
           <span id="yp-resend-countdown">Cooldown: 30s</span>
-          <button type="button" class="yp-btn-outline" id="yp-resend-btn" disabled onclick="handleResendOtp()" style="background:none; border:none; color:#38BDF8; cursor:pointer; font-size:0.75rem;">
+          <button type="button" class="yp-btn-outline" id="yp-resend-btn" disabled onclick="handleResendOtp()" style="background:none; border:none; color:#2563EB; cursor:pointer; font-size:0.75rem; font-weight:600;">
             Resend Code
           </button>
         </div>
@@ -750,7 +790,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Total Accounts</span>
-          <div class="yp-kpi-icon" style="background:rgba(56,189,248,0.15); color:#38BDF8;">👥</div>
+          <div class="yp-kpi-icon" style="background:#EFF6FF; color:#2563EB;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-total-users">-</div>
         <div class="yp-kpi-subtext">
@@ -762,7 +804,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Total Servers Created</span>
-          <div class="yp-kpi-icon" style="background:rgba(99,102,241,0.15); color:#818CF8;">🖥️</div>
+          <div class="yp-kpi-icon" style="background:#EEF2FF; color:#4F46E5;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-total-servers">-</div>
         <div class="yp-kpi-subtext">
@@ -774,7 +818,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Total Servers Online</span>
-          <div class="yp-kpi-icon" style="background:rgba(16,185,129,0.15); color:#34D399;">⚡</div>
+          <div class="yp-kpi-icon" style="background:#ECFDF5; color:#059669;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-online-servers">-</div>
         <div class="yp-kpi-subtext">
@@ -787,7 +833,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Total Emails Sent</span>
-          <div class="yp-kpi-icon" style="background:rgba(245,158,11,0.15); color:#FBBF24;">✉️</div>
+          <div class="yp-kpi-icon" style="background:#FFFBEB; color:#D97706;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-total-emails">-</div>
         <div class="yp-kpi-subtext">
@@ -800,7 +848,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Active Pro Monthly</span>
-          <div class="yp-kpi-icon" style="background:rgba(236,72,153,0.15); color:#F472B6;">📅</div>
+          <div class="yp-kpi-icon" style="background:#EFF6FF; color:#0284C7;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-pro-monthly">-</div>
         <div class="yp-kpi-subtext">
@@ -812,7 +862,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Active Pro Yearly</span>
-          <div class="yp-kpi-icon" style="background:rgba(168,85,247,0.15); color:#C084FC;">👑</div>
+          <div class="yp-kpi-icon" style="background:#FAF5FF; color:#7C3AED;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-pro-yearly">-</div>
         <div class="yp-kpi-subtext">
@@ -824,11 +876,13 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Active Free Accounts</span>
-          <div class="yp-kpi-icon" style="background:rgba(148,163,184,0.15); color:#CBD5E1;">🌱</div>
+          <div class="yp-kpi-icon" style="background:#F1F5F9; color:#475569;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-free-accounts">-</div>
         <div class="yp-kpi-subtext">
-          <span class="yp-badge-pill" style="background:#1E293B; color:#94A3B8;">Free plan tier</span>
+          <span class="yp-badge-pill yp-badge-slate">Free plan tier</span>
         </div>
       </div>
 
@@ -836,7 +890,9 @@
       <div class="yp-kpi-card">
         <div class="yp-kpi-header">
           <span class="yp-kpi-title">Online Devices</span>
-          <div class="yp-kpi-icon" style="background:rgba(16,185,129,0.15); color:#34D399;">📱</div>
+          <div class="yp-kpi-icon" style="background:#ECFDF5; color:#059669;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
         </div>
         <div class="yp-kpi-val" id="kpi-devices-online">-</div>
         <div class="yp-kpi-subtext">
@@ -854,10 +910,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"></path><path d="M18 9l-5 5-4-4-6 6"></path></svg>
             System Growth &amp; Activity
           </h3>
-          <div style="font-size: 0.75rem; color: #9CA3AF; display:flex; gap:0.75rem; align-items:center;">
-            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#38BDF8;"></span> Users</span>
-            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#818CF8;"></span> Servers</span>
-            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#FBBF24;"></span> Emails</span>
+          <div style="font-size: 0.75rem; color: #64748B; display:flex; gap:0.75rem; align-items:center;">
+            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#2563EB;"></span> Users</span>
+            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#4F46E5;"></span> Servers</span>
+            <span style="display:flex; align-items:center; gap:0.25rem;"><span style="width:8px; height:8px; border-radius:50%; background:#D97706;"></span> Emails</span>
           </div>
         </div>
 
@@ -1355,7 +1411,7 @@
       for (let s = 0; s <= 4; s++) {
         const yVal = Math.round((maxVal / 4) * s);
         const yPos = getY(yVal);
-        gridLines += `<line x1="${PADDING_LEFT}" y1="${yPos}" x2="${W - PADDING_RIGHT}" y2="${yPos}" stroke="#1E293B" stroke-dasharray="3,3" />`;
+        gridLines += `<line x1="${PADDING_LEFT}" y1="${yPos}" x2="${W - PADDING_RIGHT}" y2="${yPos}" stroke="#E2E8F0" stroke-dasharray="3,3" />`;
         gridLines += `<text x="${PADDING_LEFT - 8}" y="${yPos + 4}" fill="#64748B" font-size="10" text-anchor="end">${yVal}</text>`;
       }
 
@@ -1385,9 +1441,9 @@
       svg.innerHTML = `
         ${gridLines}
         ${xLabels}
-        <path d="${emailPath}" fill="none" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" />
-        <path d="${serverPath}" fill="none" stroke="#818CF8" stroke-width="2.5" stroke-linecap="round" />
-        <path d="${userPath}" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" />
+        <path d="${emailPath}" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" />
+        <path d="${serverPath}" fill="none" stroke="#4F46E5" stroke-width="2.5" stroke-linecap="round" />
+        <path d="${userPath}" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" />
       `;
     }
 
@@ -1399,12 +1455,12 @@
       } else {
         uBody.innerHTML = activity.users.map(u => `
           <tr>
-            <td><strong style="color:#FFFFFF;">${escapeHtml(u.email)}</strong></td>
+            <td><strong style="color:#0F172A;">${escapeHtml(u.email)}</strong></td>
             <td>${escapeHtml(u.fullName || '-')}</td>
             <td><span class="yp-badge-pill ${u.planName.startsWith('Pro') ? 'yp-badge-info' : 'yp-badge-success'}">${escapeHtml(u.planName)}</span></td>
             <td><span class="yp-badge-pill ${u.status === 'ACTIVE' ? 'yp-badge-success' : 'yp-badge-warning'}">${escapeHtml(u.status)}</span></td>
-            <td>${u.emailVerified ? '✅ Yes' : '⏳ No'}</td>
-            <td style="color:#9CA3AF;">${formatDate(u.createdAt)}</td>
+            <td>${u.emailVerified ? '<span class="yp-badge-pill yp-badge-success">Verified</span>' : '<span class="yp-badge-pill yp-badge-warning">Pending</span>'}</td>
+            <td style="color:#64748B;">${formatDate(u.createdAt)}</td>
           </tr>
         `).join('');
       }
@@ -1416,12 +1472,12 @@
       } else {
         sBody.innerHTML = activity.servers.map(s => `
           <tr>
-            <td><strong style="color:#FFFFFF;">${escapeHtml(s.serverName || 'Unnamed')}</strong></td>
+            <td><strong style="color:#0F172A;">${escapeHtml(s.serverName || 'Unnamed')}</strong></td>
             <td>${escapeHtml(s.deviceName || '-')}</td>
             <td>${escapeHtml(s.ownerEmail || '-')}</td>
             <td><span class="yp-badge-pill ${s.status === 'RUNNING' ? 'yp-badge-success' : 'yp-badge-warning'}">${escapeHtml(s.status)}</span></td>
             <td>${s.startedAt ? formatDate(s.startedAt) : '-'}</td>
-            <td style="color:#9CA3AF;">${formatDate(s.createdAt)}</td>
+            <td style="color:#64748B;">${formatDate(s.createdAt)}</td>
           </tr>
         `).join('');
       }
@@ -1433,11 +1489,11 @@
       } else {
         eBody.innerHTML = activity.emails.map(e => `
           <tr>
-            <td><strong style="color:#FFFFFF;">${escapeHtml(e.recipientEmail)}</strong></td>
+            <td><strong style="color:#0F172A;">${escapeHtml(e.recipientEmail)}</strong></td>
             <td>${escapeHtml(e.subject)}</td>
             <td><span class="yp-badge-pill yp-badge-indigo">${escapeHtml(e.emailType)}</span></td>
             <td><span class="yp-badge-pill ${e.status === 'SENT' || e.status === 'DELIVERED' ? 'yp-badge-success' : 'yp-badge-warning'}">${escapeHtml(e.status)}</span></td>
-            <td style="color:#9CA3AF;">${formatDate(e.createdAt)}</td>
+            <td style="color:#64748B;">${formatDate(e.createdAt)}</td>
           </tr>
         `).join('');
       }
