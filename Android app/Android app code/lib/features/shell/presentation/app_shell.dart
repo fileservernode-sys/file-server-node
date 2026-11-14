@@ -3,6 +3,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../camera/presentation/camera_screen.dart';
 import '../../home/presentation/home_screen.dart';
 import '../../server/presentation/server_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
@@ -26,6 +27,7 @@ class _AppShellState extends State<AppShell> {
   final List<Widget> _pages = const [
     HomeScreen(),
     ServerScreen(),
+    CameraScreen(),
     SettingsScreen(),
   ];
 
@@ -76,6 +78,12 @@ class _AppShellState extends State<AppShell> {
                 ),
                 _buildNavItem(
                   index: 2,
+                  icon: Icons.videocam_outlined,
+                  activeIcon: Icons.videocam,
+                  label: 'Camera',
+                ),
+                _buildNavItem(
+                  index: 3,
                   icon: Icons.settings_outlined,
                   activeIcon: Icons.settings,
                   label: 'Settings',

@@ -36,6 +36,7 @@ class AppRouter {
   // Authenticated Shell Routes
   static const String homeRoute = '/home';
   static const String serverRoute = '/server';
+  static const String cameraRoute = '/camera';
   static const String settingsRoute = '/settings';
 
   // Server Setup Journey Routes
@@ -86,9 +87,14 @@ class AppRouter {
           builder: (_) => const AppShell(initialIndex: 1),
           settings: settings,
         );
-      case settingsRoute:
+      case cameraRoute:
         return MaterialPageRoute(
           builder: (_) => const AppShell(initialIndex: 2),
+          settings: settings,
+        );
+      case settingsRoute:
+        return MaterialPageRoute(
+          builder: (_) => const AppShell(initialIndex: 3),
           settings: settings,
         );
       case setupDeviceRoute:

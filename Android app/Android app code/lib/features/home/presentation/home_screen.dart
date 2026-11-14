@@ -441,6 +441,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
+                    // Camera Mode Discovery Card (Phase 21.2)
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      borderColor: AppColors.primary.withValues(alpha: 0.2),
+                      color: AppColors.primarySubtle.withValues(alpha: 0.3),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(AppSpacing.xs),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primarySubtle,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.videocam_outlined,
+                                        size: 20, color: AppColors.primary),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  const Text(
+                                    'ZdexCloud Camera',
+                                    style: AppTypography.cardTitle,
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                                  border: Border.all(color: AppColors.borderSubtle),
+                                ),
+                                child: Text(
+                                  'UI Preview',
+                                  style: AppTypography.caption.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          const Text(
+                            'Preview the upcoming camera server interface designed to operate alongside your personal file server in unified ZdexCloud.',
+                            style: AppTypography.bodySmall,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              SecondaryButton(
+                                label: 'Open Camera Dashboard',
+                                icon: Icons.arrow_forward_rounded,
+                                isFullWidth: false,
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/camera');
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
                     // Help & Learn Quick Access Card
                     AppCard(
                       padding: const EdgeInsets.all(AppSpacing.lg),

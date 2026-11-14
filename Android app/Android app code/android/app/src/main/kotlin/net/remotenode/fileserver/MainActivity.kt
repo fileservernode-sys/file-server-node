@@ -17,6 +17,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.EventChannel
 import net.remotenode.fileserver.security.AndroidSecureStorage
+import net.remotenode.fileserver.camera.CameraEngineHandler
 import java.io.File
 import android.os.Environment
 import android.provider.DocumentsContract
@@ -47,6 +48,9 @@ class MainActivity : FlutterActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
+        if (CameraEngineHandler.handleRequestPermissionsResult(requestCode, permissions, grantResults)) {
+            return
+        }
         if (requestCode == REQUEST_POST_NOTIFICATIONS) {
             val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
             pendingNotificationPermissionResult?.success(granted)
@@ -102,6 +106,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        CameraEngineHandler.register(this, flutterEngine)
 
         registerNotificationChannels(context)
 
@@ -229,14 +235,14 @@ class MainActivity : FlutterActivity() {
                     val deviceCredential = call.argument<String>("deviceCredential") ?: AndroidSecureStorage.readKv(context, "device_credential")
 
                     if (!deviceId.isNullOrEmpty() && !sessionToken.isNullOrEmpty() && !apiBaseUrl.isNullOrEmpty() && !gatewayWsUrl.isNullOrEmpty()) {
-                        val intent = Intent(context, RemoteNodeServerService::class.java).apply {
-                            action = RemoteNodeServerService.ACTION_START_TUNNEL
-                            putExtra(RemoteNodeServerService.EXTRA_DEVICE_ID, deviceId)
-                            putExtra(RemoteNodeServerService.EXTRA_SESSION_TOKEN, sessionToken)
-                            putExtra(RemoteNodeServerService.EXTRA_API_BASE_URL, apiBaseUrl)
-                            putExtra(RemoteNodeServerService.EXTRA_GATEWAY_WS_URL, gatewayWsUrl)
+                        val intent = Intent(context, PlatformSupervisorService::class.java).apply {
+                            action = PlatformSupervisorService.ACTION_START_TUNNEL
+                            putExtra(PlatformSupervisorService.EXTRA_DEVICE_ID, deviceId)
+                            putExtra(PlatformSupervisorService.EXTRA_SESSION_TOKEN, sessionToken)
+                            putExtra(PlatformSupervisorService.EXTRA_API_BASE_URL, apiBaseUrl)
+                            putExtra(PlatformSupervisorService.EXTRA_GATEWAY_WS_URL, gatewayWsUrl)
                             if (!deviceCredential.isNullOrEmpty()) {
-                                putExtra(RemoteNodeServerService.EXTRA_DEVICE_CREDENTIAL, deviceCredential)
+                                putExtra(PlatformSupervisorService.EXTRA_DEVICE_CREDENTIAL, deviceCredential)
                             }
                         }
                         try {
@@ -250,8 +256,8 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "stopTunnel" -> {
-                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
-                        action = RemoteNodeServerService.ACTION_STOP_TUNNEL
+                    val intent = Intent(context, PlatformSupervisorService::class.java).apply {
+                        action = PlatformSupervisorService.ACTION_STOP_TUNNEL
                     }
                     try {
                         context.startService(intent)
@@ -467,11 +473,11 @@ class MainActivity : FlutterActivity() {
                 "startServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
                     val storagePath = call.argument<String>("storagePath")
-                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
-                        action = RemoteNodeServerService.ACTION_START_SERVER
-                        putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                    val intent = Intent(context, PlatformSupervisorService::class.java).apply {
+                        action = PlatformSupervisorService.ACTION_START_STORAGE
+                        putExtra(PlatformSupervisorService.EXTRA_PORT, port)
                         if (!storagePath.isNullOrBlank()) {
-                            putExtra(RemoteNodeServerService.EXTRA_STORAGE_PATH, storagePath)
+                            putExtra(PlatformSupervisorService.EXTRA_STORAGE_PATH, storagePath)
                         }
                     }
                     try {
@@ -503,8 +509,8 @@ class MainActivity : FlutterActivity() {
                     result.success(true)
                 }
                 "stopServer" -> {
-                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
-                        action = RemoteNodeServerService.ACTION_STOP_SERVER
+                    val intent = Intent(context, PlatformSupervisorService::class.java).apply {
+                        action = PlatformSupervisorService.ACTION_STOP_STORAGE
                     }
                     try {
                         context.startService(intent)
@@ -527,11 +533,11 @@ class MainActivity : FlutterActivity() {
                 "restartServer" -> {
                     val port = call.argument<Int>("port") ?: 8080
                     val storagePath = call.argument<String>("storagePath")
-                    val intent = Intent(context, RemoteNodeServerService::class.java).apply {
-                        action = RemoteNodeServerService.ACTION_RESTART_SERVER
-                        putExtra(RemoteNodeServerService.EXTRA_PORT, port)
+                    val intent = Intent(context, PlatformSupervisorService::class.java).apply {
+                        action = PlatformSupervisorService.ACTION_RESTART_STORAGE
+                        putExtra(PlatformSupervisorService.EXTRA_PORT, port)
                         if (!storagePath.isNullOrBlank()) {
-                            putExtra(RemoteNodeServerService.EXTRA_STORAGE_PATH, storagePath)
+                            putExtra(PlatformSupervisorService.EXTRA_STORAGE_PATH, storagePath)
                         }
                     }
                     try {
@@ -656,11 +662,17 @@ class MainActivity : FlutterActivity() {
                 }
                 "getServerStatus" -> {
                     val engineStatus = RemoteNodeServerService.engine.getStatus()
-                    val isRunning = RemoteNodeServerService.isServiceRunning || (engineStatus["status"] == "ONLINE")
+                    val isRunning = PlatformSupervisorService.isStorageActive || (engineStatus["status"] == "ONLINE")
+                    val bootPrefs = context.getSharedPreferences(BootReceiver.PREFS_NAME, Context.MODE_PRIVATE)
+                    val bootRestorationSuppressed = bootPrefs.getBoolean(BootReceiver.KEY_BOOT_RESTORE_SUPPRESSED, false)
+                    if (bootRestorationSuppressed) {
+                        bootPrefs.edit().putBoolean(BootReceiver.KEY_BOOT_RESTORE_SUPPRESSED, false).apply()
+                    }
                     val mergedStatus = HashMap(engineStatus).apply {
                         put("serviceRunning", isRunning)
                         put("desiredEnabled", RemoteNodeServerService.getDesiredServerEnabled(context))
-                        put("serverState", RemoteNodeServerService.currentServerState)
+                        put("serverState", PlatformSupervisorService.storageServerState)
+                        put("bootRestorationSuppressed", bootRestorationSuppressed)
                     }
                     result.success(mergedStatus)
                 }
@@ -669,7 +681,7 @@ class MainActivity : FlutterActivity() {
                     result.success(url)
                 }
                 "isServiceRunning" -> {
-                    val isRunning = RemoteNodeServerService.isServiceRunning
+                    val isRunning = PlatformSupervisorService.isStorageActive
                     result.success(isRunning)
                 }
                 "isNotificationPermissionGranted" -> {
@@ -859,6 +871,7 @@ class MainActivity : FlutterActivity() {
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
         android.util.Log.i("MainActivity", "[UI_DISCONNECT] source=flutter_activity_teardown action=detach_only persistentServerPreserved=true")
+        CameraEngineHandler.cleanUp()
         tunnelListener?.let { RemoteNodeTunnelManager.removeListener(it) }
         tunnelListener = null
         tunnelEventSink = null

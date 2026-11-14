@@ -67,17 +67,24 @@ class RemoteNodeServerService : Service() {
         val engine = LocalServerEngine()
         val tunnelManager = RemoteNodeTunnelManager
 
-        @Volatile
-        var isServiceRunning: Boolean = false
-            private set
+        var isServiceRunning: Boolean
+            get() = PlatformSupervisorService.isStorageActive
+            set(_) {
+                // Authoritative state is owned exclusively by PlatformSupervisorService.
+                // Discard legacy local assignments to prevent stale state drift (Phase 21.5.1.1).
+            }
 
-        @Volatile
-        var currentServerState: String = "STOPPED"
-            private set
+        var currentServerState: String
+            get() = PlatformSupervisorService.storageServerState
+            set(_) {
+                // Authoritative state is owned exclusively by PlatformSupervisorService.
+            }
 
-        @Volatile
-        var activePort: Int = 8080
-            private set
+        var activePort: Int
+            get() = PlatformSupervisorService.activePort
+            set(_) {
+                // Authoritative state is owned exclusively by PlatformSupervisorService.
+            }
 
         fun getDesiredServerEnabled(context: Context): Boolean {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -243,33 +250,20 @@ class RemoteNodeServerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Handle OS process recreation where intent is null
+        // Forward to PlatformSupervisorService to preserve unified supervisor architecture
         if (intent == null) {
             val desired = getDesiredServerEnabled(this)
             val tunnelDesired = getDesiredTunnelEnabled(this)
             if (desired || tunnelDesired) {
-                acquireWakeLock()
-                acquireWifiLock()
-                scheduleNextKeepAliveAlarm()
-                val port = getPersistedPort(this)
-                if (desired && !isServiceRunning) {
-                    handleStartServer(port)
-                } else {
-                    updateNotification()
+                val supervisorIntent = Intent(this, PlatformSupervisorService::class.java).apply {
+                    action = PlatformSupervisorService.ACTION_START_STORAGE
+                    putExtra(PlatformSupervisorService.EXTRA_PORT, getPersistedPort(this@RemoteNodeServerService))
                 }
-                if (tunnelDesired) {
-                    val tunnelConfig = getPersistedTunnelConfig(this)
-                    val devId = tunnelConfig["deviceId"]
-                    val token = tunnelConfig["sessionToken"]
-                    val apiBase = tunnelConfig["apiBaseUrl"]
-                    val gatewayWs = tunnelConfig["gatewayWsUrl"]
-                    val cred = tunnelConfig["deviceCredential"]
-                    if (!devId.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty() && (!token.isNullOrEmpty() || !cred.isNullOrEmpty())) {
-                        RemoteNodeTunnelManager.startTunnel(this, devId, token ?: "", apiBase, gatewayWs, cred)
-                    }
-                }
-                return START_STICKY
-            } else {
+                try {
+                    ContextCompat.startForegroundService(this, supervisorIntent)
+                } catch (_: Exception) {}
+            }
+            try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
@@ -277,77 +271,79 @@ class RemoteNodeServerService : Service() {
                     stopForeground(true)
                 }
                 stopSelf()
-                return START_NOT_STICKY
-            }
+            } catch (_: Exception) {}
+            return START_NOT_STICKY
         }
 
         val action = intent.action ?: ACTION_START_SERVER
 
-        when (action) {
-            ACTION_START_SERVER -> {
-                android.util.Log.i("RemoteNodeServerService", "[SERVER_START_REQUESTED] action=ACTION_START_SERVER")
-                val port = intent.getIntExtra(EXTRA_PORT, getPersistedPort(this))
-                val customStoragePath = intent.getStringExtra(EXTRA_STORAGE_PATH)
-                val user = intent.getStringExtra(EXTRA_USERNAME)
-                val pass = intent.getStringExtra(EXTRA_PASSWORD)
-                if (user != null && pass != null) {
-                    engine.setCredentials(user, pass)
-                }
-                handleStartServer(port, customStoragePath)
-            }
-            ACTION_STOP_SERVER -> {
-                android.util.Log.i("RemoteNodeServerService", "[SERVER_STOP_REQUESTED] action=ACTION_STOP_SERVER source=intent")
-                handleStopServer()
-            }
-            ACTION_RESTART_SERVER -> {
-                val port = intent.getIntExtra(EXTRA_PORT, activePort)
-                val customStoragePath = intent.getStringExtra(EXTRA_STORAGE_PATH)
-                handleRestartServer(port, customStoragePath)
-            }
-            ACTION_SET_CREDENTIALS -> {
-                val user = intent.getStringExtra(EXTRA_USERNAME)
-                val pass = intent.getStringExtra(EXTRA_PASSWORD)
+        if (action == ACTION_SET_CREDENTIALS) {
+            val user = intent.getStringExtra(EXTRA_USERNAME)
+            val pass = intent.getStringExtra(EXTRA_PASSWORD)
+            if (user != null && pass != null) {
                 engine.setCredentials(user, pass)
             }
-            ACTION_START_TUNNEL -> {
-                acquireWakeLock()
-                acquireWifiLock()
-                scheduleNextKeepAliveAlarm()
-                val devId = intent.getStringExtra(EXTRA_DEVICE_ID)
-                val token = intent.getStringExtra(EXTRA_SESSION_TOKEN)
-                val apiBase = intent.getStringExtra(EXTRA_API_BASE_URL)
-                val gatewayWs = intent.getStringExtra(EXTRA_GATEWAY_WS_URL)
-                val deviceCredential = intent.getStringExtra(EXTRA_DEVICE_CREDENTIAL) ?: net.remotenode.fileserver.security.AndroidSecureStorage.readKv(this, "device_credential")
-                if (!devId.isNullOrEmpty() && !token.isNullOrEmpty() && !apiBase.isNullOrEmpty() && !gatewayWs.isNullOrEmpty()) {
-                    persistTunnelConfig(this, devId, token, apiBase, gatewayWs, deviceCredential)
-                    RemoteNodeTunnelManager.startTunnel(this, devId, token, apiBase, gatewayWs, deviceCredential)
+            return START_NOT_STICKY
+        }
+
+        val supervisorIntent = Intent(this, PlatformSupervisorService::class.java).apply {
+            when (action) {
+                ACTION_START_SERVER -> {
+                    this.action = PlatformSupervisorService.ACTION_START_STORAGE
+                    putExtra(PlatformSupervisorService.EXTRA_PORT, intent.getIntExtra(EXTRA_PORT, getPersistedPort(this@RemoteNodeServerService)))
+                    intent.getStringExtra(EXTRA_STORAGE_PATH)?.let { putExtra(PlatformSupervisorService.EXTRA_STORAGE_PATH, it) }
+                    intent.getStringExtra(EXTRA_USERNAME)?.let { putExtra(PlatformSupervisorService.EXTRA_USERNAME, it) }
+                    intent.getStringExtra(EXTRA_PASSWORD)?.let { putExtra(PlatformSupervisorService.EXTRA_PASSWORD, it) }
                 }
-                updateNotification()
-            }
-            ACTION_STOP_TUNNEL -> {
-                android.util.Log.i("RemoteNodeServerService", "[EXPLICIT_STOP] action=ACTION_STOP_TUNNEL source=intent")
-                setDesiredTunnelEnabled(this, false)
-                RemoteNodeTunnelManager.stopTunnel()
-                if (!getDesiredServerEnabled(this)) {
-                    cancelKeepAliveAlarm()
-                    releaseWifiLock()
-                    releaseWakeLock()
+                ACTION_STOP_SERVER -> {
+                    this.action = PlatformSupervisorService.ACTION_STOP_STORAGE
                 }
-                updateNotification()
-            }
-            ACTION_KEEPALIVE_PULSE -> {
-                if (isServiceRunning || getDesiredTunnelEnabled(this)) {
-                    acquireWakeLock()
-                    acquireWifiLock()
-                    RemoteNodeTunnelManager.checkAndPulseKeepalive()
-                    scheduleNextKeepAliveAlarm()
-                } else {
-                    cancelKeepAliveAlarm()
+                ACTION_RESTART_SERVER -> {
+                    this.action = PlatformSupervisorService.ACTION_RESTART_STORAGE
+                    putExtra(PlatformSupervisorService.EXTRA_PORT, intent.getIntExtra(EXTRA_PORT, activePort))
+                    intent.getStringExtra(EXTRA_STORAGE_PATH)?.let { putExtra(PlatformSupervisorService.EXTRA_STORAGE_PATH, it) }
+                }
+                ACTION_START_TUNNEL -> {
+                    this.action = PlatformSupervisorService.ACTION_START_TUNNEL
+                    putExtra(PlatformSupervisorService.EXTRA_DEVICE_ID, intent.getStringExtra(EXTRA_DEVICE_ID))
+                    putExtra(PlatformSupervisorService.EXTRA_SESSION_TOKEN, intent.getStringExtra(EXTRA_SESSION_TOKEN))
+                    putExtra(PlatformSupervisorService.EXTRA_API_BASE_URL, intent.getStringExtra(EXTRA_API_BASE_URL))
+                    putExtra(PlatformSupervisorService.EXTRA_GATEWAY_WS_URL, intent.getStringExtra(EXTRA_GATEWAY_WS_URL))
+                    intent.getStringExtra(EXTRA_DEVICE_CREDENTIAL)?.let { putExtra(PlatformSupervisorService.EXTRA_DEVICE_CREDENTIAL, it) }
+                }
+                ACTION_STOP_TUNNEL -> {
+                    this.action = PlatformSupervisorService.ACTION_STOP_TUNNEL
+                }
+                ACTION_KEEPALIVE_PULSE -> {
+                    this.action = PlatformSupervisorService.ACTION_KEEPALIVE_PULSE
+                }
+                else -> {
+                    this.action = action
                 }
             }
         }
 
-        return START_STICKY
+        try {
+            if (action == ACTION_START_SERVER || action == ACTION_RESTART_SERVER || action == ACTION_START_TUNNEL) {
+                ContextCompat.startForegroundService(this, supervisorIntent)
+            } else {
+                startService(supervisorIntent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("RemoteNodeServerService", "Failed forwarding intent to supervisor: ${e.message}")
+        }
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            stopSelf()
+        } catch (_: Exception) {}
+
+        return START_NOT_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
