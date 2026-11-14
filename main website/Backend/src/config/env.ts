@@ -23,7 +23,21 @@ if (fs.existsSync(envPath)) {
 
 const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i;
 
-const envSchema = z.object({
+export function isCameraSignalingStrictTlsEnv(nodeEnv: string | undefined): boolean {
+  return nodeEnv === 'production' || nodeEnv === 'staging';
+}
+
+export function resolveCameraSignalingRequireTls(
+  nodeEnv: string | undefined,
+  explicitSetting?: boolean
+): boolean {
+  if (isCameraSignalingStrictTlsEnv(nodeEnv)) {
+    return true;
+  }
+  return explicitSetting ?? false;
+}
+
+export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test', 'staging']).default('development'),
   PORT: z.coerce.number().default(4000),
   HOST: z.string().default('0.0.0.0'),
@@ -198,10 +212,63 @@ const envSchema = z.object({
   EMAIL_TRACKING_RETENTION_DAYS: z.coerce.number().min(7).max(730).default(90),
   EMAIL_TRACKING_CLEANUP_BATCH_SIZE: z.coerce.number().min(10).max(1000).default(100),
   EMAIL_TRACKING_CLEANUP_INTERVAL_MINUTES: z.coerce.number().min(5).max(10080).default(1440),
+  // Camera Lifecycle & Stale Heartbeat Reconciliation Configuration (Phase 20.4 & 20.4.1)
+  CAMERA_HEARTBEAT_TIMEOUT_MS: z.coerce.number().int().min(10000).max(3600000).default(90000),
+  CAMERA_CONNECTING_TIMEOUT_MS: z.coerce.number().int().min(15000).max(3600000).default(120000),
+  CAMERA_RECONNECT_GRACE_MS: z.coerce.number().int().min(30000).max(3600000).default(180000),
+  CAMERA_RECONCILIATION_BATCH_SIZE: z.coerce.number().int().min(1).max(500).default(100),
+  CAMERA_RECONCILIATION_ENABLED: z.preprocess(
+    (val) => {
+      if (val === undefined || val === '') return true;
+      if (val === true || val === 'true') return true;
+      if (val === false || val === 'false') return false;
+      return val;
+    },
+    z.boolean()
+  ).default(true),
+  CAMERA_RECONCILIATION_INTERVAL_MS: z.coerce.number().int().min(5000).max(3600000).default(30000),
+  CAMERA_RECONCILIATION_INITIAL_DELAY_MS: z.coerce.number().int().min(0).max(300000).default(5000),
+  CAMERA_SIGNALING_PATH: z.string().trim().min(1).default('/ws/camera-signaling'),
+  CAMERA_SIGNALING_MAX_PAYLOAD_BYTES: z.coerce.number().int().min(4096).max(262144).default(65536),
+  CAMERA_SIGNALING_AUTH_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60000).default(10000),
+  CAMERA_SIGNALING_RATE_LIMIT_PER_MIN: z.coerce.number().int().min(10).max(10000).default(240),
+  CAMERA_SIGNALING_MAX_VIEWERS_PER_CAMERA: z.coerce.number().int().min(1).max(100).default(5),
+  CAMERA_SIGNALING_REAPER_INTERVAL_MS: z.coerce.number().int().min(1000).max(300000).default(30000),
+  CAMERA_SIGNALING_ALLOWED_ORIGINS: z.string().optional().default(''),
+  CAMERA_SIGNALING_REQUIRE_TLS: z.preprocess(
+    (val) => {
+      if (val === undefined) return undefined;
+      if (typeof val === 'string') {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === '') return undefined;
+        if (trimmed === 'true') return true;
+        if (trimmed === 'false') return false;
+      }
+      return val;
+    },
+    z.boolean().optional()
+  ),
+  CAMERA_RECONCILIATION_RUN_ON_STARTUP: z.preprocess(
+    (val) => {
+      if (val === undefined || val === '') return true;
+      if (val === true || val === 'true') return true;
+      if (val === false || val === 'false') return false;
+      return val;
+    },
+    z.boolean()
+  ).default(true),
   EMAIL_TRACKING_CLEANUP_DRY_RUN: z.preprocess(
     (val) => (val === undefined ? false : val === 'true' || val === true),
     z.boolean()
   ).default(false)
+}).superRefine((val, ctx) => {
+  if (isCameraSignalingStrictTlsEnv(val.NODE_ENV) && val.CAMERA_SIGNALING_REQUIRE_TLS === false) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['CAMERA_SIGNALING_REQUIRE_TLS'],
+      message: `Disabling CAMERA_SIGNALING_REQUIRE_TLS in ${val.NODE_ENV} is forbidden; wss:// is mandatory.`
+    });
+  }
 });
 
 function loadConfig() {

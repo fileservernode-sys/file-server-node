@@ -9,6 +9,8 @@
 
 import { prisma } from '../../config/database.js';
 import { defaultGatewayService } from '../../gateway/gateway_service.js';
+import { defaultCameraSignalingService } from '../camera_signaling_service.js';
+import { defaultCameraReconciliationWorker } from '../camera_reconciliation_worker.js';
 
 export type SubsystemStatus = 'HEALTHY' | 'DEGRADED' | 'UNHEALTHY' | 'UNKNOWN';
 
@@ -98,6 +100,46 @@ export interface OverallSystemHealth {
   checkedAt: string;
 }
 
+export interface CameraInfrastructureHealth {
+  status: SubsystemStatus;
+  registeredCameras: number;
+  onlineCameras: number;
+  streamingCameras: number;
+  reconnectingCameras: number;
+  errorCameras: number;
+  offlineCameras: number;
+  connectingCameras: number;
+  statusCounts: {
+    OFFLINE: number;
+    CONNECTING: number;
+    ONLINE: number;
+    STREAMING: number;
+    RECONNECTING: number;
+    ERROR: number;
+  };
+  signaling: {
+    scope: 'LOCAL_PROCESS';
+    listening: boolean;
+    uptimeSeconds: number;
+    connectedCameras: number;
+    activeViewerSockets: number;
+    rejectedAuthAttempts: number;
+    rejectedMessages: number;
+    evictedConnections: number;
+  };
+  reconciliationWorker: {
+    enabled: boolean;
+    running: boolean;
+    totalCycles: number;
+    totalFailures: number;
+    lastSuccess: boolean | null;
+    lastRunAt: string | null;
+    lastDurationMs: number | null;
+    lastErrorAt: string | null;
+  };
+  checkedAt: string;
+}
+
 export interface SystemOverviewResult {
   overall: OverallSystemHealth;
   application: ApplicationHealth;
@@ -105,6 +147,7 @@ export interface SystemOverviewResult {
   database: DatabaseHealth;
   gateway: GatewayHealth;
   devices: DevicesInfrastructureHealth;
+  camera: CameraInfrastructureHealth;
   environment: EnvironmentInfo;
   signals: SubsystemHealthSignal[];
 }
@@ -290,6 +333,131 @@ export class SystemOverviewService {
       };
     }
 
+    // 5b. Camera Infrastructure & Operations Health (Additive, fail-isolated)
+    let cameraHealth: CameraInfrastructureHealth;
+    {
+      const statusCounts = {
+        OFFLINE: 0,
+        CONNECTING: 0,
+        ONLINE: 0,
+        STREAMING: 0,
+        RECONNECTING: 0,
+        ERROR: 0
+      };
+      let cameraDbAvailable = false;
+
+      try {
+        const cameraDelegate = (prisma as any)?.cameraInstance;
+        if (cameraDelegate && typeof cameraDelegate.groupBy === 'function') {
+          const grouped: Array<{ status: keyof typeof statusCounts; _count: { _all?: number } | number }> =
+            await cameraDelegate.groupBy({
+              by: ['status'],
+              _count: { _all: true }
+            });
+          for (const row of grouped || []) {
+            if (row?.status && row.status in statusCounts) {
+              const count =
+                typeof row._count === 'number'
+                  ? row._count
+                  : typeof row._count?._all === 'number'
+                  ? row._count._all
+                  : 0;
+              statusCounts[row.status] = count;
+            }
+          }
+          cameraDbAvailable = true;
+        }
+      } catch {
+        cameraDbAvailable = false;
+      }
+
+      let signalingSummary: CameraInfrastructureHealth['signaling'] = {
+        scope: 'LOCAL_PROCESS',
+        listening: false,
+        uptimeSeconds: 0,
+        connectedCameras: 0,
+        activeViewerSockets: 0,
+        rejectedAuthAttempts: 0,
+        rejectedMessages: 0,
+        evictedConnections: 0
+      };
+      try {
+        const sigMetrics = defaultCameraSignalingService?.getMetrics?.();
+        if (sigMetrics) {
+          signalingSummary = {
+            scope: 'LOCAL_PROCESS',
+            listening: Boolean(sigMetrics.listening),
+            uptimeSeconds: Number(sigMetrics.uptimeSeconds ?? 0),
+            connectedCameras: Number(sigMetrics.connectedCameras ?? 0),
+            activeViewerSockets: Number(sigMetrics.activeViewerSockets ?? 0),
+            rejectedAuthAttempts: Number(sigMetrics.rejectedAuthAttempts ?? 0),
+            rejectedMessages: Number(sigMetrics.rejectedMessages ?? 0),
+            evictedConnections: Number(sigMetrics.evictedConnections ?? 0)
+          };
+        }
+      } catch {
+        // Keep safe default signaling summary
+      }
+
+      let workerSummary: CameraInfrastructureHealth['reconciliationWorker'] = {
+        enabled: false,
+        running: false,
+        totalCycles: 0,
+        totalFailures: 0,
+        lastSuccess: null,
+        lastRunAt: null,
+        lastDurationMs: null,
+        lastErrorAt: null
+      };
+      try {
+        const workerMetrics = defaultCameraReconciliationWorker?.getMetrics?.();
+        if (workerMetrics) {
+          workerSummary = {
+            enabled: Boolean(workerMetrics.enabled),
+            running: Boolean(workerMetrics.running),
+            totalCycles: Number(workerMetrics.totalCycles ?? 0),
+            totalFailures: Number(workerMetrics.totalFailures ?? 0),
+            lastSuccess: workerMetrics.lastSuccess ?? null,
+            lastRunAt: workerMetrics.lastRunAt ?? null,
+            lastDurationMs: workerMetrics.lastDurationMs ?? null,
+            lastErrorAt: workerMetrics.lastErrorAt ?? null
+          };
+        }
+      } catch {
+        // Keep safe default worker summary
+      }
+
+      const registeredCameras =
+        statusCounts.OFFLINE +
+        statusCounts.CONNECTING +
+        statusCounts.ONLINE +
+        statusCounts.STREAMING +
+        statusCounts.RECONNECTING +
+        statusCounts.ERROR;
+
+      let cameraStatus: SubsystemStatus = 'HEALTHY';
+      if (!cameraDbAvailable) {
+        cameraStatus = 'UNKNOWN';
+      } else if (statusCounts.ERROR > 0 || workerSummary.lastSuccess === false) {
+        cameraStatus = 'DEGRADED';
+      }
+
+      cameraHealth = {
+        status: cameraStatus,
+        registeredCameras,
+        onlineCameras: statusCounts.ONLINE,
+        streamingCameras: statusCounts.STREAMING,
+        reconnectingCameras: statusCounts.RECONNECTING,
+        errorCameras: statusCounts.ERROR,
+        offlineCameras: statusCounts.OFFLINE,
+        connectingCameras: statusCounts.CONNECTING,
+        statusCounts,
+        signaling: signalingSummary,
+        reconciliationWorker: workerSummary,
+        checkedAt: new Date().toISOString()
+      };
+    }
+
     // 6. Safe Allowlisted Environment Information
     const startedAt = new Date(Date.now() - appUptimeSeconds * 1000).toISOString();
     const envInfo: EnvironmentInfo = {
@@ -389,6 +557,7 @@ export class SystemOverviewService {
       database: dbHealth,
       gateway: gatewayHealth,
       devices: devicesHealth,
+      camera: cameraHealth,
       environment: envInfo,
       signals
     };

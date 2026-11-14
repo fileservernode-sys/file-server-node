@@ -6,7 +6,9 @@ import {
   hashOtp,
   verifyOtpCode,
   hashPasswordChangeOtp,
-  verifyPasswordChangeOtpCode
+  verifyPasswordChangeOtpCode,
+  hashDeviceReEnrollmentOtp,
+  verifyDeviceReEnrollmentOtpCode
 } from './crypto.js';
 import { emailService } from '../services/email.js';
 
@@ -34,12 +36,15 @@ export async function issueEmailOtp(
 ): Promise<IssueOtpResult> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  // Check Resend Cooldown (excluding operation-bound password-change OTPs)
+  // Check Resend Cooldown (excluding operation-bound password-change and device-re-enrollment OTPs)
   const recentOtp = await prisma.emailOtp.findFirst({
     where: {
       email: normalizedEmail,
       purpose,
-      NOT: { otpCode: { startsWith: 'pwdchg:' } },
+      AND: [
+        { NOT: { otpCode: { startsWith: 'pwdchg:' } } },
+        { NOT: { otpCode: { startsWith: 'devreenroll:' } } }
+      ],
       createdAt: { gt: new Date(Date.now() - config.OTP_RESEND_COOLDOWN_SECONDS * 1000) }
     },
     orderBy: { createdAt: 'desc' }
@@ -54,13 +59,16 @@ export async function issueEmailOtp(
     throw error;
   }
 
-  // Invalidate previous unused OTPs for this email and purpose (excluding password-change OTPs)
+  // Invalidate previous unused OTPs for this email and purpose (excluding operation-bound OTPs)
   await prisma.emailOtp.updateMany({
     where: {
       email: normalizedEmail,
       purpose,
       used: false,
-      NOT: { otpCode: { startsWith: 'pwdchg:' } }
+      AND: [
+        { NOT: { otpCode: { startsWith: 'pwdchg:' } } },
+        { NOT: { otpCode: { startsWith: 'devreenroll:' } } }
+      ]
     },
     data: { used: true }
   });
@@ -126,13 +134,16 @@ export async function verifyEmailOtp(
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedCode = code.trim();
 
-  // Find most recent active unconsumed OTP (strictly excluding password-change OTPs)
+  // Find most recent active unconsumed OTP (strictly excluding operation-bound OTPs)
   const record = await prisma.emailOtp.findFirst({
     where: {
       email: normalizedEmail,
       purpose,
       used: false,
-      NOT: { otpCode: { startsWith: 'pwdchg:' } }
+      AND: [
+        { NOT: { otpCode: { startsWith: 'pwdchg:' } } },
+        { NOT: { otpCode: { startsWith: 'devreenroll:' } } }
+      ]
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -316,6 +327,169 @@ export async function verifyPasswordChangeOtp(
   }
 
   const isMatch = verifyPasswordChangeOtpCode(cleanUserId, normalizedCode, record.otpCode);
+
+  if (!isMatch) {
+    const newAttempts = record.attempts + 1;
+    const shouldLockout = newAttempts >= config.OTP_MAX_ATTEMPTS;
+
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: {
+        attempts: newAttempts,
+        used: shouldLockout ? true : record.used
+      }
+    });
+
+    return {
+      valid: false,
+      error: shouldLockout ? 'TOO_MANY_ATTEMPTS' : 'INVALID_OTP'
+    };
+  }
+
+  if (options?.consume !== false) {
+    const consumed = await prisma.emailOtp.updateMany({
+      where: { id: record.id, userId: cleanUserId, used: false },
+      data: { used: true }
+    });
+    if (consumed.count !== 1) {
+      return { valid: false, error: 'NO_ACTIVE_OTP' };
+    }
+  }
+
+  return { valid: true, userId: record.userId, otpRecordId: record.id };
+}
+
+/**
+ * Generates and dispatches an operation-bound, user-bound, installation-bound 6-digit OTP
+ * specifically for revoked device re-enrollment confirmation.
+ * Uses the existing EmailOtp persistence model with a `devreenroll:<userId>:<salt>:<hmac>`
+ * representation so login/registration/password-reset OTPs cannot cross-validate.
+ */
+export async function issueDeviceReEnrollmentOtp(
+  userId: string,
+  email: string,
+  installationId: string
+): Promise<IssueOtpResult> {
+  const cleanUserId = userId.trim();
+  const cleanInstallationId = installationId.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+  const prefix = `devreenroll:${cleanUserId}:`;
+
+  // Enforce resend cooldown scoped to this user's device re-enrollment OTPs
+  const recentOtp = await prisma.emailOtp.findFirst({
+    where: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      purpose: 'LOGIN_2FA',
+      otpCode: { startsWith: prefix },
+      createdAt: { gt: new Date(Date.now() - config.OTP_RESEND_COOLDOWN_SECONDS * 1000) }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (recentOtp && !recentOtp.used) {
+    const elapsedSec = Math.floor((Date.now() - recentOtp.createdAt.getTime()) / 1000);
+    const remainingSec = Math.max(1, config.OTP_RESEND_COOLDOWN_SECONDS - elapsedSec);
+    const error = new Error(`Please wait ${remainingSec} seconds before requesting a new verification code`);
+    (error as any).statusCode = 429;
+    (error as any).code = 'RESEND_COOLDOWN_ACTIVE';
+    (error as any).retryAfterSeconds = remainingSec;
+    throw error;
+  }
+
+  // Invalidate any prior unused device re-enrollment OTPs for this user
+  await prisma.emailOtp.updateMany({
+    where: {
+      userId: cleanUserId,
+      purpose: 'LOGIN_2FA',
+      otpCode: { startsWith: prefix },
+      used: false
+    },
+    data: { used: true }
+  });
+
+  const otpCode = generateOtpCode();
+  const secureOtpRepresentation = hashDeviceReEnrollmentOtp(cleanUserId, cleanInstallationId, otpCode);
+  const ttlSeconds = config.EMAIL_VERIFICATION_OTP_EXPIRY_SECONDS;
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+
+  await prisma.emailOtp.create({
+    data: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      otpCode: secureOtpRepresentation,
+      purpose: 'LOGIN_2FA',
+      expiresAt,
+      attempts: 0,
+      used: false
+    }
+  });
+
+  await emailService.sendLoginOtp(normalizedEmail, otpCode, {
+    userId: cleanUserId,
+    sourcePipeline: 'OTP',
+    emailType: 'LOGIN_OTP',
+    templateId: 'LOGIN_2FA'
+  });
+
+  return { otpCode, expiresAt };
+}
+
+/**
+ * Verifies an operation-bound, user-bound, installation-bound 6-digit OTP
+ * for revoked device re-enrollment confirmation.
+ * Enforces expiry, max attempts lockout, user/installation binding, and atomic single-use consumption.
+ */
+export async function verifyDeviceReEnrollmentOtp(
+  userId: string,
+  email: string,
+  installationId: string,
+  code: string,
+  options?: { consume?: boolean }
+): Promise<VerifyOtpResult> {
+  const cleanUserId = userId.trim();
+  const cleanInstallationId = installationId.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedCode = code.trim();
+  const prefix = `devreenroll:${cleanUserId}:`;
+
+  const record = await prisma.emailOtp.findFirst({
+    where: {
+      userId: cleanUserId,
+      email: normalizedEmail,
+      purpose: 'LOGIN_2FA',
+      otpCode: { startsWith: prefix },
+      used: false
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  if (!record) {
+    return { valid: false, error: 'NO_ACTIVE_OTP' };
+  }
+
+  if (record.expiresAt <= new Date()) {
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: { used: true }
+    });
+    return { valid: false, error: 'EXPIRED_OTP' };
+  }
+
+  if (record.attempts >= config.OTP_MAX_ATTEMPTS) {
+    await prisma.emailOtp.update({
+      where: { id: record.id },
+      data: { used: true }
+    });
+    return { valid: false, error: 'TOO_MANY_ATTEMPTS' };
+  }
+
+  const isMatch = verifyDeviceReEnrollmentOtpCode(
+    cleanUserId,
+    cleanInstallationId,
+    normalizedCode,
+    record.otpCode
+  );
 
   if (!isMatch) {
     const newAttempts = record.attempts + 1;

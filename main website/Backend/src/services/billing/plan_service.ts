@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database.js';
-import { Plan, PlanPrice, BillingInterval, CurrencyCode, Prisma } from '@prisma/client';
+import { Plan, PlanPrice, BillingInterval, CurrencyCode, Prisma, ProductType } from '@prisma/client';
 import { EntitlementService, ResolvedEntitlements } from './entitlement_service.js';
 
 export interface PlanPriceDTO {
@@ -17,6 +17,7 @@ export interface PlanDTO {
   code: string;
   name: string;
   description: string | null;
+  productType: ProductType;
   interval: BillingInterval;
   intervalCount: number;
   serverLimit: number;
@@ -198,6 +199,7 @@ export class PlanService {
         code: p.code,
         name: p.name,
         description: p.description,
+        productType: p.productType,
         interval: p.interval,
         intervalCount: p.intervalCount,
         serverLimit: p.serverLimit,
@@ -270,6 +272,7 @@ export class PlanService {
       code: plan.code,
       name: plan.name,
       description: plan.description,
+      productType: plan.productType,
       interval: plan.interval,
       intervalCount: plan.intervalCount,
       serverLimit: plan.serverLimit,

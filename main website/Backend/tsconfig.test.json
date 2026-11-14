@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "tests/multi_product_subscription_foundation.test.ts",
+    "tests/multi_product_entitlement_engine.test.ts",
+    "tests/multi_product_lifecycle_hardening.test.ts",
+    "tests/multi_product_razorpay_integration.test.ts",
+    "tests/multi_product_commercial_consistency.test.ts",
+    "tests/multi_product_distributed_concurrency_and_leases.test.ts",
+    "tests/multi_product_ambiguous_checkout_and_webhook_fencing.test.ts",
+    "tests/multi_product_atomic_lease_and_pagination.test.ts",
+    "tests/camera_database_foundation.test.ts",
+    "tests/camera_api_foundation.test.ts",
+    "tests/camera_device_registration_and_identity.test.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

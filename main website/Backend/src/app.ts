@@ -87,9 +87,18 @@ export async function buildApp(): Promise<FastifyInstance> {
       redact: [
         'req.headers.authorization',
         'req.headers.cookie',
+        'req.headers["set-cookie"]',
+        'res.headers["set-cookie"]',
         'req.headers["x-razorpay-signature"]',
         'req.headers["x-brevo-webhook-secret"]',
         'req.headers["x-webhook-secret"]',
+        'req.headers["x-zdex-csrf-token"]',
+        'req.headers["x-zdex-admin-csrf-token"]',
+        'req.headers["x-device-credential"]',
+        'req.headers["x-viewing-token"]',
+        'req.headers["x-admin-session"]',
+        'req.headers["x-csrf-token"]',
+        'req.headers["x-api-key"]',
         'body.password',
         'body.passwordHash',
         'body.currentPassword',
@@ -100,7 +109,45 @@ export async function buildApp(): Promise<FastifyInstance> {
         'body.otpCode',
         'body.keySecret',
         'body.webhookSecret',
-        'body.deviceCredential'
+        'body.deviceCredential',
+        'body.viewingToken',
+        'body.pairingChallengeToken',
+        'body.connectionToken',
+        'body.sessionToken',
+        'body.sessionTokenHash',
+        'body.credentialHash',
+        'body.sdp',
+        'body.ice',
+        'body.iceCandidate',
+        'body.candidate',
+        'body.offer',
+        'body.answer',
+        'query.token',
+        'query.viewingToken',
+        'query.pairingChallengeToken',
+        'query.connectionToken',
+        'sdp',
+        'ice',
+        'iceCandidate',
+        'candidate',
+        'offer',
+        'answer',
+        'viewingToken',
+        'pairingChallengeToken',
+        'connectionToken',
+        'sessionTokenHash',
+        'credentialHash',
+        '*.sdp',
+        '*.ice',
+        '*.iceCandidate',
+        '*.candidate',
+        '*.offer',
+        '*.answer',
+        '*.viewingToken',
+        '*.pairingChallengeToken',
+        '*.connectionToken',
+        '*.sessionTokenHash',
+        '*.credentialHash'
       ]
     }
   });
@@ -130,6 +177,16 @@ export async function buildApp(): Promise<FastifyInstance> {
     const start = (request.raw as any).__startTime || Date.now();
     const duration = Date.now() - start;
     metricsCollector.recordHttpRequest(request.method, reply.statusCode, duration);
+
+    try {
+      const rawUrl = request.raw.url || request.url || '';
+      const urlPath = rawUrl.split('?')[0];
+      if (urlPath === '/api/v1/cameras' || urlPath.startsWith('/api/v1/cameras/')) {
+        metricsCollector.recordCameraHttpRequest(reply.statusCode, duration);
+      }
+    } catch {
+      // Never allow metrics aggregation to impact HTTP response completion
+    }
   });
 
   // 1. Security & CORS

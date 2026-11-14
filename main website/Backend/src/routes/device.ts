@@ -15,6 +15,7 @@ import { serverEventProducer } from '../notifications/producers/server_producer.
 import { resolveClientIp } from '../utils/ip.js';
 import { CustomerActivityService } from '../services/activity/customer_activity_service.js';
 import { resolveUniqueServerName } from '../utils/server_naming.js';
+import { CameraDeviceIdentityService } from '../services/camera_device_identity_service.js';
 
 const registerDeviceSchema = z.object({
   deviceName: z.string().min(1),
@@ -24,7 +25,8 @@ const registerDeviceSchema = z.object({
   installationId: z.string().min(1),
   serverName: z.string().optional(),
   adminUsername: z.string().optional(),
-  adminPassword: z.string().optional()
+  adminPassword: z.string().optional(),
+  purpose: z.enum(['STORAGE', 'CAMERA', 'ALL']).optional()
 });
 
 const heartbeatSchema = z.object({
@@ -33,6 +35,21 @@ const heartbeatSchema = z.object({
 
 const refreshDeviceSessionSchema = z.object({
   deviceCredential: z.string().min(16)
+});
+
+const reEnrollChallengeSchema = z.object({
+  installationId: z.string().min(1),
+  password: z.string().min(1, 'Account password is required for fresh authentication')
+});
+
+const reEnrollSchema = z.object({
+  installationId: z.string().min(1, 'installationId is required'),
+  recoveryToken: z.string().min(1, 'Recovery challenge token (rec_*) is required'),
+  otp: z.string().regex(/^\d{6}$/, 'A valid 6-digit numeric email OTP is mandatory to confirm device re-enrollment'),
+  deviceName: z.string().optional(),
+  platform: z.string().optional(),
+  osVersion: z.string().optional(),
+  appVersion: z.string().optional()
 });
 
 import { getAuthUser } from '../middleware/customer-auth.js';
@@ -67,7 +84,72 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       throw new ValidationError('Invalid device registration metadata. deviceName and installationId are required.');
     }
 
-    const { deviceName, platform, osVersion, appVersion, installationId, serverName, adminUsername, adminPassword } = body.data;
+    const { deviceName, platform, osVersion, appVersion, installationId, serverName, adminUsername, adminPassword, purpose } = body.data;
+    const clientIp = resolveClientIp(request);
+    const userAgent = request.headers['user-agent'] as string | undefined;
+
+    // Cross-Account Installation Claim Defense (Phase 20.3)
+    await CameraDeviceIdentityService.assertInstallationUnclaimedByOtherUser(
+      installationId,
+      user.id,
+      { ip: clientIp, userAgent }
+    );
+
+    // Terminal Revocation Defense: Reject revoked devices from normal registration
+    const existingClaim = await prisma.deviceInstallationClaim.findUnique({
+      where: { installationId }
+    });
+    if (existingClaim?.status === 'REVOKED') {
+      throw new ForbiddenError(
+        'This device installation has been revoked. Explicit re-enrollment is required via /api/v1/devices/re-enroll.',
+        'DEVICE_REVOKED'
+      );
+    }
+
+    const existingDeviceRecord = await prisma.device.findUnique({
+      where: {
+        userId_installationId: {
+          userId: user.id,
+          installationId: installationId
+        }
+      },
+      include: { credential: true }
+    });
+
+    if (existingDeviceRecord?.credential?.revokedAt) {
+      throw new ForbiddenError(
+        'This device has been revoked. Explicit re-enrollment is required via /api/v1/devices/re-enroll.',
+        'DEVICE_REVOKED'
+      );
+    }
+
+    // If purpose is CAMERA or caller explicitly omits Storage server details, register without ServerInstance
+    if (purpose === 'CAMERA' || (!serverName && !adminUsername && !adminPassword && purpose !== 'STORAGE')) {
+      const result = await CameraDeviceIdentityService.registerOrResolveCameraDevice({
+        userId: user.id,
+        installationId,
+        deviceName,
+        platform,
+        osVersion,
+        appVersion,
+        context: { ip: clientIp, userAgent }
+      });
+
+      return reply.status(200).send(createSuccessResponse({
+        device: {
+          id: result.device.id,
+          installationId: result.device.installationId,
+          deviceName: result.device.deviceName,
+          platform: result.device.platform,
+          osVersion: result.device.osVersion,
+          appVersion: result.device.appVersion,
+          status: result.device.status,
+          lastSeenAt: result.device.lastSeenAt?.toISOString()
+        },
+        deviceCredential: result.deviceCredential
+      }));
+    }
+
     const adminPasswordHash = adminPassword ? hashPassword(adminPassword) : undefined;
 
     // Check if a device with this installationId already exists for the user
@@ -157,6 +239,45 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
         // Lock user row to serialize concurrent server creations for this account
         await tx.$executeRawUnsafe('SELECT id FROM `User` WHERE id = ? FOR UPDATE', user.id);
 
+        // Atomically claim global installationId in DeviceInstallationClaim
+        let claim = await tx.deviceInstallationClaim.findUnique({
+          where: { installationId }
+        });
+
+        if (claim) {
+          if (claim.userId !== user.id) {
+            throw new ForbiddenError(
+              'This device installation is already registered to another ZdexCloud account.',
+              'DEVICE_ALREADY_REGISTERED_OTHER_ACCOUNT'
+            );
+          }
+          if (claim.status === 'REVOKED') {
+            throw new ForbiddenError(
+              'This device installation has been revoked. Explicit re-enrollment is required via /api/v1/devices/re-enroll.',
+              'DEVICE_REVOKED'
+            );
+          }
+        } else {
+          try {
+            claim = await tx.deviceInstallationClaim.create({
+              data: {
+                installationId,
+                userId: user.id,
+                status: 'ACTIVE',
+                metadata: { initialPurpose: purpose || 'STORAGE' }
+              }
+            });
+          } catch (err: any) {
+            if (err?.code === 'P2002' || err?.message?.includes('Unique constraint failed')) {
+              throw new ForbiddenError(
+                'This device installation is already registered to another ZdexCloud account.',
+                'DEVICE_ALREADY_REGISTERED_OTHER_ACCOUNT'
+              );
+            }
+            throw err;
+          }
+        }
+
         const serverCount = await tx.serverInstance.count({
           where: { device: { userId: user.id } }
         });
@@ -176,6 +297,11 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
             status: 'ONLINE',
             lastSeenAt: new Date()
           }
+        });
+
+        await tx.deviceInstallationClaim.update({
+          where: { id: claim.id },
+          data: { deviceId: newDevice.id }
         });
 
         const uniqueServerName = await resolveUniqueServerName(
@@ -259,7 +385,6 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       where: { deviceId: device.id },
       update: {
         credentialHash: deviceCredentialHash,
-        revokedAt: null,
         lastUsedAt: new Date(),
         lastRefreshAt: new Date()
       },
@@ -519,6 +644,14 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       where: { deviceId },
       data: { revokedAt: now }
     });
+
+    // Mark installation claim as REVOKED to prevent normal re-registration without explicit re-enrollment
+    if (device.installationId) {
+      await prisma.deviceInstallationClaim.updateMany({
+        where: { installationId: device.installationId },
+        data: { status: 'REVOKED' }
+      });
+    }
 
     // 1. Evict active gateway WebSocket session immediately
     defaultGatewayService.evictDeviceSession(deviceId, 'Device credentials revoked by user');
@@ -1088,6 +1221,100 @@ export async function deviceRoutes(app: FastifyInstance): Promise<void> {
       }
     },
     handleDeleteDevice
+  );
+
+  /**
+   * POST /api/v1/devices/re-enroll-challenge
+   * Generates a single-use, 10-minute recovery token for an authenticated user to re-enroll a revoked device.
+   */
+  app.post(
+    '/devices/re-enroll-challenge',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const body = reEnrollChallengeSchema.safeParse(request.body);
+
+      if (!body.success) {
+        throw new ValidationError('Invalid request. installationId is required.');
+      }
+
+      const clientIp = resolveClientIp(request);
+      const userAgent = request.headers['user-agent'] as string | undefined;
+
+      const result = await CameraDeviceIdentityService.requestDeviceReEnrollmentChallenge({
+        userId: user.id,
+        installationId: body.data.installationId,
+        password: body.data.password,
+        context: { ip: clientIp, userAgent }
+      });
+
+      return reply.status(200).send(createSuccessResponse({
+        recoveryToken: result.recoveryToken,
+        expiresIn: result.expiresIn,
+        expiresAt: result.expiresAt,
+        installationId: result.installationId,
+        requiresOtp: result.requiresOtp,
+        emailMasked: result.emailMasked
+      }));
+    }
+  );
+
+  /**
+   * POST /api/v1/devices/re-enroll
+   * Explicitly re-enrolls a revoked device installation under an authenticated user.
+   * Requires mandatory fresh 2FA authentication (valid 6-digit email OTP). Password-only confirmation is prohibited.
+   * Performs credential rotation, resets revokedAt, marks claim ACTIVE, sets Device status OFFLINE,
+   * and records tamper-evident security audit events.
+   */
+  app.post(
+    '/devices/re-enroll',
+    {
+      config: {
+        rateLimit: expensiveCustomerRateLimitConfig
+      }
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const user = await getAuthUser(request);
+      const body = reEnrollSchema.safeParse(request.body);
+
+      if (!body.success) {
+        throw new ValidationError(body.error.errors[0]?.message || 'Invalid re-enrollment request.');
+      }
+
+      const clientIp = resolveClientIp(request);
+      const userAgent = request.headers['user-agent'] as string | undefined;
+
+      const result = await CameraDeviceIdentityService.reEnrollRevokedDevice({
+        userId: user.id,
+        installationId: body.data.installationId,
+        recoveryToken: body.data.recoveryToken,
+        otp: body.data.otp,
+        deviceName: body.data.deviceName,
+        platform: body.data.platform,
+        osVersion: body.data.osVersion,
+        appVersion: body.data.appVersion,
+        context: { ip: clientIp, userAgent }
+      });
+
+      return reply.status(200).send(createSuccessResponse({
+        device: {
+          id: result.device.id,
+          installationId: result.device.installationId,
+          deviceName: result.device.deviceName,
+          platform: result.device.platform,
+          osVersion: result.device.osVersion,
+          appVersion: result.device.appVersion,
+          status: result.device.status,
+          lastSeenAt: result.device.lastSeenAt ? result.device.lastSeenAt.toISOString() : null
+        },
+        deviceCredential: result.deviceCredential,
+        message: result.message
+      }));
+    }
   );
 }
 

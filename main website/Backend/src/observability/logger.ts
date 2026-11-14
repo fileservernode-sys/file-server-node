@@ -1,5 +1,9 @@
 import { config } from '../config/env.js';
 import { RequestContextStore } from './request_context.js';
+import {
+  matchesSensitiveKeyPattern,
+  scrubSensitiveEmbeddedStrings
+} from './redaction_patterns.js';
 
 export interface StructuredLogPayload {
   level?: 'info' | 'warn' | 'error' | 'debug' | 'trace';
@@ -12,6 +16,7 @@ export interface StructuredLogPayload {
   userId?: string;
   adminId?: string;
   deviceId?: string;
+  cameraId?: string;
   connectionId?: string;
   serverId?: string;
   gatewayNodeId?: string;
@@ -49,33 +54,24 @@ const SENSITIVE_KEY_PATTERNS = [
  */
 export function sanitizeLogString(str: string, maxLength = 1024): string {
   if (!str || typeof str !== 'string') return '';
-  let cleaned = str
-    .replace(/[\r\n\t\0\x1b]/g, ' ') // Strip newlines, tabs, null bytes, and ANSI escape codes
-    .trim();
+  let cleaned = scrubSensitiveEmbeddedStrings(
+    str
+      .replace(/[\r\n\t\0\x1b]/g, ' ') // Strip newlines, tabs, null bytes, and ANSI escape codes
+      .trim()
+  ).replace(/((?:password|otp|secret|credential)=)[^&\s]+/gi, '$1[REDACTED]');
 
   if (cleaned.length > maxLength) {
     cleaned = `${cleaned.substring(0, maxLength)}...[Truncated ${cleaned.length} bytes]`;
   }
 
-  // Redact token/secret patterns embedded in strings
-  return cleaned
-    .replace(/Bearer\s+[A-Za-z0-9-_.]+/gi, 'Bearer [REDACTED_TOKEN]')
-    .replace(/__Host-zdex_session=[A-Za-z0-9-_.]+/gi, '__Host-zdex_session=[REDACTED_COOKIE]')
-    .replace(/__Host-zdex_admin_session=[A-Za-z0-9-_.]+/gi, '__Host-zdex_admin_session=[REDACTED_COOKIE]')
-    .replace(/x-zdex-csrf-token:\s*[^\r\n ]+/gi, 'x-zdex-csrf-token: [REDACTED_CSRF]')
-    .replace(/x-zdex-admin-csrf-token:\s*[^\r\n ]+/gi, 'x-zdex-admin-csrf-token: [REDACTED_CSRF]')
-    .replace(/([?&](?:token|accessToken|sessionToken|authToken|connectionToken|secret|key|apiKey)=)[^&\s]+/gi, '$1[REDACTED_URL_TOKEN]')
-    .replace(/mysql:\/\/[^@\s]+@[^\s/]+/gi, 'mysql://[REDACTED_DB_CREDENTIALS]@***')
-    .replace(/((?:password|otp|secret|credential)=)[^&\s]+/gi, '$1[REDACTED]');
+  return cleaned;
 }
 
 /**
  * Checks whether a key matches any sensitive security pattern.
  */
 export function isSensitiveKey(key: string): boolean {
-  if (!key) return false;
-  const lower = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return SENSITIVE_KEY_PATTERNS.some(p => p.test(lower));
+  return matchesSensitiveKeyPattern(key, SENSITIVE_KEY_PATTERNS);
 }
 
 /**
@@ -154,6 +150,7 @@ export class StructuredLogger {
       userId: payload.userId ? sanitizeLogString(payload.userId, 128) : undefined,
       adminId: payload.adminId ? sanitizeLogString(payload.adminId, 128) : undefined,
       deviceId: payload.deviceId ? sanitizeLogString(payload.deviceId, 128) : undefined,
+      cameraId: payload.cameraId ? sanitizeLogString(payload.cameraId, 128) : undefined,
       serverId: payload.serverId ? sanitizeLogString(payload.serverId, 128) : undefined,
       gatewayNodeId: payload.gatewayNodeId ? sanitizeLogString(payload.gatewayNodeId, 128) : undefined,
       durationMs: payload.durationMs,

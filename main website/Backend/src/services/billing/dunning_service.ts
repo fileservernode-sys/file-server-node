@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database.js';
 import { EntitlementService } from './entitlement_service.js';
+import { AccountProductSubscriptionService } from './account_product_subscription_service.js';
 import { CustomerActivityService } from '../activity/customer_activity_service.js';
 import {
   BillingStatus,
@@ -57,7 +58,7 @@ export class DunningService {
    */
   static async startGracePeriod(
     subscriptionId: string,
-    options?: { now?: Date; reason?: string }
+    options?: { now?: Date; reason?: string; tx?: any }
   ): Promise<Subscription> {
     const now = options?.now || new Date();
 
@@ -90,7 +91,7 @@ export class DunningService {
       currentMilestones.push(0);
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const executeGraceUpdates = async (tx: any) => {
       // Update Subscription
       const subUpdated = await tx.subscription.update({
         where: { id: sub.id },
@@ -104,15 +105,31 @@ export class DunningService {
         }
       });
 
-      // Update AccountBillingState
-      await tx.accountBillingState.update({
-        where: { userId: sub.userId },
-        data: {
+      // Update AccountBillingState (legacy pointer only updated if matches or Storage)
+      const billingState = await tx.accountBillingState.findUnique({ where: { userId: sub.userId } });
+      if (!billingState || billingState.activeSubscriptionId === sub.id || !(sub.plan as any)?.productType || (sub.plan as any)?.productType === 'STORAGE') {
+        await tx.accountBillingState.update({
+          where: { userId: sub.userId },
+          data: {
+            status: BillingStatus.GRACE_PERIOD,
+            activeSubscriptionId: sub.id,
+            updatedAt: now
+          }
+        });
+      }
+
+      // Update multi-product slot if applicable
+      try {
+        const productType = (sub.plan as any)?.productType || 'STORAGE';
+        await AccountProductSubscriptionService.updateSlotStatus({
+          subscriptionId: sub.id,
           status: BillingStatus.GRACE_PERIOD,
-          activeSubscriptionId: sub.id,
-          updatedAt: now
-        }
-      });
+          userId: sub.userId,
+          productType
+        }, tx);
+      } catch {
+        // Non-blocking fallback
+      }
 
       // Audit Events
       await tx.auditEvent.create({
@@ -143,7 +160,11 @@ export class DunningService {
       });
 
       return subUpdated;
-    }, { maxWait: 15000, timeout: 30000 });
+    };
+
+    const updated = options?.tx
+      ? await executeGraceUpdates(options.tx)
+      : await prisma.$transaction(executeGraceUpdates, { maxWait: 15000, timeout: 30000 });
 
     // Dispatch Day 0 in-app notification
     await this.dispatchDunningNotification({
@@ -367,15 +388,30 @@ export class DunningService {
         }
       });
 
-      // 2. Mark AccountBillingState EXPIRED and detach activeSubscriptionId
-      await tx.accountBillingState.update({
-        where: { userId: sub.userId },
-        data: {
-          status: BillingStatus.EXPIRED,
-          activeSubscriptionId: null,
-          updatedAt: now
-        }
-      });
+      // 2. Mark AccountBillingState EXPIRED and detach activeSubscriptionId ONLY if this sub is the active one
+      const billingState = await tx.accountBillingState.findUnique({ where: { userId: sub.userId } });
+      if (billingState && billingState.activeSubscriptionId === sub.id) {
+        await tx.accountBillingState.update({
+          where: { userId: sub.userId },
+          data: {
+            status: BillingStatus.EXPIRED,
+            activeSubscriptionId: null,
+            updatedAt: now
+          }
+        });
+      }
+
+      // Expire multi-product slot if applicable
+      try {
+        const productType = (sub.plan as any)?.productType || 'STORAGE';
+        await AccountProductSubscriptionService.expireProductSlot({
+          userId: sub.userId,
+          productType,
+          subscriptionId: sub.id
+        }, tx);
+      } catch {
+        // Non-blocking fallback
+      }
 
       // 3. Authoritative Audit Event
       await tx.auditEvent.create({
@@ -452,15 +488,30 @@ export class DunningService {
         }
       });
 
-      // 2. Mark AccountBillingState EXPIRED and detach activeSubscriptionId
-      await tx.accountBillingState.update({
-        where: { userId: sub.userId },
-        data: {
-          status: BillingStatus.EXPIRED,
-          activeSubscriptionId: null,
-          updatedAt: now
-        }
-      });
+      // 2. Mark AccountBillingState EXPIRED and detach activeSubscriptionId ONLY if this sub is the active one
+      const billingState = await tx.accountBillingState.findUnique({ where: { userId: sub.userId } });
+      if (billingState && billingState.activeSubscriptionId === sub.id) {
+        await tx.accountBillingState.update({
+          where: { userId: sub.userId },
+          data: {
+            status: BillingStatus.EXPIRED,
+            activeSubscriptionId: null,
+            updatedAt: now
+          }
+        });
+      }
+
+      // Expire multi-product slot if applicable
+      try {
+        const productType = (sub.plan as any)?.productType || 'STORAGE';
+        await AccountProductSubscriptionService.expireProductSlot({
+          userId: sub.userId,
+          productType,
+          subscriptionId: sub.id
+        }, tx);
+      } catch {
+        // Non-blocking fallback
+      }
 
       // 3. Authoritative Audit Event
       await tx.auditEvent.create({

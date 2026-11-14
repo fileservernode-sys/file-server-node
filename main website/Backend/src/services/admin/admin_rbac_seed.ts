@@ -78,7 +78,13 @@ export const SYSTEM_PERMISSIONS: SystemPermissionDef[] = [
   { slug: 'database.management.view', name: 'View Database Management', resource: 'database', action: 'view', description: 'View database topology, schema overview, and table metadata' },
   { slug: 'database.management.insert', name: 'Insert Database Records', resource: 'database', action: 'insert', description: 'Insert single records into authorized database tables via Database Management' },
   { slug: 'database.management.update', name: 'Update Database Records', resource: 'database', action: 'update', description: 'Update single records in authorized database tables via Database Management' },
-  { slug: 'database.management.delete', name: 'Delete Database Records', resource: 'database', action: 'delete', description: 'Delete single records and execute bounded bulk deletion on authorized database tables via Database Management' }
+  { slug: 'database.management.delete', name: 'Delete Database Records', resource: 'database', action: 'delete', description: 'Delete single records and execute bounded bulk deletion on authorized database tables via Database Management' },
+
+  // Camera Administration (Phase 20.6.3)
+  { slug: 'cameras.view', name: 'View Cameras', resource: 'cameras', action: 'view', description: 'View registered camera instances, connection states, and safe operational topology' },
+  { slug: 'cameras.sessions.view', name: 'View Camera Sessions', resource: 'cameras', action: 'view_sessions', description: 'Inspect real-time viewer WebRTC stream sessions and session lifecycles' },
+  { slug: 'cameras.audit.view', name: 'View Camera Audit', resource: 'cameras', action: 'view_audit', description: 'Inspect camera access and security audit event trails' },
+  { slug: 'cameras.usage.view', name: 'View Camera Usage', resource: 'cameras', action: 'view_usage', description: 'Inspect camera streaming seconds and aggregate usage records' }
 ];
 
 export const SYSTEM_ROLES: SystemRoleDef[] = [
@@ -108,7 +114,11 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'database.management.view',
       'database.management.insert',
       'database.management.update',
-      'database.management.delete'
+      'database.management.delete',
+      'cameras.view',
+      'cameras.sessions.view',
+      'cameras.audit.view',
+      'cameras.usage.view'
     ]
   },
   {
@@ -122,7 +132,9 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'billing.read',
       'support.read', 'support.write', 'support.assign', 'support.notes',
       'notifications.read',
-      'emails.read'
+      'emails.read',
+      'cameras.view',
+      'cameras.usage.view'
     ]
   },
   {
@@ -137,7 +149,10 @@ export const SYSTEM_ROLES: SystemRoleDef[] = [
       'emails.read', 'emails.manage',
       'audit.read',
       'system.read',
-      'database.management.view'
+      'database.management.view',
+      'cameras.view',
+      'cameras.sessions.view',
+      'cameras.audit.view'
     ]
   }
 ];

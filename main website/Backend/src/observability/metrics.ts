@@ -28,6 +28,7 @@ export interface AdminOpsMetricsSummary {
     devices: number;
     servers: number;
     gateway: number;
+    cameras: number;
   };
   byStatusCode: {
     status400: number;
@@ -38,6 +39,117 @@ export interface AdminOpsMetricsSummary {
     status429: number;
     status5xx: number;
   };
+}
+
+export interface LatencySummary {
+  count: number;
+  averageMs: number;
+  maxMs: number;
+  p95Ms: number;
+}
+
+export type CameraLifecycleStatusKey =
+  | 'OFFLINE'
+  | 'CONNECTING'
+  | 'ONLINE'
+  | 'STREAMING'
+  | 'RECONNECTING'
+  | 'ERROR';
+
+export type CameraTransitionFailureCategory =
+  | 'INVALID_TRANSITION'
+  | 'STALE_REPORT'
+  | 'NO_ACTIVE_SESSION'
+  | 'UNAUTHORIZED'
+  | 'VALIDATION_ERROR'
+  | 'INTERNAL_ERROR';
+
+export interface CameraMetricsSummary {
+  http: {
+    totalRequests: number;
+    requestsByStatusClass: {
+      '2xx': number;
+      '3xx': number;
+      '4xx': number;
+      '5xx': number;
+    };
+    errorCount: number;
+    latency: LatencySummary;
+  };
+  lifecycle: {
+    transitionsTotal: number;
+    transitionsByTargetStatus: Record<CameraLifecycleStatusKey, number>;
+    transitionsBySource: {
+      heartbeat: number;
+      report: number;
+      reconciliation: number;
+      api: number;
+    };
+    transitionFailuresTotal: number;
+    transitionFailuresByCategory: Record<CameraTransitionFailureCategory, number>;
+  };
+  heartbeat: {
+    totalProcessed: number;
+    idempotentCount: number;
+    rejectedCount: number;
+    latency: LatencySummary;
+  };
+}
+
+const DEFAULT_LATENCY_WINDOW_SIZE = 256;
+
+/**
+ * Fixed-capacity circular latency tracker providing bounded memory,
+ * cumulative count/avg/max, and sliding-window p95 estimation.
+ */
+export class BoundedLatencyRecorder {
+  private readonly capacity: number;
+  private readonly samples: number[] = [];
+  private writeIndex = 0;
+  private totalCount = 0;
+  private totalSumMs = 0;
+  private maxObservedMs = 0;
+
+  constructor(capacity = DEFAULT_LATENCY_WINDOW_SIZE) {
+    this.capacity = Math.max(1, Math.floor(capacity));
+  }
+
+  public record(latencyMs: number): void {
+    const clamped = Number.isFinite(latencyMs) ? Math.max(0, latencyMs) : 0;
+    this.totalCount++;
+    this.totalSumMs += clamped;
+    if (clamped > this.maxObservedMs) {
+      this.maxObservedMs = clamped;
+    }
+
+    if (this.samples.length < this.capacity) {
+      this.samples.push(clamped);
+    } else {
+      this.samples[this.writeIndex] = clamped;
+      this.writeIndex = (this.writeIndex + 1) % this.capacity;
+    }
+  }
+
+  public getSummary(): LatencySummary {
+    if (this.totalCount === 0 || this.samples.length === 0) {
+      return {
+        count: 0,
+        averageMs: 0,
+        maxMs: 0,
+        p95Ms: 0
+      };
+    }
+
+    const sorted = [...this.samples].sort((a, b) => a - b);
+    const p95Idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * 0.95) - 1));
+
+    return {
+      count: this.totalCount,
+      averageMs: Math.round((this.totalSumMs / this.totalCount) * 100) / 100,
+      maxMs: Math.round(this.maxObservedMs * 100) / 100,
+      p95Ms: Math.round(sorted[p95Idx] * 100) / 100
+    };
+  }
 }
 
 export interface DatabaseMetricsSummary {
@@ -103,7 +215,7 @@ export class MetricsCollector {
   private adminOpsTotal = 0;
   private adminOpsSuccess = 0;
   private adminOpsFailure = 0;
-  private adminOpsByDomain = { users: 0, devices: 0, servers: 0, gateway: 0 };
+  private adminOpsByDomain = { users: 0, devices: 0, servers: 0, gateway: 0, cameras: 0 };
   private adminOpsByStatus = {
     status400: 0,
     status401: 0,
@@ -113,6 +225,46 @@ export class MetricsCollector {
     status429: 0,
     status5xx: 0
   };
+
+  // Camera Operations (Bounded Cardinality)
+  private cameraHttpTotal = 0;
+  private cameraHttpByStatusClass: { '2xx': number; '3xx': number; '4xx': number; '5xx': number } = {
+    '2xx': 0,
+    '3xx': 0,
+    '4xx': 0,
+    '5xx': 0
+  };
+  private cameraHttpLatency = new BoundedLatencyRecorder(DEFAULT_LATENCY_WINDOW_SIZE);
+
+  private cameraTransitionsTotal = 0;
+  private cameraTransitionsByTargetStatus: Record<CameraLifecycleStatusKey, number> = {
+    OFFLINE: 0,
+    CONNECTING: 0,
+    ONLINE: 0,
+    STREAMING: 0,
+    RECONNECTING: 0,
+    ERROR: 0
+  };
+  private cameraTransitionsBySource = {
+    heartbeat: 0,
+    report: 0,
+    reconciliation: 0,
+    api: 0
+  };
+  private cameraTransitionFailuresTotal = 0;
+  private cameraTransitionFailuresByCategory: Record<CameraTransitionFailureCategory, number> = {
+    INVALID_TRANSITION: 0,
+    STALE_REPORT: 0,
+    NO_ACTIVE_SESSION: 0,
+    UNAUTHORIZED: 0,
+    VALIDATION_ERROR: 0,
+    INTERNAL_ERROR: 0
+  };
+
+  private cameraHeartbeatsProcessed = 0;
+  private cameraHeartbeatsIdempotent = 0;
+  private cameraHeartbeatsRejected = 0;
+  private cameraHeartbeatLatency = new BoundedLatencyRecorder(DEFAULT_LATENCY_WINDOW_SIZE);
 
   // Database
   private dbQueryFailures = 0;
@@ -178,7 +330,7 @@ export class MetricsCollector {
   }
 
   // --- Admin Operations ---
-  public recordAdminOperation(domain: 'users' | 'devices' | 'servers' | 'gateway', statusCode: number): void {
+  public recordAdminOperation(domain: 'users' | 'devices' | 'servers' | 'gateway' | 'cameras', statusCode: number): void {
     this.adminOpsTotal++;
     if (this.adminOpsByDomain[domain] !== undefined) {
       this.adminOpsByDomain[domain]++;
@@ -268,6 +420,57 @@ export class MetricsCollector {
     else if (action === 'error') this.serverTransitionErrors++;
   }
 
+  // --- Camera Operations ---
+  public recordCameraHttpRequest(statusCode: number, latencyMs: number): void {
+    this.cameraHttpTotal++;
+    const statusClass: '2xx' | '3xx' | '4xx' | '5xx' =
+      statusCode >= 500
+        ? '5xx'
+        : statusCode >= 400
+        ? '4xx'
+        : statusCode >= 300
+        ? '3xx'
+        : '2xx';
+    this.cameraHttpByStatusClass[statusClass]++;
+    this.cameraHttpLatency.record(latencyMs);
+  }
+
+  public recordCameraLifecycleTransition(
+    targetStatus: string,
+    source: 'heartbeat' | 'report' | 'reconciliation' | 'api' = 'report'
+  ): void {
+    this.cameraTransitionsTotal++;
+    const upper = String(targetStatus || '').toUpperCase() as CameraLifecycleStatusKey;
+    if (upper in this.cameraTransitionsByTargetStatus) {
+      this.cameraTransitionsByTargetStatus[upper]++;
+    }
+    if (source in this.cameraTransitionsBySource) {
+      this.cameraTransitionsBySource[source]++;
+    }
+  }
+
+  public recordCameraLifecycleTransitionFailure(category: CameraTransitionFailureCategory): void {
+    this.cameraTransitionFailuresTotal++;
+    if (category in this.cameraTransitionFailuresByCategory) {
+      this.cameraTransitionFailuresByCategory[category]++;
+    }
+  }
+
+  public recordCameraHeartbeatLatency(
+    latencyMs: number,
+    outcome: 'processed' | 'idempotent' | 'rejected' = 'processed'
+  ): void {
+    this.cameraHeartbeatLatency.record(latencyMs);
+    if (outcome === 'rejected') {
+      this.cameraHeartbeatsRejected++;
+    } else {
+      this.cameraHeartbeatsProcessed++;
+      if (outcome === 'idempotent') {
+        this.cameraHeartbeatsIdempotent++;
+      }
+    }
+  }
+
   // --- Snapshot Generation ---
   public getSnapshot(): {
     process: { uptimeSeconds: number; memoryUsage: NodeJS.MemoryUsage };
@@ -280,6 +483,7 @@ export class MetricsCollector {
       devices: { disconnectEvents: number; reconnectEvents: number };
       servers: { startEvents: number; stopEvents: number; restartEvents: number; errors: number };
     };
+    camera: CameraMetricsSummary;
   } {
     const avgLatency = this.totalHttpRequests > 0
       ? Math.round((this.totalHttpLatencyMs / this.totalHttpRequests) * 100) / 100
@@ -341,6 +545,28 @@ export class MetricsCollector {
           stopEvents: this.serverStopEvents,
           restartEvents: this.serverRestartEvents,
           errors: this.serverTransitionErrors
+        }
+      },
+      camera: {
+        http: {
+          totalRequests: this.cameraHttpTotal,
+          requestsByStatusClass: { ...this.cameraHttpByStatusClass },
+          errorCount:
+            this.cameraHttpByStatusClass['4xx'] + this.cameraHttpByStatusClass['5xx'],
+          latency: this.cameraHttpLatency.getSummary()
+        },
+        lifecycle: {
+          transitionsTotal: this.cameraTransitionsTotal,
+          transitionsByTargetStatus: { ...this.cameraTransitionsByTargetStatus },
+          transitionsBySource: { ...this.cameraTransitionsBySource },
+          transitionFailuresTotal: this.cameraTransitionFailuresTotal,
+          transitionFailuresByCategory: { ...this.cameraTransitionFailuresByCategory }
+        },
+        heartbeat: {
+          totalProcessed: this.cameraHeartbeatsProcessed,
+          idempotentCount: this.cameraHeartbeatsIdempotent,
+          rejectedCount: this.cameraHeartbeatsRejected,
+          latency: this.cameraHeartbeatLatency.getSummary()
         }
       }
     };

@@ -10,6 +10,11 @@
  * - Enforces bounded depth and string lengths to prevent payload explosion.
  */
 
+import {
+  matchesSensitiveKeyPattern,
+  scrubSensitiveEmbeddedStrings
+} from '../observability/redaction_patterns.js';
+
 const SENSITIVE_PATTERNS = [
   /Bearer\s+[A-Za-z0-9\-_.]+/gi,
   /mysql:\/\/[^@\s]+@[^\s/]+/gi,
@@ -75,7 +80,7 @@ export class ErrorSanitizer {
       return 'Unknown error';
     }
 
-    let sanitized = rawMessage;
+    let sanitized = scrubSensitiveEmbeddedStrings(rawMessage);
 
     // 1. Mask sensitive token and credential patterns
     for (const pattern of SENSITIVE_PATTERNS) {
@@ -112,7 +117,7 @@ export class ErrorSanitizer {
       return null;
     }
 
-    let sanitized = rawStack;
+    let sanitized = scrubSensitiveEmbeddedStrings(rawStack);
 
     // Mask sensitive token patterns in stack frame messages
     for (const pattern of SENSITIVE_PATTERNS) {
@@ -209,7 +214,6 @@ export class ErrorSanitizer {
    * Checks whether a metadata key name matches sensitive keywords.
    */
   public static isSensitiveKey(key: string): boolean {
-    const cleaned = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-    return SENSITIVE_KEY_PATTERNS.some(pattern => pattern.test(cleaned) || pattern.test(key));
+    return matchesSensitiveKeyPattern(key, SENSITIVE_KEY_PATTERNS);
   }
 }

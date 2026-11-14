@@ -308,7 +308,7 @@ export class ErrorIngestionService {
             message: sanitizedMessage,
             stackTrace: sanitizedStackTrace,
             httpMethod: input.httpMethod ? input.httpMethod.toUpperCase().trim() : undefined,
-            httpPath: input.httpPath ? input.httpPath.trim() : undefined,
+            httpPath: input.httpPath ? ErrorSanitizer.sanitizeMessage(input.httpPath.trim()).slice(0, 512) : undefined,
             httpStatus: typeof input.httpStatus === 'number' ? input.httpStatus : undefined,
             requestId: input.requestId ? input.requestId.trim() : undefined,
             userId: input.userId || undefined,

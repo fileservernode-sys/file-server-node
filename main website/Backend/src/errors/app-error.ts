@@ -49,6 +49,18 @@ export class ConflictError extends AppError {
   }
 }
 
+export class ConcurrencyError extends AppError {
+  constructor(message = 'Concurrent modification conflict', errorCode = 'CONCURRENCY_CONFLICT') {
+    super(message, 409, errorCode);
+  }
+}
+
+export class WebhookLeaseLostError extends ConcurrencyError {
+  constructor(message = 'Webhook processing lease lost or superseded', errorCode = 'WEBHOOK_LEASE_LOST') {
+    super(message, errorCode);
+  }
+}
+
 export class StatutoryConfigurationMissingError extends AppError {
   constructor(message = 'Statutory configuration is incomplete or unapproved', errorCode = 'STATUTORY_CONFIGURATION_MISSING') {
     super(message, 422, errorCode);
@@ -58,6 +70,24 @@ export class StatutoryConfigurationMissingError extends AppError {
 export class InvoiceIssuanceBlockedError extends AppError {
   constructor(message = 'Invoice issuance is blocked due to unfulfilled prerequisites', errorCode = 'INVOICE_ISSUANCE_BLOCKED') {
     super(message, 422, errorCode);
+  }
+}
+
+export class DeploymentMigrationPendingError extends AppError {
+  constructor(
+    message = 'Database schema migration pending deployment (npx prisma migrate deploy required)',
+    errorCode = 'MIGRATION_PENDING'
+  ) {
+    super(message, 503, errorCode);
+  }
+}
+
+export class SecurityAuditPersistenceError extends AppError {
+  constructor(
+    message = 'Failed to persist critical security audit event',
+    errorCode = 'SECURITY_AUDIT_PERSISTENCE_FAILED'
+  ) {
+    super(message, 500, errorCode);
   }
 }
 

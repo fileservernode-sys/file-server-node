@@ -4,6 +4,7 @@ import { validateEnvironment } from './config/env_validator.js';
 import { disconnectDatabase } from './config/database.js';
 import { runStartupMigrations } from './services/db_migrator.js';
 import { defaultGatewayService } from './gateway/gateway_service.js';
+import { defaultCameraSignalingService } from './services/camera_signaling_service.js';
 import { appLogger } from './observability/logger.js';
 
 async function startServer() {
@@ -54,6 +55,9 @@ async function startServer() {
     // Attach Gateway WebSocket Transport Server to main HTTP server
     defaultGatewayService.attachToHttpServer(app.server);
 
+    // Attach isolated Camera WebRTC Signaling WebSocket channel (/ws/camera-signaling)
+    defaultCameraSignalingService.attachToHttpServer(app.server);
+
     // Start background notification delivery worker and retention worker
     const { defaultDeliveryWorker, defaultRetentionWorker } = await import('./notifications/index.js');
     if (config.NOTIFICATION_WORKER_ENABLED) {
@@ -89,6 +93,13 @@ async function startServer() {
       app.log.info('🔄 Background Email Webhook Reconciliation Worker initialized.');
     }
 
+    // Start background Camera Lifecycle Reconciliation Worker (Phase 20.4.1)
+    const { defaultCameraReconciliationWorker } = await import('./services/camera_reconciliation_worker.js');
+    if (config.CAMERA_RECONCILIATION_ENABLED) {
+      defaultCameraReconciliationWorker.start();
+      app.log.info(`📷 Background Camera Lifecycle Reconciliation Worker (${defaultCameraReconciliationWorker.getWorkerId()}) initialized.`);
+    }
+
     app.log.info(`🚀 Control Plane Backend & Gateway running at ${address}`);
     app.log.info(`📊 Health probes available at ${address}/health and ${address}/api/v1/health`);
 
@@ -98,7 +109,12 @@ async function startServer() {
 
       // Bounded shutdown timer: force exit if cleanup exceeds 15 seconds
       const forceExitTimer = setTimeout(() => {
-        app.log.error('Graceful shutdown timeout exceeded (15s). Force-exiting process.');
+        app.log.error(
+          {
+            cameraReconciliationActive: defaultCameraReconciliationWorker.isExecuting()
+          },
+          'Graceful shutdown timeout exceeded (15s). Force-exiting process without disconnecting active database mid-cycle.'
+        );
         process.exit(1);
       }, 15000);
       forceExitTimer.unref();
@@ -131,7 +147,16 @@ async function startServer() {
           app.log.info('Email webhook reconciliation worker stopped.');
         }
 
-        // 1. Close Gateway WebSocket Relay Server
+        await defaultCameraReconciliationWorker.stop();
+        if (defaultCameraReconciliationWorker.isExecuting()) {
+          throw new Error('Camera lifecycle reconciliation worker still has an active cycle after stop().');
+        }
+        app.log.info('Camera lifecycle reconciliation worker stopped.');
+
+        // 1. Close Camera Signaling & Storage Gateway WebSocket Servers
+        await defaultCameraSignalingService.stop();
+        app.log.info('Camera signaling WebSocket server stopped.');
+
         await defaultGatewayService.stop();
         app.log.info('Gateway WebSocket relay stopped.');
 
@@ -139,7 +164,10 @@ async function startServer() {
         await app.close();
         app.log.info('HTTP server closed.');
 
-        // 3. Disconnect Database Pool
+        // 3. Disconnect Database Pool (only after all DB workers, including camera reconciliation, are stopped)
+        if (defaultCameraReconciliationWorker.isExecuting()) {
+          throw new Error('Refusing to disconnect Prisma while camera reconciliation cycle is still active.');
+        }
         await disconnectDatabase();
         app.log.info('Database client disconnected.');
 

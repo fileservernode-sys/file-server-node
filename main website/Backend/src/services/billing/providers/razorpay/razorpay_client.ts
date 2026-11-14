@@ -136,6 +136,81 @@ export class RazorpayClient implements IPaymentProvider {
   }
 
   /**
+   * Fetches a paginated list of Subscriptions from Razorpay.
+   * Calls GET /v1/subscriptions?plan_id=...&count=...&skip=...
+   */
+  public async fetchSubscriptions(
+    params?: { plan_id?: string; count?: number; skip?: number; from?: number; to?: number },
+    options?: RequestOptions
+  ): Promise<{ entity: string; count: number; items: RazorpaySubscriptionResponse[] }> {
+    const queryParts: string[] = [];
+    if (params?.plan_id) queryParts.push(`plan_id=${encodeURIComponent(params.plan_id)}`);
+    if (params?.count !== undefined) queryParts.push(`count=${encodeURIComponent(params.count)}`);
+    if (params?.skip !== undefined) queryParts.push(`skip=${encodeURIComponent(params.skip)}`);
+    if (params?.from !== undefined) queryParts.push(`from=${encodeURIComponent(params.from)}`);
+    if (params?.to !== undefined) queryParts.push(`to=${encodeURIComponent(params.to)}`);
+
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+    return this.get<{ entity: string; count: number; items: RazorpaySubscriptionResponse[] }>(
+      `/subscriptions${queryString}`,
+      options
+    );
+  }
+
+  /**
+   * Reconciles a subscription reservation by performing a complete paginated search across
+   * subscriptions for the given plan to see if any subscription matches notes.zdexcloud_reservation_id.
+   * 
+   * Strict Safety Invariants:
+   * 1. Paginates across all relevant pages until match found or collection is genuinely exhausted.
+   * 2. Never returns null on network/API failure; errors are thrown to indicate unresolved outcomes.
+   * 3. Respects provider pagination limits (count: 50) and rate limits.
+   * 4. Throws PAGINATION_LIMIT_EXCEEDED if search boundary is reached without exhaustion to prevent
+   *    falsely interpreting a partial search as definitive absence.
+   */
+  public async findSubscriptionByReservationId(
+    reservationId: string,
+    planId?: string,
+    options?: RequestOptions
+  ): Promise<RazorpaySubscriptionResponse | null> {
+    if (!reservationId) return null;
+
+    const pageSize = 50;
+    const maxPages = 20; // Bound search up to 1,000 subscriptions
+    let skip = 0;
+    let pageCount = 0;
+
+    while (pageCount < maxPages) {
+      pageCount++;
+      const response = await this.fetchSubscriptions(
+        { plan_id: planId, count: pageSize, skip },
+        options
+      );
+
+      const items = response?.items || [];
+      for (const item of items) {
+        if (item.notes && item.notes.zdexcloud_reservation_id === reservationId) {
+          return item;
+        }
+      }
+
+      // If page returned fewer items than requested, collection is genuinely exhausted
+      if (items.length < pageSize) {
+        return null;
+      }
+
+      skip += items.length;
+    }
+
+    // Maximum search boundary reached without exhausting provider collection
+    throw new RazorpayProviderError(
+      'PAGINATION_LIMIT_EXCEEDED',
+      `Reconciliation search for reservation ${reservationId} exceeded maximum page limit (${maxPages} pages) without exhausting provider collection. Outcome unresolved.`,
+      { statusCode: 504 }
+    );
+  }
+
+  /**
    * Fetches a paginated list of Plans from Razorpay.
    * Calls GET /v1/plans?count=...&skip=...
    */

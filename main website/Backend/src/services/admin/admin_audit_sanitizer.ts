@@ -3,6 +3,11 @@
  * Defends against Log Injection (CR/LF), Secret Leakage, Delimiter Injection, and Nested Payloads.
  */
 
+import {
+  matchesSensitiveKeyPattern,
+  scrubSensitiveEmbeddedStrings
+} from '../../observability/redaction_patterns.js';
+
 const SENSITIVE_KEY_PATTERNS = [
   /password/i,
   /token/i,
@@ -50,13 +55,14 @@ export class AdminAuditSanitizer {
       const entries = Object.entries(input as Record<string, unknown>);
 
       for (const [key, value] of entries.slice(0, 50)) {
+        const sanitizedKey = this.sanitizeString(key) || key;
         // Redact if key name matches sensitive patterns
         if (this.isSensitiveKey(key)) {
-          sanitizedObj[key] = '[REDACTED]';
+          sanitizedObj[sanitizedKey] = '[REDACTED]';
           continue;
         }
 
-        sanitizedObj[this.sanitizeString(key)] = this.sanitizeMetadata(value, depth + 1);
+        sanitizedObj[sanitizedKey] = this.sanitizeMetadata(value, depth + 1);
       }
 
       // Check total byte size constraint
@@ -80,9 +86,11 @@ export class AdminAuditSanitizer {
    */
   static sanitizeString(str: string): string {
     if (!str || typeof str !== 'string') return '';
-    let cleaned = str
-      .replace(/[\r\n\t\0]/g, ' ') // Strip control characters and newlines
-      .trim();
+    let cleaned = scrubSensitiveEmbeddedStrings(
+      str
+        .replace(/[\r\n\t\0]/g, ' ') // Strip control characters and newlines
+        .trim()
+    );
 
     if (cleaned.length > MAX_STRING_LENGTH) {
       cleaned = cleaned.substring(0, MAX_STRING_LENGTH) + '...';
@@ -95,6 +103,6 @@ export class AdminAuditSanitizer {
    * Checks whether a key contains sensitive terminology
    */
   static isSensitiveKey(key: string): boolean {
-    return SENSITIVE_KEY_PATTERNS.some(pattern => pattern.test(key));
+    return matchesSensitiveKeyPattern(key, SENSITIVE_KEY_PATTERNS);
   }
 }

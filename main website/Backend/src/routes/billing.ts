@@ -235,14 +235,15 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
         throw new ValidationError('Request body is required');
       }
 
-      const { planCode } = body;
+      const { planCode, productType } = body;
 
       if (!planCode || typeof planCode !== 'string') {
         throw new ValidationError('planCode is required');
       }
 
       const result = await RazorpayCheckoutService.createCheckoutSession(user.id, {
-        planCode: String(planCode)
+        planCode: String(planCode),
+        productType: productType && typeof productType === 'string' ? (productType.trim().toUpperCase() as any) : undefined
       });
 
       return createSuccessResponse(result);

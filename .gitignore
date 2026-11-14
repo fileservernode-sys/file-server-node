@@ -39,6 +39,7 @@ Android app/.idea/
 # Database backups
 db_backup_*/
 *.sql
+!main website/Backend/prisma/migrations/**/*.sql
 *.dump
 
 # Local prompt notes

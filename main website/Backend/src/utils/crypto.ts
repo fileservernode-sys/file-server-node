@@ -62,7 +62,13 @@ export function hashOtp(otp: string): string {
  * Timing-safely verifies a candidate 6-digit OTP against stored OTP representation
  */
 export function verifyOtpCode(candidateOtp: string, storedRepresentation: string): boolean {
-  if (!storedRepresentation || storedRepresentation.startsWith('pwdchg:')) return false;
+  if (
+    !storedRepresentation ||
+    storedRepresentation.startsWith('pwdchg:') ||
+    storedRepresentation.startsWith('devreenroll:')
+  ) {
+    return false;
+  }
 
   const cleanCandidate = candidateOtp.trim();
 
@@ -125,6 +131,63 @@ export function verifyPasswordChangeOtpCode(
     const candidateHash = crypto
       .createHmac('sha256', salt)
       .update(`PASSWORD_CHANGE:${cleanUserId}:${cleanCandidate}`)
+      .digest('hex');
+    const a = Buffer.from(candidateHash, 'hex');
+    const b = Buffer.from(originalHash, 'hex');
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hashes a 6-digit OTP code bound strictly to authenticated device re-enrollment, userId, and installationId.
+ * Stored representation format: devreenroll:<userId>:<salt>:<hmac>
+ */
+export function hashDeviceReEnrollmentOtp(
+  userId: string,
+  installationId: string,
+  otp: string
+): string {
+  const cleanUserId = userId.trim();
+  const cleanInstallationId = installationId.trim();
+  const cleanOtp = otp.trim();
+  const salt = crypto.randomBytes(8).toString('hex');
+  const hash = crypto
+    .createHmac('sha256', salt)
+    .update(`DEVICE_RE_ENROLL:${cleanUserId}:${cleanInstallationId}:${cleanOtp}`)
+    .digest('hex');
+  return `devreenroll:${cleanUserId}:${salt}:${hash}`;
+}
+
+/**
+ * Timing-safely verifies a candidate 6-digit OTP against an operation-bound device re-enrollment OTP representation.
+ */
+export function verifyDeviceReEnrollmentOtpCode(
+  userId: string,
+  installationId: string,
+  candidateOtp: string,
+  storedRepresentation: string
+): boolean {
+  if (!userId || !installationId || !candidateOtp || !storedRepresentation) return false;
+  if (!storedRepresentation.startsWith('devreenroll:')) return false;
+
+  const parts = storedRepresentation.split(':');
+  if (parts.length !== 4) return false;
+
+  const [prefix, storedUserId, salt, originalHash] = parts;
+  const cleanUserId = userId.trim();
+  const cleanInstallationId = installationId.trim();
+  if (prefix !== 'devreenroll' || !storedUserId || storedUserId !== cleanUserId || !salt || !originalHash) {
+    return false;
+  }
+
+  try {
+    const cleanCandidate = candidateOtp.trim();
+    const candidateHash = crypto
+      .createHmac('sha256', salt)
+      .update(`DEVICE_RE_ENROLL:${cleanUserId}:${cleanInstallationId}:${cleanCandidate}`)
       .digest('hex');
     const a = Buffer.from(candidateHash, 'hex');
     const b = Buffer.from(originalHash, 'hex');

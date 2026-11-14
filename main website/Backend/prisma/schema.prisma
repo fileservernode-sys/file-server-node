@@ -112,6 +112,12 @@ enum BillingInterval {
   YEARLY
 }
 
+enum ProductType {
+  STORAGE
+  CAMERA
+  UNIFIED_PRO
+}
+
 enum BillingStatus {
   FREE
   CREATED
@@ -431,6 +437,65 @@ enum IncidentStatus {
 }
 
 // -----------------------------------------------------------------------------
+// CAMERA ENUMS (PHASE 20.1)
+// -----------------------------------------------------------------------------
+
+enum CameraStatus {
+  OFFLINE
+  CONNECTING
+  ONLINE
+  STREAMING
+  RECONNECTING
+  ERROR
+}
+
+enum CameraEndpointStatus {
+  INACTIVE
+  READY
+  CONNECTED
+  FAILED
+  REVOKED
+}
+
+enum CameraStreamSessionStatus {
+  INITIATED
+  NEGOTIATING
+  ACTIVE
+  ENDED
+  FAILED
+  TIMED_OUT
+  REVOKED
+}
+
+enum CameraTransportType {
+  P2P
+  TURN_RELAY
+  SFU
+}
+
+enum CameraAuditEventType {
+  CAMERA_REGISTERED
+  CAMERA_UNLINKED
+  CAMERA_CONFIG_UPDATED
+  CAMERA_STARTED
+  CAMERA_STOPPED
+  VIEWING_SESSION_REQUESTED
+  VIEWING_SESSION_STARTED
+  VIEWING_SESSION_ENDED
+  VIEWING_ACCESS_DENIED
+  TURN_CREDENTIALS_ISSUED
+  SIGNALING_AUTHENTICATED
+  SIGNALING_AUTH_FAILED
+}
+
+enum CameraUsageCategory {
+  STREAMING_SECONDS
+  TURN_RELAY_BYTES
+  STREAM_SESSION_COUNT
+  ACTIVE_CAMERA_HOURS
+}
+
+// -----------------------------------------------------------------------------
 // CORE ENTITIES
 // -----------------------------------------------------------------------------
 
@@ -453,6 +518,7 @@ model User {
   notificationPreferences UserNotificationPreferences?
   pushTokens              DevicePushToken[]
   billingState            AccountBillingState?
+  productSubscriptions    AccountProductSubscription[]
   subscriptions           Subscription[]
   payments                BillingPayment[]
   refunds                 BillingRefund[]
@@ -467,6 +533,12 @@ model User {
   deviceCredentials       DeviceAuthCredential[]
   invoiceNotifications    InvoiceNotificationOutbox[]
   customerActivityEvents  CustomerActivityEvent[]
+  cameraInstances         CameraInstance[]            @relation("UserCameraInstances")
+  cameraStreamSessions    CameraStreamSession[]       @relation("ViewerCameraStreamSessions")
+  cameraSubscriptions     CameraSubscription[]        @relation("UserCameraSubscriptions")
+  cameraAuditEvents       CameraAccessAuditEvent[]    @relation("UserCameraAuditEvents")
+  cameraUsageRecords      CameraUsageRecord[]         @relation("UserCameraUsageRecords")
+  installationClaims      DeviceInstallationClaim[]
 
   @@index([email])
 }
@@ -501,6 +573,23 @@ model UserSession {
 
   @@index([userId])
   @@index([tokenHash])
+}
+
+/// Global Device Installation Claim for Cross-Account Anti-Hijacking and Safe Re-Enrollment (Phase 20.3)
+model DeviceInstallationClaim {
+  id             String    @id @default(cuid())
+  installationId String    @unique
+  userId         String
+  deviceId       String?
+  status         String    @default("ACTIVE") // ACTIVE | REVOKED | RECOVERY_PENDING
+  metadata       Json?
+  claimedAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 /// Persistent Device Authentication Credential for Unattended Server Mode (Phase 14.7)
@@ -546,6 +635,7 @@ model Device {
   pushTokens       DevicePushToken[]
   errorOccurrences ErrorOccurrence[]
   credential       DeviceAuthCredential?
+  cameraInstances  CameraInstance[]      @relation("DeviceCameraInstances")
 
   @@unique([userId, installationId])
   @@index([userId])
@@ -587,6 +677,164 @@ model ServerEndpoint {
   serverInstance   ServerInstance @relation(fields: [serverInstanceId], references: [id], onDelete: Cascade)
 
   @@index([hostname])
+}
+
+// =============================================================================
+// CAMERA FOUNDATION MODELS (PHASE 20.1)
+// =============================================================================
+
+/// Canonical Registered Camera Installation / Node (Phase 20.1)
+model CameraInstance {
+  id             String       @id @default(cuid())
+  userId         String
+  deviceId       String?
+  cameraName     String?
+  status         CameraStatus @default(OFFLINE)
+  resolution     String?      @default("720p")
+  fps            Int?         @default(20)
+  audioEnabled   Boolean      @default(false)
+  lensFacing     String?      @default("BACK")
+  metadata       Json?
+  lastSeenAt     DateTime?
+  startedAt      DateTime?
+  stoppedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user           User                     @relation("UserCameraInstances", fields: [userId], references: [id], onDelete: Cascade)
+  device         Device?                  @relation("DeviceCameraInstances", fields: [deviceId], references: [id], onDelete: SetNull)
+  endpoints      CameraEndpoint[]
+  streamSessions CameraStreamSession[]
+  subscription   CameraSubscription?
+  auditEvents    CameraAccessAuditEvent[]
+  usageRecords   CameraUsageRecord[]
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([status])
+  @@index([lastSeenAt])
+  @@index([createdAt])
+}
+
+/// Camera Connection & Signaling Endpoint Metadata
+model CameraEndpoint {
+  id               String               @id @default(cuid())
+  cameraInstanceId String
+  signalingUrl     String?
+  connectionToken  String?
+  ipAddress        String?
+  status           CameraEndpointStatus @default(INACTIVE)
+  lastHeartbeatAt  DateTime?
+  connectedAt      DateTime?
+  disconnectedAt   DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  cameraInstance   CameraInstance       @relation(fields: [cameraInstanceId], references: [id], onDelete: Cascade)
+
+  @@index([cameraInstanceId])
+  @@index([status])
+}
+
+/// Viewer Real-time Video Streaming Session Log / State
+model CameraStreamSession {
+  id                String                    @id @default(cuid())
+  cameraInstanceId  String
+  viewerUserId      String
+  sessionTokenHash  String?
+  status            CameraStreamSessionStatus @default(INITIATED)
+  transportType     CameraTransportType       @default(P2P)
+  protocol          String                    @default("WEBRTC")
+  startedAt         DateTime?
+  endedAt           DateTime?
+  expiresAt         DateTime?
+  bytesTransferred  BigInt?                   @default(0)
+  durationSeconds   Int?                      @default(0)
+  terminationReason String?
+  metadata          Json?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  cameraInstance    CameraInstance            @relation(fields: [cameraInstanceId], references: [id], onDelete: Cascade)
+  viewerUser        User                      @relation("ViewerCameraStreamSessions", fields: [viewerUserId], references: [id], onDelete: Cascade)
+
+  @@index([cameraInstanceId])
+  @@index([viewerUserId])
+  @@index([sessionTokenHash])
+  @@index([status])
+  @@index([startedAt])
+  @@index([expiresAt])
+}
+
+/// Multi-Product Subscription Slot Allocation for Camera Product
+model CameraSubscription {
+  id                           String                      @id @default(cuid())
+  cameraInstanceId             String                      @unique
+  userId                       String
+  accountProductSubscriptionId String?
+  subscriptionId               String?
+  status                       BillingStatus               @default(ACTIVE)
+  allocatedAt                  DateTime                    @default(now())
+  revokedAt                    DateTime?
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+
+  cameraInstance               CameraInstance              @relation(fields: [cameraInstanceId], references: [id], onDelete: Cascade)
+  user                         User                        @relation("UserCameraSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
+  accountProductSubscription   AccountProductSubscription? @relation(fields: [accountProductSubscriptionId], references: [id], onDelete: SetNull)
+  subscription                 Subscription?               @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([cameraInstanceId])
+  @@index([accountProductSubscriptionId])
+  @@index([subscriptionId])
+  @@index([status])
+}
+
+/// Security & Access Audit Log for Camera Operations
+model CameraAccessAuditEvent {
+  id               String               @id @default(cuid())
+  cameraInstanceId String?
+  userId           String?
+  actorType        String               @default("USER")
+  eventType        CameraAuditEventType
+  action           String
+  result           String               @default("SUCCESS")
+  ipAddress        String?
+  userAgent        String?
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+
+  cameraInstance   CameraInstance?      @relation(fields: [cameraInstanceId], references: [id], onDelete: SetNull)
+  user             User?                @relation("UserCameraAuditEvents", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([cameraInstanceId])
+  @@index([userId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+/// Aggregate Usage Tracking Record for Camera Service
+model CameraUsageRecord {
+  id               String              @id @default(cuid())
+  cameraInstanceId String?
+  userId           String
+  category         CameraUsageCategory
+  quantity         BigInt              @default(0)
+  unit             String              @default("SECONDS")
+  periodStart      DateTime
+  periodEnd        DateTime
+  metadata         Json?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  cameraInstance   CameraInstance?     @relation(fields: [cameraInstanceId], references: [id], onDelete: SetNull)
+  user             User                @relation("UserCameraUsageRecords", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([cameraInstanceId])
+  @@index([category])
+  @@index([periodStart, periodEnd])
 }
 
 /// Remote Relay Gateway Node Entity
@@ -845,6 +1093,7 @@ model Plan {
   code          String          @unique // e.g. FREE, PRO_MONTHLY, PRO_YEARLY
   name          String                  // Display name e.g. "Free", "Pro Monthly", "Pro Yearly"
   description   String?         @db.Text
+  productType   ProductType     @default(STORAGE)
   interval      BillingInterval @default(FREE)
   intervalCount Int             @default(1)
   serverLimit   Int             @default(1)
@@ -861,6 +1110,7 @@ model Plan {
   planChangesTo        SubscriptionPlanChange[]     @relation("PlanChangeToPlan")
 
   @@index([code])
+  @@index([productType])
   @@index([isActive])
 }
 
@@ -951,6 +1201,27 @@ model AccountBillingState {
   @@index([status])
 }
 
+/// Active Product Subscription Pointer per User and Product Type (Phase 19.3 Multi-Product Foundation)
+/// Enables multiple concurrent product subscriptions (e.g. STORAGE + CAMERA)
+/// while maintaining backward compatibility with legacy single-subscription flows.
+model AccountProductSubscription {
+  id             String        @id @default(cuid())
+  userId         String
+  productType    ProductType
+  subscriptionId String        @unique(map: "account_product_sub_subscription_uniq")
+  status         BillingStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  cameraSubscriptions CameraSubscription[]
+
+  @@unique([userId, productType], map: "account_product_sub_user_product_uniq")
+  @@index([userId], map: "account_product_sub_user_idx")
+  @@index([productType, status], map: "account_product_sub_product_status_idx")
+}
+
 /// Persistent Internal Subscription Contract
 model Subscription {
   id                   String             @id @default(cuid())
@@ -983,6 +1254,8 @@ model Subscription {
   plan                 Plan                 @relation(fields: [planId], references: [id], onDelete: Restrict)
   planPrice            PlanPrice            @relation(fields: [planPriceId], references: [id], onDelete: Restrict)
   activeForAccount     AccountBillingState? @relation("ActiveAccountSubscription")
+  productSlot          AccountProductSubscription?
+  cameraSubscriptions  CameraSubscription[]
   payments             BillingPayment[]
   refunds              BillingRefund[]
   receipts             BillingReceipt[]

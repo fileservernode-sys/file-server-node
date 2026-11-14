@@ -21,6 +21,7 @@ import { executeAdminOperation } from '../../utils/operation_executor.js';
 import { defaultDeliveryWorker } from '../../../../../notifications/workers/delivery_worker.js';
 import { defaultErrorRetentionWorker } from '../../../../../observability/error_retention_worker.js';
 import { defaultEmailRetentionWorker } from '../../../../../services/email_retention_worker.js';
+import { defaultCameraReconciliationWorker } from '../../../../../services/camera_reconciliation_worker.js';
 import {
   BackgroundJobsMetrics,
   BackgroundQueueSummary,
@@ -436,6 +437,57 @@ export class AdminBackgroundJobsService {
           totalAttemptsCleaned: emailMetrics.totalAttemptsCleaned,
           totalRuns: emailMetrics.totalRuns,
           totalFailures: emailMetrics.totalFailures
+        }
+      });
+    } catch {
+      // Graceful fallback
+    }
+
+    // 5. Camera Lifecycle & Stale Heartbeat Reconciliation Worker (Phase 20.4.1)
+    try {
+      const camMetrics = defaultCameraReconciliationWorker.getMetrics();
+      workers.push({
+        workerId: camMetrics.workerId,
+        name: 'Camera Lifecycle Reconciliation Worker',
+        category: 'MAINTENANCE',
+        scope: 'LOCAL_DAEMON',
+        processId: pid,
+        hostname,
+        status: !camMetrics.enabled
+          ? 'STOPPED'
+          : !camMetrics.lastSuccess
+          ? 'DEGRADED'
+          : camMetrics.isStarted
+          ? 'RUNNING'
+          : 'IDLE',
+        enabled: camMetrics.enabled,
+        assignedQueues: ['camera-lifecycle-reconciliation'],
+        startedAt: camMetrics.startedAt,
+        lastHeartbeatAt: camMetrics.lastRunAt,
+        lastPollAt: camMetrics.lastRunAt,
+        isHeartbeatStale: false,
+        currentProcessingCount: camMetrics.isExecuting ? 1 : 0,
+        totalProcessedCount: camMetrics.totalRuns,
+        totalDeliveredCount:
+          camMetrics.totalTransitionedToReconnecting +
+          camMetrics.totalTransitionedToOffline +
+          camMetrics.totalStreamingReconciledToOnline,
+        lastErrorAt: camMetrics.lastErrorAt,
+        lastErrorMessage: camMetrics.lastErrorMessage,
+        telemetry: {
+          intervalMs: camMetrics.intervalMs,
+          batchSize: camMetrics.batchSize,
+          lastDurationMs: camMetrics.lastDurationMs,
+          lastSuccess: camMetrics.lastSuccess,
+          totalRuns: camMetrics.totalRuns,
+          totalFailures: camMetrics.totalFailures,
+          totalSkippedOverlap: camMetrics.totalSkippedOverlap,
+          totalExpiredSessionsTimedOut: camMetrics.totalExpiredSessionsTimedOut,
+          totalStreamingReconciledToOnline: camMetrics.totalStreamingReconciledToOnline,
+          totalTransitionedToReconnecting: camMetrics.totalTransitionedToReconnecting,
+          totalTransitionedToOffline: camMetrics.totalTransitionedToOffline,
+          totalSkippedConcurrentOrFresh: camMetrics.totalSkippedConcurrentOrFresh,
+          lastResult: camMetrics.lastResult
         }
       });
     } catch {

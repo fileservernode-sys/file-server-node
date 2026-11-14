@@ -31,6 +31,8 @@ export * from './system/logs/index.js';
 export * from './system/jobs/index.js';
 export * from './system/config/index.js';
 export * from './system/security/index.js';
+export * from './cameras/service.js';
+export * from './cameras/schemas.js';
 
 export async function adminOperationsRoutes(app: FastifyInstance): Promise<void> {
   /**

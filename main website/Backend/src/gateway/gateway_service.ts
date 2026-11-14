@@ -4,6 +4,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { prisma } from '../config/database.js';
+import { config as appConfig } from '../config/env.js';
+import { markUpgradeHandled, scheduleUnhandledUpgradeRejection } from '../utils/ws_upgrade_security.js';
 import { GatewayConfig, loadGatewayConfig } from './gateway_config.js';
 import { deviceEventProducer } from '../notifications/producers/device_producer.js';
 import { gatewayEventProducer } from '../notifications/producers/gateway_producer.js';
@@ -169,6 +171,9 @@ export class PrismaTokenValidator implements TokenValidator {
 export class GatewayService {
   private httpServer: http.Server | null = null;
   private wss: WebSocketServer | null = null;
+  private ownsHttpServer = false;
+  private stopPromise: Promise<void> | null = null;
+  private httpUpgradeHandler: ((req: http.IncomingMessage, socket: import('net').Socket, head: Buffer) => void) | null = null;
   private activeConnections: Map<string, ActiveGatewayConnection> = new Map(); // connectionId -> ActiveGatewayConnection
   private deviceToConnectionMap: Map<string, string> = new Map(); // deviceId -> connectionId
   private hostnameToConnectionMap: Map<string, string> = new Map(); // hostname -> connectionId
@@ -639,6 +644,7 @@ export class GatewayService {
       res.end(JSON.stringify({ error: 'Not Found' }));
     });
 
+    this.ownsHttpServer = true;
     this.wss = new WebSocketServer({
       server: this.httpServer,
       maxPayload: this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES
@@ -754,7 +760,8 @@ export class GatewayService {
   }
 
   public async stop(): Promise<void> {
-    if (!this.isListening) return;
+    if (this.stopPromise) return this.stopPromise;
+    if (!this.isListening && !this.wss) return;
 
     this.log('info', 'Initiating graceful Gateway shutdown');
 
@@ -811,17 +818,43 @@ export class GatewayService {
     this.deviceToConnectionMap.clear();
     this.hostnameToConnectionMap.clear();
 
-    return new Promise((resolve) => {
-      this.wss?.close(() => {
-        this.httpServer?.close(() => {
-          this.isListening = false;
-          this.wss = null;
-          this.httpServer = null;
-          this.log('info', 'Gateway shutdown completed cleanly');
-          resolve();
-        });
+    if (this.httpServer && this.httpUpgradeHandler) {
+      this.httpServer.off('upgrade', this.httpUpgradeHandler);
+      this.httpUpgradeHandler = null;
+    }
+
+    this.stopPromise = new Promise<void>((resolve) => {
+      const serverToClose = this.wss;
+      const ownedServer = this.ownsHttpServer ? this.httpServer : null;
+      const finalize = () => {
+        this.isListening = false;
+        this.wss = null;
+        this.httpServer = null;
+        this.ownsHttpServer = false;
+        this.stopPromise = null;
+        this.log('info', 'Gateway shutdown completed cleanly');
+        resolve();
+      };
+
+      if (!serverToClose) {
+        if (ownedServer) {
+          ownedServer.close(() => finalize());
+        } else {
+          finalize();
+        }
+        return;
+      }
+
+      serverToClose.close(() => {
+        if (ownedServer) {
+          ownedServer.close(() => finalize());
+        } else {
+          finalize();
+        }
       });
     });
+
+    return this.stopPromise;
   }
 
   private handleSocketConnection(socket: WebSocket, remoteIp: string): void {
@@ -1640,16 +1673,20 @@ export class GatewayService {
     return this.activeTransfers.size;
   }
 
-  public attachToHttpServer(httpServer: http.Server): void {
-    if (this.wss) return;
+  public attachToHttpServer(httpServer: http.Server, excludedPaths?: string[]): void {
+    if (this.wss || this.httpUpgradeHandler) return;
 
     this.httpServer = httpServer;
+    this.ownsHttpServer = false;
+    this.stopPromise = null;
     httpServer.headersTimeout = 0;
     httpServer.requestTimeout = 0;
     httpServer.keepAliveTimeout = 120000;
 
+    // Use noServer + upgrade dispatch so isolated WebSocket channels (e.g. /ws/camera-signaling)
+    // can share the same HTTP server without colliding with Storage Gateway WebSocket upgrades.
     this.wss = new WebSocketServer({
-      server: httpServer,
+      noServer: true,
       maxPayload: this.config.GATEWAY_MAX_MESSAGE_SIZE_BYTES
     });
 
@@ -1659,6 +1696,36 @@ export class GatewayService {
       const remoteIp = req.socket.remoteAddress || '127.0.0.1';
       this.handleSocketConnection(socket, remoteIp);
     });
+
+    const normalizePath = (p: string) => p.replace(/\/+$/, '') || '/';
+    const excluded = new Set(
+      (excludedPaths && excludedPaths.length > 0
+        ? excludedPaths
+        : [appConfig.CAMERA_SIGNALING_PATH || '/ws/camera-signaling']
+      ).map(normalizePath)
+    );
+    const allowedStoragePaths = new Set(['/', '/tunnel', '/ws']);
+
+    this.httpUpgradeHandler = (req: http.IncomingMessage, socket: import('net').Socket, head: Buffer) => {
+      let pathname = '/';
+      try {
+        pathname = normalizePath(new URL(req.url || '/', 'http://localhost').pathname);
+      } catch {
+        pathname = normalizePath((req.url || '/').split('?')[0]);
+      }
+
+      if (excluded.has(pathname) || !allowedStoragePaths.has(pathname)) {
+        scheduleUnhandledUpgradeRejection(req, socket);
+        return;
+      }
+
+      markUpgradeHandled(req);
+      this.wss?.handleUpgrade(req, socket, head, (ws) => {
+        this.wss?.emit('connection', ws, req);
+      });
+    };
+
+    httpServer.on('upgrade', this.httpUpgradeHandler);
 
     this.isListening = true;
     this.startTime = Date.now();

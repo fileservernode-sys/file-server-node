@@ -26,8 +26,10 @@ import { adminUsersRoutes } from './admin/users.js';
 import { adminDevicesRoutes } from './admin/devices.js';
 import { adminServersRoutes } from './admin/servers.js';
 import { adminNotificationsRoutes } from './admin/notifications.js';
+import { adminCamerasRoutes } from './admin/cameras.js';
 import { emailWebhookRoutes } from './email-webhooks.js';
 import { youmPanelRoutes } from './youm_panel.js';
+import { cameraRoutes } from './camera.js';
 import { pushTokenRoutes, preferenceRoutes, notificationRoutes } from '../notifications/index.js';
 import { createSuccessResponse } from '../schemas/response.js';
 
@@ -58,6 +60,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(adminDevicesRoutes);
   await app.register(adminServersRoutes);
   await app.register(adminNotificationsRoutes);
+  await app.register(adminCamerasRoutes);
   await app.register(deviceRoutes);
   await app.register(serverRoutes);
   await app.register(gatewayRoutes);
@@ -71,6 +74,7 @@ export async function apiV1Routes(app: FastifyInstance): Promise<void> {
   await app.register(contactRoutes);
   await app.register(emailWebhookRoutes);
   await app.register(youmPanelRoutes);
+  await app.register(cameraRoutes);
   await app.register(pushTokenRoutes);
   await app.register(preferenceRoutes);
   await app.register(notificationRoutes);

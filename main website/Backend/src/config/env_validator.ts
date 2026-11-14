@@ -1,5 +1,6 @@
-import { config } from './env.js';
+import { config, isCameraSignalingStrictTlsEnv } from './env.js';
 import { appLogger } from '../observability/logger.js';
+import { normalizeExactOrigin } from '../utils/ws_upgrade_security.js';
 
 export interface EnvValidationResult {
   valid: boolean;
@@ -106,6 +107,74 @@ export function validateEnvironment(configOverride?: Record<string, any>): EnvVa
   const hasFcm = Boolean(cfg.FCM_PROJECT_ID && cfg.FCM_CLIENT_EMAIL && cfg.FCM_PRIVATE_KEY);
   if (!hasFcm) {
     warnings.push('FCM credentials incomplete. Android background push notifications will be simulated or deferred.');
+  }
+
+  // 5. Camera Reconciliation Scheduler Configuration (Phase 20.4.1)
+  if (typeof cfg.CAMERA_RECONCILIATION_ENABLED !== 'boolean') {
+    errors.push('CAMERA_RECONCILIATION_ENABLED must be a valid boolean.');
+  }
+  if (typeof cfg.CAMERA_RECONCILIATION_RUN_ON_STARTUP !== 'boolean') {
+    errors.push('CAMERA_RECONCILIATION_RUN_ON_STARTUP must be a valid boolean.');
+  }
+  if (
+    !Number.isInteger(cfg.CAMERA_RECONCILIATION_INTERVAL_MS) ||
+    cfg.CAMERA_RECONCILIATION_INTERVAL_MS < 5000 ||
+    cfg.CAMERA_RECONCILIATION_INTERVAL_MS > 3600000
+  ) {
+    errors.push('CAMERA_RECONCILIATION_INTERVAL_MS must be an integer between 5000 and 3600000 milliseconds.');
+  }
+  if (
+    !Number.isInteger(cfg.CAMERA_RECONCILIATION_INITIAL_DELAY_MS) ||
+    cfg.CAMERA_RECONCILIATION_INITIAL_DELAY_MS < 0 ||
+    cfg.CAMERA_RECONCILIATION_INITIAL_DELAY_MS > 300000
+  ) {
+    errors.push('CAMERA_RECONCILIATION_INITIAL_DELAY_MS must be an integer between 0 and 300000 milliseconds.');
+  }
+  if (
+    !Number.isInteger(cfg.CAMERA_RECONCILIATION_BATCH_SIZE) ||
+    cfg.CAMERA_RECONCILIATION_BATCH_SIZE < 1 ||
+    cfg.CAMERA_RECONCILIATION_BATCH_SIZE > 500
+  ) {
+    errors.push('CAMERA_RECONCILIATION_BATCH_SIZE must be an integer between 1 and 500.');
+  }
+  if (
+    Number.isFinite(cfg.CAMERA_RECONCILIATION_INTERVAL_MS) &&
+    Number.isFinite(cfg.CAMERA_HEARTBEAT_TIMEOUT_MS) &&
+    cfg.CAMERA_RECONCILIATION_INTERVAL_MS > cfg.CAMERA_HEARTBEAT_TIMEOUT_MS
+  ) {
+    warnings.push(
+      'CAMERA_RECONCILIATION_INTERVAL_MS exceeds CAMERA_HEARTBEAT_TIMEOUT_MS; stale cameras may experience delayed transitions.'
+    );
+  }
+
+  // 6. Camera Signaling Origin & Transport Security Configuration (Phase 20.5.1)
+  if (cfg.CAMERA_SIGNALING_ALLOWED_ORIGINS && cfg.CAMERA_SIGNALING_ALLOWED_ORIGINS.trim().length > 0) {
+    if (cfg.CAMERA_SIGNALING_ALLOWED_ORIGINS.includes('*')) {
+      errors.push('Wildcard (*) in CAMERA_SIGNALING_ALLOWED_ORIGINS is strictly forbidden.');
+    } else {
+      const entries = cfg.CAMERA_SIGNALING_ALLOWED_ORIGINS.split(',').map((s: string) => s.trim()).filter(Boolean);
+      for (const entry of entries) {
+        const normalized = normalizeExactOrigin(entry);
+        if (!normalized) {
+          errors.push(`Invalid origin in CAMERA_SIGNALING_ALLOWED_ORIGINS: ${entry}`);
+        } else if (isProd && !normalized.startsWith('https://')) {
+          errors.push(`Insecure non-HTTPS origin in CAMERA_SIGNALING_ALLOWED_ORIGINS forbidden in production: ${entry}`);
+        }
+      }
+    }
+  }
+  const isStrictTlsEnv = isCameraSignalingStrictTlsEnv(cfg.NODE_ENV);
+  const rawRequireTls = cfg.CAMERA_SIGNALING_REQUIRE_TLS;
+  const isStringFalse =
+    typeof rawRequireTls === 'string' && rawRequireTls.trim().toLowerCase() === 'false';
+  if (rawRequireTls !== undefined && typeof rawRequireTls !== 'boolean') {
+    if (isStringFalse && isStrictTlsEnv) {
+      errors.push(`Disabling CAMERA_SIGNALING_REQUIRE_TLS in ${cfg.NODE_ENV} is forbidden; wss:// is mandatory.`);
+    } else {
+      errors.push('CAMERA_SIGNALING_REQUIRE_TLS must be a valid boolean when specified.');
+    }
+  } else if (isStrictTlsEnv && rawRequireTls === false) {
+    errors.push(`Disabling CAMERA_SIGNALING_REQUIRE_TLS in ${cfg.NODE_ENV} is forbidden; wss:// is mandatory.`);
   }
 
   const valid = errors.length === 0;
