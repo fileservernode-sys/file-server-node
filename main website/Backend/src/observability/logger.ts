@@ -6,14 +6,18 @@ import {
 } from './redaction_patterns.js';
 
 export interface StructuredLogPayload {
-  level?: 'info' | 'warn' | 'error' | 'debug' | 'trace';
+  level?: 'info' | 'warn' | 'error' | 'debug' | 'trace' | 'fatal';
   service?: string;
   environment?: string;
   requestId?: string;
   operation?: string;
+  action?: string;
+  targetEventType?: string;
+  targetAction?: string;
   resourceType?: string;
   resourceId?: string;
   userId?: string;
+  currentUserId?: string;
   adminId?: string;
   deviceId?: string;
   cameraId?: string;
@@ -27,6 +31,7 @@ export interface StructuredLogPayload {
   message?: string;
   metadata?: Record<string, any>;
   error?: Error | unknown;
+  [key: string]: any;
 }
 
 const SENSITIVE_KEY_PATTERNS = [
@@ -168,7 +173,7 @@ export class StructuredLogger {
     };
 
     const serialized = JSON.stringify(structuredRecord);
-    if (level === 'error') {
+    if (level === 'error' || level === 'fatal') {
       console.error(serialized);
     } else if (level === 'warn') {
       console.warn(serialized);

@@ -414,8 +414,8 @@ export class SystemOverviewService {
         if (workerMetrics) {
           workerSummary = {
             enabled: Boolean(workerMetrics.enabled),
-            running: Boolean(workerMetrics.running),
-            totalCycles: Number(workerMetrics.totalCycles ?? 0),
+            running: Boolean(workerMetrics.isExecuting || workerMetrics.isStarted),
+            totalCycles: Number(workerMetrics.totalRuns ?? 0),
             totalFailures: Number(workerMetrics.totalFailures ?? 0),
             lastSuccess: workerMetrics.lastSuccess ?? null,
             lastRunAt: workerMetrics.lastRunAt ?? null,

@@ -322,7 +322,7 @@ export async function cameraRoutes(app: FastifyInstance): Promise<void> {
 
       const parsed = cameraHeartbeatSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
-        throw new ValidationError('Invalid heartbeat payload', parsed.error.issues);
+        throw new ValidationError(parsed.error.errors.map(e => e.message).join(', ') || 'Invalid heartbeat payload');
       }
 
       const authDevice = await CameraLifecycleService.authenticateDeviceRequest(request, {
@@ -384,7 +384,7 @@ export async function cameraRoutes(app: FastifyInstance): Promise<void> {
 
       const parsed = cameraLifecycleReportSchema.safeParse(request.body);
       if (!parsed.success) {
-        throw new ValidationError('Invalid camera lifecycle report payload', parsed.error.issues);
+        throw new ValidationError(parsed.error.errors.map(e => e.message).join(', ') || 'Invalid camera lifecycle report payload');
       }
 
       const authDevice = await CameraLifecycleService.authenticateDeviceRequest(request, {

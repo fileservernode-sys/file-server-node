@@ -164,7 +164,7 @@ export function validateEnvironment(configOverride?: Record<string, any>): EnvVa
     }
   }
   const isStrictTlsEnv = isCameraSignalingStrictTlsEnv(cfg.NODE_ENV);
-  const rawRequireTls = cfg.CAMERA_SIGNALING_REQUIRE_TLS;
+  const rawRequireTls: unknown = (cfg as Record<string, unknown>).CAMERA_SIGNALING_REQUIRE_TLS;
   const isStringFalse =
     typeof rawRequireTls === 'string' && rawRequireTls.trim().toLowerCase() === 'false';
   if (rawRequireTls !== undefined && typeof rawRequireTls !== 'boolean') {

@@ -353,8 +353,9 @@ export class CameraService {
     // 3. Resolve authoritative Camera entitlements
     const entitlements = await EntitlementService.resolveUserEntitlements(userId);
 
+    const maxCameras = entitlements.camera?.maxCameras ?? entitlements.maxCameras ?? 0;
     // If account has 0 camera entitlements (e.g. Storage Free or Storage Pro), require Camera subscription
-    if (entitlements.maxCameras <= 0) {
+    if (maxCameras <= 0) {
       await this.recordAuditEvent({
         userId,
         eventType: CameraAuditEventType.CAMERA_REGISTERED,
@@ -380,9 +381,9 @@ export class CameraService {
         where: { userId }
       });
 
-      if (cameraCount >= entitlements.maxCameras) {
+      if (cameraCount >= maxCameras) {
         throw new ConflictError(
-          `Your account has reached the maximum limit of ${entitlements.maxCameras} active camera instances.`,
+          `Your account has reached the maximum limit of ${maxCameras} active camera instances.`,
           'MAX_CAMERAS_REACHED'
         );
       }
@@ -411,7 +412,7 @@ export class CameraService {
           fps: input.fps ?? 20,
           audioEnabled: input.audioEnabled ?? false,
           lensFacing: input.lensFacing || 'BACK',
-          metadata: input.metadata || null
+          metadata: input.metadata ?? undefined
         }
       });
 
@@ -668,7 +669,8 @@ export class CameraService {
 
     // Check streaming entitlement
     const entitlements = await EntitlementService.resolveUserEntitlements(userId);
-    if (!entitlements.cameraStreaming) {
+    const hasStreaming = entitlements.camera?.liveStreamingEnabled ?? entitlements.cameraStreaming ?? false;
+    if (!hasStreaming) {
       throw new ForbiddenError(
         'Live camera streaming requires an active Camera or Unified Pro subscription.',
         'CAMERA_STREAMING_NOT_ENTITLED'
@@ -966,7 +968,8 @@ export class CameraService {
 
     // Verify streaming entitlement
     const entitlements = await EntitlementService.resolveUserEntitlements(userId);
-    if (!entitlements.cameraStreaming) {
+    const hasStreaming = entitlements.camera?.liveStreamingEnabled ?? entitlements.cameraStreaming ?? false;
+    if (!hasStreaming) {
       await this.recordAuditEvent({
         cameraInstanceId: cameraId,
         userId,
@@ -1121,7 +1124,8 @@ export class CameraService {
 
     // Authorize viewer streaming entitlement
     const entitlements = await EntitlementService.resolveUserEntitlements(session.viewerUserId);
-    if (!entitlements.cameraStreaming) {
+    const hasStreaming = entitlements.camera?.liveStreamingEnabled ?? entitlements.cameraStreaming ?? false;
+    if (!hasStreaming) {
       return { valid: false, reason: 'STREAMING_NOT_ENTITLED', session };
     }
 

@@ -65,6 +65,8 @@ export interface MultiProductResolvedEntitlements extends ResolvedEntitlements {
   resolvedAt: Date;
   storage: StorageEntitlements;
   camera: CameraEntitlements;
+  maxCameras?: number;
+  cameraStreaming?: boolean;
   applicableSubscriptions: ApplicableSubscriptionInfo[];
   activeProducts: ProductType[];
   isMultiProduct: boolean;
@@ -121,6 +123,8 @@ export function buildFreeMultiProductEntitlements(userId = ''): MultiProductReso
     resolvedAt: new Date(),
     storage: { ...DEFAULT_FREE_STORAGE_ENTITLEMENTS },
     camera: { ...DEFAULT_FREE_CAMERA_ENTITLEMENTS },
+    maxCameras: DEFAULT_FREE_CAMERA_ENTITLEMENTS.maxCameras,
+    cameraStreaming: DEFAULT_FREE_CAMERA_ENTITLEMENTS.liveStreamingEnabled,
     applicableSubscriptions: [],
     activeProducts: [ProductType.STORAGE],
     isMultiProduct: false
@@ -333,6 +337,8 @@ export class EntitlementService {
           source: isPro ? 'PRODUCT_SLOT' : 'FREE_DEFAULT'
         },
         camera: { ...DEFAULT_FREE_CAMERA_ENTITLEMENTS },
+        maxCameras: DEFAULT_FREE_CAMERA_ENTITLEMENTS.maxCameras,
+        cameraStreaming: DEFAULT_FREE_CAMERA_ENTITLEMENTS.liveStreamingEnabled,
         applicableSubscriptions: isPro
           ? [
               {
@@ -641,6 +647,8 @@ export class EntitlementService {
       resolvedAt: new Date(),
       storage: storageEntitlements,
       camera: cameraEntitlements,
+      maxCameras: cameraEntitlements.maxCameras,
+      cameraStreaming: cameraEntitlements.liveStreamingEnabled,
       applicableSubscriptions,
       activeProducts,
       isMultiProduct: activeProducts.length > 1

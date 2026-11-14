@@ -26,6 +26,14 @@ import {
   ForbiddenError,
   UnauthorizedError
 } from '../errors/app-error.js';
+import {
+  markUpgradeHandled,
+  scheduleUnhandledUpgradeRejection,
+  rejectUpgradeHandshake,
+  buildAllowedBrowserOrigins,
+  isExactBrowserOriginAllowed,
+  isSecureUpgradeRequest
+} from '../utils/ws_upgrade_security.js';
 
 export const CAMERA_SIGNALING_PROTOCOL_VERSION = '1.0' as const;
 export const CAMERA_SIGNALING_SDP_MAX_BYTES = 32768;
@@ -142,6 +150,10 @@ export interface CameraSignalingServiceConfig {
   rateLimitPerMin: number;
   maxViewersPerCamera: number;
   reaperIntervalMs: number;
+  allowedOrigins?: string[];
+  requireSecureTransport?: boolean;
+  trustProxy?: string;
+  nodeEnv?: string;
 }
 
 interface PendingSocketState {
@@ -149,6 +161,8 @@ interface PendingSocketState {
   socket: WebSocket;
   remoteIp: string;
   userAgent: string | null;
+  hasValidBrowserOrigin?: boolean;
+  origin?: string | null;
   upgradeAuthHeader: string | null;
   upgradeDeviceCredHeader: string | null;
   upgradeViewingTokenHeader: string | null;
@@ -426,7 +440,7 @@ export class CameraSignalingService {
       // Claim ownership of this signaling upgrade synchronously
       markUpgradeHandled(req);
 
-      if (this.cfg.requireSecureTransport && !isSecureUpgradeRequest(req, this.cfg.trustProxy)) {
+      if (this.cfg.requireSecureTransport && !isSecureUpgradeRequest(req, this.cfg.trustProxy || 'loopback,linklocal,uniquelocal')) {
         this.recordAuthRejection('TLS_REQUIRED');
         rejectUpgradeHandshake(
           socket,
@@ -1476,7 +1490,8 @@ export class CameraSignalingService {
     // Re-evaluate viewer streaming entitlement fail-closed on active negotiation
     if (conn.role === 'VIEWER') {
       const entitlements = await EntitlementService.resolveUserEntitlements(conn.userId);
-      if (!entitlements.cameraStreaming) {
+      const hasStreaming = entitlements.camera?.liveStreamingEnabled ?? entitlements.cameraStreaming ?? false;
+      if (!hasStreaming) {
         this.recordRejectedMessage('negotiation');
         this.sendErrorSafe(
           conn.socket,

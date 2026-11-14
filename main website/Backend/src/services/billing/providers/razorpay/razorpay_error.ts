@@ -13,7 +13,8 @@ export type RazorpayErrorCode =
   | 'MAPPING_CONFLICT'
   | 'RESPONSE_MISMATCH'
   | 'CATALOG_INCOMPLETE'
-  | 'VALIDATION_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'PAGINATION_LIMIT_EXCEEDED';
 
 /**
  * Sanitized, provider-specific error class for Razorpay operations.

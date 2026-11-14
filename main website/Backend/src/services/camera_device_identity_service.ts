@@ -188,6 +188,7 @@ export class CameraDeviceIdentityService {
       auditLogger.log({
         level: 'warn',
         event: 'CROSS_ACCOUNT_DEVICE_CLAIM_DETECTED',
+        userId: currentUserId,
         currentUserId,
         existingClaimId: existingClaim.id,
         existingOwnerUserId: existingClaim.userId
@@ -225,6 +226,7 @@ export class CameraDeviceIdentityService {
       auditLogger.log({
         level: 'warn',
         event: 'CROSS_ACCOUNT_DEVICE_CLAIM_DETECTED',
+        userId: currentUserId,
         currentUserId,
         existingDeviceId: existingUnderOtherUser.id,
         existingOwnerUserId: existingUnderOtherUser.userId
@@ -761,7 +763,7 @@ export class CameraDeviceIdentityService {
     const cameras = await prisma.cameraInstance.findMany({
       where: {
         metadata: {
-          path: ['pairingChallenge', 'challengeHash'],
+          path: '$.pairingChallenge.challengeHash',
           equals: challengeHash
         }
       }
