@@ -137,6 +137,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
           'Hardware capture (Phase 21.4), multi-engine supervision (Phase 21.5), and live WebRTC signaling (/ws/camera-signaling in Phase 21.6) '
           'will be activated in subsequent updates.',
       primaryActionLabel: 'Understood',
+      onPrimaryAction: () => Navigator.of(context).pop(),
     );
   }
 
@@ -975,6 +976,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                                             message:
                                                 'Your session has expired. Please sign in to your ZdexCloud account before registering a security camera node.',
                                             primaryActionLabel: 'Understood',
+                                            onPrimaryAction: () => Navigator.of(context).pop(),
                                           );
                                           return;
                                         }
@@ -987,6 +989,7 @@ class _CameraScreenState extends ConsumerState<CameraScreen>
                                             message:
                                                 'You must sign in to your ZdexCloud account before registering a security camera node.',
                                             primaryActionLabel: 'Understood',
+                                            onPrimaryAction: () => Navigator.of(context).pop(),
                                           );
                                           return;
                                         }

@@ -37,7 +37,7 @@ enum class TimeoutResolution {
  * 5. Encoder-Only Teardown Compatibility: `releaseEncoderOnly()` prevents late encoder initialization
  *    from restoring encoder state after teardown (`isEncoderAllowed = false`).
  */
-internal class CaptureSessionContext(
+class CaptureSessionContext(
     val generation: Int,
     val cameraId: String = "0",
     val width: Int = 1280,

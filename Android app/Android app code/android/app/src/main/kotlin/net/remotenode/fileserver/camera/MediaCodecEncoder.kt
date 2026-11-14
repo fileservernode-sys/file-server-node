@@ -146,8 +146,12 @@ class MediaCodecEncoder(
 
                     // Check frame rate support
                     val supportedFrameRates = videoCaps.supportedFrameRates
-                    if (supportedFrameRates != null && !supportedFrameRates.contains(fps.toDouble())) {
-                        continue
+                    if (supportedFrameRates != null) {
+                        val minFps = (supportedFrameRates.lower as? Number)?.toDouble() ?: 1.0
+                        val maxFps = (supportedFrameRates.upper as? Number)?.toDouble() ?: 60.0
+                        if (fps < minFps || fps > maxFps) {
+                            continue
+                        }
                     }
 
                     // Check Surface color format support

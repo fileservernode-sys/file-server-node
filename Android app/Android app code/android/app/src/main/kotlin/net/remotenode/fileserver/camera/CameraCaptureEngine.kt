@@ -325,15 +325,16 @@ class CameraCaptureEngine(
                                 Log.i(TAG, "MediaCodec output format changed: $format")
                             }
 
-                            override fun onEncoderError(errorCode: String, message: String) {
+                            override fun onEncoderError(error: Exception) {
                                 if (!coordinator.isGenerationActive(sessionCtx)) return
-                                Log.w(TAG, "MediaCodec encoder runtime error: $message. Falling back to preview-only.")
+                                Log.w(TAG, "MediaCodec encoder runtime error: ${error.message}. Falling back to preview-only.")
                                 sessionCtx.releaseEncoderOnly()
                             }
                         }
                     )
+                    val inputSurface = encoder.prepare()
                     // Atomically attach encoder; if rejected, encoder and its surface are immediately disposed
-                    val encAttached = sessionCtx.attachEncoder(encoder, encoder.inputSurface)
+                    val encAttached = sessionCtx.attachEncoder(encoder, inputSurface)
                     if (encAttached && coordinator.isGenerationActive(sessionCtx)) {
                         encoder.start()
                         Log.i(TAG, "MediaCodec surface-based H.264 encoder prepared (${width}x${height} @ ${fps}fps)")

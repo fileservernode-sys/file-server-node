@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
-import '../domain/entities/camera_hardware_info.dart';
+import '../../application/camera_state.dart';
+import '../entities/camera_hardware_info.dart';
 
 /// Abstract service contract for non-destructive camera hardware capability discovery
 abstract class CameraHardwareService {

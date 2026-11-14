@@ -1,4 +1,4 @@
-import '../application/camera_state.dart';
+import '../../application/camera_state.dart';
 
 /// Permission status enumeration representing Android runtime permission states
 enum CameraPermissionStatus {

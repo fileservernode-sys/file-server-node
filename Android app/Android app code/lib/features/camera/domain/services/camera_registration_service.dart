@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/utils/logger.dart';
-import '../application/camera_state.dart';
+import '../../application/camera_state.dart';
 
 /// Abstract service contract for ZdexCloud Camera backend registration and discovery
 abstract class CameraRegistrationService {
@@ -372,7 +372,7 @@ class HttpCameraRegistrationService implements CameraRegistrationService {
         return json;
       } else {
         final err = json['error'] as Map<String, dynamic>?;
-        AppLogger.warn(
+        AppLogger.warning(
             '[CameraRegistration] Registration rejected: ${err?['code']} - ${err?['message']}');
         return json;
       }

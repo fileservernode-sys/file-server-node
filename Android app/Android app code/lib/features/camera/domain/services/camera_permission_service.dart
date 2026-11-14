@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import '../domain/entities/camera_hardware_info.dart';
+import '../entities/camera_hardware_info.dart';
 
 /// Abstract service contract for Android camera and microphone runtime permissions
 abstract class CameraPermissionService {
